@@ -1,16 +1,13 @@
 package com.drimoz.factoryio.core.registery.custom;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.features.inserters.inserter.BlockInserter;
-import com.drimoz.factoryio.features.inserters.inserter.ItemInserter;
+import com.drimoz.factoryio.features.inserters.inserter.InserterBlock;
+import com.drimoz.factoryio.features.inserters.inserter.InserterItem;
 import com.drimoz.factoryio.shared.ModCreativeModeTab;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -29,7 +26,7 @@ public class FactoryIOBlocks {
     // Inserters
 
     public static final RegistryObject<Block> INSERTER_BLOCK = registerInserter("inserter",
-            () -> new BlockInserter(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion().isRedstoneConductor(redstone)));
+            () -> new InserterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion().isRedstoneConductor(redstone)));
 
 
 
@@ -41,7 +38,7 @@ public class FactoryIOBlocks {
 
     private static <T extends Block> RegistryObject<T> registerInserter(String name, Supplier<T> block) {
         RegistryObject<T> toReturn = BLOCKS.register(name, block);
-        FactoryIOItems.ITEMS.register(name, () -> new ItemInserter(toReturn.get(), new Item.Properties().tab(ModCreativeModeTab.MOD_TAB)));
+        FactoryIOItems.ITEMS.register(name, () -> new InserterItem(toReturn.get(), new Item.Properties().tab(ModCreativeModeTab.MOD_TAB)));
 
         return toReturn;
     }

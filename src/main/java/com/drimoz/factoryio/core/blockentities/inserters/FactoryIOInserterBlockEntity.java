@@ -1,13 +1,20 @@
 package com.drimoz.factoryio.core.blockentities.inserters;
 
+import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.blockentities.FactoryIOMenuProvidedBlockEntity;
 import com.drimoz.factoryio.core.containers.energy.FactoryIOEnergyContainer;
+import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CEnergy;
+import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CFuel;
+import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CWhitelistButton;
+import com.drimoz.factoryio.core.registery.custom.FactoryIONetworks;
 import com.drimoz.factoryio.core.tags.FactoryIOTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.Containers;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -24,10 +31,17 @@ import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
+import software.bernie.geckolib3.core.IAnimatable;
+import software.bernie.geckolib3.core.PlayState;
+import software.bernie.geckolib3.core.builder.AnimationBuilder;
+import software.bernie.geckolib3.core.controller.AnimationController;
+import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
+import software.bernie.geckolib3.core.manager.AnimationData;
+import software.bernie.geckolib3.core.manager.AnimationFactory;
 
 import javax.annotation.Nonnull;
 
-public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvidedBlockEntity {
+public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvidedBlockEntity implements IAnimatable {
 
     // Public constants
 
@@ -55,6 +69,8 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
     private int current_cooldown = 0;
     private boolean isWhitelist = true;
     private int current_fuel_value = 0;
+
+    private AnimationFactory factory = new AnimationFactory(this);
 
     // Life cycle
 
@@ -127,6 +143,33 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
         return new TranslatableComponent(getBlockState().getBlock().getDescriptionId());
     }
 
+    // Interface (ItemStorage)
+
+    public void drops() {
+        SimpleContainer inventory = new SimpleContainer(itemStorage.getSlots());
+        for (int i = 0; i < (this.IS_FILTER ? itemStorage.getSlots() - 5: itemStorage.getSlots()); i++) {
+            inventory.setItem(i, itemStorage.getStackInSlot(i));
+        }
+
+        Containers.dropContents(this.level, this.worldPosition, inventory);
+    }
+
+    public boolean isEmpty() {
+        for(int i = 0; i < this.itemStorage.getSlots(); i++) {
+            if (!this.itemStorage.getStackInSlot(i).isEmpty()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void clearContent() {
+        for(int i = 0; i < this.itemStorage.getSlots(); i++) {
+            this.itemStorage.setStackInSlot(i, ItemStack.EMPTY);
+        }
+    }
+
     // Interface (Capabilities)
 
     @Override
@@ -189,13 +232,13 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
     public static void tick(Level pLevel, BlockPos pPos, BlockState pState, final FactoryIOInserterBlockEntity pEntity) {
         if (!pLevel.isClientSide) {
             if (pEntity.IS_ENERGY) {
-                //ModMessages.sendToClients(new EnergySyncS2C(pEntity.getEnergy(), pPos));
+                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnergy(pEntity.getCurrentEnergy(), pPos));
             }
             else {
-                //ModMessages.sendToClients(new FuelSyncS2C(pEntity.getFuel(), pPos));
+                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CFuel(pEntity.getCurrentFuelValue(), pPos));
             }
             if (pEntity.IS_FILTER) {
-                //ModMessages.sendToClients(new ButtonSyncS2C((pEntity.isWhitelist()? 1 : 0), 6, pPos));
+                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CWhitelistButton((pEntity.isWhitelist()? 1 : 0), 6, pPos));
             }
         }
 
@@ -468,7 +511,7 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
 
                 if (checkItemStackNotPresentInWhitelist(pEntity, itemStackToGet, isWhitelist) && !itemStackToGet.isEmpty()) {
                     pEntity.insertItemInternal(
-                            FUEL_SLOT,
+                            BUFFER_SLOT,
                             pBackEntityItemHandler.extractItem(
                                     i,
                                     Math.min(pEntity.getMaximumItemCountPerAction(),
@@ -540,5 +583,22 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
         else {
             this.removeFromToCurrentFuelValue(this.getFuelConsumptionPerAction());
         }
+    }
+
+    // Interface GeckLib
+    @Override
+    public void registerControllers(AnimationData data) {
+        data.addAnimationController(new AnimationController<FactoryIOInserterBlockEntity>
+                (this, "controller", 0, this::predicate));
+    }
+
+    private <E extends IAnimatable> PlayState predicate (AnimationEvent<E> event) {
+        event.getController().setAnimation(new AnimationBuilder().addAnimation("idle", true));
+
+        return PlayState.CONTINUE;
+    }
+
+    public AnimationFactory getFactory() {
+        return this.factory;
     }
 }

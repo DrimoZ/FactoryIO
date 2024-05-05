@@ -1,7 +1,7 @@
 package com.drimoz.factoryio.core.registery.custom;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.features.inserters.inserter.BlockEntityInserter;
+import com.drimoz.factoryio.features.inserters.inserter.InserterBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -16,7 +16,7 @@ public class FactoryIOBlockEntities {
     }
 
 
-    public static final RegistryObject<BlockEntityType<BlockEntityInserter>> BLOCK_ENTITY_INSERTER =
+    public static final RegistryObject<BlockEntityType<InserterBlockEntity>> BLOCK_ENTITY_INSERTER =
             BLOCK_ENTITIES.register("inserter_block_entity", () ->
-                    BlockEntityType.Builder.of(BlockEntityInserter::new, FactoryIOBlocks.INSERTER_BLOCK.get()).build(null));
+                    BlockEntityType.Builder.of(InserterBlockEntity::new, FactoryIOBlocks.INSERTER_BLOCK.get()).build(null));
 }

@@ -11,9 +11,9 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class BlockInserter extends FactoryIOInserterEntityBlock {
+public class InserterBlock extends FactoryIOInserterEntityBlock {
 
-    public BlockInserter(BlockBehaviour.Properties pProps) {
+    public InserterBlock(BlockBehaviour.Properties pProps) {
         super(pProps);
         this.registerDefaultState(this.stateDefinition.any().setValue(ENABLED, Boolean.TRUE).setValue(WATERLOGGED, false));
     }
@@ -21,7 +21,7 @@ public class BlockInserter extends FactoryIOInserterEntityBlock {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
-        return new BlockEntityInserter(pPos, pState);
+        return new InserterBlockEntity(pPos, pState);
     }
 
     @javax.annotation.Nullable

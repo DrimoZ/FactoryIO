@@ -8,8 +8,8 @@ import net.minecraftforge.client.IItemRenderProperties;
 
 import java.util.function.Consumer;
 
-public class ItemInserter extends FactoryIOInserterItem {
-    public ItemInserter(Block block, Item.Properties properties) {
+public class InserterItem extends FactoryIOInserterItem {
+    public InserterItem(Block block, Item.Properties properties) {
         super(block, properties);
     }
 

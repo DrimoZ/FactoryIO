@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.features.inserters.inserter;
 
+import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.blockentities.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.core.configs.FactoryIOCommonConfigs;
 import com.drimoz.factoryio.core.registery.custom.FactoryIOBlockEntities;
@@ -10,7 +11,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class BlockEntityInserter extends FactoryIOInserterBlockEntity {
+public class InserterBlockEntity extends FactoryIOInserterBlockEntity {
     public static final int GRAB_DISTANCE = 1;
     public static final int MAX_COOLDOWN = FactoryIOCommonConfigs.INSERTER_ACTION_DURATION.get();
     public static final int MAX_ENERGY_LEVEL = FactoryIOCommonConfigs.INSERTER_ENERGY_CAPACITY.get();
@@ -18,7 +19,7 @@ public class BlockEntityInserter extends FactoryIOInserterBlockEntity {
     public static final int MAX_ITEM_PER_ACTION = FactoryIOCommonConfigs.INSERTER_ITEM_PER_ACTION.get();
     public static final int ENERGY_PER_ACTION = FactoryIOCommonConfigs.INSERTER_ENERGY_PER_ACTION.get();
 
-    public BlockEntityInserter(BlockPos pPos, BlockState pState) {
+    public InserterBlockEntity(BlockPos pPos, BlockState pState) {
         super(FactoryIOBlockEntities.BLOCK_ENTITY_INSERTER.get(), pPos, pState, true, false);
 
         energyStorage.overrideEnergyCapacity(MAX_ENERGY_LEVEL);
@@ -28,7 +29,7 @@ public class BlockEntityInserter extends FactoryIOInserterBlockEntity {
     @Nullable
     @Override
     public AbstractContainerMenu createMenu(int pContainerId, Inventory pPlayerInventory, Player pPlayer) {
-        return new ContainerInserter(pContainerId, pPlayerInventory, pPlayer, this.level, this.worldPosition);
+        return new InserterContainer(pContainerId, pPlayerInventory, pPlayer, this.level, this.worldPosition);
     }
 
     @Override
