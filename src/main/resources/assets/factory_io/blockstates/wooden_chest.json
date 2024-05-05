@@ -1,0 +1,9 @@
+{
+  "variants": {
+    "facing=north": { "model": "factory_io:block/chests/wooden_chest", "y": 0 },
+    "facing=south": { "model": "factory_io:block/chests/wooden_chest", "y": 180 },
+    "facing=east":  { "model": "factory_io:block/chests/wooden_chest", "y": 90 },
+    "facing=west": { "model": "factory_io:block/chests/wooden_chest", "y": 270 }
+
+  }
+}

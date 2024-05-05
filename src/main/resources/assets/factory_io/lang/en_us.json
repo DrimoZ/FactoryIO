@@ -1,0 +1,61 @@
+{
+  "_comment": "CreativeTab",
+  "itemGroup.modtab": "Factory'I/O",
+
+
+
+  "_comment": "Blocks",
+  "block.factory_io.burner_inserter": "Burner Inserter",
+  "block.factory_io.inserter": "Inserter",
+  "block.factory_io.long_inserter": "Long Inserter",
+  "block.factory_io.fast_inserter": "Fast Inserter",
+  "block.factory_io.filter_inserter": "Filter Inserter",
+  "block.factory_io.stack_inserter": "Stack Inserter",
+
+  "block.factory_io.transport_belt": "Transport Belt",
+  "block.factory_io.fast_transport_belt": "Fast Transport Belt",
+  "block.factory_io.express_transport_belt": "Express Transport Belt",
+
+
+
+  "_comment": "Tooltips",
+  "tooltip.factory_io.energy_name": "FE",
+  "tooltip.factory_io.upgrade_right_click": "Sneak & right-click to upgrade",
+  "tooltip.factory_io.boundPos": "Bound to: ",
+  "tooltip.factory_io.posX": "X: ",
+  "tooltip.factory_io.posY": "Y: ",
+  "tooltip.factory_io.posZ": "Z: ",
+  "tooltip.factory_io.no_boundPos": "Has yet to be bound!",
+  "tooltip.factory_io.gui_open": "Open Config",
+  "tooltip.factory_io.gui_close": "Close Config",
+  "tooltip.factory_io.gui_auto_input": "Auto Input",
+  "tooltip.factory_io.gui_auto_output": "Auto Output",
+  "tooltip.factory_io.gui_top": "Top",
+  "tooltip.factory_io.gui_bottom": "Bottom",
+  "tooltip.factory_io.gui_front": "Front",
+  "tooltip.factory_io.gui_back": "Back",
+  "tooltip.factory_io.gui_left": "Left",
+  "tooltip.factory_io.gui_right": "Right",
+  "tooltip.factory_io.gui_none": "NONE",
+  "tooltip.factory_io.gui_input": "Input",
+  "tooltip.factory_io.gui_output": "Output",
+  "tooltip.factory_io.gui_input_output": "Input/Output",
+  "tooltip.factory_io.gui_fuel": "Fuel Input",
+  "tooltip.factory_io.gui_reset": "Reset All",
+  "tooltip.factory_io.gui_redstone_ignored": "Redstone Ignored",
+  "tooltip.factory_io.gui_redstone_low": "Redstone Low",
+  "tooltip.factory_io.gui_redstone_high": "Redstone High",
+  "tooltip.factory_io.gui_redstone_comparator": "Comparator",
+  "tooltip.factory_io.gui_redstone_comparator_sub": "Comparator with Subtraction",
+  "tooltip.factory_io.gui_hold_shift": "Hold ",
+  "tooltip.factory_io.gui_shift_more_options": " for more options",
+  "tooltip.factory_io.hold": "Hold ",
+  "tooltip.factory_io.for_details": " for details.",
+
+  "tooltip.factory_io.speed": "Speed : ",
+  "tooltip.factory_io.consumption": "Consumption : ",
+  "tooltip.factory_io.capacity": "Capacity : ",
+  "tooltip.factory_io.grab": "Grab Items from ",
+  "tooltip.factory_io.whitelist": "Whitelist",
+  "tooltip.factory_io.blacklist": "Blacklist"
+}

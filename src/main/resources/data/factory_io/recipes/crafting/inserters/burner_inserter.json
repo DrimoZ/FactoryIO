@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " A ",
+    "DED",
+    "BCB"],
+  "key": {
+    "A": {
+      "item": "minecraft:hopper"
+    },
+    "B": {
+      "item": "minecraft:heavy_weighted_pressure_plate"
+    },
+    "C": {
+      "item": "minecraft:cobblestone_wall"
+    },
+    "D": {
+      "tag": "forge:ingots/copper"
+    },
+    "E": {
+      "tag": "forge:dusts/redstone"
+    }
+  },
+  "result": {
+    "item": "factory_io:burner_inserter"
+  }
+}

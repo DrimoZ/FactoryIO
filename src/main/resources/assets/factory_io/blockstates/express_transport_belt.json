@@ -1,0 +1,40 @@
+{
+  "variants": {
+    "facing=north,connected=0": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt", "y": 0 },
+    "facing=north,connected=1": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct", "y": 0 },
+    "facing=north,connected=2": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct_output", "y": 0 },
+    "facing=north,connected=3": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct_input", "y": 0 },
+    "facing=north,connected=4": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_left_ct_input", "y": 0 },
+    "facing=north,connected=5": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_left_ct", "y": 0 },
+    "facing=north,connected=6": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_right_ct_input", "y": 0 },
+    "facing=north,connected=7": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_right_ct", "y": 0 },
+
+    "facing=south,connected=0": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt", "y": 180 },
+    "facing=south,connected=1": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct", "y": 180 },
+    "facing=south,connected=2": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct_output", "y": 180 },
+    "facing=south,connected=3": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct_input", "y": 180 },
+    "facing=south,connected=4": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_left_ct_input", "y": 180 },
+    "facing=south,connected=5": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_left_ct", "y": 180 },
+    "facing=south,connected=6": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_right_ct_input", "y": 180 },
+    "facing=south,connected=7": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_right_ct", "y": 180 },
+
+    "facing=east,connected=0":  { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt", "y": 90 },
+    "facing=east,connected=1":  { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct", "y": 90 },
+    "facing=east,connected=2":  { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct_output", "y": 90 },
+    "facing=east,connected=3":  { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct_input", "y": 90 },
+    "facing=east,connected=4": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_left_ct_input", "y": 90 },
+    "facing=east,connected=5": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_left_ct", "y": 90 },
+    "facing=east,connected=6": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_right_ct_input", "y": 90 },
+    "facing=east,connected=7": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_right_ct", "y": 90 },
+
+    "facing=west,connected=0":  { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt", "y": 270 },
+    "facing=west,connected=1":  { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct", "y": 270 },
+    "facing=west,connected=2":  { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct_output", "y": 270 },
+    "facing=west,connected=3":  { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_ct_input", "y": 270 },
+    "facing=west,connected=4": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_left_ct_input", "y": 270 },
+    "facing=west,connected=5": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_left_ct", "y": 270 },
+    "facing=west,connected=6": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_right_ct_input", "y": 270 },
+    "facing=west,connected=7": { "model": "factory_io:block/transport_belts/express_transport_belt/express_transport_belt_right_ct", "y": 270 }
+
+  }
+}
