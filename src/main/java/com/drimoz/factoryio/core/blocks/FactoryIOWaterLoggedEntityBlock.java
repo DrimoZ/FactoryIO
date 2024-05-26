@@ -15,21 +15,37 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 
 public abstract class FactoryIOWaterLoggedEntityBlock extends FactoryIOEntityBlock implements SimpleWaterloggedBlock {
+
+    // Public constants
+
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
-    protected FactoryIOWaterLoggedEntityBlock(Properties pProperties) {
+    // Private properties
+
+    private final boolean isWaterLogged;
+
+    protected FactoryIOWaterLoggedEntityBlock(Properties pProperties, boolean isWaterLogged) {
         super(pProperties);
+        this.isWaterLogged = isWaterLogged;
+
+        if (isWaterLogged) this.registerDefaultState(this.stateDefinition.any().setValue(ENABLED, Boolean.TRUE).setValue(WATERLOGGED, false));
+        else this.registerDefaultState(this.stateDefinition.any().setValue(ENABLED, Boolean.TRUE));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> pBuilder) {
-        pBuilder.add(FACING, ENABLED, WATERLOGGED);
+        if (isWaterLogged) pBuilder.add(FACING, ENABLED, WATERLOGGED);
+        else pBuilder.add(FACING, ENABLED, WATERLOGGED);
     }
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext pContext) {
+        this.defaultBlockState().setValue(FACING, pContext.getHorizontalDirection().getOpposite()).setValue(ENABLED, Boolean.valueOf(true));
+
         FluidState fluidState = pContext.getLevel().getFluidState(pContext.getClickedPos());
-        return this.defaultBlockState().setValue(FACING, pContext.getHorizontalDirection().getOpposite()).setValue(ENABLED, Boolean.valueOf(true)).setValue(WATERLOGGED, fluidState.getType() == Fluids.WATER);
+        if (isWaterLogged) this.defaultBlockState().setValue(WATERLOGGED, fluidState.getType() == Fluids.WATER);
+
+        return this.defaultBlockState();
     }
 
     public FluidState getFluidState(BlockState state) {

@@ -1,9 +1,7 @@
 package com.drimoz.factoryio.features.inserters.inserter;
 
-import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.blockentities.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.core.configs.FactoryIOCommonConfigs;
-import com.drimoz.factoryio.core.registery.custom.FactoryIOBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -20,7 +18,7 @@ public class InserterBlockEntity extends FactoryIOInserterBlockEntity {
     public static final int ENERGY_PER_ACTION = FactoryIOCommonConfigs.INSERTER_ENERGY_PER_ACTION.get();
 
     public InserterBlockEntity(BlockPos pPos, BlockState pState) {
-        super(FactoryIOBlockEntities.BLOCK_ENTITY_INSERTER.get(), pPos, pState, true, false);
+        super(pPos, pState, null);
 
         energyStorage.overrideEnergyCapacity(MAX_ENERGY_LEVEL);
         energyStorage.overrideMaxTransfer(MAX_ENERGY_INPUT);

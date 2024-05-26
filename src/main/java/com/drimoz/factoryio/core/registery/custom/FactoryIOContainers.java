@@ -17,7 +17,7 @@ public class FactoryIOContainers {
 
     // Public properties
 
-    public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(ForgeRegistries.CONTAINERS, FactoryIO.MOD_ID);
+    public static final DeferredRegister<MenuType<?>> CONTAINERS = DeferredRegister.create(ForgeRegistries.CONTAINERS, FactoryIO.MOD_ID);
 
     // Inserters
 
@@ -30,11 +30,11 @@ public class FactoryIOContainers {
 
     // Interface
 
-    private static <T extends AbstractContainerMenu> RegistryObject<MenuType<T>> registerMenuType(IContainerFactory<T> factory, String name) {
-        return MENUS.register(name, () -> IForgeMenuType.create(factory));
+    public static <T extends AbstractContainerMenu> RegistryObject<MenuType<T>> registerMenuType(IContainerFactory<T> factory, String name) {
+        return CONTAINERS.register(name, () -> IForgeMenuType.create(factory));
     }
 
     public static void registerContainers(IEventBus eventBus) {
-        MENUS.register(eventBus);
+        CONTAINERS.register(eventBus);
     }
 }

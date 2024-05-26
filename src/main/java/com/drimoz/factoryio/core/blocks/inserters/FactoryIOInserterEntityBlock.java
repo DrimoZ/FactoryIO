@@ -1,15 +1,14 @@
 package com.drimoz.factoryio.core.blocks.inserters;
 
 
-import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.blockentities.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.core.blocks.FactoryIOWaterLoggedEntityBlock;
+import com.drimoz.factoryio.core.registery.models.InserterData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -25,16 +24,25 @@ import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
-public abstract class FactoryIOInserterEntityBlock extends FactoryIOWaterLoggedEntityBlock {
+public class FactoryIOInserterEntityBlock extends FactoryIOWaterLoggedEntityBlock {
 
     // Private properties
 
     private static final VoxelShape SHAPE =  Block.box(0, 0, 0, 16, 16, 16);
+    private final InserterData INSERTER_DATA;
 
     // Life cycle
 
-    protected FactoryIOInserterEntityBlock(Properties pProperties) {
-        super(pProperties);
+    public FactoryIOInserterEntityBlock(Properties pProperties, InserterData inserterData) {
+        super(pProperties, inserterData.isWaterlogged);
+
+        this.INSERTER_DATA = inserterData;
+    }
+
+    public static FactoryIOInserterEntityBlock create(Properties pProperties, InserterData inserterData) {
+        return new FactoryIOInserterEntityBlock(pProperties, inserterData) {
+
+        };
     }
 
     // Interface (Shape)
@@ -57,6 +65,7 @@ public abstract class FactoryIOInserterEntityBlock extends FactoryIOWaterLoggedE
     }
 
     // Interface (Interactions)
+
     @Override
     public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving) {
         if (pState.getBlock() != pNewState.getBlock()) {
@@ -81,5 +90,21 @@ public abstract class FactoryIOInserterEntityBlock extends FactoryIOWaterLoggedE
             throw new IllegalStateException("Missing Container Provider for FactoryIOInserterBlockEntity");
         }
         return InteractionResult.SUCCESS;
+    }
+
+
+
+    // Interface BlockEntity
+
+    @org.jetbrains.annotations.Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
+        return null;
+    }
+
+    @javax.annotation.Nullable
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        //return createTicker(level, type, FactoryIOBlockEntities.BLOCK_ENTITY_INSERTER.get());
+        return null;
     }
 }

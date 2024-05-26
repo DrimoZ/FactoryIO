@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.items;
 
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
 

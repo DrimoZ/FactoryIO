@@ -3,10 +3,12 @@ package com.drimoz.factoryio.core.blockentities.inserters;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.blockentities.FactoryIOMenuProvidedBlockEntity;
 import com.drimoz.factoryio.core.containers.energy.FactoryIOEnergyContainer;
+import com.drimoz.factoryio.core.containers.inserters.FactoryIOInserterContainer;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CEnergy;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CFuel;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CWhitelistButton;
 import com.drimoz.factoryio.core.registery.custom.FactoryIONetworks;
+import com.drimoz.factoryio.core.registery.models.InserterData;
 import com.drimoz.factoryio.core.tags.FactoryIOTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -15,7 +17,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.Containers;
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -24,7 +29,9 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraftforge.common.ForgeHooks;
+import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
@@ -40,8 +47,9 @@ import software.bernie.geckolib3.core.manager.AnimationData;
 import software.bernie.geckolib3.core.manager.AnimationFactory;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvidedBlockEntity implements IAnimatable {
+public class FactoryIOInserterBlockEntity extends FactoryIOMenuProvidedBlockEntity implements IAnimatable {
 
     // Public constants
 
@@ -54,7 +62,12 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
     public final boolean IS_FILTER;
 
     // Duration : 0 = 10a / tick || 10 = 1a / tick || 200 = 1a / 20tick (1sec) ||
-    public final int MAX_ACTIONS_PER_TICK = 10;
+    public static final int MAX_ACTIONS_PER_TICK = 10;
+
+    // Private constants
+
+    private final MenuType<FactoryIOInserterContainer> menuType;
+    private final InserterData inserterData;
 
     // Protected properties
 
@@ -74,30 +87,42 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
 
     // Life cycle
 
-    public FactoryIOInserterBlockEntity(
-            BlockEntityType<?> pType,
-            BlockPos pPos,
-            BlockState pBlockState,
+    public FactoryIOInserterBlockEntity(BlockPos blockPos, BlockState blockState, InserterData inserterData) {
+        this(
+                (MenuType)inserterData.registries().getMenu().get(),
+                (BlockEntityType)inserterData.registries().getBlockEntity().get(),
+                blockPos,
+                blockState,
+                inserterData);
+    }
 
-            boolean isEnergy,
-            boolean isFilter
+    protected FactoryIOInserterBlockEntity(
+            MenuType<FactoryIOInserterContainer> menuType,
+            BlockEntityType<?> blockEntityType,
+            BlockPos blockPos,
+            BlockState blockState,
+            InserterData inserterData
     ) {
-        super(pType, pPos, pBlockState);
+        super(blockEntityType, blockPos, blockState);
 
-        this.IS_ENERGY = isEnergy;
-        this.IS_FILTER = isFilter;
+        this.menuType = menuType;
+        this.inserterData = inserterData;
 
-        if (isEnergy) {
-            this.energyStorage = new FactoryIOEnergyContainer(0) {
+        this.IS_ENERGY = inserterData.useEnergy;
+        this.IS_FILTER = inserterData.isFilter;
+
+        if (IS_ENERGY) {
+            this.energyStorage = new FactoryIOEnergyContainer(inserterData.energyMaxCapacity, inserterData.energyMaxTransferRate) {
                 @Override
                 protected void onEnergyChanged() {
                     FactoryIOInserterBlockEntity.this.setChanged();
                 }
             };
+
             this.lazyEnergy = LazyOptional.of(() -> this.energyStorage);
         }
 
-        this.INVENTORY_SIZE = 1 + (isEnergy ? 0 : 1) + (isFilter ? FILTER_SLOTS.length : 0);
+        this.INVENTORY_SIZE = 1 + (IS_ENERGY ? 0 : 1) + (IS_FILTER ? FILTER_SLOTS.length : 0);
 
         this.itemStorage = new ItemStackHandler(INVENTORY_SIZE) {
             @Override
@@ -108,7 +133,7 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
             @NotNull
             @Override
             public ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
-                if (isEnergy || slot != FUEL_SLOT) return stack;
+                if (IS_ENERGY || slot != FUEL_SLOT) return stack;
                 if (ForgeHooks.getBurnTime(stack, null) <= 0) return stack;
                 if (!stack.is(FactoryIOTags.Items.INSERTER_FUEL)) return stack;
 
@@ -118,7 +143,7 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
             @NotNull
             @Override
             public ItemStack extractItem(int slot, int amount, boolean simulate) {
-                if (isEnergy || slot != FUEL_SLOT) return ItemStack.EMPTY;
+                if (IS_ENERGY || slot != FUEL_SLOT) return ItemStack.EMPTY;
 
                 return super.extractItem(slot, amount, simulate);
             }
@@ -127,14 +152,31 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
         this.lazyItem = LazyOptional.of(() -> this.itemStorage);
     }
 
-    // Interface (To override)
+    // Interface (DataFromData)
 
-    public abstract int getMaximumItemCountPerAction();
-    public abstract int getGrabDistance();
-    public abstract int getDurationBetweenActions();
-    public abstract int getFuelCapacity();
-    public abstract int getFuelConsumptionPerAction();
-    public abstract int getPreferredFuelItemBufferCount();
+    public int getMaximumItemCountPerAction(){
+        return inserterData.preferredItemCountPerAction;
+    }
+
+    public int getGrabDistance(){
+        return inserterData.grabDistance;
+    }
+
+    public int getDurationBetweenActions(){
+        return inserterData.timeBetweenActions;
+    }
+
+    public int getFuelCapacity(){
+        return IS_ENERGY ? inserterData.energyMaxCapacity : inserterData.fuelMaxCapacity;
+    }
+
+    public int getFuelConsumptionPerAction() {
+        return IS_ENERGY ? inserterData.energyConsumptionPerAction : inserterData.fuelConsumptionPerAction;
+    }
+
+    public int getPreferredFuelItemBufferCount() {
+        return -1;
+    }
 
     // Interface (Name)
 
@@ -171,6 +213,13 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
     }
 
     // Interface (Capabilities)
+
+    @Nonnull @Override
+    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
+        if (cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) return lazyItem.cast();
+        if (cap == CapabilityEnergy.ENERGY && IS_ENERGY) return lazyEnergy.cast();
+        return super.getCapability(cap, side);
+    }
 
     @Override
     public void onLoad() {
@@ -600,5 +649,13 @@ public abstract class FactoryIOInserterBlockEntity extends FactoryIOMenuProvided
 
     public AnimationFactory getFactory() {
         return this.factory;
+    }
+
+    // Interface (Menu)
+
+    @org.jetbrains.annotations.Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int pContainerId, Inventory pPlayerInventory, Player pPlayer) {
+        return new FactoryIOInserterContainer(this.menuType, pContainerId, level, getBlockPos(), pPlayerInventory, pPlayer);
     }
 }

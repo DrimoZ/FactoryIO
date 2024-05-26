@@ -1,19 +1,30 @@
-package com.drimoz.factoryio.features.inserters.inserter;
+package com.drimoz.factoryio.core.items.inserters;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.items.inserters.FactoryIOInserterItem;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib3.model.AnimatedGeoModel;
 
-public class InserterItemModel extends AnimatedGeoModel<FactoryIOInserterItem> {
+public class FactoryIOInserterItemModel extends AnimatedGeoModel<FactoryIOInserterItem> {
+
+    // Private properties
+
+    private final String IDENTIFIER;
+
+    public FactoryIOInserterItemModel(String identifier) {
+        super();
+
+        this.IDENTIFIER = identifier;
+    }
+
     @Override
     public ResourceLocation getModelLocation(FactoryIOInserterItem object) {
-        return new ResourceLocation(FactoryIO.MOD_ID, "geo/inserter.geo.json");
+        return new ResourceLocation(FactoryIO.MOD_ID, "geo/" + this.IDENTIFIER + ".geo.json");
     }
 
     @Override
     public ResourceLocation getTextureLocation(FactoryIOInserterItem object) {
-        return new ResourceLocation(FactoryIO.MOD_ID, "textures/block/inserter.png");
+        return new ResourceLocation(FactoryIO.MOD_ID, "textures/block/" + this.IDENTIFIER + ".png");
     }
 
     @Override

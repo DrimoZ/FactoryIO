@@ -1,15 +1,17 @@
 package com.drimoz.factoryio.features.inserters.inserter;
 
-import com.drimoz.factoryio.core.items.inserters.FactoryIOInserterItem;
+import com.drimoz.factoryio.core.items.inserters.FactoryIOInserterItemRenderer;
+import com.drimoz.factoryio.core.registery.models.InserterData;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.client.IItemRenderProperties;
 
 import java.util.function.Consumer;
 
-public class InserterItem extends FactoryIOInserterItem {
-    public InserterItem(Block block, Item.Properties properties) {
+public abstract class InserterItem extends BlockItem {
+    public InserterItem(Block block, Item.Properties properties, InserterData inserterData) {
         super(block, properties);
     }
 
@@ -18,7 +20,7 @@ public class InserterItem extends FactoryIOInserterItem {
         super.initializeClient(consumer);
         consumer.accept(new IItemRenderProperties() {
 
-            private final BlockEntityWithoutLevelRenderer renderer = new InserterItemRenderer();
+            private final BlockEntityWithoutLevelRenderer renderer = new FactoryIOInserterItemRenderer("");
 
             @Override
             public BlockEntityWithoutLevelRenderer getItemStackRenderer() {

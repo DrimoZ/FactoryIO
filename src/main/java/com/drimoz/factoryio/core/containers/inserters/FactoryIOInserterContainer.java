@@ -5,6 +5,8 @@ import com.drimoz.factoryio.core.containers.FactoryIOContainer;
 import com.drimoz.factoryio.core.containers.slots.SlotInserterBuffer;
 import com.drimoz.factoryio.core.containers.slots.SlotInserterFilter;
 import com.drimoz.factoryio.core.containers.slots.SlotInserterFuel;
+import com.drimoz.factoryio.core.registery.custom.FactoryIOContainers;
+import com.drimoz.factoryio.core.registery.models.InserterData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -14,9 +16,10 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class FactoryIOInserterContainer extends FactoryIOContainer {
+public class FactoryIOInserterContainer extends FactoryIOContainer {
 
     // Private properties
 
@@ -28,7 +31,7 @@ public abstract class FactoryIOInserterContainer extends FactoryIOContainer {
 
     // Life cycle
 
-    protected FactoryIOInserterContainer(@Nullable MenuType<?> pMenuType, int pContainerId, Level pLevel, BlockPos pPos, Inventory pPlayerInv, Player pPlayer) {
+    public FactoryIOInserterContainer(@Nullable MenuType<?> pMenuType, int pContainerId, Level pLevel, BlockPos pPos, Inventory pPlayerInv, Player pPlayer) {
         super(pMenuType, pContainerId, pLevel, pPos, pPlayerInv, pPlayer);
 
         this.blockEntity = (FactoryIOInserterBlockEntity) pLevel.getBlockEntity(pPos);
@@ -55,6 +58,22 @@ public abstract class FactoryIOInserterContainer extends FactoryIOContainer {
             }
         });
     }
+
+    public static FactoryIOInserterContainer create (InserterData inserterData, int pContainerId, Level pLevel, BlockPos pPos, Inventory pPlayerInv, Player pPlayer)  {
+        @Nullable MenuType<?> pMenuType = null;
+
+        for (RegistryObject<MenuType<?>> value : FactoryIOContainers.CONTAINERS.getEntries()) {
+            if (value.getKey().equals(inserterData.identifier)) {
+                pMenuType = value.get();
+            }
+        }
+
+        if (pMenuType == null) throw new AssertionError();
+
+
+        return new FactoryIOInserterContainer (pMenuType, pContainerId, pLevel, pPos, pPlayerInv, pPlayer);
+    }
+
 
     // Interface BlockEntity
 
