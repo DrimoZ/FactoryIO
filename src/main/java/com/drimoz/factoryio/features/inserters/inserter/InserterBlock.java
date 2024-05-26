@@ -1,7 +1,7 @@
 package com.drimoz.factoryio.features.inserters.inserter;
 
 import com.drimoz.factoryio.core.blocks.inserters.FactoryIOInserterEntityBlock;
-import com.drimoz.factoryio.core.registery.custom.FactoryIOBlockEntities;
+import com.drimoz.factoryio.core.registery.loaders.FactoryIODataLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -11,21 +11,23 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class BlockInserter extends FactoryIOInserterEntityBlock {
+public class InserterBlock extends FactoryIOInserterEntityBlock {
 
-    public BlockInserter(BlockBehaviour.Properties pProps) {
-        super(pProps);
+    public InserterBlock(BlockBehaviour.Properties pProps) {
+        super(pProps, FactoryIODataLoader.INSERTER_DATA_LIST.get(0));
         this.registerDefaultState(this.stateDefinition.any().setValue(ENABLED, Boolean.TRUE).setValue(WATERLOGGED, false));
     }
 
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
-        return new BlockEntityInserter(pPos, pState);
+        //return new InserterBlockEntity(pPos, pState);
+        return null;
     }
 
     @javax.annotation.Nullable
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return createTicker(level, type, FactoryIOBlockEntities.BLOCK_ENTITY_INSERTER.get());
+        //return createTicker(level, type, FactoryIOBlockEntities.BLOCK_ENTITY_INSERTER.get());
+        return null;
     }
 }

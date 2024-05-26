@@ -24,6 +24,7 @@ public abstract class FactoryIOEntityBlock extends BaseEntityBlock {
 
     protected FactoryIOEntityBlock(Properties pProperties) {
         super(pProperties);
+
     }
 
     @Override

@@ -5,6 +5,8 @@ import com.drimoz.factoryio.core.containers.FactoryIOContainer;
 import com.drimoz.factoryio.core.containers.slots.SlotInserterBuffer;
 import com.drimoz.factoryio.core.containers.slots.SlotInserterFilter;
 import com.drimoz.factoryio.core.containers.slots.SlotInserterFuel;
+import com.drimoz.factoryio.core.registery.custom.FactoryIOContainers;
+import com.drimoz.factoryio.core.registery.models.InserterData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -14,26 +16,29 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class FactoryIOInserterContainer extends FactoryIOContainer {
+public class FactoryIOInserterContainer extends FactoryIOContainer {
+
+    // Private properties
+
     private final int TE_INVENTORY_SLOT_COUNT;
+    private static final int FILTER_SLOT_COUNT = 5;
+    private static final int TE_INVENTORY_FIRST_SLOT_INDEX = VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT;
 
     private final FactoryIOInserterBlockEntity blockEntity;
-    private final Level level;
 
-    protected Player playerEntity;
+    // Life cycle
 
-    protected FactoryIOInserterContainer(@Nullable MenuType<?> pMenuType, int pContainerId, Level pLevel, BlockPos pPos, Inventory pPlayerInv, Player pPlayer) {
-        super(pMenuType, pContainerId);
-
+    public FactoryIOInserterContainer(@Nullable MenuType<?> pMenuType, int pContainerId, Level pLevel, BlockPos pPos, Inventory pPlayerInv, Player pPlayer) {
+        super(pMenuType, pContainerId, pLevel, pPos, pPlayerInv, pPlayer);
 
         this.blockEntity = (FactoryIOInserterBlockEntity) pLevel.getBlockEntity(pPos);
-        this.level = pLevel;
-        this.playerEntity = pPlayer;
         this.TE_INVENTORY_SLOT_COUNT = 1 + (blockEntity.IS_ENERGY ? 0 : 1) + (blockEntity.IS_FILTER ? FactoryIOInserterBlockEntity.FILTER_SLOTS.length : 0);
 
         checkContainerSize(pPlayerInv, this.TE_INVENTORY_SLOT_COUNT);
+
         addPlayerInventory(pPlayerInv);
         addPlayerHotbar(pPlayerInv);
 
@@ -53,6 +58,24 @@ public abstract class FactoryIOInserterContainer extends FactoryIOContainer {
             }
         });
     }
+
+    public static FactoryIOInserterContainer create (InserterData inserterData, int pContainerId, Level pLevel, BlockPos pPos, Inventory pPlayerInv, Player pPlayer)  {
+        @Nullable MenuType<?> pMenuType = null;
+
+        for (RegistryObject<MenuType<?>> value : FactoryIOContainers.CONTAINERS.getEntries()) {
+            if (value.getKey().equals(inserterData.identifier)) {
+                pMenuType = value.get();
+            }
+        }
+
+        if (pMenuType == null) throw new AssertionError();
+
+
+        return new FactoryIOInserterContainer (pMenuType, pContainerId, pLevel, pPos, pPlayerInv, pPlayer);
+    }
+
+
+    // Interface BlockEntity
 
     public FactoryIOInserterBlockEntity getBlockEntity() {
         return blockEntity;
@@ -90,14 +113,11 @@ public abstract class FactoryIOInserterContainer extends FactoryIOContainer {
         return false;
     }
 
-    private static final int HOTBAR_SLOT_COUNT = 9;
-    private static final int PLAYER_INVENTORY_ROW_COUNT = 3;
-    private static final int PLAYER_INVENTORY_COLUMN_COUNT = 9;
-    private static final int PLAYER_INVENTORY_SLOT_COUNT = PLAYER_INVENTORY_COLUMN_COUNT * PLAYER_INVENTORY_ROW_COUNT;
-    private static final int VANILLA_SLOT_COUNT = HOTBAR_SLOT_COUNT + PLAYER_INVENTORY_SLOT_COUNT;
-    private static final int VANILLA_FIRST_SLOT_INDEX = 0;
-    private static final int TE_INVENTORY_FIRST_SLOT_INDEX = VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT;
-    private static final int FILTER_SLOT_COUNT = 5;
+
+
+
+
+    // Interface (Inventory Interaction)
 
     @Override
     public ItemStack quickMoveStack(Player playerIn, int index) {
@@ -188,19 +208,5 @@ public abstract class FactoryIOInserterContainer extends FactoryIOContainer {
             }
         }
         super.clicked(pSlotId, pButton, pClickType, pPlayer);
-    }
-
-    private void addPlayerInventory(Inventory playerInventory) {
-        for (int i = 0; i < 3; ++i) {
-            for (int l = 0; l < 9; ++l) {
-                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 8 + l * 18, 84 + i * 18));
-            }
-        }
-    }
-
-    private void addPlayerHotbar(Inventory playerInventory) {
-        for (int i = 0; i < 9; ++i) {
-            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 142));
-        }
     }
 }

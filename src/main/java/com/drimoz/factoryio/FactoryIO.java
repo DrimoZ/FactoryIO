@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 public class FactoryIO
 {
     public static final String MOD_ID = "factory_io";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public FactoryIO()
     {
@@ -47,9 +47,7 @@ public class FactoryIO
 
     private void setup(final FMLCommonSetupEvent event)
     {
-        // some preinit code
-        LOGGER.info("HELLO FROM PREINIT");
-        LOGGER.info("DIRT BLOCK >> {}", Blocks.DIRT.getRegistryName());
+        FactoryIORegistry.registerNetwork(event);
     }
 
     public void clientSetup(final FMLClientSetupEvent event) {
@@ -58,28 +56,5 @@ public class FactoryIO
 
     private void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         FactoryIORegistry.registerRenderers(event);
-    }
-
-
-
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event)
-    {
-        // Do something when the server starts
-        LOGGER.info("HELLO from server starting");
-    }
-
-    // You can use EventBusSubscriber to automatically subscribe events on the contained class (this is subscribing to the MOD
-    // Event bus for receiving Registry Events)
-    @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
-    public static class RegistryEvents
-    {
-        @SubscribeEvent
-        public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent)
-        {
-            // Register a new block here
-            LOGGER.info("HELLO from Register Block");
-        }
     }
 }

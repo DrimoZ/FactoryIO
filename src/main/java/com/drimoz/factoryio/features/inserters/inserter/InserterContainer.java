@@ -8,13 +8,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.Level;
 
-public class ContainerInserter extends FactoryIOInserterContainer {
-    public ContainerInserter(int pContainerId, Inventory pPlayerInv, Player pPlayer, Level pLevel, BlockPos pPos) {
+public class InserterContainer extends FactoryIOInserterContainer {
+    public InserterContainer(int pContainerId, Inventory pPlayerInv, Player pPlayer, Level pLevel, BlockPos pPos) {
         super((MenuType) FactoryIOContainers.INSERTER_MENU.get(), pContainerId, pLevel, pPos, pPlayerInv, pPlayer);
-    }
-
-    @Override
-    public boolean stillValid(Player pPlayer) {
-        return false;
     }
 }

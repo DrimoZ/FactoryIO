@@ -151,6 +151,8 @@ repositories {
     //     dir 'libs'
     // }
 
+    mavenCentral()
+
     maven {
         // location of the maven that hosts JEI files since January 2023
         name = "Jared's maven"
@@ -193,6 +195,8 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
+    implementation 'com.google.code.gson:gson:2.10.1'
+
     implementation fg.deobf('software.bernie.geckolib:geckolib-1.18-forge:3.0.13')
 
     compileOnly(fg.deobf("mezz.jei:jei-${mc_version}-common-api:${jei_version}"))
@@ -205,7 +209,6 @@ dependencies {
     runtimeOnly fg.deobf("curse.maven:cofh-core-69162:4385215")
     runtimeOnly fg.deobf("curse.maven:thermal-foundation-222880:4382339")
     runtimeOnly fg.deobf("curse.maven:thermal-expansion-69163:4382343")
-
 
     runtimeOnly fg.deobf("curse.maven:ironchests-498794:4446848")
     runtimeOnly fg.deobf("curse.maven:iron-chests-228756:3966367")

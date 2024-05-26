@@ -6,6 +6,7 @@
     "factory_io:long_inserter",
     "factory_io:fast_inserter",
     "factory_io:filter_inserter",
-    "factory_io:stack_inserter"
+    "factory_io:stack_inserter",
+    "factory_io:stack_filter_inserter"
   ]
 }
