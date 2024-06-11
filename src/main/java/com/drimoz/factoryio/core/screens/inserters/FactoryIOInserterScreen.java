@@ -20,7 +20,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
-public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> extends AbstractContainerScreen<T> {
+public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> extends AbstractContainerScreen<FactoryIOInserterContainer> {
     public static final ResourceLocation GUI_FILTER_INSERTER = new ResourceLocation(FactoryIO.MOD_ID + ":textures/gui/filter_inserter_gui.png");
     public static final ResourceLocation GUI_BURNER_INSERTER = new ResourceLocation(FactoryIO.MOD_ID + ":textures/gui/burner_inserter_gui.png");
     public static final ResourceLocation GUI_INSERTER = new ResourceLocation(FactoryIO.MOD_ID + ":textures/gui/inserter_gui.png");

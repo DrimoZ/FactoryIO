@@ -10,6 +10,7 @@ import net.minecraft.world.level.Level;
 
 public class InserterContainer extends FactoryIOInserterContainer {
     public InserterContainer(int pContainerId, Inventory pPlayerInv, Player pPlayer, Level pLevel, BlockPos pPos) {
-        super((MenuType) FactoryIOContainers.INSERTER_MENU.get(), pContainerId, pLevel, pPos, pPlayerInv, pPlayer);
+        // super((MenuType) FactoryIOContainers.INSERTER_MENU.get(), pContainerId, pLevel, pPos, pPlayerInv, pPlayer);
+        super(pContainerId, null, pPlayerInv, pLevel, pPos);
     }
 }

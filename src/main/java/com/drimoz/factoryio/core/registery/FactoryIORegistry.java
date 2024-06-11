@@ -14,13 +14,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
 public class FactoryIORegistry {
     public static void register(IEventBus eventBus) {
-        // createEntitiesFromConfigs();
-
         FactoryIOBlocks.registerBlocks(eventBus);
-
-        //for (InserterData inserterData: FactoryIODataLoader.INSERTER_DATA_LIST) {
-        //    FactoryIO.LOGGER.error("INSERTERDATA BLOCK" + inserterData.registries().getBlock().get().getDescriptionId());
-        //}
 
         FactoryIOBlocks.registerBlockEntities(eventBus);
 
@@ -49,7 +43,6 @@ public class FactoryIORegistry {
         FactoryIODataLoader.setup();
 
         for (InserterData inserterData : FactoryIODataLoader.INSERTER_DATA_LIST) {
-            // FactoryIO.LOGGER.error(inserterData.toString());
 
             // Block & Entities
 
@@ -58,6 +51,10 @@ public class FactoryIORegistry {
             // Items
 
             FactoryIOItems.registerInserterItemFromData(inserterData);
+
+            // Containers
+
+            FactoryIOContainers.registerMenu(inserterData);
 
             FactoryIO.LOGGER.error("Inserter correctly created : " + inserterData.identifier);
             FactoryIO.LOGGER.error("Inserter Block : " + inserterData.registries().getBlock());

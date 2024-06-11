@@ -21,6 +21,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 
@@ -95,16 +96,11 @@ public class FactoryIOInserterEntityBlock extends FactoryIOWaterLoggedEntityBloc
 
 
     // Interface BlockEntity
-
-    @org.jetbrains.annotations.Nullable
     @Override
-    public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
-        return null;
+    public BlockEntity newBlockEntity(@NotNull BlockPos pPos, @NotNull BlockState pState) {
+        return new FactoryIOInserterBlockEntity(INSERTER_DATA.registries().getMenu().get(), INSERTER_DATA.registries().getBlockEntity().get(), pPos, pState, INSERTER_DATA);
     }
-
-    @javax.annotation.Nullable
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        //return createTicker(level, type, FactoryIOBlockEntities.BLOCK_ENTITY_INSERTER.get());
-        return null;
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, @NotNull BlockState blockState, @NotNull BlockEntityType<T> blockEntityType) {
+        return level.isClientSide ? createTicker(level, blockEntityType, INSERTER_DATA.registries().getBlockEntity().get()) : null;
     }
 }

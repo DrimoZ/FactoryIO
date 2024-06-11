@@ -5,7 +5,7 @@ import com.drimoz.factoryio.features.inserters.inserter.InserterBlockEntity;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib3.model.AnimatedGeoModel;
 
-public class FactoryIOInserterBlockEntityModel extends AnimatedGeoModel<InserterBlockEntity> {
+public class FactoryIOInserterBlockEntityModel extends AnimatedGeoModel<FactoryIOInserterBlockEntity> {
 
     private final String identifier;
 
@@ -14,17 +14,17 @@ public class FactoryIOInserterBlockEntityModel extends AnimatedGeoModel<Inserter
     }
 
     @Override
-    public ResourceLocation getModelLocation(InserterBlockEntity object) {
+    public ResourceLocation getModelLocation(FactoryIOInserterBlockEntity object) {
         return new ResourceLocation(FactoryIO.MOD_ID, "geo/" + identifier + ".geo.json");
     }
 
     @Override
-    public ResourceLocation getTextureLocation(InserterBlockEntity object) {
+    public ResourceLocation getTextureLocation(FactoryIOInserterBlockEntity object) {
         return new ResourceLocation(FactoryIO.MOD_ID, "textures/block/" + identifier + ".png");
     }
 
     @Override
-    public ResourceLocation getAnimationFileLocation(InserterBlockEntity animatable) {
+    public ResourceLocation getAnimationFileLocation(FactoryIOInserterBlockEntity animatable) {
         return new ResourceLocation(FactoryIO.MOD_ID, "animations/animated_block.animation.json");
     }
 }
