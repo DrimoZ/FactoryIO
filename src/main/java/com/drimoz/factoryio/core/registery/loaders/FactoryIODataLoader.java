@@ -34,8 +34,8 @@ public class FactoryIODataLoader {
                 true, true, 25000, 5000, 300,
                 0, 0, 1, 0, 400, 1);
 
-        FactoryIO.LOGGER.error("DEFAULT INSERTER : " + inserter);
-        FactoryIODataLoader.DEFAULT_INSERTERS_DATA_LIST.add(inserter);
+        // FactoryIO.LOGGER.error("DEFAULT INSERTER : " + inserter);
+        // FactoryIODataLoader.DEFAULT_INSERTERS_DATA_LIST.add(inserter);
 
         setupInsertersList();
     }
@@ -55,7 +55,6 @@ public class FactoryIODataLoader {
                     InserterData inserterData = GSON.fromJson(obj, InserterData.class);
                     inserterData.setupRegistries();
 
-                    FactoryIO.LOGGER.error(inserterData.toString());
                     INSERTER_DATA_LIST.add(inserterData);
                 } catch (IOException e) {
                     e.printStackTrace();

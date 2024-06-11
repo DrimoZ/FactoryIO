@@ -32,6 +32,7 @@ public class FactoryIO
     {
         IEventBus eventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
+        FactoryIORegistry.createEntitiesFromConfigs();
         FactoryIORegistry.register(eventBus);
 
         eventBus.addListener(this::setup);

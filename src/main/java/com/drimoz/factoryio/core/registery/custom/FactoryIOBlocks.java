@@ -42,22 +42,29 @@ public class FactoryIOBlocks {
     //                BlockEntityType.Builder.of(InserterBlockEntity::new, FactoryIOBlocks.INSERTER_BLOCK.get()).build(null));
 
 
+
     // Interface
 
     public static void registerBlocks(IEventBus eventBus) {
         BLOCKS.register(eventBus);
-
-        for (RegistryObject<Block> b : BLOCKS.getEntries()) {
-            FactoryIO.LOGGER.error("DESCRIPTION : " + b.get().getDescriptionId());
-        }
     }
+
+    private static <T extends Block> Supplier<T> registerBlockImpl(String id, Supplier<T> item) {
+        return BLOCKS.register(id, item);
+    }
+
 
     public static void registerBlockEntities(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
+    }
 
-        for (RegistryObject<BlockEntityType<?>> be : BLOCK_ENTITIES.getEntries()) {
-            FactoryIO.LOGGER.error("DESCRIPTION : " + be.get());
-        }
+    public static <E extends BlockEntity, T extends BlockEntityType<E>> Supplier<T> registerBlockEntityImpl(String id, Supplier<T> item) {
+        return BLOCK_ENTITIES.register(id, item);
+    }
+
+    public static <E extends BlockEntity> BlockEntityType<E> createBlockEntityTypeImpl(BlockEntityFactory<E> factory, Block... blocks) {
+        Objects.requireNonNull(factory);
+        return BlockEntityType.Builder.of(factory::create, blocks).build(null);
     }
 
     public static void registerInserterBlockFromData(InserterData inserterData) {
@@ -80,7 +87,7 @@ public class FactoryIOBlocks {
             blockProps.isRedstoneConductor(redstone);
         }
 
-        Supplier<FactoryIOInserterEntityBlock> register = BLOCKS.register(
+        Supplier<FactoryIOInserterEntityBlock> register = registerBlockImpl(
                 inserterData.identifier,
                 () -> new FactoryIOInserterEntityBlock(blockProps, inserterData)
         );
@@ -90,7 +97,7 @@ public class FactoryIOBlocks {
 
     private static void registerInserterEntity(InserterData inserterData) {
 
-        Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> entityType = BLOCK_ENTITIES.register(
+        Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> entityType = registerBlockEntityImpl(
                 inserterData.identifier + "_block_entity",
                 () -> {
                     return createBlockEntityType(
@@ -106,12 +113,12 @@ public class FactoryIOBlocks {
     }
 
     private static <E extends BlockEntity> BlockEntityType<E> createBlockEntityType(BlockEntityFactory<E> factory, Block... blocks) {
-        Objects.requireNonNull(factory);
-        return BlockEntityType.Builder.of(factory::create, blocks).build(null);
+        return createBlockEntityTypeImpl(factory, blocks);
     }
 
     @FunctionalInterface
     public interface BlockEntityFactory<T extends BlockEntity> {
         @NotNull T create(BlockPos var1, BlockState var2);
     }
+
 }
