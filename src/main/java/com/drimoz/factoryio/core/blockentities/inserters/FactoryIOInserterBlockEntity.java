@@ -96,7 +96,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOMenuProvidedBlockEnti
                 inserterData);
     }
 
-    protected FactoryIOInserterBlockEntity(
+    public FactoryIOInserterBlockEntity(
             MenuType<FactoryIOInserterContainer> menuType,
             BlockEntityType<?> blockEntityType,
             BlockPos blockPos,
@@ -653,9 +653,8 @@ public class FactoryIOInserterBlockEntity extends FactoryIOMenuProvidedBlockEnti
 
     // Interface (Menu)
 
-    @org.jetbrains.annotations.Nullable
     @Override
     public AbstractContainerMenu createMenu(int pContainerId, Inventory pPlayerInventory, Player pPlayer) {
-        return new FactoryIOInserterContainer(this.menuType, pContainerId, level, getBlockPos(), pPlayerInventory, pPlayer);
+        return new FactoryIOInserterContainer(pContainerId, inserterData, pPlayerInventory, level, getBlockPos());
     }
 }

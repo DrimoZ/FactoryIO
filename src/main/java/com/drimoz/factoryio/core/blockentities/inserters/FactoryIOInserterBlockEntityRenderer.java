@@ -15,14 +15,14 @@ import software.bernie.geckolib3.renderers.geo.GeoBlockRenderer;
 import javax.annotation.Nullable;
 
 @OnlyIn(Dist.CLIENT)
-public class FactoryIOInserterBlockEntityRenderer extends GeoBlockRenderer<InserterBlockEntity> {
+public class FactoryIOInserterBlockEntityRenderer extends GeoBlockRenderer<FactoryIOInserterBlockEntity> {
 
     public FactoryIOInserterBlockEntityRenderer(BlockEntityRendererProvider.Context rendererDispatcherIn, String identifier) {
         super(rendererDispatcherIn, new FactoryIOInserterBlockEntityModel(identifier));
     }
 
     @Override
-    public RenderType getRenderType(InserterBlockEntity animatable, float partialTicks, PoseStack stack,
+    public RenderType getRenderType(FactoryIOInserterBlockEntity animatable, float partialTicks, PoseStack stack,
                                     @Nullable MultiBufferSource renderTypeBuffer, @Nullable VertexConsumer vertexBuilder,
                                     int packedLightIn, ResourceLocation textureLocation) {
         return RenderType.entityTranslucent(getTextureLocation(animatable));

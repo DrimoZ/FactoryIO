@@ -22,25 +22,11 @@ public abstract class FactoryIOContainer extends AbstractContainerMenu {
     public static final int VANILLA_SLOT_COUNT = HOTBAR_SLOT_COUNT + PLAYER_INVENTORY_SLOT_COUNT;
     public static final int VANILLA_FIRST_SLOT_INDEX = 0;
 
-    // Private properties
-
-    private final Level level;
-
-
-
-    // Protected properties
-
-    protected Player playerEntity;
-
     // Life cycle
 
-    protected FactoryIOContainer(@Nullable MenuType<?> pMenuType, int pContainerId, Level pLevel, BlockPos pPos, Inventory pPlayerInv, Player pPlayer) {
+    protected FactoryIOContainer(@Nullable MenuType<?> pMenuType, int pContainerId) {
         super(pMenuType, pContainerId);
-
-        this.level = pLevel;
-        this.playerEntity = pPlayer;
     }
-
 
     // Inner work (Inventory)
 

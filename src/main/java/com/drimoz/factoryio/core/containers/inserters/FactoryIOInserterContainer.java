@@ -27,89 +27,100 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
     private static final int FILTER_SLOT_COUNT = 5;
     private static final int TE_INVENTORY_FIRST_SLOT_INDEX = VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT;
 
-    private final FactoryIOInserterBlockEntity blockEntity;
+    private final FactoryIOInserterBlockEntity BLOCK_ENTITY;
+
+    private final InserterData INSERTER_DATA;
 
     // Life cycle
 
-    public FactoryIOInserterContainer(@Nullable MenuType<?> pMenuType, int pContainerId, Level pLevel, BlockPos pPos, Inventory pPlayerInv, Player pPlayer) {
-        super(pMenuType, pContainerId, pLevel, pPos, pPlayerInv, pPlayer);
+    public FactoryIOInserterContainer(
+            int pContainerId,
+            InserterData inserterData,
+            Inventory pPlayerInv,
+            Level pLevel,
+            BlockPos pPos
+    ) {
+        this(
+                (MenuType)inserterData.registries().getMenu().get(),
+                pContainerId,
+                inserterData,
+                pPlayerInv,
+                pLevel,
+                pPos
+        );
+    }
 
-        this.blockEntity = (FactoryIOInserterBlockEntity) pLevel.getBlockEntity(pPos);
-        this.TE_INVENTORY_SLOT_COUNT = 1 + (blockEntity.IS_ENERGY ? 0 : 1) + (blockEntity.IS_FILTER ? FactoryIOInserterBlockEntity.FILTER_SLOTS.length : 0);
+    public FactoryIOInserterContainer(
+            @Nullable MenuType<?> pMenuType,
+            int pContainerId,
+            InserterData inserterData,
+            Inventory pPlayerInv,
+            Level pLevel,
+            BlockPos pPos
+    ) {
+        super(pMenuType, pContainerId);
+        INSERTER_DATA = inserterData;
+
+        this.BLOCK_ENTITY = inserterData.registries().getBlockEntity().get().getBlockEntity(pLevel, pPos);
+        this.TE_INVENTORY_SLOT_COUNT = 1 + (BLOCK_ENTITY.IS_ENERGY ? 0 : 1) + (BLOCK_ENTITY.IS_FILTER ? FactoryIOInserterBlockEntity.FILTER_SLOTS.length : 0);
 
         checkContainerSize(pPlayerInv, this.TE_INVENTORY_SLOT_COUNT);
 
         addPlayerInventory(pPlayerInv);
         addPlayerHotbar(pPlayerInv);
 
-        this.blockEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).ifPresent(handler -> {
+        this.BLOCK_ENTITY.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).ifPresent(handler -> {
             this.addSlot(new SlotInserterBuffer(handler, FactoryIOInserterBlockEntity.BUFFER_SLOT, 124, 45));
 
-            if (!blockEntity.IS_ENERGY) {
-                this.addSlot(new SlotInserterFuel(this.blockEntity, handler, FactoryIOInserterBlockEntity.FUEL_SLOT, 80, 49));
+            if (!BLOCK_ENTITY.IS_ENERGY) {
+                this.addSlot(new SlotInserterFuel(this.BLOCK_ENTITY, handler, FactoryIOInserterBlockEntity.FUEL_SLOT, 80, 49));
             }
 
-            if (blockEntity.IS_FILTER) {
-                this.addSlot(new SlotInserterFilter(handler, blockEntity.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[0] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[0], 8, 49));
-                this.addSlot(new SlotInserterFilter(handler, blockEntity.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[1] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[1], 26, 49));
-                this.addSlot(new SlotInserterFilter(handler, blockEntity.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[2] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[2], 44, 49));
-                this.addSlot(new SlotInserterFilter(handler, blockEntity.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[3] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[3], 62, 49));
-                this.addSlot(new SlotInserterFilter(handler, blockEntity.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[4] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[4], 80, 49));
+            if (BLOCK_ENTITY.IS_FILTER) {
+                this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[0] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[0], 8, 49));
+                this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[1] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[1], 26, 49));
+                this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[2] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[2], 44, 49));
+                this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[3] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[3], 62, 49));
+                this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[4] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[4], 80, 49));
             }
         });
     }
 
-    public static FactoryIOInserterContainer create (InserterData inserterData, int pContainerId, Level pLevel, BlockPos pPos, Inventory pPlayerInv, Player pPlayer)  {
-        @Nullable MenuType<?> pMenuType = null;
-
-        for (RegistryObject<MenuType<?>> value : FactoryIOContainers.CONTAINERS.getEntries()) {
-            if (value.getKey().equals(inserterData.identifier)) {
-                pMenuType = value.get();
-            }
-        }
-
-        if (pMenuType == null) throw new AssertionError();
-
-
-        return new FactoryIOInserterContainer (pMenuType, pContainerId, pLevel, pPos, pPlayerInv, pPlayer);
-    }
-
-
     // Interface BlockEntity
 
     public FactoryIOInserterBlockEntity getBlockEntity() {
-        return blockEntity;
+        return BLOCK_ENTITY;
     }
 
     public boolean stillValid(Player player) {
-        return this.blockEntity.stillValid(player);
+        return this.BLOCK_ENTITY.stillValid(player);
     }
 
     public int getEnergyScaled(int pixels) {
-        if (this.blockEntity.IS_ENERGY) {
-            int i = this.blockEntity.getCurrentEnergy();
-            int j = this.blockEntity.getEnergyCapacity();
+        if (this.BLOCK_ENTITY.IS_ENERGY) {
+            int i = this.BLOCK_ENTITY.getCurrentEnergy();
+            int j = this.BLOCK_ENTITY.getEnergyCapacity();
             return j != 0 && i != 0 ? i * pixels / j : 0;
         }
         return -1;
     }
 
     public int getFuelScaled(int pixels) {
-        if (!this.blockEntity.IS_ENERGY) {
-            int i = this.blockEntity.getCurrentFuelValue();
-            int j = this.blockEntity.getFuelCapacity();
+        if (!this.BLOCK_ENTITY.IS_ENERGY) {
+            int i = this.BLOCK_ENTITY.getCurrentFuelValue();
+            int j = this.BLOCK_ENTITY.getFuelCapacity();
             return j != 0 && i != 0 ? i * pixels / j : 0;
         }
         return -1;
     }
 
     public boolean hasEnergy() {
-        if (this.blockEntity.IS_ENERGY && this.blockEntity.getCurrentEnergy() > 0) return true;
+        if (this.BLOCK_ENTITY.IS_ENERGY && this.BLOCK_ENTITY.getCurrentEnergy() > 0) return true;
         return false;
     }
 
     public boolean hasFuel() {
-        if (!this.blockEntity.IS_ENERGY && this.blockEntity.getCurrentFuelValue() > 0) return true;
+        if (!this.BLOCK_ENTITY.IS_ENERGY && this.BLOCK_ENTITY.getCurrentFuelValue() > 0) return true;
         return false;
     }
 
@@ -134,7 +145,7 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
             }
         } else if (index < TE_INVENTORY_FIRST_SLOT_INDEX + TE_INVENTORY_SLOT_COUNT) {
             //This is a TE slot so merge the stack into the players inventory
-            if ((blockEntity.IS_FILTER || blockEntity.IS_ENERGY) && TE_INVENTORY_SLOT_COUNT - FILTER_SLOT_COUNT > 0) {
+            if ((BLOCK_ENTITY.IS_FILTER || BLOCK_ENTITY.IS_ENERGY) && TE_INVENTORY_SLOT_COUNT - FILTER_SLOT_COUNT > 0) {
                 if (index > VANILLA_SLOT_COUNT + TE_INVENTORY_SLOT_COUNT - FILTER_SLOT_COUNT - 1) {
                     sourceSlot.set(ItemStack.EMPTY);
                     return copyOfSourceStack;
