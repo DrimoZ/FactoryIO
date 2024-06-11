@@ -2,6 +2,7 @@ package com.drimoz.factoryio.core.screens.inserters;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.containers.inserters.FactoryIOInserterContainer;
+import com.drimoz.factoryio.core.registery.models.InserterData;
 import com.drimoz.factoryio.shared.gui.FactoryIOGuiButton;
 import com.drimoz.factoryio.shared.gui.FactoryIOGuiEnergy;
 import com.google.common.collect.Lists;
@@ -10,6 +11,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
@@ -31,10 +33,14 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
     Inventory inv;
     Component name;
 
-    public FactoryIOInserterScreen(T pMenu, Inventory pPlayerInventory, Component pTitle) {
+    private static InserterData INSERTER_DATA;
+
+    public FactoryIOInserterScreen(T pMenu, Inventory pPlayerInventory, Component pTitle, InserterData inserterData) {
         super(pMenu, pPlayerInventory, pTitle);
         inv = pPlayerInventory;
         name = pTitle;
+
+        INSERTER_DATA = inserterData;
     }
     protected void init() {
         super.init();
@@ -56,11 +62,11 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
-        //if (getMenu().getBlockEntity() instanceof BurnerInserterEntity)
-        //    RenderSystem.setShaderTexture(0, GUI_BURNER_INSERTER);
-        //else if (getMenu().getBlockEntity() instanceof FilterInserterEntity)
-        //    RenderSystem.setShaderTexture(0, GUI_FILTER_INSERTER);
-        //else
+        if (!INSERTER_DATA.useEnergy)
+            RenderSystem.setShaderTexture(0, GUI_BURNER_INSERTER);
+        else if (INSERTER_DATA.isFilter)
+            RenderSystem.setShaderTexture(0, GUI_FILTER_INSERTER);
+        else
             RenderSystem.setShaderTexture(0, GUI_INSERTER);
 
         int relX = (this.width - this.getXSize()) / 2;
