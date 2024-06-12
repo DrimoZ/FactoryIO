@@ -1,6 +1,6 @@
 package com.drimoz.factoryio.shared.gui;
 
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncC2SWhitelistButton;
+import com.drimoz.factoryio.a_core.network.packet.FactoryIOSyncC2SWhitelistButton;
 import com.drimoz.factoryio.a_core.registery.FactoryIORegistryNetworks;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;

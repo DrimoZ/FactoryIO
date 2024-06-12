@@ -14,6 +14,7 @@ public class FactoryIOTags {
         // Public properties
 
         public static final TagKey<Item> INSERTER_FUEL = tag("inserter_fuel");
+        public static final TagKey<Item> WRENCH_ITEM = forgeTag("tools/wrench");
 
         // Inner work
 

@@ -1,4 +1,4 @@
-package com.drimoz.factoryio.core.network.packet;
+package com.drimoz.factoryio.a_core.network.packet;
 
 import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterBlockEntity;
 import net.minecraft.client.Minecraft;

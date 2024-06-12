@@ -1,7 +1,7 @@
 package com.drimoz.factoryio.a_core.registery;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.network.packet.*;
+import com.drimoz.factoryio.a_core.network.packet.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkDirection;

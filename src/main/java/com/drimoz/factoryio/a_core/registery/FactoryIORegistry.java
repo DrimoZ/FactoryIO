@@ -1,12 +1,10 @@
 package com.drimoz.factoryio.a_core.registery;
 
 import com.drimoz.factoryio.a_core.models.InserterData;
-import com.drimoz.factoryio.core.configs.FactoryIOCommonConfigs;
-import net.minecraftforge.client.event.EntityRenderersEvent;
+import com.drimoz.factoryio.a_core.configs.FactoryIOCommonConfigs;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
 public class FactoryIORegistry {
     public static void init(IEventBus eventBus) {

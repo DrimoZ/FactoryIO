@@ -1,4 +1,4 @@
-package com.drimoz.factoryio.core.configs;
+package com.drimoz.factoryio.a_core.configs;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 

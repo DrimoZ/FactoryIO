@@ -1,10 +1,11 @@
 package com.drimoz.factoryio.a_core.inserters;
 
+import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.a_core.generic.block_entity.FactoryIOBlockEntityMenuProvided;
 import com.drimoz.factoryio.a_core.generic.container.energy.FactoryIOEnergyContainer;
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CEnergy;
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CFuel;
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CWhitelistButton;
+import com.drimoz.factoryio.a_core.network.packet.FactoryIOSyncS2CEnergy;
+import com.drimoz.factoryio.a_core.network.packet.FactoryIOSyncS2CFuel;
+import com.drimoz.factoryio.a_core.network.packet.FactoryIOSyncS2CWhitelistButton;
 import com.drimoz.factoryio.a_core.registery.FactoryIORegistryNetworks;
 import com.drimoz.factoryio.a_core.models.InserterData;
 import com.drimoz.factoryio.a_core.generic.tag.FactoryIOTags;
@@ -277,6 +278,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     // Interface (Ticking)
 
     public static void tick(Level pLevel, BlockPos pPos, BlockState pState, final FactoryIOInserterBlockEntity pEntity) {
+
         if (!pLevel.isClientSide) {
             if (pEntity.IS_ENERGY) {
                 FactoryIORegistryNetworks.sendToClients(new FactoryIOSyncS2CEnergy(pEntity.getCurrentEnergy(), pPos));

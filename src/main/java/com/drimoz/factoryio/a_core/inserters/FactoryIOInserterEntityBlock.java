@@ -2,6 +2,7 @@ package com.drimoz.factoryio.a_core.inserters;
 
 
 import com.drimoz.factoryio.a_core.generic.block.FactoryIOEntityBlockWaterLogged;
+import com.drimoz.factoryio.a_core.generic.tag.FactoryIOTags;
 import com.drimoz.factoryio.a_core.models.InserterData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,6 +13,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -78,11 +80,24 @@ public class FactoryIOInserterEntityBlock extends FactoryIOEntityBlockWaterLogge
         if (pLevel.isClientSide) return InteractionResult.SUCCESS;
 
         BlockEntity blockEntity = pLevel.getBlockEntity(pPos);
+
         if(blockEntity instanceof FactoryIOInserterBlockEntity) {
-            NetworkHooks.openGui(((ServerPlayer)pPlayer), (FactoryIOInserterBlockEntity)blockEntity, pPos);
+            if (pPlayer.getItemInHand(pHand).is(FactoryIOTags.Items.WRENCH_ITEM)) {
+                if (pPlayer.isShiftKeyDown()) {
+                    pLevel.removeBlock(pPos, false);
+                    pLevel.destroyBlock(pPos, true);
+                }
+                else {
+                    pLevel.setBlock(pPos, pState.rotate(pLevel, pPos, Rotation.CLOCKWISE_90), 3);
+                }
+            }
+            else {
+                NetworkHooks.openGui(((ServerPlayer)pPlayer), (FactoryIOInserterBlockEntity)blockEntity, pPos);
+            }
         } else {
             throw new IllegalStateException("Missing Container Provider for FactoryIOInserterBlockEntity");
         }
+
         return InteractionResult.SUCCESS;
     }
 
@@ -94,6 +109,6 @@ public class FactoryIOInserterEntityBlock extends FactoryIOEntityBlockWaterLogge
         return new FactoryIOInserterBlockEntity(INSERTER_DATA.registries().getMenu().get(), INSERTER_DATA.registries().getBlockEntity().get(), pPos, pState, INSERTER_DATA);
     }
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, @NotNull BlockState blockState, @NotNull BlockEntityType<T> blockEntityType) {
-        return level.isClientSide ? createTicker(level, blockEntityType, INSERTER_DATA.registries().getBlockEntity().get()) : null;
+        return level.isClientSide ? null : createTicker(level, blockEntityType, INSERTER_DATA.registries().getBlockEntity().get());
     }
 }

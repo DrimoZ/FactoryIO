@@ -38,17 +38,15 @@ public abstract class FactoryIOEntityBlockWaterLogged extends FactoryIOEntityBlo
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> pBuilder) {
         if (isWaterLogged) pBuilder.add(FACING, ENABLED, WATERLOGGED);
-        else pBuilder.add(FACING, ENABLED, WATERLOGGED);
+        else super.createBlockStateDefinition(pBuilder);
     }
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext pContext) {
-        this.defaultBlockState().setValue(FACING, pContext.getHorizontalDirection().getOpposite()).setValue(ENABLED, Boolean.TRUE);
-
         FluidState fluidState = pContext.getLevel().getFluidState(pContext.getClickedPos());
         if (isWaterLogged) this.defaultBlockState().setValue(WATERLOGGED, fluidState.getType() == Fluids.WATER);
 
-        return this.defaultBlockState();
+        return super.getStateForPlacement(pContext);
     }
 
     public @NotNull FluidState getFluidState(@NotNull BlockState state) {
