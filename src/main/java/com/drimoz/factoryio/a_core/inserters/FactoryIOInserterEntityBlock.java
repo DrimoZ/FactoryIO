@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.a_core.inserters;
 
 
+import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.a_core.generic.block.FactoryIOEntityBlockWaterLogged;
 import com.drimoz.factoryio.a_core.generic.tag.FactoryIOTags;
 import com.drimoz.factoryio.a_core.models.InserterData;
@@ -83,13 +84,7 @@ public class FactoryIOInserterEntityBlock extends FactoryIOEntityBlockWaterLogge
 
         if(blockEntity instanceof FactoryIOInserterBlockEntity) {
             if (pPlayer.getItemInHand(pHand).is(FactoryIOTags.Items.WRENCH_ITEM)) {
-                if (pPlayer.isShiftKeyDown()) {
-                    pLevel.removeBlock(pPos, false);
-                    pLevel.destroyBlock(pPos, true);
-                }
-                else {
-                    pLevel.setBlock(pPos, pState.rotate(pLevel, pPos, Rotation.CLOCKWISE_90), 3);
-                }
+                pLevel.setBlock(pPos, pState.rotate(pLevel, pPos, Rotation.CLOCKWISE_90), 3);
             }
             else {
                 NetworkHooks.openGui(((ServerPlayer)pPlayer), (FactoryIOInserterBlockEntity)blockEntity, pPos);
