@@ -1,8 +1,6 @@
-package com.drimoz.factoryio.core.registery.loaders;
+package com.drimoz.factoryio.a_core.registery;
 
-import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.registery.models.InserterData;
-import com.drimoz.factoryio.core.registery.models.InserterRegistries;
+import com.drimoz.factoryio.a_core.models.InserterData;
 import com.drimoz.factoryio.shared.FactoryIOPaths;
 import com.google.gson.*;
 

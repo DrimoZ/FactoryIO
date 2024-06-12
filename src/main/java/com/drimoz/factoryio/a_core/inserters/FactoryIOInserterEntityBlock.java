@@ -2,7 +2,7 @@ package com.drimoz.factoryio.a_core.inserters;
 
 
 import com.drimoz.factoryio.a_core.generic.block.FactoryIOEntityBlockWaterLogged;
-import com.drimoz.factoryio.core.registery.models.InserterData;
+import com.drimoz.factoryio.a_core.models.InserterData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;

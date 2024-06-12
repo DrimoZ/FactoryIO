@@ -1,4 +1,4 @@
-package com.drimoz.factoryio.core.registery.custom;
+package com.drimoz.factoryio.a_core.registery;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.network.packet.*;
@@ -9,7 +9,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
-public class FactoryIONetworks {
+public class FactoryIORegistryNetworks {
     private static SimpleChannel INSTANCE;
 
     private static int packetId = 0;
@@ -17,7 +17,7 @@ public class FactoryIONetworks {
         return packetId++;
     }
 
-    public static void register() {
+    public static void init() {
         SimpleChannel net = NetworkRegistry.ChannelBuilder
                 .named(new ResourceLocation(FactoryIO.MOD_ID, "messages"))
                 .networkProtocolVersion(() -> "1.0")

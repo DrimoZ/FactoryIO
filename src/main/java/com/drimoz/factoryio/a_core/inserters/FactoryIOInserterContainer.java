@@ -1,11 +1,10 @@
 package com.drimoz.factoryio.a_core.inserters;
 
-import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.a_core.generic.container.FactoryIOContainer;
 import com.drimoz.factoryio.a_core.generic.container.slots.SlotInserterBuffer;
 import com.drimoz.factoryio.a_core.generic.container.slots.SlotInserterFilter;
 import com.drimoz.factoryio.a_core.generic.container.slots.SlotInserterFuel;
-import com.drimoz.factoryio.core.registery.models.InserterData;
+import com.drimoz.factoryio.a_core.models.InserterData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;

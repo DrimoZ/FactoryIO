@@ -1,8 +1,8 @@
-package com.drimoz.factoryio.core.registery.custom;
+package com.drimoz.factoryio.a_core.registery;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterContainer;
-import com.drimoz.factoryio.core.registery.models.InserterData;
+import com.drimoz.factoryio.a_core.models.InserterData;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;
@@ -12,22 +12,26 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
-public class FactoryIOContainers {
+public class FactoryIORegistryContainers {
 
     // Public properties
 
     public static final DeferredRegister<MenuType<?>> CONTAINERS = DeferredRegister.create(ForgeRegistries.CONTAINERS, FactoryIO.MOD_ID);
 
-    // Inserters
+    // Interface ( Generic )
+    public static void init(IEventBus eventBus) {
+        CONTAINERS.register(eventBus);
+    }
 
-    // public static final RegistryObject<MenuType<InserterContainer>> INSERTER_MENU = registerMenuType(
-    //         (windowId, inv, data) -> {
-    //             BlockPos pos = data.readBlockPos();
-    //             Level world = inv.player.getCommandSenderWorld();
-    //             return new InserterContainer(windowId, inv,  inv.player, world, pos);
-    //         }, "inserter_menu");
+    // Inner work ( Generic )
 
-    // Interface
+    private static <T extends AbstractContainerMenu> RegistryObject<MenuType<T>> registerMenuType(String id, IContainerFactory<T> factory) {
+        return CONTAINERS.register(id, () -> IForgeMenuType.create(factory));
+    }
+
+    /** +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ **/
+    /**                                                          INSERTERS                                                          **/
+    /** +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ **/
 
     public static void registerMenu(InserterData inserterData) {
         inserterData.registries().setMenuSupplier(
@@ -44,12 +48,8 @@ public class FactoryIOContainers {
         );
     }
 
-    public static <T extends AbstractContainerMenu> RegistryObject<MenuType<T>> registerMenuType(String id, IContainerFactory<T> factory) {
-        return CONTAINERS.register(id, () -> IForgeMenuType.create(factory));
-    }
 
-    public static void registerContainers(IEventBus eventBus) {
-        CONTAINERS.register(eventBus);
-    }
+
+
 
 }

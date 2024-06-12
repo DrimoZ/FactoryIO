@@ -5,8 +5,8 @@ import com.drimoz.factoryio.a_core.generic.container.energy.FactoryIOEnergyConta
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CEnergy;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CFuel;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CWhitelistButton;
-import com.drimoz.factoryio.core.registery.custom.FactoryIONetworks;
-import com.drimoz.factoryio.core.registery.models.InserterData;
+import com.drimoz.factoryio.a_core.registery.FactoryIORegistryNetworks;
+import com.drimoz.factoryio.a_core.models.InserterData;
 import com.drimoz.factoryio.a_core.generic.tag.FactoryIOTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -279,13 +279,13 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     public static void tick(Level pLevel, BlockPos pPos, BlockState pState, final FactoryIOInserterBlockEntity pEntity) {
         if (!pLevel.isClientSide) {
             if (pEntity.IS_ENERGY) {
-                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnergy(pEntity.getCurrentEnergy(), pPos));
+                FactoryIORegistryNetworks.sendToClients(new FactoryIOSyncS2CEnergy(pEntity.getCurrentEnergy(), pPos));
             }
             else {
-                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CFuel(pEntity.getCurrentFuelValue(), pPos));
+                FactoryIORegistryNetworks.sendToClients(new FactoryIOSyncS2CFuel(pEntity.getCurrentFuelValue(), pPos));
             }
             if (pEntity.IS_FILTER) {
-                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CWhitelistButton((pEntity.isWhitelist()? 1 : 0), 6, pPos));
+                FactoryIORegistryNetworks.sendToClients(new FactoryIOSyncS2CWhitelistButton((pEntity.isWhitelist()? 1 : 0), 6, pPos));
             }
         }
 

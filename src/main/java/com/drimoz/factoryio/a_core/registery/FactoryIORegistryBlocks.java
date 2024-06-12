@@ -1,9 +1,9 @@
-package com.drimoz.factoryio.core.registery.custom;
+package com.drimoz.factoryio.a_core.registery;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterEntityBlock;
-import com.drimoz.factoryio.core.registery.models.InserterData;
+import com.drimoz.factoryio.a_core.models.InserterData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public class FactoryIOBlocks {
+public class FactoryIORegistryBlocks {
 
     // Public properties
 
@@ -28,53 +28,21 @@ public class FactoryIOBlocks {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, FactoryIO.MOD_ID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITIES, FactoryIO.MOD_ID);
 
-    // Inserters
+    // Interface ( Generic )
 
-    //public static final RegistryObject<Block> INSERTER_BLOCK = registerInserter("inserter",
-    //        () -> new InserterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion().isRedstoneConductor(redstone)));
-
-    //public static final RegistryObject<BlockEntityType<InserterBlockEntity>> BLOCK_ENTITY_INSERTER =
-    //        BLOCK_ENTITIES.register("inserter_block_entity", () ->
-    //                BlockEntityType.Builder.of(InserterBlockEntity::new, FactoryIOBlocks.INSERTER_BLOCK.get()).build(null));
-
-
-
-    // Interface
-
-    public static void registerBlocks(IEventBus eventBus) {
+    public static void init(IEventBus eventBus) {
         BLOCKS.register(eventBus);
-    }
-
-    private static <T extends Block> Supplier<T> registerBlockImpl(String id, Supplier<T> item) {
-        return BLOCKS.register(id, item);
-    }
-
-
-    public static void registerBlockEntities(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }
 
-    public static <E extends BlockEntity, T extends BlockEntityType<E>> Supplier<T> registerBlockEntityImpl(String id, Supplier<T> item) {
-        return BLOCK_ENTITIES.register(id, item);
-    }
-
-    public static <E extends BlockEntity> BlockEntityType<E> createBlockEntityTypeImpl(BlockEntityFactory<E> factory, Block... blocks) {
-        Objects.requireNonNull(factory);
-        return BlockEntityType.Builder.of(factory::create, blocks).build(null);
-    }
+    /** +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ **/
+    /**                                                          INSERTERS                                                          **/
+    /** +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ **/
 
     public static void registerInserterBlockFromData(InserterData inserterData) {
-
-        // Blocks
-
         registerInserterBlock(inserterData);
-
-        // Block Entities
-
         registerInserterEntity(inserterData);
     }
-
-    // Inner work
 
     private static void registerInserterBlock(InserterData inserterData) {
         BlockBehaviour.Properties blockProps = BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion();
@@ -83,7 +51,7 @@ public class FactoryIOBlocks {
             blockProps.isRedstoneConductor(redstone);
         }
 
-        Supplier<FactoryIOInserterEntityBlock> register = registerBlockImpl(
+        Supplier<FactoryIOInserterEntityBlock> register = BLOCKS.register(
                 inserterData.identifier,
                 () -> new FactoryIOInserterEntityBlock(blockProps, inserterData)
         );
@@ -93,23 +61,20 @@ public class FactoryIOBlocks {
 
     private static void registerInserterEntity(InserterData inserterData) {
 
-        Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> entityType = registerBlockEntityImpl(
+        Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> entityType = BLOCK_ENTITIES.register(
                 inserterData.identifier + "_block_entity",
-                () -> {
-                    return createBlockEntityType(
-                            (pPos, pState) -> {
-                                return new FactoryIOInserterBlockEntity(pPos, pState, inserterData);
-                            },
-                            (Block) inserterData.registries().getBlock().get()
-                    );
-                }
+                () -> createBlockEntityType(
+                        (pPos, pState) -> new FactoryIOInserterBlockEntity(pPos, pState, inserterData),
+                        inserterData.registries().getBlock().get()
+                )
         );
 
         inserterData.registries().setBlockEntityType(entityType);
     }
 
     private static <E extends BlockEntity> BlockEntityType<E> createBlockEntityType(BlockEntityFactory<E> factory, Block... blocks) {
-        return createBlockEntityTypeImpl(factory, blocks);
+        Objects.requireNonNull(factory);
+        return BlockEntityType.Builder.of(factory::create, blocks).build(null);
     }
 
     @FunctionalInterface

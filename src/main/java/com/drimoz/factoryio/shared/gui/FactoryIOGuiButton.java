@@ -1,7 +1,7 @@
 package com.drimoz.factoryio.shared.gui;
 
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncC2SWhitelistButton;
-import com.drimoz.factoryio.core.registery.custom.FactoryIONetworks;
+import com.drimoz.factoryio.a_core.registery.FactoryIORegistryNetworks;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -67,7 +67,7 @@ public class FactoryIOGuiButton {
             boolean test = hovering(mouseX, mouseY);
             if (hovering(mouseX, mouseY))
             {
-                FactoryIONetworks.sendToServer(new FactoryIOSyncC2SWhitelistButton(pos, index, set));
+                FactoryIORegistryNetworks.sendToServer(new FactoryIOSyncC2SWhitelistButton(pos, index, set));
                 Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 0.6F, 0.3F));
             }
         }
@@ -81,7 +81,7 @@ public class FactoryIOGuiButton {
             {
                 if (hovering(mouseX, mouseY))
                 {
-                    FactoryIONetworks.sendToServer(new FactoryIOSyncC2SWhitelistButton(pos, index, set));
+                    FactoryIORegistryNetworks.sendToServer(new FactoryIOSyncC2SWhitelistButton(pos, index, set));
                     Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 0.3F, 0.3F));
                 }
             }

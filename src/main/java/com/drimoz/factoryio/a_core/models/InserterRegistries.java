@@ -1,4 +1,4 @@
-package com.drimoz.factoryio.core.registery.models;
+package com.drimoz.factoryio.a_core.models;
 
 import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterEntityBlock;
