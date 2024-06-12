@@ -3,7 +3,7 @@ package com.drimoz.factoryio.core.registery.custom;
 
 import com.drimoz.factoryio.core.registery.loaders.FactoryIODataLoader;
 import com.drimoz.factoryio.core.registery.models.InserterData;
-import com.drimoz.factoryio.core.blockentities.inserters.FactoryIOInserterBlockEntityRenderer;
+import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterBlockEntityRenderer;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 
 public class FactoryIORenderers {

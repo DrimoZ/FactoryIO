@@ -1,10 +1,9 @@
 package com.drimoz.factoryio.core.registery.custom;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.items.inserters.FactoryIOInserterItem;
+import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterItem;
 import com.drimoz.factoryio.core.registery.models.InserterData;
 import com.drimoz.factoryio.shared.FactoryIOCreativeTab;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.eventbus.api.IEventBus;

@@ -1,8 +1,8 @@
 package com.drimoz.factoryio.core.registery.custom;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.blockentities.inserters.FactoryIOInserterBlockEntity;
-import com.drimoz.factoryio.core.blocks.inserters.FactoryIOInserterEntityBlock;
+import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterBlockEntity;
+import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterEntityBlock;
 import com.drimoz.factoryio.core.registery.models.InserterData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
@@ -14,13 +14,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.NotNull;
-import software.bernie.example.registry.BlockRegistry;
 
-import java.lang.reflect.Type;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Supplier;
 
 public class FactoryIOBlocks {

@@ -1,8 +1,8 @@
 package com.drimoz.factoryio.core.registery.models;
 
-import com.drimoz.factoryio.core.blockentities.inserters.FactoryIOInserterBlockEntity;
-import com.drimoz.factoryio.core.blocks.inserters.FactoryIOInserterEntityBlock;
-import com.drimoz.factoryio.core.containers.inserters.FactoryIOInserterContainer;
+import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterBlockEntity;
+import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterEntityBlock;
+import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterContainer;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 

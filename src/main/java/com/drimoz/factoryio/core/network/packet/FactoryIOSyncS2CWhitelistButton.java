@@ -1,6 +1,6 @@
 package com.drimoz.factoryio.core.network.packet;
 
-import com.drimoz.factoryio.core.blockentities.inserters.FactoryIOInserterBlockEntity;
+import com.drimoz.factoryio.a_core.inserters.FactoryIOInserterBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
