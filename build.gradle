@@ -165,6 +165,7 @@ repositories {
         name = "ModMaven"
         url = "https://modmaven.dev"
     }
+
     maven {
         name = "CurseMaven"
         url "https://cursemaven.com"
