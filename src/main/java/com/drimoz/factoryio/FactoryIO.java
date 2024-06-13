@@ -1,9 +1,9 @@
 package com.drimoz.factoryio;
 
-import com.drimoz.factoryio.a_core.registery.FactoryIORegistry;
-import com.drimoz.factoryio.a_core.registery.FactoryIORegistryNetworks;
-import com.drimoz.factoryio.a_core.registery.FactoryIORegistryRenderers;
-import com.drimoz.factoryio.a_core.registery.FactoryIORegistryScreens;
+import com.drimoz.factoryio.core.registery.FactoryIORegistry;
+import com.drimoz.factoryio.core.registery.FactoryIORegistryNetworks;
+import com.drimoz.factoryio.core.registery.FactoryIORegistryRenderers;
+import com.drimoz.factoryio.core.registery.FactoryIORegistryScreens;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.common.MinecraftForge;
