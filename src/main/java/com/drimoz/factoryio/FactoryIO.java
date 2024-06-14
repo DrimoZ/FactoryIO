@@ -1,14 +1,15 @@
 package com.drimoz.factoryio;
 
-import com.drimoz.factoryio.core.registery.FactoryIORegistry;
-import com.drimoz.factoryio.core.registery.FactoryIORegistryNetworks;
-import com.drimoz.factoryio.core.registery.FactoryIORegistryRenderers;
-import com.drimoz.factoryio.core.registery.FactoryIORegistryScreens;
+import com.drimoz.factoryio.core.configs.FactoryIOCommonConfigs;
+import com.drimoz.factoryio.core.datagen.FactoryIODataGenerators;
+import com.drimoz.factoryio.core.init.*;
+import com.drimoz.factoryio.core.registery.*;
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -23,30 +24,35 @@ public class FactoryIO
 
     public FactoryIO()
     {
+        FactoryIOInserterLoader.setup();
+
         IEventBus eventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        FactoryIORegistry.createEntitiesFromConfigs();
-        FactoryIORegistry.init(eventBus);
+        eventBus.register(new FactoryIOBlocks());
+        eventBus.register(new FactoryIOBlockEntities());
+        eventBus.register(new FactoryIOItems());
+        eventBus.register(new FactoryIOMenuTypes());
+        eventBus.register(new FactoryIODataGenerators());
 
-        eventBus.addListener(this::setup);
-        eventBus.addListener(this::clientSetup);
-        eventBus.addListener(this::registerRenderers);
+
+        FactoryIONetworks.init();
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, FactoryIOCommonConfigs.SPEC, "factory_io-common.toml");
+
+        eventBus.addListener(this::onCommonSetup);
+        eventBus.addListener(this::onClientSetup);
 
         GeckoLib.initialize();
 
         MinecraftForge.EVENT_BUS.register(this);
     }
 
-    private void setup(final FMLCommonSetupEvent event)
+    public void onCommonSetup(final FMLCommonSetupEvent event)
     {
-        event.enqueueWork(FactoryIORegistryNetworks::init);
+        FactoryIOInserterRegistry.getInstance().onCommonSetup();
+        event.enqueueWork(FactoryIONetworks::init);
     }
 
-    public void clientSetup(final FMLClientSetupEvent event) {
-        FactoryIORegistryScreens.init();
-    }
-
-    private void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        FactoryIORegistryRenderers.init(event);
+    public void onClientSetup(final FMLClientSetupEvent event) {
+        FactoryIOInserterRegistry.getInstance().onRegisterScreens();
     }
 }

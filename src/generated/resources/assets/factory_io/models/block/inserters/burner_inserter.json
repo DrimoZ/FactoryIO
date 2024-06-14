@@ -1,0 +1,6 @@
+{
+  "parent": "factory_io:block/base_inserter",
+  "textures": {
+    "all": "factory_io:block/inserters/burner_inserter"
+  }
+}

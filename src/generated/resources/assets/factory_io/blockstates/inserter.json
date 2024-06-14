@@ -1,63 +1,63 @@
 {
   "variants": {
     "enabled=false,facing=north,waterlogged=false": {
-      "model": "factory_io:inserters/inserter"
+      "model": "factory_io:block/inserters/inserter"
     },
     "enabled=true,facing=north,waterlogged=false": {
-      "model": "factory_io:inserters/inserter"
+      "model": "factory_io:block/inserters/inserter"
     },
     "enabled=false,facing=south,waterlogged=false": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 180
     },
     "enabled=true,facing=south,waterlogged=false": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 180
     },
     "enabled=false,facing=west,waterlogged=false": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 270
     },
     "enabled=true,facing=west,waterlogged=false": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 270
     },
     "enabled=false,facing=east,waterlogged=false": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 90
     },
     "enabled=true,facing=east,waterlogged=false": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 90
     },
     "enabled=false,facing=north,waterlogged=true": {
-      "model": "factory_io:inserters/inserter"
+      "model": "factory_io:block/inserters/inserter"
     },
     "enabled=true,facing=north,waterlogged=true": {
-      "model": "factory_io:inserters/inserter"
+      "model": "factory_io:block/inserters/inserter"
     },
     "enabled=false,facing=south,waterlogged=true": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 180
     },
     "enabled=true,facing=south,waterlogged=true": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 180
     },
     "enabled=false,facing=west,waterlogged=true": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 270
     },
     "enabled=true,facing=west,waterlogged=true": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 270
     },
     "enabled=false,facing=east,waterlogged=true": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 90
     },
     "enabled=true,facing=east,waterlogged=true": {
-      "model": "factory_io:inserters/inserter",
+      "model": "factory_io:block/inserters/inserter",
       "y": 90
     }
   }

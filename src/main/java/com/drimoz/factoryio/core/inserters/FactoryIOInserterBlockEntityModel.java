@@ -14,7 +14,7 @@ public class FactoryIOInserterBlockEntityModel extends AnimatedGeoModel<FactoryI
 
     @Override
     public ResourceLocation getModelLocation(FactoryIOInserterBlockEntity object) {
-        return new ResourceLocation(FactoryIO.MOD_ID, "geo/" + identifier + ".geo.json");
+        return new ResourceLocation(FactoryIO.MOD_ID, "geo/inserter.geo.json");
     }
 
     @Override

@@ -4,7 +4,7 @@ import com.drimoz.factoryio.core.generic.container.FactoryIOContainer;
 import com.drimoz.factoryio.core.generic.container.slots.SlotInserterBuffer;
 import com.drimoz.factoryio.core.generic.container.slots.SlotInserterFilter;
 import com.drimoz.factoryio.core.generic.container.slots.SlotInserterFuel;
-import com.drimoz.factoryio.core.model.InserterData;
+import com.drimoz.factoryio.core.model.Inserter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -26,21 +26,21 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
 
     private final FactoryIOInserterBlockEntity BLOCK_ENTITY;
 
-    private final InserterData INSERTER_DATA;
+    private final Inserter inserter;
 
     // Life cycle
 
     public FactoryIOInserterContainer(
             int pContainerId,
-            InserterData inserterData,
+            Inserter inserter,
             Inventory pPlayerInv,
             Level pLevel,
             BlockPos pPos
     ) {
         this(
-                (MenuType)inserterData.registries().getMenu().get(),
+                inserter.getMenuType().get(),
                 pContainerId,
-                inserterData,
+                inserter,
                 pPlayerInv,
                 pLevel,
                 pPos
@@ -50,15 +50,15 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
     public FactoryIOInserterContainer(
             @Nullable MenuType<?> pMenuType,
             int pContainerId,
-            InserterData inserterData,
+            Inserter inserterData,
             Inventory pPlayerInv,
             Level pLevel,
             BlockPos pPos
     ) {
         super(pMenuType, pContainerId);
-        INSERTER_DATA = inserterData;
+        inserter = inserterData;
 
-        this.BLOCK_ENTITY = inserterData.registries().getBlockEntity().get().getBlockEntity(pLevel, pPos);
+        this.BLOCK_ENTITY = inserterData.getBlockEntityType().get().getBlockEntity(pLevel, pPos);
         this.TE_INVENTORY_SLOT_COUNT = 1 + (BLOCK_ENTITY.IS_ENERGY ? 0 : 1) + (BLOCK_ENTITY.IS_FILTER ? FactoryIOInserterBlockEntity.FILTER_SLOTS.length : 0);
 
         checkContainerSize(pPlayerInv, this.TE_INVENTORY_SLOT_COUNT);

@@ -2,8 +2,8 @@ package com.drimoz.factoryio.core.inserters;
 
 
 import com.drimoz.factoryio.core.generic.block.FactoryIOEntityBlockWaterLogged;
-import com.drimoz.factoryio.core.generic.tag.FactoryIOTags;
-import com.drimoz.factoryio.core.model.InserterData;
+import com.drimoz.factoryio.core.init.FactoryIOTags;
+import com.drimoz.factoryio.core.model.Inserter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -22,7 +22,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
-import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 
@@ -31,17 +30,18 @@ public class FactoryIOInserterEntityBlock extends FactoryIOEntityBlockWaterLogge
     // Private properties
 
     private static final VoxelShape SHAPE =  Block.box(0, 0, 0, 16, 16, 16);
-    private final InserterData INSERTER_DATA;
+    private final Inserter inserter;
 
     // Life cycle
 
-    public FactoryIOInserterEntityBlock(Properties pProperties, InserterData inserterData) {
-        super(pProperties, inserterData.isWaterlogged);
+    public FactoryIOInserterEntityBlock(Properties pProperties, Inserter inserter) {
+        super(pProperties);
 
-        this.INSERTER_DATA = inserterData;
+        this.inserter = inserter;
     }
 
     // Interface (Shape)
+
 
     @Override
     public VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
@@ -99,10 +99,10 @@ public class FactoryIOInserterEntityBlock extends FactoryIOEntityBlockWaterLogge
 
     // Interface BlockEntity
     @Override
-    public BlockEntity newBlockEntity(@NotNull BlockPos pPos, @NotNull BlockState pState) {
-        return new FactoryIOInserterBlockEntity(INSERTER_DATA.registries().getMenu().get(), INSERTER_DATA.registries().getBlockEntity().get(), pPos, pState, INSERTER_DATA);
+    public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
+        return new FactoryIOInserterBlockEntity(inserter.getMenuType().get(), inserter.getBlockEntityType().get(), pPos, pState, inserter);
     }
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, @NotNull BlockState blockState, @NotNull BlockEntityType<T> blockEntityType) {
-        return level.isClientSide ? null : createTicker(level, blockEntityType, INSERTER_DATA.registries().getBlockEntity().get());
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState blockState, BlockEntityType<T> blockEntityType) {
+        return level.isClientSide ? null : createTicker(level, blockEntityType, inserter.getBlockEntityType().get());
     }
 }
