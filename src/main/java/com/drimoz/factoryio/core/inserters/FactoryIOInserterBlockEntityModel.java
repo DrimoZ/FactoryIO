@@ -19,7 +19,7 @@ public class FactoryIOInserterBlockEntityModel extends AnimatedGeoModel<FactoryI
 
     @Override
     public ResourceLocation getTextureLocation(FactoryIOInserterBlockEntity object) {
-        return new ResourceLocation(FactoryIO.MOD_ID, "textures/block/" + identifier + ".png");
+        return new ResourceLocation(FactoryIO.MOD_ID, "textures/block/inserters/" + identifier + ".png");
     }
 
     @Override

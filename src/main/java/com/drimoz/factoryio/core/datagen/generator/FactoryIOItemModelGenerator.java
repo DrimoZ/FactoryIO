@@ -28,8 +28,4 @@ public class FactoryIOItemModelGenerator extends ItemModelProvider {
             withExistingParent("item/inserters/" + blockName, modLoc("block/inserters/" + blockName));
         });
     }
-    @Override
-    public String getName() {
-        return FactoryIO.MOD_ID + " item model generator";
-    }
 }

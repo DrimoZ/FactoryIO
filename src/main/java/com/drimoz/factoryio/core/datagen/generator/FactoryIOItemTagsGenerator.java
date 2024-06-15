@@ -22,14 +22,11 @@ public class FactoryIOItemTagsGenerator extends TagsProvider<Item> {
 
     @Override
     protected void addTags() {
-        FactoryIOInserterRegistry.getInstance().getInserters().forEach((inserter) -> {
-            this.tag(FactoryIOTags.Items.INSERTERS).add(inserter.getItem().get());
-        });
+        FactoryIOInserterRegistry.getInstance().getInserters().forEach((inserter) -> this.tag(FactoryIOTags.Items.INSERTERS).add(inserter.getItem().get()));
     }
+
     @Override
     public String getName() {
-        return FactoryIO.MOD_ID + " item tags generator";
+        return "Items Tags";
     }
-
-
 }

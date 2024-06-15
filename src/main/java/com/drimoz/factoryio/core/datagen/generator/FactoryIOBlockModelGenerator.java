@@ -51,9 +51,4 @@ public class FactoryIOBlockModelGenerator extends BlockStateProvider {
                 return 0;
         }
     }
-
-    @Override
-    public String getName() {
-        return FactoryIO.MOD_ID + " block model & blockstate generator";
-    }
 }
