@@ -21,6 +21,7 @@ public class FactoryIODataGenerators {
         generator.addProvider(new FactoryIOBlockModelGenerator(generator, FactoryIO.MOD_ID, existingFileHelper));
         generator.addProvider(new FactoryIOItemModelGenerator(generator, FactoryIO.MOD_ID, existingFileHelper));
         generator.addProvider(new FactoryIOItemTagsGenerator(generator, FactoryIO.MOD_ID, existingFileHelper));
+        generator.addProvider(new FactoryIOBlockTagsGenerator(generator, FactoryIO.MOD_ID, existingFileHelper));
         generator.addProvider(new FactoryIOLangGenerator(generator, FactoryIO.MOD_ID, "en_us"));
         generator.addProvider(new FactoryIOLootGenerator(generator));
     }

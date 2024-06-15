@@ -17,6 +17,8 @@ public class FactoryIOTags {
         public static final TagKey<Item> INSERTER_FUEL = tag("inserter_fuel");
         public static final TagKey<Item> WRENCH_ITEM = forgeTag("tools/wrench");
 
+
+
         // Inner work
 
         private static TagKey<Item> tag(String name) {
@@ -26,9 +28,24 @@ public class FactoryIOTags {
         private static TagKey<Item> forgeTag(String name) {
             return ItemTags.create(new ResourceLocation("forge", name));
         }
+
+        private static TagKey<Item> minecraftTag(String name) {
+            return ItemTags.create(new ResourceLocation("minecraft", name));
+        }
     }
 
     public static class Blocks {
+
+        // Public properties
+
+        public static final TagKey<Block> MINEABLE_PICKAXE = minecraftTag("mineable/pickaxe");
+
+        public static final TagKey<Block> TOOL_WOODEN = minecraftTag("needs_wooden_tool");
+        public static final TagKey<Block> TOOL_STONE = minecraftTag("needs_stone_tool");
+        public static final TagKey<Block> TOOL_IRON = minecraftTag("needs_iron_tool");
+        public static final TagKey<Block> TOOL_GOLD = minecraftTag("needs_gold_tool");
+        public static final TagKey<Block> TOOL_DIAMOND = minecraftTag("needs_diamond_tool");
+        public static final TagKey<Block> TOOL_NETHERITE = minecraftTag("needs_netherite_tool");
 
         // Inner work
 
@@ -38,6 +55,10 @@ public class FactoryIOTags {
 
         private static TagKey<Block> forgeTag(String name) {
             return BlockTags.create(new ResourceLocation("forge", name));
+        }
+
+        private static TagKey<Block> minecraftTag(String name) {
+            return BlockTags.create(new ResourceLocation("minecraft", name));
         }
     }
 }

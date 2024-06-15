@@ -19,11 +19,14 @@ import java.util.function.Supplier;
 
 
 public class FactoryIOLootGenerator extends LootTableProvider {
+
+    private final List<Pair<Supplier<Consumer<BiConsumer<ResourceLocation, LootTable.Builder>>>, LootContextParamSet>>
+            loot_tables = ImmutableList.of(Pair.of(FactoryIOBlockLootTables::new, LootContextParamSets.BLOCK));
+
     public FactoryIOLootGenerator(DataGenerator pGenerator) {
         super(pGenerator);
     }
-    private final List<Pair<Supplier<Consumer<BiConsumer<ResourceLocation, LootTable.Builder>>>, LootContextParamSet>>
-            loot_tables = ImmutableList.of(Pair.of(FactoryIOBlockLootTables::new, LootContextParamSets.BLOCK));
+
 
 
     @Override

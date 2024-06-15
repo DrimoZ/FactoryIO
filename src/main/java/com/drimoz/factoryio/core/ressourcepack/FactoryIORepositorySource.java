@@ -30,9 +30,6 @@ public class FactoryIORepositorySource implements RepositorySource {
 
     @Override
     public void loadPacks(Consumer<Pack> consumer, Pack.PackConstructor constructor) {
-
-        FactoryIOResourcePackHandler.prepareResourcesFolder();
-
         PackMetadataSection meta = new PackMetadataSection(
                 new TextComponent(FactoryIOResourcePackHandler.PACK_DESCRIPTION),
                 FactoryIOResourcePackHandler.PACK_FORMAT);
@@ -50,7 +47,7 @@ public class FactoryIORepositorySource implements RepositorySource {
         if (p != null) {
             consumer.accept(p);
         } else {
-            FactoryIO.LOGGER.error("Failed to create pack: " + FactoryIOResourcePackHandler.resourcesDirectory.getAbsolutePath());
+            FactoryIO.LOGGER.error("Failed to create pack: " + FactoryIORepositorySource.CONFIG_DIR.toString());
         }
 
     }

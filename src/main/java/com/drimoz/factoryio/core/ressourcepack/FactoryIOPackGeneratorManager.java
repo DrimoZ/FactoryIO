@@ -42,6 +42,7 @@ public class FactoryIOPackGeneratorManager {
             generator.addProvider(new FactoryIOBlockModelGenerator(generator, FactoryIO.MOD_ID, efh));
             generator.addProvider(new FactoryIOItemModelGenerator(generator, FactoryIO.MOD_ID, efh));
             generator.addProvider(new FactoryIOItemTagsGenerator(generator, FactoryIO.MOD_ID, efh));
+            generator.addProvider(new FactoryIOBlockTagsGenerator(generator, FactoryIO.MOD_ID, efh));
         }
     }
 
