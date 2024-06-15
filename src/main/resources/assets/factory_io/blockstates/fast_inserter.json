@@ -1,9 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "factory_io:block/inserters/fast_inserter", "y": 0 },
-    "facing=south": { "model": "factory_io:block/inserters/fast_inserter", "y": 180 },
-    "facing=east":  { "model": "factory_io:block/inserters/fast_inserter", "y": 90 },
-    "facing=west": { "model": "factory_io:block/inserters/fast_inserter", "y": 270 }
-
-  }
-}

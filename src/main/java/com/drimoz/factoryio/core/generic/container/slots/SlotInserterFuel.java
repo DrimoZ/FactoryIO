@@ -1,7 +1,7 @@
 package com.drimoz.factoryio.core.generic.container.slots;
 
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterBlockEntity;
-import com.drimoz.factoryio.core.generic.tag.FactoryIOTags;
+import com.drimoz.factoryio.core.init.FactoryIOTags;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.common.ForgeHooks;

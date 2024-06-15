@@ -5,9 +5,9 @@ import com.drimoz.factoryio.core.generic.container.energy.FactoryIOEnergyContain
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CEnergy;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CFuel;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CWhitelistButton;
-import com.drimoz.factoryio.core.registery.FactoryIORegistryNetworks;
-import com.drimoz.factoryio.core.model.InserterData;
-import com.drimoz.factoryio.core.generic.tag.FactoryIOTags;
+import com.drimoz.factoryio.core.init.FactoryIONetworks;
+import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.init.FactoryIOTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -65,7 +65,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     // Private constants
 
     private final MenuType<FactoryIOInserterContainer> menuType;
-    private final InserterData inserterData;
+    private final Inserter inserter;
 
     // Protected properties
 
@@ -85,13 +85,13 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     // Life cycle
 
-    public FactoryIOInserterBlockEntity(BlockPos blockPos, BlockState blockState, InserterData inserterData) {
+    public FactoryIOInserterBlockEntity(BlockPos blockPos, BlockState blockState, Inserter inserter) {
         this(
-                (MenuType)inserterData.registries().getMenu().get(),
-                (BlockEntityType)inserterData.registries().getBlockEntity().get(),
+                (MenuType)inserter.getMenuType().get(),
+                (BlockEntityType)inserter.getBlockEntityType().get(),
                 blockPos,
                 blockState,
-                inserterData);
+                inserter);
     }
 
     public FactoryIOInserterBlockEntity(
@@ -99,21 +99,31 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             BlockEntityType<?> blockEntityType,
             BlockPos blockPos,
             BlockState blockState,
-            InserterData inserterData
+            Inserter inserter
     ) {
         super(blockEntityType, blockPos, blockState);
 
         this.menuType = menuType;
-        this.inserterData = inserterData;
+        this.inserter = inserter;
 
-        this.IS_ENERGY = inserterData.useEnergy;
-        this.IS_FILTER = inserterData.isFilter;
+        this.IS_ENERGY = inserter.useEnergy();
+        this.IS_FILTER = inserter.isFilterable();
 
         if (IS_ENERGY) {
-            this.energyStorage = new FactoryIOEnergyContainer(inserterData.energyMaxCapacity, inserterData.energyMaxTransferRate) {
+            this.energyStorage = new FactoryIOEnergyContainer(inserter.getEnergyCapacity(), inserter.getEnergyTransferRate()) {
                 @Override
                 protected void onEnergyChanged() {
                     FactoryIOInserterBlockEntity.this.setChanged();
+                }
+
+                @Override
+                public int extractEnergy(int maxExtract, boolean simulate) {
+                    return 0;
+                }
+
+                @Override
+                public boolean canExtract() {
+                    return false;
                 }
             };
 
@@ -153,23 +163,23 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     // Interface (DataFromData)
 
     public int getMaximumItemCountPerAction(){
-        return inserterData.preferredItemCountPerAction;
+        return inserter.getPreferredItemCountPerAction();
     }
 
     public int getGrabDistance(){
-        return inserterData.grabDistance;
+        return inserter.getGrabDistance();
     }
 
     public int getDurationBetweenActions(){
-        return inserterData.timeBetweenActions;
+        return inserter.getCooldownBetweenActions();
     }
 
     public int getFuelCapacity(){
-        return IS_ENERGY ? inserterData.energyMaxCapacity : inserterData.fuelMaxCapacity;
+        return IS_ENERGY ? inserter.getEnergyCapacity() : inserter.getFuelCapacity();
     }
 
     public int getFuelConsumptionPerAction() {
-        return IS_ENERGY ? inserterData.energyConsumptionPerAction : inserterData.fuelConsumptionPerAction;
+        return IS_ENERGY ? inserter.getEnergyConsumption() : inserter.getFuelConsumption();
     }
 
     public int getPreferredFuelItemBufferCount() {
@@ -215,7 +225,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     @Nonnull @Override
     public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
         if (cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) return lazyItem.cast();
-        if (cap == CapabilityEnergy.ENERGY && IS_ENERGY) return lazyEnergy.cast();
+        if (cap == CapabilityEnergy.ENERGY && IS_ENERGY && side == Direction.DOWN) return lazyEnergy.cast();
         return super.getCapability(cap, side);
     }
 
@@ -280,13 +290,13 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
         if (!pLevel.isClientSide) {
             if (pEntity.IS_ENERGY) {
-                FactoryIORegistryNetworks.sendToClients(new FactoryIOSyncS2CEnergy(pEntity.getCurrentEnergy(), pPos));
+                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnergy(pEntity.getCurrentEnergy(), pPos));
             }
             else {
-                FactoryIORegistryNetworks.sendToClients(new FactoryIOSyncS2CFuel(pEntity.getCurrentFuelValue(), pPos));
+                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CFuel(pEntity.getCurrentFuelValue(), pPos));
             }
             if (pEntity.IS_FILTER) {
-                FactoryIORegistryNetworks.sendToClients(new FactoryIOSyncS2CWhitelistButton((pEntity.isWhitelist()? 1 : 0), 6, pPos));
+                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CWhitelistButton((pEntity.isWhitelist()? 1 : 0), 6, pPos));
             }
         }
 
@@ -634,6 +644,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     }
 
     // Interface GeckLib
+
     @Override
     public void registerControllers(AnimationData data) {
         data.addAnimationController(new AnimationController<FactoryIOInserterBlockEntity>
@@ -654,6 +665,6 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     @Override
     public AbstractContainerMenu createMenu(int pContainerId, Inventory pPlayerInventory, Player pPlayer) {
-        return new FactoryIOInserterContainer(pContainerId, inserterData, pPlayerInventory, level, getBlockPos());
+        return new FactoryIOInserterContainer(pContainerId, inserter, pPlayerInventory, level, getBlockPos());
     }
 }

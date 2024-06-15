@@ -2,7 +2,7 @@ package com.drimoz.factoryio.core.inserters;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.item.FactoryIOItemBlock;
-import com.drimoz.factoryio.core.model.InserterData;
+import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.shared.StringHelper;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.network.chat.Component;
@@ -34,25 +34,25 @@ public class FactoryIOInserterItem extends FactoryIOItemBlock implements IAnimat
 
     // Private properties
 
-    private final InserterData inserterData;
+    private final Inserter inserter;
 
     // Life cycle
 
-    public FactoryIOInserterItem(Block pBlock, Properties pProperties, InserterData inserterData) {
+    public FactoryIOInserterItem(Block pBlock, Properties pProperties, Inserter inserter) {
         super(pBlock, pProperties);
 
-        this.inserterData = inserterData;
+        this.inserter = inserter;
     }
 
-    public static FactoryIOInserterItem create(Block pBlock, Properties pProperties, InserterData inserterData) {
-        return new FactoryIOInserterItem(pBlock, pProperties, inserterData) {
+    public static FactoryIOInserterItem create(Properties pProperties, Inserter inserter) {
+        return new FactoryIOInserterItem(inserter.getBlock().get(), pProperties, inserter) {
             @Override
             public void initializeClient(Consumer<IItemRenderProperties> consumer) {
                 super.initializeClient(consumer);
 
                 consumer.accept(new IItemRenderProperties() {
 
-                    private final BlockEntityWithoutLevelRenderer renderer = new FactoryIOInserterItemRenderer(inserterData.identifier);
+                    private final BlockEntityWithoutLevelRenderer renderer = new FactoryIOInserterItemRenderer(inserter.getName());
 
                     @Override
                     public BlockEntityWithoutLevelRenderer getItemStackRenderer() {
@@ -89,37 +89,37 @@ public class FactoryIOInserterItem extends FactoryIOItemBlock implements IAnimat
         {
             tooltip.add(new TextComponent(
                     "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".grab").getString() +
-                            "§b" + inserterData.grabDistance + " §6Block(s)"
+                            "§b" + inserter.getGrabDistance() + " §6Block(s)"
             ));
 
             tooltip.add(new TextComponent(
                     "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".speed").getString() +
-                            "§b" + inserterData.preferredItemCountPerAction + " §6Item(s) §7/ §b" +
-                            Math.round(inserterData.timeBetweenActions / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK) + " §6Tick"
+                            "§b" + inserter.getPreferredItemCountPerAction() + " §6Item(s) §7/ §b" +
+                            Math.round(inserter.getCooldownBetweenActions() / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK) + " §6Tick"
             ));
 
-            if (inserterData.useEnergy) {
+            if (inserter.useEnergy()) {
                 tooltip.add(new TextComponent(
                         "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".consumption").getString() + "§b" +
-                                inserterData.energyConsumptionPerAction / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK + "§6 " +
+                                inserter.getEnergyConsumption() / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK + "§6 " +
                                 new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".energy_name").getString() + " §7/ §6Tick"
                 ));
 
                 tooltip.add(new TextComponent(
                         "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".capacity").getString() +
-                                "§b" + inserterData.energyMaxCapacity + "§6 " + new TranslatableComponent("tooltip." +
+                                "§b" + inserter.getEnergyCapacity() + "§6 " + new TranslatableComponent("tooltip." +
                                 FactoryIO.MOD_ID + ".energy_name").getString()
                 ));
             }
             else {
                 tooltip.add(new TextComponent(
                         "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".fuel_consumption").getString() + "§b" +
-                                inserterData.energyConsumptionPerAction / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK
+                                inserter.getFuelConsumption() / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK
                 ));
 
                 tooltip.add(new TextComponent(
                         "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".capacity").getString() +
-                                "§b" + inserterData.fuelMaxCapacity
+                                "§b" + inserter.getFuelCapacity()
                 ));
             }
         }
