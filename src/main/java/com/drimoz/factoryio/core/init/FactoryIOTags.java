@@ -17,6 +17,10 @@ public class FactoryIOTags {
         public static final TagKey<Item> INSERTER_FUEL = tag("inserter_fuel");
         public static final TagKey<Item> WRENCH_ITEM = forgeTag("tools/wrench");
 
+        public static final TagKey<Item> PLATES = forgeTag("plates");
+        public static final TagKey<Item> PLATES_IRON = forgeTag("plates/iron");
+        public static final TagKey<Item> PLATES_COPPER = forgeTag("plates/copper");
+        public static final TagKey<Item> PLATES_STEEL = forgeTag("plates/steel");
 
 
         // Inner work

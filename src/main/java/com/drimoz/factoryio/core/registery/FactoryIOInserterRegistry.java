@@ -165,7 +165,7 @@ public class FactoryIOInserterRegistry {
         inserters.forEach((i) -> {
             event.registerBlockEntityRenderer(
                     i.getBlockEntityType().get(),
-                    (pContext -> new FactoryIOInserterBlockEntityRenderer(pContext, i.getName())));
+                    (pContext -> new FactoryIOInserterBlockEntityRenderer(pContext, i)));
         });
     }
 

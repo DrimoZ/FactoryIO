@@ -1,6 +1,8 @@
 package com.drimoz.factoryio.shared;
 
+import com.drimoz.factoryio.FactoryIO;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.item.ItemStack;
 
 import java.nio.file.Path;
@@ -14,12 +16,12 @@ public class FactoryIOUtils {
         return Paths.get("config");
     }
 
-    public static List<Path> getModFilePath(String modid) {
-        throw new AssertionError();
+    public static TranslatableComponent tooltipComponent(String name) {
+        return new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + "." + name);
     }
 
-    public static Optional<CompoundTag> getTag(ItemStack stack) {
-        return Optional.ofNullable(stack.getTag()).filter(Predicate.not(CompoundTag::isEmpty));
+    public static String tooltipString(String name) {
+        return tooltipComponent(name).getString();
     }
 
 }

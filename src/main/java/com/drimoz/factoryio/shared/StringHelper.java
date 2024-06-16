@@ -23,7 +23,7 @@ public class StringHelper {
         String j = format.format(capacity);
         i = i.replaceAll("\u00A0", ",").replaceAll(" ", ",");
         j = j.replaceAll("\u00A0", ",").replaceAll(" ", ",");
-        text.add("§6" + i + " §f/ §c" + j + " §4" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".energy_name").getString());
+        text.add("§6" + i + " §f/ §c" + j + " §4" + FactoryIOUtils.tooltipString("energy_name"));
         return text;
     }
 
@@ -32,7 +32,7 @@ public class StringHelper {
         NumberFormat format = DecimalFormat.getNumberInstance();
         String i = format.format(energy);
         i = i.replaceAll("\u00A0", ",");
-        text.add("§6" + i + " §4" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".energy_name").getString());
+        text.add("§6" + i + " §4" + FactoryIOUtils.tooltipString("energy_name"));
         return text;
     }
 
@@ -52,9 +52,9 @@ public class StringHelper {
 
     public static Component getShiftInfoText()
     {
-        MutableComponent tooltip1 = new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".hold");
-        MutableComponent shift = new TextComponent("[Shift]");
-        MutableComponent tooltip2 = new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".for_details");
+        MutableComponent tooltip1 = FactoryIOUtils.tooltipComponent("hold");
+        MutableComponent shift = new TextComponent(" [Shift] ");
+        MutableComponent tooltip2 = FactoryIOUtils.tooltipComponent("for_details");
         tooltip1.withStyle(ChatFormatting.GRAY);
         shift.withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC);
         tooltip2.withStyle(ChatFormatting.GRAY);

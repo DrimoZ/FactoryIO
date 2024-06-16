@@ -627,8 +627,8 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         int actionMultiplier = 1;
         int duration = this.getDurationBetweenActions();
 
-        if (duration < this.MAX_ACTIONS_PER_TICK) {
-            actionMultiplier += this.MAX_ACTIONS_PER_TICK - duration;
+        if (duration < MAX_ACTIONS_PER_TICK) {
+            actionMultiplier += MAX_ACTIONS_PER_TICK - duration;
         }
 
         return actionMultiplier;

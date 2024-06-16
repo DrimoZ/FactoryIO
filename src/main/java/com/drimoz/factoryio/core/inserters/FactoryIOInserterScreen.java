@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.core.inserters;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.shared.FactoryIOUtils;
 import com.drimoz.factoryio.shared.gui.FactoryIOGuiButton;
 import com.drimoz.factoryio.shared.gui.FactoryIOGuiEnergy;
 import com.google.common.collect.Lists;
@@ -116,12 +117,21 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
         }
         if (getMenu().getBlockEntity().IS_FILTER) {
             List list = Lists.newArrayList();
+
             list.add(new TextComponent("" + (getMenu().getBlockEntity().isWhitelist() ?
-                    new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".whitelist").getString() :
-                    new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".blacklist").getString())));
-            list.add(new TextComponent("§7Click to switch into a §6" + (getMenu().getBlockEntity().isWhitelist() ?
-                    new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".blacklist").getString():
-                    new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".whitelist").getString())));
+                    FactoryIOUtils.tooltipString("whitelist") :
+                    FactoryIOUtils.tooltipString("blacklist"))));
+
+            list.add(
+                    new TextComponent(
+                            "§7" + FactoryIOUtils.tooltipString("whitelist_switch") + " §6" +
+                                    ( getMenu().getBlockEntity().isWhitelist() ?
+                                                    FactoryIOUtils.tooltipString("blacklist") :
+                                                    FactoryIOUtils.tooltipString("whitelist")
+                                    )
+                    )
+            );
+
             whitelistButton.renderComponentTooltip(this, pPoseStack, list, mouseX, mouseY, true);
         }
     }

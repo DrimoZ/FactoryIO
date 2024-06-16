@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.init.FactoryIOItems;
 import com.drimoz.factoryio.core.init.FactoryIOTags;
 import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
 import net.minecraft.core.Registry;
@@ -19,23 +20,23 @@ public class FactoryIOLangGenerator extends LanguageProvider {
 
     @Override
     protected void addTranslations() {
-        add("itemGroup.modtab", "Factory'I/O");
-        add("tooltip.factory_io.energy_name", "FE");
-        add("tooltip.factory_io.gui_hold_shift", "Hold ");
-        add("tooltip.factory_io.gui_shift_more_options", " for more options");
-        add("tooltip.factory_io.hold", "Hold ");
-        add("tooltip.factory_io.for_details", " for details.");
-        add("tooltip.factory_io.speed", "Speed : ");
-        add("tooltip.factory_io.consumption", "Consumption : ");
-        add("tooltip.factory_io.fuel_consumption", "Fuel Consumption : ");
-        add("tooltip.factory_io.capacity", "Capacity : ");
-        add("tooltip.factory_io.grab", "Grab Items from ");
-        add("tooltip.factory_io.whitelist", "Whitelist");
-        add("tooltip.factory_io.blacklist", "Blacklist");
-
         FactoryIOInserterRegistry.getInstance().getInserters().forEach((inserter) -> {
             addBlock(inserter.getBlock(), inserter.getDisplayName().getString());
-            //addItem(inserter.getItem(), inserter.getDisplayName().getString());
         });
+
+        FactoryIOItems.ENTRIES.keySet().forEach((itemRegistryObject) -> {
+            String itemName = itemRegistryObject.getId().getPath();
+            String translationKey = "item." + FactoryIO.MOD_ID + "." + itemName;
+            add(translationKey, formatDisplayName(itemName));
+        });
+    }
+
+    private String formatDisplayName(String name) {
+        String[] parts = name.split("_");
+        StringBuilder displayName = new StringBuilder();
+        for (String part : parts) {
+            displayName.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1)).append(" ");
+        }
+        return displayName.toString().trim();
     }
 }
