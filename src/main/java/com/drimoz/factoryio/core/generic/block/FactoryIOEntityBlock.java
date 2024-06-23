@@ -71,7 +71,7 @@ public abstract class FactoryIOEntityBlock extends BaseEntityBlock {
     private void checkPoweredState(Level pLevel, BlockPos pPos, BlockState pState) {
         boolean flag = !pLevel.hasNeighborSignal(pPos);
         if (flag != pState.getValue(ENABLED)) {
-            pLevel.setBlock(pPos, pState.setValue(ENABLED, Boolean.valueOf(flag)), 4);
+            pLevel.setBlock(pPos, pState.setValue(ENABLED, Boolean.valueOf(flag)), 5);
         }
     }
 

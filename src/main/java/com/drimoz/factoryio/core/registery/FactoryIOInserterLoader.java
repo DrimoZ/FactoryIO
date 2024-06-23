@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.core.registery;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.configs.FactoryIOCommonConfigs;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.google.gson.*;
 import net.minecraft.resources.ResourceLocation;
@@ -22,7 +23,10 @@ public class FactoryIOInserterLoader {
     // Interface (Global)
 
     public static void setup() {
+        FactoryIOInserterRegistry.getInstance().setAllowRegistration(true);
         setupInsertersList();
+        createDefaultInserters();
+        FactoryIOInserterRegistry.getInstance().setAllowRegistration(false);
     }
 
     private static void setupInsertersList() {
@@ -36,7 +40,7 @@ public class FactoryIOInserterLoader {
         if (files == null)
             return;
 
-        FactoryIOInserterRegistry.getInstance().setAllowRegistration(true);
+
 
         for (var file : files) {
             JsonObject json;
@@ -63,7 +67,89 @@ public class FactoryIOInserterLoader {
             if (inserter != null)
                 FactoryIOInserterRegistry.getInstance().registerInserter(inserter);
         }
+    }
 
-        FactoryIOInserterRegistry.getInstance().setAllowRegistration(false);
+    private static void createDefaultInserters() {
+        if (FactoryIOCommonConfigs.SHOULD_GEN_BURNER_INSERTER.get()) {
+            registerInserter(
+                    new Inserter(
+                            new ResourceLocation(FactoryIO.MOD_ID, "burner_inserter"), true,
+                            1, 400, 1,
+                            15000, 300
+                    )
+            );
+        }
+
+        if (FactoryIOCommonConfigs.SHOULD_GEN_INSERTER.get()) {
+            registerInserter(
+                    new Inserter(
+                            new ResourceLocation(FactoryIO.MOD_ID, "inserter"), true,
+                            1, 400, 1,
+                            false,
+                            25000, 5000, 300
+                    )
+            );
+        }
+
+        if (FactoryIOCommonConfigs.SHOULD_GEN_LONG_HANDED_INSERTER.get()) {
+            registerInserter(
+                    new Inserter(
+                            new ResourceLocation(FactoryIO.MOD_ID, "long_handed_inserter"), true,
+                            2, 400, 1,
+                            false,
+                            25000, 5000, 400
+                    )
+            );
+        }
+
+        if (FactoryIOCommonConfigs.SHOULD_GEN_FILTER_INSERTER.get()) {
+            registerInserter(
+                    new Inserter(
+                            new ResourceLocation(FactoryIO.MOD_ID, "filter_inserter"), true,
+                            1, 400, 1,
+                            true,
+                            25000, 5000, 400
+                    )
+            );
+        }
+
+        if (FactoryIOCommonConfigs.SHOULD_GEN_FAST_INSERTER.get()) {
+            registerInserter(
+                    new Inserter(
+                            new ResourceLocation(FactoryIO.MOD_ID, "fast_inserter"), true,
+                            1, 250, 1,
+                            false,
+                            25000, 5000, 400
+                    )
+            );
+        }
+
+        if (FactoryIOCommonConfigs.SHOULD_GEN_STACK_INSERTER.get()) {
+            registerInserter(
+                    new Inserter(
+                            new ResourceLocation(FactoryIO.MOD_ID, "stack_inserter"), true,
+                            1, 400, 3,
+                            false,
+                            25000, 5000, 500
+                    )
+            );
+        }
+
+        if (FactoryIOCommonConfigs.SHOULD_GEN_STACK_FILTER_INSERTER.get()) {
+            registerInserter(
+                    new Inserter(
+                            new ResourceLocation(FactoryIO.MOD_ID, "stack_filter_inserter"), true,
+                            1, 400, 3,
+                            true,
+                            25000, 5000, 600
+                    )
+            );
+        }
+    }
+
+    private static void registerInserter(Inserter inserter) {
+        FactoryIOInserterRegistry.getInstance().registerInserter(
+                inserter
+        );
     }
 }

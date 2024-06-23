@@ -1,13 +1,12 @@
 package com.drimoz.factoryio.core.inserters;
 
-import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.shared.FactoryIOUtils;
 import com.drimoz.factoryio.core.generic.item.FactoryIOItemBlock;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.shared.StringHelper;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
@@ -52,7 +51,7 @@ public class FactoryIOInserterItem extends FactoryIOItemBlock implements IAnimat
 
                 consumer.accept(new IItemRenderProperties() {
 
-                    private final BlockEntityWithoutLevelRenderer renderer = new FactoryIOInserterItemRenderer(inserter.getName());
+                    private final BlockEntityWithoutLevelRenderer renderer = new FactoryIOInserterItemRenderer(inserter);
 
                     @Override
                     public BlockEntityWithoutLevelRenderer getItemStackRenderer() {
@@ -88,38 +87,36 @@ public class FactoryIOInserterItem extends FactoryIOItemBlock implements IAnimat
         if (FactoryIOInserterScreen.isShiftKeyDown())
         {
             tooltip.add(new TextComponent(
-                    "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".grab").getString() +
-                            "§b" + inserter.getGrabDistance() + " §6Block(s)"
+                    "§7" + FactoryIOUtils.tooltipString("grab") +
+                            " §b" + inserter.getGrabDistance() + " §6"  + FactoryIOUtils.tooltipString("blocks")
             ));
 
             tooltip.add(new TextComponent(
-                    "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".speed").getString() +
-                            "§b" + inserter.getPreferredItemCountPerAction() + " §6Item(s) §7/ §b" +
-                            Math.round(inserter.getCooldownBetweenActions() / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK) + " §6Tick"
+                    "§7" + FactoryIOUtils.tooltipString("speed") + " §b" + inserter.getPreferredItemCountPerAction() + " §6" +
+                            FactoryIOUtils.tooltipString("items") + " §7/ §b" +
+                            Math.round(inserter.getCooldownBetweenActions() / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK) +
+                            " §6" + FactoryIOUtils.tooltipString("tick")
             ));
 
             if (inserter.useEnergy()) {
                 tooltip.add(new TextComponent(
-                        "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".consumption").getString() + "§b" +
+                        "§7" + FactoryIOUtils.tooltipString("consumption") + " §b" +
                                 inserter.getEnergyConsumption() / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK + "§6 " +
-                                new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".energy_name").getString() + " §7/ §6Tick"
+                                FactoryIOUtils.tooltipString("energy_name") + " §7/ §6" + FactoryIOUtils.tooltipString("tick")
                 ));
 
                 tooltip.add(new TextComponent(
-                        "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".capacity").getString() +
-                                "§b" + inserter.getEnergyCapacity() + "§6 " + new TranslatableComponent("tooltip." +
-                                FactoryIO.MOD_ID + ".energy_name").getString()
+                        "§7" + FactoryIOUtils.tooltipString("capacity") + " §b" + inserter.getEnergyCapacity() + " §6" + FactoryIOUtils.tooltipString("energy_name")
                 ));
             }
             else {
                 tooltip.add(new TextComponent(
-                        "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".fuel_consumption").getString() + "§b" +
+                        "§7" + FactoryIOUtils.tooltipString("fuel_consumption") + " §b" +
                                 inserter.getFuelConsumption() / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK
                 ));
 
                 tooltip.add(new TextComponent(
-                        "§7" + new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".capacity").getString() +
-                                "§b" + inserter.getFuelCapacity()
+                        "§7" + FactoryIOUtils.tooltipString("capacity") + " §b" + inserter.getFuelCapacity()
                 ));
             }
         }

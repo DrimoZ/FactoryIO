@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.init.FactoryIOItems;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
 import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
 import net.minecraft.core.Direction;
@@ -25,7 +26,12 @@ public class FactoryIOItemModelGenerator extends ItemModelProvider {
             FactoryIOInserterEntityBlock block = inserter.getBlock().get();
             String blockName = Objects.requireNonNull(block.getRegistryName()).getPath();
 
-            withExistingParent("item/inserters/" + blockName, modLoc("block/inserters/" + blockName));
+            withExistingParent("item/" + blockName, modLoc("block/" + blockName));
+        });
+
+        FactoryIOItems.ENTRIES.keySet().forEach((registry) -> {
+            String itemName = registry.getId().getPath();
+            singleTexture(itemName, mcLoc("item/generated"), "layer0", modLoc("item/" + itemName));
         });
     }
 }

@@ -2,6 +2,7 @@ package com.drimoz.factoryio.core.inserters;
 
 import com.drimoz.factoryio.core.generic.block_entity.FactoryIOBlockEntityMenuProvided;
 import com.drimoz.factoryio.core.generic.container.energy.FactoryIOEnergyContainer;
+import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CEnabledState;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CEnergy;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CFuel;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CWhitelistButton;
@@ -12,6 +13,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.Containers;
 import net.minecraft.world.SimpleContainer;
@@ -289,6 +291,15 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     public static void tick(Level pLevel, BlockPos pPos, BlockState pState, final FactoryIOInserterBlockEntity pEntity) {
 
         if (!pLevel.isClientSide) {
+            if (pState.getValue(FactoryIOInserterEntityBlock.ENABLED)) {
+                BlockState state = pState.setValue(FactoryIOInserterEntityBlock.ENABLED, true);
+                pLevel.setBlock(pPos, state, 3);
+            }
+            else {
+                BlockState state = pState.setValue(FactoryIOInserterEntityBlock.ENABLED, false);
+                pLevel.setBlock(pPos, state, 3);
+            }
+
             if (pEntity.IS_ENERGY) {
                 FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnergy(pEntity.getCurrentEnergy(), pPos));
             }
@@ -627,8 +638,8 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         int actionMultiplier = 1;
         int duration = this.getDurationBetweenActions();
 
-        if (duration < this.MAX_ACTIONS_PER_TICK) {
-            actionMultiplier += this.MAX_ACTIONS_PER_TICK - duration;
+        if (duration < MAX_ACTIONS_PER_TICK) {
+            actionMultiplier += MAX_ACTIONS_PER_TICK - duration;
         }
 
         return actionMultiplier;

@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.inserters;
 
+import com.drimoz.factoryio.core.model.Inserter;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -15,8 +16,8 @@ import javax.annotation.Nullable;
 @OnlyIn(Dist.CLIENT)
 public class FactoryIOInserterBlockEntityRenderer extends GeoBlockRenderer<FactoryIOInserterBlockEntity> {
 
-    public FactoryIOInserterBlockEntityRenderer(BlockEntityRendererProvider.Context rendererDispatcherIn, String identifier) {
-        super(rendererDispatcherIn, new FactoryIOInserterBlockEntityModel(identifier));
+    public FactoryIOInserterBlockEntityRenderer(BlockEntityRendererProvider.Context rendererDispatcherIn, Inserter inserter) {
+        super(rendererDispatcherIn, new FactoryIOInserterBlockEntityModel(inserter));
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.drimoz.factoryio.core.ressourcepack;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.datagen.generator.*;
+import com.drimoz.factoryio.core.registery.FactoryIOTranslations;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.DetectedVersion;
@@ -36,7 +37,10 @@ public class FactoryIOPackGeneratorManager {
         ExistingFileHelper efh = new ExistingFileHelper(ImmutableList.of(), ImmutableSet.of(), false, null, null);
 
         generator.addProvider(new FactoryIOLootGenerator(generator));
-        generator.addProvider(new FactoryIOLangGenerator(generator, FactoryIO.MOD_ID, "en_us"));
+
+        FactoryIOTranslations.getINSTANCE().getTranslationList().forEach(translationCode -> {
+            generator.addProvider(new FactoryIOLangGenerator(generator, FactoryIO.MOD_ID, translationCode));
+        });
 
         if (FMLEnvironment.dist != Dist.DEDICATED_SERVER) {
             generator.addProvider(new FactoryIOBlockModelGenerator(generator, FactoryIO.MOD_ID, efh));

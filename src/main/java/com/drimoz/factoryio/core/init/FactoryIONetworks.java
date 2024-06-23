@@ -26,6 +26,7 @@ public class FactoryIONetworks {
                 .simpleChannel();
 
         INSTANCE = net;
+
         net.messageBuilder(FactoryIOSyncS2CEnergy.class, id(), NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(FactoryIOSyncS2CEnergy::new)
                 .encoder(FactoryIOSyncS2CEnergy::toBytes)
@@ -54,6 +55,12 @@ public class FactoryIONetworks {
                 .decoder(FactoryIOSyncS2CItemStack::new)
                 .encoder(FactoryIOSyncS2CItemStack::toBytes)
                 .consumer(FactoryIOSyncS2CItemStack::handle)
+                .add();
+
+        net.messageBuilder(FactoryIOSyncS2CEnabledState.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(FactoryIOSyncS2CEnabledState::new)
+                .encoder(FactoryIOSyncS2CEnabledState::toBytes)
+                .consumer(FactoryIOSyncS2CEnabledState::handle)
                 .add();
     }
 

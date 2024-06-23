@@ -1,0 +1,23 @@
+{
+  "itemGroup.creativeTab": "Factory'I/O",
+
+  "tooltip.factory_io.energy_name": "FE",
+  "tooltip.factory_io.tick": "Tick",
+
+  "tooltip.factory_io.blacklist": "Blacklist",
+  "tooltip.factory_io.whitelist": "Whitelist",
+  "tooltip.factory_io.whitelist_switch": "Click to switch into a",
+
+  "tooltip.factory_io.items": "Item(s)",
+  "tooltip.factory_io.blocks": "Block(s)",
+
+  "tooltip.factory_io.capacity": "Capacity :",
+  "tooltip.factory_io.consumption": "Consumption :",
+  "tooltip.factory_io.fuel_consumption": "Fuel Consumption :",
+  "tooltip.factory_io.speed": "Speed : ",
+  "tooltip.factory_io.grab": "Grab Items from",
+
+  "tooltip.factory_io.gui_shift_more_options": "for more options",
+  "tooltip.factory_io.for_details": "for details.",
+  "tooltip.factory_io.hold": "Hold"
+}
