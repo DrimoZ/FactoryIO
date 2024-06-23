@@ -292,12 +292,10 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
         if (!pLevel.isClientSide) {
             if (pState.getValue(FactoryIOInserterEntityBlock.ENABLED)) {
-                BlockState state = pState.setValue(FactoryIOInserterEntityBlock.ENABLED, true);
-                pLevel.setBlock(pPos, state, 3);
+                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnabledState(true, pPos));
             }
             else {
-                BlockState state = pState.setValue(FactoryIOInserterEntityBlock.ENABLED, false);
-                pLevel.setBlock(pPos, state, 3);
+                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnabledState(false, pPos));
             }
 
             if (pEntity.IS_ENERGY) {
@@ -313,7 +311,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
         if (!pEntity.isEnabled()) return;
 
-        pEntity.current_cooldown += pEntity.MAX_ACTIONS_PER_TICK;
+        pEntity.current_cooldown += MAX_ACTIONS_PER_TICK;
 
         if (pEntity.current_cooldown >= pEntity.getDurationBetweenActions()) {
             if ((pEntity.IS_ENERGY && pEntity.getCurrentEnergy() >= pEntity.getFuelConsumptionPerAction()) ||

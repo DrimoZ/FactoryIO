@@ -5,6 +5,7 @@ import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -32,9 +33,9 @@ public class FactoryIOSyncS2CEnabledState {
         NetworkEvent.Context context = supplier.get();
         context.enqueueWork(() -> {
             if(Minecraft.getInstance().level.getBlockEntity(pos) instanceof FactoryIOInserterBlockEntity blockEntity) {
-                blockEntity.getBlockState().setValue(FactoryIOInserterEntityBlock.ENABLED, set);
+                BlockState pState = blockEntity.getBlockState().setValue(FactoryIOInserterEntityBlock.ENABLED, set);
+                Minecraft.getInstance().level.setBlock(pos, pState, 3);
                 blockEntity.setChanged();
-
             }
         });
         return true;
