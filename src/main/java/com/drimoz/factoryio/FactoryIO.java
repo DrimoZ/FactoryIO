@@ -14,9 +14,11 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.PackSource;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddPackFindersEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -49,9 +51,8 @@ public class FactoryIO
         eventBus.register(new FactoryIOMenuTypes());
         eventBus.register(new FactoryIODataGenerators());
 
-
         FactoryIONetworks.init();
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, FactoryIOCommonConfigs.SPEC, "factory_io-common.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, FactoryIOCommonConfigs.SPEC, "factory_io/factory_io-common.toml");
 
         eventBus.addListener(this::onCommonSetup);
         eventBus.addListener(this::onClientSetup);
@@ -61,6 +62,7 @@ public class FactoryIO
 
 
         FactoryIOResourcePackHandler.init();
+
 
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onRegisterResourcePacks);
 

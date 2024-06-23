@@ -2,8 +2,12 @@ package com.drimoz.factoryio.core.inserters;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.model.Inserter;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import software.bernie.geckolib3.model.AnimatedGeoModel;
+
 
 public class FactoryIOInserterBlockEntityModel extends AnimatedGeoModel<FactoryIOInserterBlockEntity> {
 
@@ -25,7 +29,15 @@ public class FactoryIOInserterBlockEntityModel extends AnimatedGeoModel<FactoryI
 
     @Override
     public ResourceLocation getTextureLocation(FactoryIOInserterBlockEntity object) {
-        return new ResourceLocation(FactoryIO.MOD_ID, "textures/block/inserters/" + inserter.getName() + ".png");
+        Level level = object.getLevel();
+        BlockPos pos = object.getBlockPos();
+        BlockState state = level.getBlockState(pos);
+
+        if (state.getValue(FactoryIOInserterEntityBlock.ENABLED)) {
+            return new ResourceLocation(FactoryIO.MOD_ID, "textures/block/inserters/" + inserter.getName() + ".png");
+        } else {
+            return new ResourceLocation(FactoryIO.MOD_ID, "textures/block/inserters/" + inserter.getName() + "_disabled.png");
+        }
     }
 
     @Override

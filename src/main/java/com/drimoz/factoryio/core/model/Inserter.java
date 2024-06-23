@@ -6,6 +6,7 @@ import com.drimoz.factoryio.core.inserters.FactoryIOInserterContainer;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterItem;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -17,7 +18,7 @@ public class Inserter {
     // Private Properties
 
     private final ResourceLocation id;
-    private Component displayName;
+    private final Component displayNameComponent;
     private boolean filterable;
     private boolean useEnergy;
     private boolean affectedByRedstone;
@@ -37,6 +38,7 @@ public class Inserter {
     private Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> blockEntityTypeSupplier;
     private Supplier<MenuType<FactoryIOInserterContainer>> menuTypeSupplier;
 
+    private Translation translation = new Translation();
 
     // Lifecycle
 
@@ -96,7 +98,8 @@ public class Inserter {
         setCooldownBetweenActions(cooldownBetweenActions);
         setPreferredItemCountPerAction(preferredItemCountPerAction);
 
-        setupTexture();
+        this.displayNameComponent = new TranslatableComponent(String.format("%s.%s", FactoryIO.MOD_ID, this.getName()));
+        this.texture = new ResourceLocation(FactoryIO.MOD_ID, "block/inserters/" + getName());
 
     }
 
@@ -118,13 +121,8 @@ public class Inserter {
         return String.format("%s_%s", this.getName(), suffix);
     }
 
-    public Component getDisplayName() {
-        return (Component)(this.displayName != null ? this.displayName : Component.nullToEmpty(String.format("crop.%s.%s", this.getModId(), this.getName())));
-    }
-
-    public Inserter setDisplayName(Component name) {
-        this.displayName = name;
-        return this;
+    public Component getDisplayNameComponent() {
+        return this.displayNameComponent;
     }
 
     public boolean isFilterable() {
@@ -256,18 +254,15 @@ public class Inserter {
         this.menuTypeSupplier = menuTypeSupplier;
     }
 
-    // Inner Work
-
-    private void setupTexture() {
-        this.texture = new ResourceLocation(FactoryIO.MOD_ID, "block/inserters/" + getName());
+    public Translation getTranslation() {
+        return translation;
     }
-
 
     @Override
     public String toString() {
         return "Inserter{" +
                 "id=" + id +
-                ", displayName=" + displayName +
+                ", displayName=" + displayNameComponent +
                 ", filterable=" + filterable +
                 ", useEnergy=" + useEnergy +
                 ", affectedByRedstone=" + affectedByRedstone +

@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.registery;
 
+import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.JsonObject;
@@ -39,9 +40,14 @@ public class FactoryIOInserterCreator {
             );
         }
 
-        if (json.has("name")) {
-            var name = GsonHelper.getAsString(json, "name");
-            inserter.setDisplayName(new TextComponent(name));
+        if (json.has("translations")) {
+            var translations = GsonHelper.getAsJsonObject(json, "translations");
+            FactoryIO.LOGGER.error("translations");
+            FactoryIO.LOGGER.error(translations.toString());
+
+            for (var t: translations.entrySet()) {
+                inserter.getTranslation().addTranslation(t.getKey(), t.getValue().getAsString());
+            }
         }
 
         if (json.has("texture")) {

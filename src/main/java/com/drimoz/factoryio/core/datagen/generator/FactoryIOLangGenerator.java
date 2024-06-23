@@ -2,26 +2,33 @@ package com.drimoz.factoryio.core.datagen.generator;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.init.FactoryIOItems;
-import com.drimoz.factoryio.core.init.FactoryIOTags;
+import com.drimoz.factoryio.core.model.TranslationCode;
 import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
-import net.minecraft.core.Registry;
 import net.minecraft.data.DataGenerator;
-import net.minecraft.data.tags.TagsProvider;
-import net.minecraft.world.item.Item;
-import net.minecraftforge.common.data.ExistingFileHelper;
 import net.minecraftforge.common.data.LanguageProvider;
-import org.jetbrains.annotations.Nullable;
 
 
 public class FactoryIOLangGenerator extends LanguageProvider {
-    public FactoryIOLangGenerator(DataGenerator gen, String modid, String locale) {
-        super(gen, modid, locale);
+
+    // Private properties
+
+    private final TranslationCode translationCode;
+
+    public FactoryIOLangGenerator(DataGenerator gen, String modid, TranslationCode code) {
+        super(gen, modid, code.getFullCode());
+
+        this.translationCode = code;
     }
 
     @Override
     protected void addTranslations() {
         FactoryIOInserterRegistry.getInstance().getInserters().forEach((inserter) -> {
-            addBlock(inserter.getBlock(), inserter.getDisplayName().getString());
+            String translation = inserter.getTranslation().getTranslation(translationCode);
+
+            addBlock(
+                    inserter.getBlock(),
+                    translation == null ? formatDisplayName(inserter.getName()) : translation
+            );
         });
 
         FactoryIOItems.ENTRIES.keySet().forEach((itemRegistryObject) -> {
