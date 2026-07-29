@@ -56,13 +56,13 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     // Public constants
 
-    public static final int BUFFER_SLOT = 0;
-    public static final int FUEL_SLOT = 1;
-    public static final int[] FILTER_SLOTS = new int[]{2, 3, 4, 5, 6};
+    public static final int BUFFER_SLOT = InserterSlotLayout.BUFFER;
 
-    public final int INVENTORY_SIZE;
     public final boolean IS_ENERGY;
     public final boolean IS_FILTER;
+
+    /** Source unique de vérité pour les index de slots (cf. DT-03). */
+    public final InserterSlotLayout LAYOUT;
 
     // Duration : 0 = 10a / tick || 10 = 1a / tick || 200 = 1a / 20tick (1sec) ||
     public static final int MAX_ACTIONS_PER_TICK = 10;
@@ -108,6 +108,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
         this.IS_ENERGY = inserter.useEnergy();
         this.IS_FILTER = inserter.isFilterable();
+        this.LAYOUT = InserterSlotLayout.of(inserter);
 
         if (IS_ENERGY) {
             this.energyStorage = new FactoryIOEnergyContainer(inserter.getEnergyCapacity(), inserter.getEnergyTransferRate()) {
@@ -133,9 +134,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             this.lazyEnergy = LazyOptional.of(() -> this.energyStorage);
         }
 
-        this.INVENTORY_SIZE = 1 + (IS_ENERGY ? 0 : 1) + (IS_FILTER ? FILTER_SLOTS.length : 0);
-
-        this.itemStorage = new ItemStackHandler(INVENTORY_SIZE) {
+        this.itemStorage = new ItemStackHandler(LAYOUT.size()) {
             @Override
             protected void onContentsChanged(int slot) {
                 setChanged();
@@ -144,7 +143,8 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             @NotNull
             @Override
             public ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
-                if (IS_ENERGY || slot != FUEL_SLOT) return stack;
+                // Depuis l'extérieur, seul le slot de carburant est accessible.
+                if (slot != LAYOUT.fuel()) return stack;
                 if (ForgeHooks.getBurnTime(stack, null) <= 0) return stack;
                 if (!stack.is(FactoryIOTags.Items.INSERTER_FUEL)) return stack;
 
@@ -154,7 +154,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             @NotNull
             @Override
             public ItemStack extractItem(int slot, int amount, boolean simulate) {
-                if (IS_ENERGY || slot != FUEL_SLOT) return ItemStack.EMPTY;
+                if (slot != LAYOUT.fuel()) return ItemStack.EMPTY;
 
                 return super.extractItem(slot, amount, simulate);
             }
@@ -199,10 +199,14 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     // Interface (ItemStorage)
 
+    /** Lâche le contenu réel au sol. Les filtres sont des items fantômes : ils ne tombent pas. */
     public void drops() {
         SimpleContainer inventory = new SimpleContainer(itemStorage.getSlots());
-        for (int i = 0; i < (this.IS_FILTER ? itemStorage.getSlots() - 5: itemStorage.getSlots()); i++) {
-            inventory.setItem(i, itemStorage.getStackInSlot(i));
+
+        for (int slot = 0; slot < itemStorage.getSlots(); slot++) {
+            if (!LAYOUT.isDroppable(slot)) continue;
+
+            inventory.setItem(slot, itemStorage.getStackInSlot(slot));
         }
 
         Containers.dropContents(this.level, this.worldPosition, inventory);
@@ -229,7 +233,10 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     @Nonnull @Override
     public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
         if (cap == ForgeCapabilities.ITEM_HANDLER) return lazyItem.cast();
-        if (cap == ForgeCapabilities.ENERGY && IS_ENERGY && side == Direction.DOWN) return lazyEnergy.cast();
+        // Toutes les faces, et surtout side == null : cette requête interne est celle
+        // qu'utilisent The One Probe, les compteurs et beaucoup de mods d'énergie.
+        // La restriction à DOWN les rendait tous aveugles (cf. BUG-021).
+        if (cap == ForgeCapabilities.ENERGY && IS_ENERGY) return lazyEnergy.cast();
         return super.getCapability(cap, side);
     }
 
@@ -401,7 +408,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     private boolean needsFuel() {
         if (IS_ENERGY) return false;
 
-        return this.itemStorage.getStackInSlot(FUEL_SLOT).getCount() < this.getPreferredFuelItemBufferCount();
+        return this.itemStorage.getStackInSlot(LAYOUT.fuel()).getCount() < this.getPreferredFuelItemBufferCount();
     }
 
     /** Aspire du carburant depuis l'inventaire situé à l'arrière. */
@@ -411,14 +418,14 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         IItemHandler source = neighbourHandler(pEntity, pLevel, facing.getOpposite(), pDistance, facing);
         if (source == null) return false;
 
-        return grabInto(pEntity, source, FUEL_SLOT, stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL));
+        return grabInto(pEntity, source, pEntity.LAYOUT.fuel(), stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL));
     }
 
     /** Convertit un item du slot de carburant en réserve de combustion. */
     private void burnFuel() {
         if (IS_ENERGY) return;
 
-        ItemStack stack = this.itemStorage.getStackInSlot(FUEL_SLOT);
+        ItemStack stack = this.itemStorage.getStackInSlot(LAYOUT.fuel());
         if (stack.isEmpty()) return;
 
         int burnTime = ForgeHooks.getBurnTime(stack, null);
@@ -432,9 +439,9 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         stack.shrink(1);
 
         if (stack.isEmpty() && !remainder.isEmpty()) {
-            this.itemStorage.setStackInSlot(FUEL_SLOT, remainder);
+            this.itemStorage.setStackInSlot(LAYOUT.fuel(), remainder);
         } else {
-            this.itemStorage.setStackInSlot(FUEL_SLOT, stack);
+            this.itemStorage.setStackInSlot(LAYOUT.fuel(), stack);
             this.dropAtBlock(remainder);
         }
     }
@@ -544,30 +551,37 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         return entity.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING);
     }
 
-    private static boolean checkItemStackNotPresentInWhitelist(FactoryIOInserterBlockEntity pEntity, ItemStack stack, boolean isWhitelist) {
-        if (!pEntity.IS_FILTER) return true;
-        else if (pEntity.itemStorage.getStackInSlot(pEntity.itemStorage.getSlots() - 5).isEmpty() &&
-                pEntity.itemStorage.getStackInSlot(pEntity.itemStorage.getSlots() - 4).isEmpty() &&
-                pEntity.itemStorage.getStackInSlot(pEntity.itemStorage.getSlots() - 3).isEmpty() &&
-                pEntity.itemStorage.getStackInSlot(pEntity.itemStorage.getSlots() - 2).isEmpty() &&
-                pEntity.itemStorage.getStackInSlot(pEntity.itemStorage.getSlots() - 1).isEmpty()
-        ) return true;
+    /**
+     * @return {@code true} si la pile est acceptée par les filtres
+     *
+     * <p>Un inserter non filtrant, ou dont tous les slots de filtre sont vides, accepte
+     * tout. Sinon la présence dans la liste décide, selon le mode whitelist/blacklist.
+     *
+     * <p>La comparaison porte sur le <b>type</b> d'item et non sur son NBT : un filtre
+     * posé avec une pioche neuve doit aussi laisser passer une pioche usée
+     * (cf. DT-02).
+     */
+    private static boolean matchesFilters(FactoryIOInserterBlockEntity pEntity, ItemStack stack, boolean isWhitelist) {
+        InserterSlotLayout layout = pEntity.LAYOUT;
+        if (!layout.hasFilters()) return true;
 
-        for(int i = pEntity.itemStorage.getSlots() - 5 ; i < pEntity.itemStorage.getSlots(); i++) {
-            if (pEntity.itemStorage.getStackInSlot(i).isEmpty())
-                continue;
-            if (!pEntity.itemStorage.getStackInSlot(i).isEmpty() && ItemStack.isSameItemSameTags(pEntity.itemStorage.getStackInSlot(i), stack)) {
-                if (isWhitelist) {
-                    return true;
-                }
-                else {
-                    return false;
-                }
+        boolean anyFilterSet = false;
+        boolean listed = false;
+
+        for (int i = 0; i < layout.filterCount(); i++) {
+            ItemStack filter = pEntity.itemStorage.getStackInSlot(layout.filter(i));
+            if (filter.isEmpty()) continue;
+
+            anyFilterSet = true;
+            if (ItemStack.isSameItem(filter, stack)) {
+                listed = true;
+                break;
             }
         }
 
-        if(isWhitelist) return false;
-        else return true;
+        if (!anyFilterSet) return true;
+
+        return isWhitelist == listed;
     }
 
     private ItemStack insertItemInternal(int slot, @Nonnull ItemStack itemStack, boolean simulate) {
@@ -744,13 +758,13 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         //    La condition portait auparavant sur un slot NON vide, ce qui empêchait tout
         //    redémarrage après panne sèche (cf. BUG-012).
         if (pEntity.needsFuel()
-                && grabInto(pEntity, source, FUEL_SLOT, stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL))) {
+                && grabInto(pEntity, source, pEntity.LAYOUT.fuel(), stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL))) {
             return true;
         }
 
         // 2. Buffer de transport, uniquement s'il est libre.
         if (pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()
-                && grabInto(pEntity, source, BUFFER_SLOT, stack -> checkItemStackNotPresentInWhitelist(pEntity, stack, isWhitelist))) {
+                && grabInto(pEntity, source, BUFFER_SLOT, stack -> matchesFilters(pEntity, stack, isWhitelist))) {
             return true;
         }
 

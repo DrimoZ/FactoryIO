@@ -23,8 +23,9 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
     // Private properties
 
     private final int TE_INVENTORY_SLOT_COUNT;
-    private static final int FILTER_SLOT_COUNT = 5;
     private static final int TE_INVENTORY_FIRST_SLOT_INDEX = VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT;
+
+    private final InserterSlotLayout LAYOUT;
 
     private final FactoryIOInserterBlockEntity BLOCK_ENTITY;
 
@@ -98,7 +99,8 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
             throw new IllegalStateException("Aucun inserter en " + pPos + " pour ouvrir le menu");
         }
 
-        this.TE_INVENTORY_SLOT_COUNT = 1 + (BLOCK_ENTITY.IS_ENERGY ? 0 : 1) + (BLOCK_ENTITY.IS_FILTER ? FactoryIOInserterBlockEntity.FILTER_SLOTS.length : 0);
+        this.LAYOUT = BLOCK_ENTITY.LAYOUT;
+        this.TE_INVENTORY_SLOT_COUNT = LAYOUT.size();
 
         // checkContainerSize validait l'inventaire du JOUEUR contre le nombre de slots de
         // la machine : l'assertion passait toujours et ne testait rien (cf. BUG-034).
@@ -109,16 +111,14 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
         this.BLOCK_ENTITY.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(handler -> {
             this.addSlot(new SlotInserterBuffer(handler, FactoryIOInserterBlockEntity.BUFFER_SLOT, 124, 45));
 
-            if (!BLOCK_ENTITY.IS_ENERGY) {
-                this.addSlot(new SlotInserterFuel(this.BLOCK_ENTITY, handler, FactoryIOInserterBlockEntity.FUEL_SLOT, 80, 49));
+            if (LAYOUT.hasFuelSlot()) {
+                this.addSlot(new SlotInserterFuel(this.BLOCK_ENTITY, handler, LAYOUT.fuel(), 80, 49));
             }
 
-            if (BLOCK_ENTITY.IS_FILTER) {
-                this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[0] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[0], 8, 49));
-                this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[1] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[1], 26, 49));
-                this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[2] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[2], 44, 49));
-                this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[3] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[3], 62, 49));
-                this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[4] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[4], 80, 49));
+            // Les index viennent du layout : plus de « FILTER_SLOTS[i] - 1 » à corriger
+            // à la main selon le type d'inserter (cf. DT-03).
+            for (int i = 0; i < LAYOUT.filterCount(); i++) {
+                this.addSlot(new SlotInserterFilter(handler, LAYOUT.filter(i), 8 + i * 18, 49));
             }
         });
 
@@ -210,15 +210,14 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
                 return ItemStack.EMPTY;  // EMPTY_ITEM
             }
         } else if (index < TE_INVENTORY_FIRST_SLOT_INDEX + TE_INVENTORY_SLOT_COUNT) {
-            //This is a TE slot so merge the stack into the players inventory
-            if ((BLOCK_ENTITY.IS_FILTER || BLOCK_ENTITY.IS_ENERGY) && TE_INVENTORY_SLOT_COUNT - FILTER_SLOT_COUNT > 0) {
-                if (index > VANILLA_SLOT_COUNT + TE_INVENTORY_SLOT_COUNT - FILTER_SLOT_COUNT - 1) {
-                    sourceSlot.set(ItemStack.EMPTY);
-                    return copyOfSourceStack;
-                }
+            // Slot de filtre : c'est un item fantôme, shift-cliquer l'efface au lieu de
+            // le déplacer.
+            if (isFilterMenuSlot(index)) {
+                sourceSlot.set(ItemStack.EMPTY);
+                return copyOfSourceStack;
             }
 
-            else if (!moveItemStackTo(sourceStack, VANILLA_FIRST_SLOT_INDEX, VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT, false)) {
+            if (!moveItemStackTo(sourceStack, VANILLA_FIRST_SLOT_INDEX, VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT, false)) {
                 return ItemStack.EMPTY;
             }
             return ItemStack.EMPTY;
@@ -236,25 +235,36 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
         return copyOfSourceStack;
     }
 
+    /**
+     * Comportement « fantôme » des slots de filtre : cliquer y dépose une copie d'un
+     * seul item sans consommer ce que le joueur tient, et cliquer à vide efface.
+     */
     @Override
     public void clicked(int pSlotId, int pButton, ClickType pClickType, Player pPlayer) {
-        if (TE_INVENTORY_SLOT_COUNT - FILTER_SLOT_COUNT > 0) {
-            if (pSlotId > VANILLA_SLOT_COUNT + TE_INVENTORY_SLOT_COUNT - FILTER_SLOT_COUNT - 1) {
-                if (pClickType == ClickType.PICKUP || pClickType == ClickType.QUICK_MOVE) {
-                    if (!slots.get(pSlotId).getItem().isEmpty()) {
-                        if (this.getCarried().isEmpty()) {
-                            slots.get(pSlotId).set(ItemStack.EMPTY);
-                        }
-                        else {
-                            ItemStack ts = this.getCarried().copy();
-                            ts.setCount(1);
-                            slots.get(pSlotId).set(ts);
-                        }
-                        return;
-                    }
-                }
+        boolean ghostClick = isFilterMenuSlot(pSlotId)
+                && (pClickType == ClickType.PICKUP || pClickType == ClickType.QUICK_MOVE);
+
+        if (ghostClick && !slots.get(pSlotId).getItem().isEmpty()) {
+            if (this.getCarried().isEmpty()) {
+                slots.get(pSlotId).set(ItemStack.EMPTY);
+            } else {
+                ItemStack ghost = this.getCarried().copy();
+                ghost.setCount(1);
+                slots.get(pSlotId).set(ghost);
             }
+            return;
         }
+
         super.clicked(pSlotId, pButton, pClickType, pPlayer);
+    }
+
+    // Inner work (Slots)
+
+    /** @param menuSlotId index dans le menu, pas dans l'inventaire de la machine */
+    private boolean isFilterMenuSlot(int menuSlotId) {
+        if (menuSlotId < TE_INVENTORY_FIRST_SLOT_INDEX) return false;
+        if (menuSlotId >= TE_INVENTORY_FIRST_SLOT_INDEX + TE_INVENTORY_SLOT_COUNT) return false;
+
+        return LAYOUT.isFilter(menuSlotId - TE_INVENTORY_FIRST_SLOT_INDEX);
     }
 }
