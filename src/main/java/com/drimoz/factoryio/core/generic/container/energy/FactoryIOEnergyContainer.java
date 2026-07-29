@@ -26,6 +26,35 @@ public class FactoryIOEnergyContainer extends EnergyStorage {
 
     protected void onEnergyChanged() {}
 
+    // Interface (Consommation interne)
+
+    /**
+     * Consomme de l'énergie pour le fonctionnement propre de la machine.
+     *
+     * <p>Volontairement distinct de {@link #extractEnergy(int, boolean)} : ce dernier
+     * représente le contrat <i>externe</i> de la capability et peut être verrouillé par
+     * les sous-classes pour empêcher les blocs voisins de pomper l'énergie. La
+     * consommation interne, elle, doit toujours aboutir (cf. BUG-003).
+     *
+     * @return la quantité réellement consommée
+     */
+    public int consumeInternal(int amount) {
+        if (amount <= 0) return 0;
+
+        int consumed = Math.min(this.energy, amount);
+        if (consumed > 0) {
+            this.energy -= consumed;
+            this.onEnergyChanged();
+        }
+
+        return consumed;
+    }
+
+    /** @return {@code true} si la machine dispose d'au moins {@code amount} FE. */
+    public boolean hasEnergy(int amount) {
+        return this.energy >= amount;
+    }
+
     // Getters
 
     public int getCurrentEnergy() {

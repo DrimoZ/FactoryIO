@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.core.inserters;
 
 
+import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.block.FactoryIOEntityBlockWaterLogged;
 import com.drimoz.factoryio.core.init.FactoryIOTags;
 import com.drimoz.factoryio.core.model.Inserter;
@@ -18,8 +19,10 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
 
@@ -29,7 +32,15 @@ public class FactoryIOInserterEntityBlock extends FactoryIOEntityBlockWaterLogge
 
     // Private properties
 
-    private static final VoxelShape SHAPE =  Block.box(0, 0, 0, 16, 16, 16);
+    /**
+     * Calquée sur la géométrie GeckoLib : socle d'environ 6×6 blocs de large sur 5 de
+     * haut, surmonté du palier. La version précédente utilisait un cube plein 16³, sans
+     * rapport avec le modèle affiché (cf. BUG-017).
+     */
+    private static final VoxelShape SHAPE = Shapes.or(
+            Block.box(4, 0, 4, 12, 5, 12),
+            Block.box(6, 5, 6, 10, 12, 10));
+
     private final Inserter inserter;
 
     // Life cycle
@@ -79,20 +90,33 @@ public class FactoryIOInserterEntityBlock extends FactoryIOEntityBlockWaterLogge
 
         if (pLevel.isClientSide) return InteractionResult.SUCCESS;
 
-        BlockEntity blockEntity = pLevel.getBlockEntity(pPos);
-
-        if(blockEntity instanceof FactoryIOInserterBlockEntity) {
-            if (pPlayer.getItemInHand(pHand).is(FactoryIOTags.Items.WRENCH_ITEM)) {
-                pLevel.setBlock(pPos, pState.rotate(pLevel, pPos, Rotation.CLOCKWISE_90), 3);
-            }
-            else {
-                NetworkHooks.openGui(((ServerPlayer)pPlayer), (FactoryIOInserterBlockEntity)blockEntity, pPos);
-            }
-        } else {
-            throw new IllegalStateException("Missing Container Provider for FactoryIOInserterBlockEntity");
+        if (!(pLevel.getBlockEntity(pPos) instanceof FactoryIOInserterBlockEntity blockEntity)) {
+            // Ne pas lever d'exception : un BlockEntity manquant est une anomalie
+            // récupérable, pas un motif de crash serveur.
+            FactoryIO.LOGGER.warn("Aucun FactoryIOInserterBlockEntity en {}", pPos);
+            return InteractionResult.PASS;
         }
 
-        return InteractionResult.SUCCESS;
+        if (isRotationTool(pPlayer, pHand)) {
+            pLevel.setBlock(pPos, pState.rotate(pLevel, pPos, Rotation.CLOCKWISE_90), Block.UPDATE_ALL);
+            return InteractionResult.CONSUME;
+        }
+
+        NetworkHooks.openScreen((ServerPlayer) pPlayer, blockEntity, pPos);
+        return InteractionResult.CONSUME;
+    }
+
+    /**
+     * Le tag {@code forge:tools/wrench} est vide tant qu'aucun mod ne le peuple. Le
+     * shift + clic droit à main nue offre donc une alternative toujours disponible
+     * (cf. BUG-026).
+     */
+    private static boolean isRotationTool(Player player, InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+
+        if (held.is(FactoryIOTags.Items.WRENCH_ITEM)) return true;
+
+        return held.isEmpty() && player.isSecondaryUseActive();
     }
 
 
@@ -100,7 +124,7 @@ public class FactoryIOInserterEntityBlock extends FactoryIOEntityBlockWaterLogge
     // Interface BlockEntity
     @Override
     public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
-        return new FactoryIOInserterBlockEntity(inserter.getMenuType().get(), inserter.getBlockEntityType().get(), pPos, pState, inserter);
+        return new FactoryIOInserterBlockEntity(inserter.getBlockEntityType().get(), pPos, pState, inserter);
     }
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState blockState, BlockEntityType<T> blockEntityType) {
         return level.isClientSide ? null : createTicker(level, blockEntityType, inserter.getBlockEntityType().get());

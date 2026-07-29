@@ -1,29 +1,28 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
-import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
 import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
 import net.minecraft.core.Direction;
-import net.minecraft.data.DataGenerator;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.data.PackOutput;
 import net.minecraftforge.client.model.generators.BlockStateProvider;
 import net.minecraftforge.client.model.generators.ConfiguredModel;
 import net.minecraftforge.client.model.generators.ModelFile;
 import net.minecraftforge.common.data.ExistingFileHelper;
 
-import java.util.Objects;
-
-
 public class FactoryIOBlockModelGenerator extends BlockStateProvider {
-    public FactoryIOBlockModelGenerator(DataGenerator gen, String modid, ExistingFileHelper exFileHelper) {
-        super(gen, modid, exFileHelper);
+
+    public FactoryIOBlockModelGenerator(PackOutput output, String modid, ExistingFileHelper exFileHelper) {
+        super(output, modid, exFileHelper);
     }
 
     @Override
     protected void registerStatesAndModels() {
         FactoryIOInserterRegistry.getInstance().getInserters().forEach((inserter) -> {
             FactoryIOInserterEntityBlock block = inserter.getBlock().get();
-            String blockName = Objects.requireNonNull(block.getRegistryName()).getPath();
+
+            // getRegistryName() a disparu en 1.19 ; le nom vient désormais de la
+            // définition, seule source de vérité.
+            String blockName = inserter.getName();
 
             String baseLoc = "base_fuel_inserter";
             if (inserter.isFilterable()) baseLoc = "base_filter_inserter";
@@ -40,25 +39,20 @@ public class FactoryIOBlockModelGenerator extends BlockStateProvider {
                         Direction facing = state.getValue(FactoryIOInserterEntityBlock.FACING);
                         boolean enabled = state.getValue(FactoryIOInserterEntityBlock.ENABLED);
 
-                        int yRotation = getYRotation(facing);
                         return ConfiguredModel.builder()
                                 .modelFile(enabled ? model : disabledModel)
-                                .rotationY(yRotation)
+                                .rotationY(getYRotation(facing))
                                 .build();
                     });
         });
     }
 
     private int getYRotation(Direction facing) {
-        switch (facing) {
-            case SOUTH:
-                return 180;
-            case EAST:
-                return 90;
-            case WEST:
-                return 270;
-            default:
-                return 0;
-        }
+        return switch (facing) {
+            case SOUTH -> 180;
+            case EAST -> 90;
+            case WEST -> 270;
+            default -> 0;
+        };
     }
 }

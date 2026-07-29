@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.inserters;
 
+import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.container.FactoryIOContainer;
 import com.drimoz.factoryio.core.generic.container.slots.SlotInserterBuffer;
 import com.drimoz.factoryio.core.generic.container.slots.SlotInserterFilter;
@@ -13,7 +14,7 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import org.jetbrains.annotations.Nullable;
 
 public class FactoryIOInserterContainer extends FactoryIOContainer {
@@ -58,15 +59,23 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
         super(pMenuType, pContainerId);
         inserter = inserterData;
 
+        // getBlockEntity renvoie null si le bloc a disparu entre l'ouverture demandée et
+        // la construction du menu — fréquent côté client, où le menu naît d'un paquet
+        // réseau (cf. BUG-020).
         this.BLOCK_ENTITY = inserterData.getBlockEntityType().get().getBlockEntity(pLevel, pPos);
+        if (this.BLOCK_ENTITY == null) {
+            throw new IllegalStateException("Aucun inserter en " + pPos + " pour ouvrir le menu");
+        }
+
         this.TE_INVENTORY_SLOT_COUNT = 1 + (BLOCK_ENTITY.IS_ENERGY ? 0 : 1) + (BLOCK_ENTITY.IS_FILTER ? FactoryIOInserterBlockEntity.FILTER_SLOTS.length : 0);
 
-        checkContainerSize(pPlayerInv, this.TE_INVENTORY_SLOT_COUNT);
+        // checkContainerSize validait l'inventaire du JOUEUR contre le nombre de slots de
+        // la machine : l'assertion passait toujours et ne testait rien (cf. BUG-034).
 
         addPlayerInventory(pPlayerInv);
         addPlayerHotbar(pPlayerInv);
 
-        this.BLOCK_ENTITY.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).ifPresent(handler -> {
+        this.BLOCK_ENTITY.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(handler -> {
             this.addSlot(new SlotInserterBuffer(handler, FactoryIOInserterBlockEntity.BUFFER_SLOT, 124, 45));
 
             if (!BLOCK_ENTITY.IS_ENERGY) {
@@ -137,7 +146,10 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
         // Check if the slot clicked is one of the vanilla container slots
         if (index < VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT) {
             // Only goes to inventory
-            if (!moveItemStackTo(sourceStack, TE_INVENTORY_FIRST_SLOT_INDEX, TE_INVENTORY_FIRST_SLOT_INDEX - 1, false)) {
+            // Les bornes étaient inversées (36 -> 35) : la boucle de moveItemStackTo ne
+            // s'exécutait jamais et le shift-clic depuis l'inventaire joueur ne faisait
+            // rien du tout (cf. BUG-009).
+            if (!moveItemStackTo(sourceStack, TE_INVENTORY_FIRST_SLOT_INDEX, TE_INVENTORY_FIRST_SLOT_INDEX + TE_INVENTORY_SLOT_COUNT, false)) {
                 return ItemStack.EMPTY;  // EMPTY_ITEM
             }
         } else if (index < TE_INVENTORY_FIRST_SLOT_INDEX + TE_INVENTORY_SLOT_COUNT) {
@@ -154,7 +166,7 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
             }
             return ItemStack.EMPTY;
         } else {
-            System.out.println("Invalid slotIndex:" + index);
+            FactoryIO.LOGGER.warn("Index de slot invalide : {}", index);
             return ItemStack.EMPTY;
         }
         // If stack size == 0 (the entire stack was moved) set slot contents to null
@@ -166,35 +178,6 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
         sourceSlot.onTake(playerIn, sourceStack);
         return copyOfSourceStack;
     }
-
-    //@Override
-    //public ItemStack quickMoveStack2(Player playerIn, int index) {
-    //    Slot sourceSlot = slots.get(index);
-    //    if (sourceSlot == null || !sourceSlot.hasItem()) return ItemStack.EMPTY;  //EMPTY_ITEM
-    //    ItemStack sourceStack = sourceSlot.getItem();
-    //    ItemStack copyOfSourceStack = sourceStack.copy();
-//
-    //    if (index < TE_INVENTORY_FIRST_SLOT_INDEX + TE_EXTRACTABLE_INVENTORY_SLOT_COUNT) {
-    //        if (!moveItemStackTo(sourceStack,VANILLA_FIRST_SLOT_INDEX, VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT,false))
-    //            return ItemStack.EMPTY;
-    //    } else if (index >= VANILLA_FIRST_SLOT_INDEX && index < VANILLA_FIRST_SLOT_INDEX+VANILLA_SLOT_COUNT) {
-    //        if (!moveItemStackTo(sourceStack,TE_INVENTORY_FIRST_SLOT_INDEX, TE_INVENTORY_FIRST_SLOT_INDEX + TE_INSERTABLE_INVENTORY_SLOT_COUNT,false))
-    //            return ItemStack.EMPTY;
-    //    } else {
-    //        System.out.println("Invalid slotIndex:" + index);
-    //        return ItemStack.EMPTY;
-    //    }
-//
-//
-    //    // If stack size == 0 (the entire stack was moved) set slot contents to null
-    //    if (sourceStack.getCount() == 0) {
-    //        sourceSlot.set(ItemStack.EMPTY);
-    //    } else {
-    //        sourceSlot.setChanged();
-    //    }
-    //    sourceSlot.onTake(playerIn, sourceStack);
-    //    return copyOfSourceStack;
-    //}
 
     @Override
     public void clicked(int pSlotId, int pButton, ClickType pClickType, Player pPlayer) {

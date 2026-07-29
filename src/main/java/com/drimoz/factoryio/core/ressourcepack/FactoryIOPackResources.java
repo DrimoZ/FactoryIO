@@ -1,56 +1,30 @@
 package com.drimoz.factoryio.core.ressourcepack;
 
-import com.google.common.base.Joiner;
-import net.minecraft.client.Minecraft;
-import net.minecraft.server.packs.metadata.MetadataSectionSerializer;
-import net.minecraftforge.resource.PathResourcePack;
+import net.minecraftforge.resource.PathPackResources;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 
-public class FactoryIOPackResources extends PathResourcePack {
-
-    // Private properties
-
-    private final String packId;
-    private final boolean isBuiltin;
-    private final Path root;
+/**
+ * Pack virtuel adossé au dossier {@code config/factory_io/generated}.
+ *
+ * <p>Cette classe est instanciée <b>des deux côtés</b> : une fois pour le pack de
+ * ressources (client) et une fois pour le pack de données (client <i>et</i> serveur
+ * dédié). Elle ne doit donc contenir aucune référence au code client — une version
+ * antérieure lisait ses métadonnées via {@code Minecraft.getInstance()}, ce qui
+ * provoquait un {@code NoClassDefFoundError} sur serveur dédié (cf. BUG-005).
+ *
+ * <p>Les métadonnées sont lues normalement, depuis le {@code pack.mcmeta} écrit sur
+ * disque par {@link FactoryIOPackGeneratorManager}.
+ */
+public class FactoryIOPackResources extends PathPackResources {
 
     // Life cycle
 
-    public FactoryIOPackResources(String packId, boolean isBuiltin, Path source) {
-        super(packId, source);
-
-        this.packId = packId;
-        this.isBuiltin = isBuiltin;
-        this.root = source;
+    public FactoryIOPackResources(String packId, Path source) {
+        super(packId, false, source);
     }
 
-    @Override
-    public String getName() {
-        return FactoryIOResourcePackHandler.PACK_NAME;
-    }
-
-    @Override
-    public <T> T getMetadataSection(MetadataSectionSerializer<T> serializer) throws IOException {
-        InputStream in = Minecraft.getInstance().getResourceManager().getResource(FactoryIOResourcePackHandler.DUMMY_PACK_META).getInputStream();
-        Object o;
-        try {
-            o = getMetadataFromStream(serializer, in);
-        } catch (Throwable throwable1) {
-            try {
-                in.close();
-            } catch (Throwable throwable) {
-                throwable1.addSuppressed(throwable);
-            }
-            throw throwable1;
-        }
-
-        in.close();
-
-        return (T)o;
-    }
+    // Interface
 
     @Override
     public boolean isHidden() {

@@ -2,7 +2,7 @@ package com.drimoz.factoryio.core.generic.item;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.network.chat.TextComponent;
+
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
@@ -23,7 +23,7 @@ public class FactoryIOColoredItem extends FactoryIOItem {
 
     @Override
     public Component getName(ItemStack stack) {
-        return new TextComponent(super.getName(stack).getString()).withStyle(style -> style.withColor(TextColor.parseColor(color)));
+        return Component.literal(super.getName(stack).getString()).withStyle(style -> style.withColor(TextColor.parseColor(color)));
     }
 
     @Override

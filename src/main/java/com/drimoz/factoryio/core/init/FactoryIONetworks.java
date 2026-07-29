@@ -30,46 +30,36 @@ public class FactoryIONetworks {
         net.messageBuilder(FactoryIOSyncS2CEnergy.class, id(), NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(FactoryIOSyncS2CEnergy::new)
                 .encoder(FactoryIOSyncS2CEnergy::toBytes)
-                .consumer(FactoryIOSyncS2CEnergy::handle)
+                .consumerMainThread(FactoryIOSyncS2CEnergy::handle)
                 .add();
 
         net.messageBuilder(FactoryIOSyncS2CFuel.class, id(), NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(FactoryIOSyncS2CFuel::new)
                 .encoder(FactoryIOSyncS2CFuel::toBytes)
-                .consumer(FactoryIOSyncS2CFuel::handle)
+                .consumerMainThread(FactoryIOSyncS2CFuel::handle)
                 .add();
 
         net.messageBuilder(FactoryIOSyncC2SWhitelistButton.class, id(), NetworkDirection.PLAY_TO_SERVER)
                 .decoder(FactoryIOSyncC2SWhitelistButton::new)
                 .encoder(FactoryIOSyncC2SWhitelistButton::toBytes)
-                .consumer(FactoryIOSyncC2SWhitelistButton::handle)
+                .consumerMainThread(FactoryIOSyncC2SWhitelistButton::handle)
                 .add();
 
         net.messageBuilder(FactoryIOSyncS2CWhitelistButton.class, id(), NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(FactoryIOSyncS2CWhitelistButton::new)
                 .encoder(FactoryIOSyncS2CWhitelistButton::toBytes)
-                .consumer(FactoryIOSyncS2CWhitelistButton::handle)
-                .add();
-
-        net.messageBuilder(FactoryIOSyncS2CItemStack.class, id(), NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(FactoryIOSyncS2CItemStack::new)
-                .encoder(FactoryIOSyncS2CItemStack::toBytes)
-                .consumer(FactoryIOSyncS2CItemStack::handle)
+                .consumerMainThread(FactoryIOSyncS2CWhitelistButton::handle)
                 .add();
 
         net.messageBuilder(FactoryIOSyncS2CEnabledState.class, id(), NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(FactoryIOSyncS2CEnabledState::new)
                 .encoder(FactoryIOSyncS2CEnabledState::toBytes)
-                .consumer(FactoryIOSyncS2CEnabledState::handle)
+                .consumerMainThread(FactoryIOSyncS2CEnabledState::handle)
                 .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {
         INSTANCE.sendToServer(message);
-    }
-
-    public static <MSG> void sendToPlayer(MSG message, ServerPlayer player) {
-        INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), message);
     }
 
     public static <MSG> void sendToClients(MSG message) {

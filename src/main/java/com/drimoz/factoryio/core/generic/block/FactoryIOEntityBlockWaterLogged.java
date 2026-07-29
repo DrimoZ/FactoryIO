@@ -34,9 +34,12 @@ public abstract class FactoryIOEntityBlockWaterLogged extends FactoryIOEntityBlo
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext pContext) {
         FluidState fluidState = pContext.getLevel().getFluidState(pContext.getClickedPos());
-        this.defaultBlockState().setValue(WATERLOGGED, fluidState.getType() == Fluids.WATER);
 
-        return super.getStateForPlacement(pContext);
+        // BlockState est immuable : la version précédente appelait setValue sur
+        // defaultBlockState() et jetait le résultat, si bien que WATERLOGGED restait
+        // toujours false et que poser un bloc dans l'eau la supprimait (cf. BUG-010).
+        return super.getStateForPlacement(pContext)
+                .setValue(WATERLOGGED, fluidState.getType() == Fluids.WATER);
     }
 
     public FluidState getFluidState(BlockState state) {

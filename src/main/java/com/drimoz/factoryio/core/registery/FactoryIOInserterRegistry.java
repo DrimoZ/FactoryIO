@@ -1,27 +1,23 @@
 package com.drimoz.factoryio.core.registery;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.init.FactoryIORegistries;
 import com.drimoz.factoryio.core.inserters.*;
 import com.drimoz.factoryio.core.model.Inserter;
-import com.drimoz.factoryio.shared.FactoryIOCreativeTab;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.common.extensions.IForgeMenuType;
-import net.minecraftforge.registries.IForgeRegistry;
+import net.minecraftforge.registries.RegistryObject;
 
 import java.util.*;
 
 public class FactoryIOInserterRegistry {
-
-    // Public properties
-
 
     // Private properties
 
@@ -77,110 +73,72 @@ public class FactoryIOInserterRegistry {
         return this.inserters.values().stream().filter((i) -> name.equals(i.getName())).findFirst().orElse(null);
     }
 
-    public void onRegisterBlocks(IForgeRegistry<Block> registry) {
-        Collection<Inserter> inserters = this.inserters.values();
+    /**
+     * Déclare bloc, item, block entity et menu de chaque inserter auprès des
+     * {@code DeferredRegister}.
+     *
+     * <p>Appelé une seule fois, depuis le constructeur du mod. Les {@code RegistryObject}
+     * renvoyés se résolvent paresseusement, ce qui gère automatiquement les dépendances
+     * croisées (l'item a besoin du bloc, le block entity aussi).
+     */
+    public void registerAll() {
+        this.inserters = this.getSortedInsertersMap(this.inserters.values());
 
-        inserters.forEach((i) -> {
-            if (i.getBlock() == null) {
-                BlockBehaviour.StatePredicate redstoneBehavior = (pState, pLevel, pPos) -> false;
-                BlockBehaviour.Properties blockProps = BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion();
-
-                if (i.isAffectedByRedstone()) {
-                    blockProps.isRedstoneConductor(redstoneBehavior);
-                }
-
-                FactoryIOInserterEntityBlock defaultInserterBlock = new FactoryIOInserterEntityBlock(blockProps, i);
-
-                defaultInserterBlock.setRegistryName(i.getName());
-                i.setBlock(() -> defaultInserterBlock);
-            }
-
-            registry.register(i.getBlock().get());
-        });
-        this.inserters = this.getSortedInsertersMap(inserters);
-    }
-
-    public void onRegisterBlockEntities(IForgeRegistry<BlockEntityType<?>> registry) {
-        Collection<Inserter> inserters = this.inserters.values();
-
-        inserters.forEach((i) -> {
-            if (i.getBlockEntityType() == null) {
-                BlockEntityType<FactoryIOInserterBlockEntity> blockEntityBlockEntityType =
-                        BlockEntityType.Builder.of(
-                                (pPos, pState) -> new FactoryIOInserterBlockEntity(pPos, pState, i),
-                                i.getBlock().get()
-                        ).build(null);
-
-                blockEntityBlockEntityType.setRegistryName(i.getName());
-                i.setBlockEntityType(() -> blockEntityBlockEntityType);
-            }
-
-            registry.register(i.getBlockEntityType().get());
-        });
-    }
-
-    public void onRegisterItems(IForgeRegistry<Item> registry) {
-        Collection<Inserter> inserters = this.inserters.values();
-
-        inserters.forEach((i) -> {
-            if (i.getItem() == null) {
-                FactoryIOInserterItem defaultInserterItem = FactoryIOInserterItem.create(
-                        new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB),
-                        i
-                );
-
-                defaultInserterItem.setRegistryName(i.getName());
-                i.setItem(() -> defaultInserterItem);
-            }
-
-            registry.register(i.getItem().get());
-        });
-    }
-    public void onRegisterContainers(IForgeRegistry<MenuType<?>> registry) {
-        Collection<Inserter> inserters = this.inserters.values();
-
-        inserters.forEach((i) -> {
-            if (i.getMenuType() == null) {
-                MenuType<FactoryIOInserterContainer> defaultInserterMenuType = IForgeMenuType.create(
-                        (windowId, inv, data) -> new FactoryIOInserterContainer(
-                                windowId,
-                                i,
-                                inv,
-                                inv.player.getCommandSenderWorld(),
-                                data.readBlockPos()
-                        )
-                );
-
-                defaultInserterMenuType.setRegistryName(i.getName());
-                i.setMenuType(() -> defaultInserterMenuType);
-            }
-
-            registry.register(i.getMenuType().get());
-        });
+        this.inserters.values().forEach(this::registerInserterContent);
     }
 
     public void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        Collection<Inserter> inserters = this.inserters.values();
-
-        inserters.forEach((i) -> {
-            event.registerBlockEntityRenderer(
-                    i.getBlockEntityType().get(),
-                    (pContext -> new FactoryIOInserterBlockEntityRenderer(pContext, i)));
-        });
+        this.inserters.values().forEach((i) ->
+                event.registerBlockEntityRenderer(
+                        i.getBlockEntityType().get(),
+                        (pContext -> new FactoryIOInserterBlockEntityRenderer(i))));
     }
 
     public void onRegisterScreens() {
-        Collection<Inserter> inserters = this.inserters.values();
-
-        inserters.forEach((i) -> {
-            MenuScreens.register(
-                    i.getMenuType().get(),
-                    FactoryIOInserterScreen<FactoryIOInserterContainer>::new
-            );
-        });
+        this.inserters.values().forEach((i) ->
+                MenuScreens.register(
+                        i.getMenuType().get(),
+                        FactoryIOInserterScreen<FactoryIOInserterContainer>::new));
     }
 
     // Inner work
+
+    private void registerInserterContent(Inserter inserter) {
+        String name = inserter.getName();
+
+        RegistryObject<FactoryIOInserterEntityBlock> block = FactoryIORegistries.BLOCKS.register(
+                name,
+                () -> {
+                    BlockBehaviour.Properties props = BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion();
+
+                    if (inserter.isAffectedByRedstone()) {
+                        props.isRedstoneConductor((pState, pLevel, pPos) -> false);
+                    }
+
+                    return new FactoryIOInserterEntityBlock(props, inserter);
+                });
+        inserter.setBlock(block);
+
+        inserter.setItem(FactoryIORegistries.ITEMS.register(
+                name,
+                () -> FactoryIOInserterItem.create(new Item.Properties(), inserter)));
+
+        inserter.setBlockEntityType(FactoryIORegistries.BLOCK_ENTITIES.register(
+                name,
+                () -> BlockEntityType.Builder
+                        .of((pPos, pState) -> new FactoryIOInserterBlockEntity(pPos, pState, inserter), block.get())
+                        .build(null)));
+
+        inserter.setMenuType(FactoryIORegistries.MENUS.register(
+                name,
+                () -> IForgeMenuType.create(
+                        (windowId, inv, data) -> new FactoryIOInserterContainer(
+                                windowId,
+                                inserter,
+                                inv,
+                                inv.player.getCommandSenderWorld(),
+                                data.readBlockPos()))));
+    }
 
     private Map<ResourceLocation, Inserter> getSortedInsertersMap(Collection<Inserter> inserterCollection) {
         LinkedHashMap<ResourceLocation, Inserter> sorted = new LinkedHashMap<>();

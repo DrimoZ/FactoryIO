@@ -1,9 +1,7 @@
 package com.drimoz.factoryio.core.ressourcepack;
 
 import com.drimoz.factoryio.FactoryIO;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.server.packs.PackResources;
-import net.minecraft.server.packs.metadata.pack.PackMetadataSection;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.repository.RepositorySource;
@@ -11,14 +9,16 @@ import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.nio.file.Path;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public class FactoryIORepositorySource implements RepositorySource {
+
+    // Public properties
+
+    public static final Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve("factory_io/generated");
 
     // Private properties
 
     private final EPackType packType;
-    public static final Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve("factory_io/generated");
 
     // Life cycle
 
@@ -28,35 +28,35 @@ public class FactoryIORepositorySource implements RepositorySource {
 
     // Interface
 
+    /**
+     * En 1.20, {@code loadPacks} ne reçoit plus de {@code Pack.PackConstructor} : c'est
+     * {@link Pack#readMetaAndCreate} qui lit le {@code pack.mcmeta} du pack lui-même.
+     * La construction manuelle des métadonnées n'a donc plus lieu d'être.
+     */
     @Override
-    public void loadPacks(Consumer<Pack> consumer, Pack.PackConstructor constructor) {
-        PackMetadataSection meta = new PackMetadataSection(
-                new TextComponent(FactoryIOResourcePackHandler.PACK_DESCRIPTION),
-                FactoryIOResourcePackHandler.PACK_FORMAT);
-
-        Pack p = FactoryIOResourcePackHandler.createPack(
-                FactoryIOResourcePackHandler.PACK_NAME,
-                meta,
+    public void loadPacks(Consumer<Pack> consumer) {
+        Pack pack = Pack.readMetaAndCreate(
+                FactoryIOResourcePackHandler.PACK_ID,
+                Component.literal(FactoryIOResourcePackHandler.PACK_NAME),
                 true,
-                this.createSupplier(),
-                constructor,
+                this::createResources,
+                packType.getVanillaType(),
                 Pack.Position.TOP,
-                PackSource.DEFAULT
-        );
+                PackSource.BUILT_IN);
 
-        if (p != null) {
-            consumer.accept(p);
-        } else {
-            FactoryIO.LOGGER.error("Failed to create pack: " + FactoryIORepositorySource.CONFIG_DIR.toString());
+        if (pack == null) {
+            FactoryIO.LOGGER.error("Création du pack généré impossible depuis {}", CONFIG_DIR);
+            return;
         }
 
+        consumer.accept(pack);
     }
 
-    protected Supplier<PackResources> createSupplier() {
-        return () -> {
-            FactoryIOPackGeneratorManager.generate();
-            return new FactoryIOPackResources(packType.getSuffix(), false, CONFIG_DIR);
-        };
-    }
+    // Inner work
 
+    private FactoryIOPackResources createResources(String id) {
+        FactoryIOPackGeneratorManager.generate();
+
+        return new FactoryIOPackResources(id, CONFIG_DIR);
+    }
 }

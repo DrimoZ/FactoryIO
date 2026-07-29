@@ -1,39 +1,35 @@
 package com.drimoz.factoryio.core.inserters;
 
-import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.model.Inserter;
 import net.minecraft.resources.ResourceLocation;
-import software.bernie.geckolib3.model.AnimatedGeoModel;
+import software.bernie.geckolib.model.GeoModel;
 
-public class FactoryIOInserterItemModel extends AnimatedGeoModel<FactoryIOInserterItem> {
+public class FactoryIOInserterItemModel extends GeoModel<FactoryIOInserterItem> {
 
     // Private properties
 
     private final Inserter inserter;
 
-    public FactoryIOInserterItemModel(Inserter inserter) {
-        super();
+    // Life cycle
 
+    public FactoryIOInserterItemModel(Inserter inserter) {
         this.inserter = inserter;
     }
 
+    // Interface
+
     @Override
-    public ResourceLocation getModelLocation(FactoryIOInserterItem object) {
-        if (inserter.isFilterable())
-            return new ResourceLocation(FactoryIO.MOD_ID, "geo/filter_inserter.geo.json");
-        else if (inserter.useEnergy())
-            return new ResourceLocation(FactoryIO.MOD_ID, "geo/energy_inserter.geo.json");
-        else
-            return new ResourceLocation(FactoryIO.MOD_ID, "geo/fuel_inserter.geo.json");
+    public ResourceLocation getModelResource(FactoryIOInserterItem object) {
+        return FactoryIOInserterGeo.modelFor(inserter);
     }
 
     @Override
-    public ResourceLocation getTextureLocation(FactoryIOInserterItem object) {
-        return new ResourceLocation(FactoryIO.MOD_ID, "textures/block/inserters/" + inserter.getName() + ".png");
+    public ResourceLocation getTextureResource(FactoryIOInserterItem object) {
+        return FactoryIOInserterGeo.textureFor(inserter, true);
     }
 
     @Override
-    public ResourceLocation getAnimationFileLocation(FactoryIOInserterItem animatable) {
-        return new ResourceLocation(FactoryIO.MOD_ID, "animations/animated_block.animation.json");
+    public ResourceLocation getAnimationResource(FactoryIOInserterItem animatable) {
+        return FactoryIOInserterGeo.ANIMATIONS;
     }
 }

@@ -1,64 +1,62 @@
 package com.drimoz.factoryio.shared;
 
-import com.drimoz.factoryio.FactoryIO;
-import com.google.common.collect.Lists;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
+import org.lwjgl.glfw.GLFW;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.List;
 
-public class StringHelper {
+public final class StringHelper {
 
+    private StringHelper() {}
 
-    public static List<String> displayEnergy(int energy, int capacity) {
-        List<String> text = new ArrayList<String>();
+    // Interface (Énergie)
+
+    public static Component displayEnergy(int energy, int capacity) {
         NumberFormat format = DecimalFormat.getNumberInstance();
-        String i = format.format(energy);
-        String j = format.format(capacity);
-        i = i.replaceAll("\u00A0", ",").replaceAll(" ", ",");
-        j = j.replaceAll("\u00A0", ",").replaceAll(" ", ",");
-        text.add("§6" + i + " §f/ §c" + j + " §4" + FactoryIOUtils.tooltipString("energy_name"));
-        return text;
+
+        return Component.literal(normalize(format.format(energy))).withStyle(ChatFormatting.GOLD)
+                .append(Component.literal(" / ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(normalize(format.format(capacity))).withStyle(ChatFormatting.RED))
+                .append(Component.literal(" ").withStyle(ChatFormatting.DARK_RED)
+                        .append(FactoryIOUtils.tooltipComponent("energy_name")));
     }
 
-    public static List<String> displayEnergy(int energy) {
-        List<String> text = new ArrayList<String>();
-        NumberFormat format = DecimalFormat.getNumberInstance();
-        String i = format.format(energy);
-        i = i.replaceAll("\u00A0", ",");
-        text.add("§6" + i + " §4" + FactoryIOUtils.tooltipString("energy_name"));
-        return text;
+    // Interface (Tooltips)
+
+    public static Component getShiftInfoText() {
+        MutableComponent hold = FactoryIOUtils.tooltipComponent("hold").withStyle(ChatFormatting.GRAY);
+        MutableComponent shift = Component.literal(" [Shift] ").withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC);
+        MutableComponent details = FactoryIOUtils.tooltipComponent("for_details").withStyle(ChatFormatting.GRAY);
+
+        return hold.append(shift).append(details);
     }
 
-    public static List<Component> getShiftInfoGui()
-    {
-        List<Component> list = Lists.newArrayList();
-        list.add(new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".gui_close"));
-        MutableComponent tooltip1 = new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".gui_hold_shift");
-        MutableComponent shift = new TextComponent("[Shift]");
-        MutableComponent tooltip2 = new TranslatableComponent("tooltip." + FactoryIO.MOD_ID + ".gui_shift_more_options");
-        tooltip1.withStyle(ChatFormatting.GRAY);
-        shift.withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC);
-        tooltip2.withStyle(ChatFormatting.GRAY);
-        list.add(tooltip1.append(shift).append(tooltip2));
-        return list;
+    // Interface (Entrées clavier)
+
+    public static boolean isShiftKeyDown() {
+        return isKeyDown(GLFW.GLFW_KEY_LEFT_SHIFT) || isKeyDown(GLFW.GLFW_KEY_RIGHT_SHIFT);
     }
 
-    public static Component getShiftInfoText()
-    {
-        MutableComponent tooltip1 = FactoryIOUtils.tooltipComponent("hold");
-        MutableComponent shift = new TextComponent(" [Shift] ");
-        MutableComponent tooltip2 = FactoryIOUtils.tooltipComponent("for_details");
-        tooltip1.withStyle(ChatFormatting.GRAY);
-        shift.withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC);
-        tooltip2.withStyle(ChatFormatting.GRAY);
-        return tooltip1.append(shift).append(tooltip2);
+    public static boolean isKeyDown(int glfw) {
+        InputConstants.Key key = InputConstants.Type.KEYSYM.getOrCreate(glfw);
+        if (key.getValue() == InputConstants.UNKNOWN.getValue()) return false;
+
+        try {
+            return InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), key.getValue());
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
+    // Inner work
+
+    /** Remplace les espaces (dont insécables) des formats localisés par des virgules. */
+    private static String normalize(String formatted) {
+        return formatted.replace(' ', ',').replace(' ', ',');
+    }
 }

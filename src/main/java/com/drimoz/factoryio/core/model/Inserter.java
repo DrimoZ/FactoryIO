@@ -6,7 +6,7 @@ import com.drimoz.factoryio.core.inserters.FactoryIOInserterContainer;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterItem;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -28,7 +28,6 @@ public class Inserter {
     private int fuelCapacity;
     private int fuelConsumption;
     private int grabDistance;
-    private int filterSlotCount;
     private int cooldownBetweenActions;
     private int preferredItemCountPerAction;
     private ResourceLocation texture;
@@ -98,7 +97,7 @@ public class Inserter {
         setCooldownBetweenActions(cooldownBetweenActions);
         setPreferredItemCountPerAction(preferredItemCountPerAction);
 
-        this.displayNameComponent = new TranslatableComponent(String.format("%s.%s", FactoryIO.MOD_ID, this.getName()));
+        this.displayNameComponent = Component.translatable(String.format("%s.%s", FactoryIO.MOD_ID, this.getName()));
         this.texture = new ResourceLocation(FactoryIO.MOD_ID, "block/inserters/" + getName());
 
     }
@@ -272,7 +271,6 @@ public class Inserter {
                 ", fuelCapacity=" + fuelCapacity +
                 ", fuelConsumption=" + fuelConsumption +
                 ", grabDistance=" + grabDistance +
-                ", filterSlotCount=" + filterSlotCount +
                 ", cooldownBetweenActions=" + cooldownBetweenActions +
                 ", preferredItemCountPerAction=" + preferredItemCountPerAction +
                 ", texture=" + texture +

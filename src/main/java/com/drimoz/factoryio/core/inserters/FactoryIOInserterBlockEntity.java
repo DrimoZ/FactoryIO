@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.inserters;
 
+import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.block_entity.FactoryIOBlockEntityMenuProvided;
 import com.drimoz.factoryio.core.generic.container.energy.FactoryIOEnergyContainer;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CEnabledState;
@@ -12,9 +13,11 @@ import com.drimoz.factoryio.core.init.FactoryIOTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
+
+
 import net.minecraft.world.Containers;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -31,25 +34,28 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.energy.CapabilityEnergy;
+
 import net.minecraftforge.energy.IEnergyStorage;
-import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
-import software.bernie.geckolib3.core.IAnimatable;
-import software.bernie.geckolib3.core.PlayState;
-import software.bernie.geckolib3.core.builder.AnimationBuilder;
-import software.bernie.geckolib3.core.controller.AnimationController;
-import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
-import software.bernie.geckolib3.core.manager.AnimationData;
-import software.bernie.geckolib3.core.manager.AnimationFactory;
+import software.bernie.geckolib.animatable.GeoBlockEntity;
+import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.core.animation.AnimationController;
+import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.core.animation.RawAnimation;
+import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
-public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvided implements IAnimatable {
+public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvided implements GeoBlockEntity {
 
     // Public constants
 
@@ -64,9 +70,11 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     // Duration : 0 = 10a / tick || 10 = 1a / tick || 200 = 1a / 20tick (1sec) ||
     public static final int MAX_ACTIONS_PER_TICK = 10;
 
+    /** Nombre d'items de carburant que l'inserter garde en réserve dans son slot. */
+    public static final int FUEL_BUFFER_TARGET = 5;
+
     // Private constants
 
-    private final MenuType<FactoryIOInserterContainer> menuType;
     private final Inserter inserter;
 
     // Protected properties
@@ -83,21 +91,15 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     private boolean isWhitelist = true;
     private int current_fuel_value = 0;
 
-    private AnimationFactory factory = new AnimationFactory(this);
+    private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
 
     // Life cycle
 
     public FactoryIOInserterBlockEntity(BlockPos blockPos, BlockState blockState, Inserter inserter) {
-        this(
-                (MenuType)inserter.getMenuType().get(),
-                (BlockEntityType)inserter.getBlockEntityType().get(),
-                blockPos,
-                blockState,
-                inserter);
+        this(inserter.getBlockEntityType().get(), blockPos, blockState, inserter);
     }
 
     public FactoryIOInserterBlockEntity(
-            MenuType<FactoryIOInserterContainer> menuType,
             BlockEntityType<?> blockEntityType,
             BlockPos blockPos,
             BlockState blockState,
@@ -105,7 +107,6 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     ) {
         super(blockEntityType, blockPos, blockState);
 
-        this.menuType = menuType;
         this.inserter = inserter;
 
         this.IS_ENERGY = inserter.useEnergy();
@@ -117,6 +118,9 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
                 protected void onEnergyChanged() {
                     FactoryIOInserterBlockEntity.this.setChanged();
                 }
+
+                // Contrat externe : un bloc voisin ne doit jamais pouvoir vider
+                // l'inserter. La consommation propre passe par consumeInternal().
 
                 @Override
                 public int extractEnergy(int maxExtract, boolean simulate) {
@@ -184,15 +188,16 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         return IS_ENERGY ? inserter.getEnergyConsumption() : inserter.getFuelConsumption();
     }
 
+    /** Nombre d'items de carburant que l'inserter cherche à conserver en réserve. */
     public int getPreferredFuelItemBufferCount() {
-        return -1;
+        return FUEL_BUFFER_TARGET;
     }
 
     // Interface (Name)
 
     @Override
     public Component getDisplayName() {
-        return new TranslatableComponent(getBlockState().getBlock().getDescriptionId());
+        return Component.translatable(getBlockState().getBlock().getDescriptionId());
     }
 
     // Interface (ItemStorage)
@@ -226,8 +231,8 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     @Nonnull @Override
     public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        if (cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) return lazyItem.cast();
-        if (cap == CapabilityEnergy.ENERGY && IS_ENERGY && side == Direction.DOWN) return lazyEnergy.cast();
+        if (cap == ForgeCapabilities.ITEM_HANDLER) return lazyItem.cast();
+        if (cap == ForgeCapabilities.ENERGY && IS_ENERGY && side == Direction.DOWN) return lazyEnergy.cast();
         return super.getCapability(cap, side);
     }
 
@@ -262,6 +267,11 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             tag.putInt("inserterFuelLevel",this.getCurrentFuelValue());
         }
 
+        // Sans ces deux lignes, chaque rechargement de monde remettait tous les filtres
+        // en whitelist et repartait d'un cooldown nul (cf. BUG-008).
+        tag.putBoolean("inserterWhitelist", this.isWhitelist);
+        tag.putInt("inserterCooldown", this.current_cooldown);
+
         super.saveAdditional(tag);
     }
 
@@ -276,6 +286,11 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         else {
             this.overrideCurrentFuelValue(tag.getInt("inserterFuelLevel"));
         }
+
+        // contains() : un monde sauvegardé avant ce correctif n'a pas ces clés, et
+        // getBoolean() renverrait false — soit l'inverse du défaut attendu.
+        this.isWhitelist = !tag.contains("inserterWhitelist") || tag.getBoolean("inserterWhitelist");
+        this.current_cooldown = tag.getInt("inserterCooldown");
     }
 
     public boolean stillValid(Player playerEntity) {
@@ -311,21 +326,28 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
         if (!pEntity.isEnabled()) return;
 
-        pEntity.current_cooldown += MAX_ACTIONS_PER_TICK;
+        if (pEntity.current_cooldown < pEntity.getDurationBetweenActions()) {
+            pEntity.current_cooldown += MAX_ACTIONS_PER_TICK;
+        }
 
         if (pEntity.current_cooldown >= pEntity.getDurationBetweenActions()) {
-            if ((pEntity.IS_ENERGY && pEntity.getCurrentEnergy() >= pEntity.getFuelConsumptionPerAction()) ||
-                    (!pEntity.IS_ENERGY && pEntity.getCurrentFuelValue() >= pEntity.getFuelConsumptionPerAction())) {
 
+            // Le ravitaillement en carburant est gratuit et prioritaire : le conditionner
+            // à la réserve courante enfermerait tout burner à sec dans un blocage
+            // définitif (cf. BUG-012).
+            if (pEntity.needsFuel() && refuel(pEntity, pLevel, pEntity.getGrabDistance())) {
+                pEntity.current_cooldown = 0;
+            }
+            else if (pEntity.hasPowerForAction()) {
                 // TODO : Multiply item/energy count instead of for loop
                 for (int i = 0; i < pEntity.getActionMultiplier(); i++) {
                     if (pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()) {
-                        if (suckItems(pEntity, pLevel, pEntity.getGrabDistance(), pEntity.isWhitelist(), false)) {
+                        if (suckItems(pEntity, pLevel, pEntity.getGrabDistance(), pEntity.isWhitelist())) {
                             pEntity.current_cooldown = 0;
                             pEntity.useFuelOrEnergy();
                         }
                     } else {
-                        if (expelItems(pEntity, pLevel, pEntity.getGrabDistance(), false)) {
+                        if (expelItems(pEntity, pLevel, pEntity.getGrabDistance())) {
                             pEntity.current_cooldown = 0;
                             pEntity.useFuelOrEnergy();
                         }
@@ -334,17 +356,55 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             }
         }
 
-        if (!pEntity.IS_ENERGY) {
-            ItemStack stack = pEntity.itemStorage.getStackInSlot(FUEL_SLOT);
-            if (!stack.isEmpty() && stack.getItem() != Items.BUCKET &&
-                    ForgeHooks.getBurnTime(stack, null) > 0 && ForgeHooks.getBurnTime(stack, null) < pEntity.getFuelCapacity() - pEntity.current_fuel_value) {
-                pEntity.current_fuel_value += ForgeHooks.getBurnTime(stack, null);
+        pEntity.burnFuel();
+    }
 
-                if (stack.is(Items.LAVA_BUCKET))
-                    pEntity.itemStorage.setStackInSlot(FUEL_SLOT, new ItemStack(Items.BUCKET, 1));
-                else
-                    pEntity.itemStorage.setStackInSlot(FUEL_SLOT,  new ItemStack(stack.getItem(), stack.getCount()-1));
-            }
+    /** @return {@code true} si la réserve permet de payer une action */
+    private boolean hasPowerForAction() {
+        return IS_ENERGY
+                ? getCurrentEnergy() >= getFuelConsumptionPerAction()
+                : getCurrentFuelValue() >= getFuelConsumptionPerAction();
+    }
+
+    /** @return {@code true} si le slot de carburant doit être réapprovisionné */
+    private boolean needsFuel() {
+        if (IS_ENERGY) return false;
+
+        return this.itemStorage.getStackInSlot(FUEL_SLOT).getCount() < this.getPreferredFuelItemBufferCount();
+    }
+
+    /** Aspire du carburant depuis l'inventaire situé à l'arrière. */
+    private static boolean refuel(FactoryIOInserterBlockEntity pEntity, Level pLevel, int pDistance) {
+        Direction facing = getFacing(pEntity);
+
+        IItemHandler source = neighbourHandler(pEntity, pLevel, facing.getOpposite(), pDistance, facing);
+        if (source == null) return false;
+
+        return grabInto(pEntity, source, FUEL_SLOT, stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL));
+    }
+
+    /** Convertit un item du slot de carburant en réserve de combustion. */
+    private void burnFuel() {
+        if (IS_ENERGY) return;
+
+        ItemStack stack = this.itemStorage.getStackInSlot(FUEL_SLOT);
+        if (stack.isEmpty()) return;
+
+        int burnTime = ForgeHooks.getBurnTime(stack, null);
+        if (burnTime <= 0) return;
+        if (burnTime > this.getFuelCapacity() - this.current_fuel_value) return;
+
+        this.addToCurrentFuelValue(burnTime);
+
+        // Conserve les items conteneurs (seau de lave -> seau vide) sans casser le NBT.
+        ItemStack remainder = stack.hasCraftingRemainingItem() ? stack.getCraftingRemainingItem() : ItemStack.EMPTY;
+        stack.shrink(1);
+
+        if (stack.isEmpty() && !remainder.isEmpty()) {
+            this.itemStorage.setStackInSlot(FUEL_SLOT, remainder);
+        } else {
+            this.itemStorage.setStackInSlot(FUEL_SLOT, stack);
+            this.dropAtBlock(remainder);
         }
     }
 
@@ -374,10 +434,17 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         this.energyStorage.overrideEnergyCapacity(energy);
     }
 
-    public void removeEnergy(int energy, boolean simulate) {
+    /**
+     * Consomme l'énergie de fonctionnement.
+     *
+     * <p>Passe par {@code consumeInternal} et non par {@code extractEnergy}, que la
+     * sous-classe anonyme neutralise volontairement pour interdire aux blocs voisins
+     * de vider l'inserter (cf. BUG-003).
+     */
+    public void consumeEnergy(int energy) {
         if (!IS_ENERGY) return;
 
-        this.energyStorage.extractEnergy(energy, simulate);
+        this.energyStorage.consumeInternal(energy);
     }
 
     // Interface (Fuel)
@@ -388,18 +455,12 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         return this.current_fuel_value;
     }
 
-    public int getInnerFuelCapacity() {
-        if (IS_ENERGY) return -1;
-
-        return this.getInnerFuelCapacity();
-    }
-
     public void overrideCurrentFuelValue(int fuel) {
         if(IS_ENERGY) return;
 
-        if (fuel < 0) this.current_fuel_value = 0;
-        if (fuel > this.getFuelCapacity()) this.current_fuel_value = this.getFuelCapacity();
-        this.current_fuel_value = fuel;
+        // Les deux gardes précédentes étaient écrasées par l'affectation finale, si bien
+        // que la réserve pouvait devenir négative ou dépasser la capacité (cf. BUG-013).
+        this.current_fuel_value = Mth.clamp(fuel, 0, this.getFuelCapacity());
     }
 
     public void addToCurrentFuelValue(int fuel) {
@@ -433,7 +494,14 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     }
 
     public void setEnabled(boolean enabled) {
-        this.getBlockState().setValue(BlockStateProperties.ENABLED, enabled);
+        if (this.level == null) return;
+
+        // BlockState est immuable : setValue renvoie un nouvel état, il faut le poser
+        // dans le monde (cf. BUG-018).
+        this.level.setBlock(
+                this.worldPosition,
+                this.getBlockState().setValue(BlockStateProperties.ENABLED, enabled),
+                Block.UPDATE_ALL);
     }
 
     // Inner work
@@ -530,106 +598,157 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         return ItemHandlerHelper.copyStackWithSize(currentItemStack, itemCountToExtract);
     }
 
-    private static boolean suckItems(FactoryIOInserterBlockEntity pEntity, Level pLevel, int pDistance, boolean isWhitelist, boolean simulate) {
-        BlockEntity pBackEntity = pLevel.getBlockEntity(pEntity.getBlockPos().relative(getFacing(pEntity).getOpposite(), pDistance));
-        if (pBackEntity == null) return false;
+    /**
+     * @param offset  direction dans laquelle chercher le voisin, depuis l'inserter
+     * @param side    face du voisin en contact avec l'inserter, du point de vue du voisin
+     */
+    @Nullable
+    private static IItemHandler neighbourHandler(BlockEntity pEntity, Level pLevel, Direction offset, int pDistance, Direction side) {
+        BlockEntity neighbour = pLevel.getBlockEntity(pEntity.getBlockPos().relative(offset, pDistance));
+        if (neighbour == null) return null;
 
-        IItemHandler pBackEntityItemHandler = (IItemHandler) pBackEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, getFacing(pEntity)).orElse(null);
-        if (pBackEntityItemHandler == null) return false;
+        return neighbour.getCapability(ForgeCapabilities.ITEM_HANDLER, side).orElse(null);
+    }
 
-        // No Energy => Items to Fuel Buffer
-        // TODO : Choose item count in fuel buffer (check for buckets)
-        if (!pEntity.IS_ENERGY && !pEntity.itemStorage.getStackInSlot(FUEL_SLOT).isEmpty()) {
-            ItemStack itemStackToGet;
+    /** Nombre d'items de {@code stack} que le slot interne {@code slot} peut réellement accueillir. */
+    private int simulateInsertInternal(int slot, @Nonnull ItemStack stack) {
+        if (stack.isEmpty()) return 0;
 
-            for(int i = 0; i < pBackEntityItemHandler.getSlots(); i++) {
-                itemStackToGet = pBackEntityItemHandler.extractItem(
-                    i,
-                    Math.min(pEntity.getMaximumItemCountPerAction(),
-                    pBackEntityItemHandler.getStackInSlot(i).getMaxStackSize()),
-                    true);
+        ItemStack current = this.itemStorage.getStackInSlot(slot);
+        if (current.isEmpty()) {
+            return Math.min(stack.getCount(), stack.getMaxStackSize());
+        }
+        if (!ItemHandlerHelper.canItemStacksStack(stack, current)) return 0;
 
-                if (!itemStackToGet.isEmpty() && itemStackToGet.is(FactoryIOTags.Items.INSERTER_FUEL)) {
-                    pEntity.insertItemInternal(
-                        FUEL_SLOT,
-                        pBackEntityItemHandler.extractItem(
-                            i,
-                            Math.min(pEntity.getMaximumItemCountPerAction(),
-                            pBackEntityItemHandler.getStackInSlot(i).getMaxStackSize()),
-                            simulate),
-                        simulate);
+        return Math.max(0, Math.min(stack.getCount(), current.getMaxStackSize() - current.getCount()));
+    }
 
-                    return true;
-                }
-            }
+    /** Nombre d'items de {@code stack} que {@code handler} accepte, tous slots confondus. */
+    private static int simulateInsert(IItemHandler handler, @Nonnull ItemStack stack) {
+        int remaining = stack.getCount();
 
+        for (int slot = 0; slot < handler.getSlots() && remaining > 0; slot++) {
+            remaining = handler.insertItem(slot, ItemHandlerHelper.copyStackWithSize(stack, remaining), true).getCount();
         }
 
-        // In Internal Buffer ( BUFFER_SLOT ) if Empty
-        if (pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()) {
-            ItemStack itemStackToGet;
+        return stack.getCount() - remaining;
+    }
 
-            for(int i = 0; i < pBackEntityItemHandler.getSlots(); i++) {
-                itemStackToGet = pBackEntityItemHandler.extractItem(
-                        i,
-                        Math.min(pEntity.getMaximumItemCountPerAction(),
-                                pBackEntityItemHandler.getStackInSlot(i).getMaxStackSize()),
-                        true);
+    /** Insère en répartissant sur plusieurs slots. @return ce qui n'a pas pu être placé */
+    @Nonnull
+    private static ItemStack insertDistributed(IItemHandler handler, @Nonnull ItemStack stack) {
+        ItemStack remaining = stack;
 
-                if (checkItemStackNotPresentInWhitelist(pEntity, itemStackToGet, isWhitelist) && !itemStackToGet.isEmpty()) {
-                    pEntity.insertItemInternal(
-                            BUFFER_SLOT,
-                            pBackEntityItemHandler.extractItem(
-                                    i,
-                                    Math.min(pEntity.getMaximumItemCountPerAction(),
-                                            pBackEntityItemHandler.getStackInSlot(i).getMaxStackSize()),
-                                    simulate),
-                            simulate);
-
-                    return true;
-                }
-            }
+        for (int slot = 0; slot < handler.getSlots() && !remaining.isEmpty(); slot++) {
+            remaining = handler.insertItem(slot, remaining, false);
         }
 
-        // If no Item found
+        return remaining;
+    }
+
+    /**
+     * Filet de sécurité : un reliquat inattendu ne doit jamais être détruit (cf. BUG-006).
+     * On tente de le rendre à la source, puis on le laisse tomber au sol en dernier recours.
+     */
+    private void rescueLeftover(@Nonnull ItemStack leftover, UnaryOperator<ItemStack> fallback) {
+        if (leftover.isEmpty()) return;
+
+        FactoryIO.LOGGER.warn("Reliquat inattendu lors d'un transfert en {} : {}", this.worldPosition, leftover);
+
+        this.dropAtBlock(fallback.apply(leftover));
+    }
+
+    /** Laisse tomber une pile au sol, en dernier recours. Sans effet si elle est vide. */
+    private void dropAtBlock(@Nonnull ItemStack stack) {
+        if (stack.isEmpty() || this.level == null) return;
+
+        Containers.dropItemStack(
+                this.level,
+                this.worldPosition.getX() + 0.5,
+                this.worldPosition.getY() + 0.5,
+                this.worldPosition.getZ() + 0.5,
+                stack);
+    }
+
+    /**
+     * Prend au plus une « main » d'items acceptés par {@code accept} et les place dans
+     * {@code targetSlot}.
+     *
+     * <p>Ordre impératif : simuler l'extraction, calculer ce que la destination accepte
+     * réellement, puis extraire exactement cette quantité. L'inverse détruit des items.
+     */
+    private static boolean grabInto(FactoryIOInserterBlockEntity pEntity, IItemHandler source, int targetSlot, Predicate<ItemStack> accept) {
+        int wanted = pEntity.getMaximumItemCountPerAction();
+
+        for (int slot = 0; slot < source.getSlots(); slot++) {
+            ItemStack probe = source.extractItem(slot, wanted, true);
+            if (probe.isEmpty() || !accept.test(probe)) continue;
+
+            int movable = pEntity.simulateInsertInternal(targetSlot, probe);
+            if (movable <= 0) continue;
+
+            ItemStack taken = source.extractItem(slot, movable, false);
+            if (taken.isEmpty()) continue;
+
+            pEntity.rescueLeftover(
+                    pEntity.insertItemInternal(targetSlot, taken, false),
+                    rest -> ItemHandlerHelper.insertItem(source, rest, false));
+            return true;
+        }
+
         return false;
     }
 
-    private static boolean expelItems(FactoryIOInserterBlockEntity pEntity, Level pLevel, int pDistance, boolean simulate) {
-        if (pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()) return false;
+    private static boolean suckItems(FactoryIOInserterBlockEntity pEntity, Level pLevel, int pDistance, boolean isWhitelist) {
+        Direction facing = getFacing(pEntity);
 
-        BlockEntity pBackEntity = pLevel.getBlockEntity(pEntity.getBlockPos().relative(getFacing(pEntity), pDistance));
-        if (pBackEntity == null) return false;
+        // La face du coffre en contact avec l'inserter, vue depuis le coffre, est `facing`.
+        IItemHandler source = neighbourHandler(pEntity, pLevel, facing.getOpposite(), pDistance, facing);
+        if (source == null) return false;
 
-        IItemHandler pBackEntityItemHandler = (IItemHandler) pBackEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, getFacing(pEntity)).orElse(null);
-        if (pBackEntityItemHandler == null) return false;
+        // 1. Ravitaillement en carburant tant que le buffer interne n'est pas rempli.
+        //    La condition portait auparavant sur un slot NON vide, ce qui empêchait tout
+        //    redémarrage après panne sèche (cf. BUG-012).
+        if (pEntity.needsFuel()
+                && grabInto(pEntity, source, FUEL_SLOT, stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL))) {
+            return true;
+        }
 
-        boolean check;
-
-        for(int i = 0; i < pBackEntityItemHandler.getSlots(); ++i) {
-            check = pBackEntityItemHandler.insertItem(
-                    i,
-                    pEntity.extractItemInternal(
-                            BUFFER_SLOT,
-                            Math.min(pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).getCount(), pEntity.getMaximumItemCountPerAction()),
-                            true),
-                    true)
-                    .isEmpty();
-
-            if (check) {
-                pBackEntityItemHandler.insertItem(
-                        i,
-                        pEntity.extractItemInternal(
-                                BUFFER_SLOT,
-                                Math.min(pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).getCount(), pEntity.getMaximumItemCountPerAction()),
-                                simulate),
-                        simulate);
-                return true;
-            }
-
+        // 2. Buffer de transport, uniquement s'il est libre.
+        if (pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()
+                && grabInto(pEntity, source, BUFFER_SLOT, stack -> checkItemStackNotPresentInWhitelist(pEntity, stack, isWhitelist))) {
+            return true;
         }
 
         return false;
+    }
+
+    private static boolean expelItems(FactoryIOInserterBlockEntity pEntity, Level pLevel, int pDistance) {
+        ItemStack buffer = pEntity.itemStorage.getStackInSlot(BUFFER_SLOT);
+        if (buffer.isEmpty()) return false;
+
+        Direction facing = getFacing(pEntity);
+
+        // La face de la cible en contact avec l'inserter, vue depuis la cible, est l'opposé
+        // de `facing` (cf. BUG-023).
+        IItemHandler target = neighbourHandler(pEntity, pLevel, facing, pDistance, facing.getOpposite());
+        if (target == null) return false;
+
+        int wanted = Math.min(buffer.getCount(), pEntity.getMaximumItemCountPerAction());
+
+        ItemStack probe = pEntity.extractItemInternal(BUFFER_SLOT, wanted, true);
+        if (probe.isEmpty()) return false;
+
+        int movable = simulateInsert(target, probe);
+        if (movable <= 0) return false;
+
+        ItemStack taken = pEntity.extractItemInternal(BUFFER_SLOT, movable, false);
+        if (taken.isEmpty()) return false;
+
+        pEntity.rescueLeftover(
+                insertDistributed(target, taken),
+                rest -> pEntity.insertItemInternal(BUFFER_SLOT, rest, false));
+        return true;
     }
 
     private int getActionMultiplier() {
@@ -645,7 +764,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     private void useFuelOrEnergy() {
         if (this.IS_ENERGY) {
-            this.removeEnergy(this.getFuelConsumptionPerAction(), false);
+            this.consumeEnergy(this.getFuelConsumptionPerAction());
         }
         else {
             this.removeFromToCurrentFuelValue(this.getFuelConsumptionPerAction());
@@ -654,20 +773,22 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     // Interface GeckLib
 
+    private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
+
     @Override
-    public void registerControllers(AnimationData data) {
-        data.addAnimationController(new AnimationController<FactoryIOInserterBlockEntity>
-                (this, "controller", 0, this::predicate));
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this, "controller", 0, this::idlePredicate));
     }
 
-    private <E extends IAnimatable> PlayState predicate (AnimationEvent<E> event) {
-        event.getController().setAnimation(new AnimationBuilder().addAnimation("idle", true));
+    private PlayState idlePredicate(AnimationState<FactoryIOInserterBlockEntity> state) {
+        state.getController().setAnimation(IDLE);
 
         return PlayState.CONTINUE;
     }
 
-    public AnimationFactory getFactory() {
-        return this.factory;
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.animatableCache;
     }
 
     // Interface (Menu)

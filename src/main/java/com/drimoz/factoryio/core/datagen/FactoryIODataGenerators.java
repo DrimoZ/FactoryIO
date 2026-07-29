@@ -4,30 +4,35 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.datagen.generator.*;
 import com.drimoz.factoryio.core.registery.FactoryIOTranslations;
 import net.minecraft.data.DataGenerator;
+import net.minecraft.data.PackOutput;
 import net.minecraftforge.common.data.ExistingFileHelper;
+import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.forge.event.lifecycle.GatherDataEvent;
-
-import java.util.Locale;
 
 public class FactoryIODataGenerators {
-    public FactoryIODataGenerators() {
-    }
 
     @SubscribeEvent
     public void onGatherData(GatherDataEvent event) {
         DataGenerator generator = event.getGenerator();
+        PackOutput output = generator.getPackOutput();
         ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
 
-        FactoryIOTranslations.getINSTANCE().getTranslationList().forEach(translationCode -> {
-            generator.addProvider(new FactoryIOLangGenerator(generator, FactoryIO.MOD_ID, translationCode));
-        });
+        boolean client = event.includeClient();
+        boolean server = event.includeServer();
 
-        generator.addProvider(new FactoryIOBlockModelGenerator(generator, FactoryIO.MOD_ID, existingFileHelper));
-        generator.addProvider(new FactoryIOItemModelGenerator(generator, FactoryIO.MOD_ID, existingFileHelper));
-        generator.addProvider(new FactoryIOItemTagsGenerator(generator, FactoryIO.MOD_ID, existingFileHelper));
-        generator.addProvider(new FactoryIOBlockTagsGenerator(generator, FactoryIO.MOD_ID, existingFileHelper));
+        FactoryIOTranslations.getINSTANCE().getTranslationList().forEach(code ->
+                generator.addProvider(client, new FactoryIOLangGenerator(output, FactoryIO.MOD_ID, code)));
 
-        generator.addProvider(new FactoryIOLootGenerator(generator));
+        generator.addProvider(client, new FactoryIOBlockModelGenerator(output, FactoryIO.MOD_ID, existingFileHelper));
+        generator.addProvider(client, new FactoryIOItemModelGenerator(output, FactoryIO.MOD_ID, existingFileHelper));
+
+        FactoryIOBlockTagsGenerator blockTags =
+                new FactoryIOBlockTagsGenerator(output, event.getLookupProvider(), FactoryIO.MOD_ID, existingFileHelper);
+
+        generator.addProvider(server, blockTags);
+        generator.addProvider(server, new FactoryIOItemTagsGenerator(
+                output, event.getLookupProvider(), blockTags.contentsGetter(), FactoryIO.MOD_ID, existingFileHelper));
+
+        generator.addProvider(server, new FactoryIOLootGenerator(output));
     }
 }

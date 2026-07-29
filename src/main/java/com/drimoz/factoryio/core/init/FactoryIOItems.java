@@ -1,38 +1,31 @@
 package com.drimoz.factoryio.core.init;
 
-import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.generic.item.FactoryIOFoilItem;
 import com.drimoz.factoryio.core.generic.item.FactoryIOColoredItem;
-import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
-import com.drimoz.factoryio.shared.FactoryIOCreativeTab;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.RegistryObject;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 public class FactoryIOItems {
 
     // Public properties
 
-    public static final Map<RegistryObject<Item>, Supplier<Item>> ENTRIES = new LinkedHashMap<>();
+    /** Ordre d'apparition dans l'onglet créatif et dans les générateurs de données. */
+    public static final List<RegistryObject<Item>> ENTRIES = new ArrayList<>();
 
-    public static final RegistryObject<Item> ELECTRONIC_CIRCUIT = register("electronic_circuit", () -> new FactoryIOColoredItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB), false, "#00FF00"));
-    public static final RegistryObject<Item> ADVANCED_CIRCUIT = register("advanced_circuit", () -> new FactoryIOColoredItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB), false, "#FF0000"));
-    public static final RegistryObject<Item> PROCESSING_UNIT = register("processing_unit", () -> new FactoryIOColoredItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB), false, "#0000FF"));
+    public static final RegistryObject<Item> ELECTRONIC_CIRCUIT = register("electronic_circuit", () -> new FactoryIOColoredItem(new Item.Properties(), false, "#00FF00"));
+    public static final RegistryObject<Item> ADVANCED_CIRCUIT = register("advanced_circuit", () -> new FactoryIOColoredItem(new Item.Properties(), false, "#FF0000"));
+    public static final RegistryObject<Item> PROCESSING_UNIT = register("processing_unit", () -> new FactoryIOColoredItem(new Item.Properties(), false, "#0000FF"));
 
-    public static final RegistryObject<Item> AUTOMATION_SCIENCE_PACK = register("automation_science_pack", () -> new FactoryIOColoredItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB), true, "#8A2BE2"));
-    public static final RegistryObject<Item> LOGISTIC_SCIENCE_PACK = register("logistic_science_pack", () -> new FactoryIOColoredItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB), true, "#8A2BE2"));
-    public static final RegistryObject<Item> MILITARY_SCIENCE_PACK = register("military_science_pack", () -> new FactoryIOColoredItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB), true, "#8A2BE2"));
-    public static final RegistryObject<Item> CHEMICAL_SCIENCE_PACK = register("chemical_science_pack", () -> new FactoryIOColoredItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB), true, "#8A2BE2"));
-    public static final RegistryObject<Item> PRODUCTION_SCIENCE_PACK = register("production_science_pack", () -> new FactoryIOColoredItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB), true, "#8A2BE2"));
-    public static final RegistryObject<Item> UTILITY_SCIENCE_PACK = register("utility_science_pack", () -> new FactoryIOColoredItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB), true, "#8A2BE2"));
-    public static final RegistryObject<Item> SPACE_SCIENCE_PACK = register("space_science_pack", () -> new FactoryIOColoredItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB), true, "#8A2BE2"));
+    public static final RegistryObject<Item> AUTOMATION_SCIENCE_PACK = register("automation_science_pack", () -> new FactoryIOColoredItem(new Item.Properties(), true, "#8A2BE2"));
+    public static final RegistryObject<Item> LOGISTIC_SCIENCE_PACK = register("logistic_science_pack", () -> new FactoryIOColoredItem(new Item.Properties(), true, "#8A2BE2"));
+    public static final RegistryObject<Item> MILITARY_SCIENCE_PACK = register("military_science_pack", () -> new FactoryIOColoredItem(new Item.Properties(), true, "#8A2BE2"));
+    public static final RegistryObject<Item> CHEMICAL_SCIENCE_PACK = register("chemical_science_pack", () -> new FactoryIOColoredItem(new Item.Properties(), true, "#8A2BE2"));
+    public static final RegistryObject<Item> PRODUCTION_SCIENCE_PACK = register("production_science_pack", () -> new FactoryIOColoredItem(new Item.Properties(), true, "#8A2BE2"));
+    public static final RegistryObject<Item> UTILITY_SCIENCE_PACK = register("utility_science_pack", () -> new FactoryIOColoredItem(new Item.Properties(), true, "#8A2BE2"));
+    public static final RegistryObject<Item> SPACE_SCIENCE_PACK = register("space_science_pack", () -> new FactoryIOColoredItem(new Item.Properties(), true, "#8A2BE2"));
 
     public static final RegistryObject<Item> COPPER_PLATE = register("copper_plate");
     public static final RegistryObject<Item> IRON_PLATE = register("iron_plate");
@@ -65,49 +58,22 @@ public class FactoryIOItems {
     public static final RegistryObject<Item> URANIUM_235 = register("uranium_235");
     public static final RegistryObject<Item> URANIUM_238 = register("uranium_238");
 
-
-    // Listeners
-
-    @SubscribeEvent
-    public void onRegisterItems(RegistryEvent.Register<Item> event) {
-        IForgeRegistry<Item> registry = event.getRegistry();
-        Objects.requireNonNull(registry);
-
-        ENTRIES.forEach((reg, item) -> {
-            registry.register(item.get());
-            reg.updateReference(registry);
-        });
-
-        FactoryIOInserterRegistry.getInstance().onRegisterItems(registry);
-    }
-
     // Life cycle
 
-    public FactoryIOItems() {
+    private FactoryIOItems() {}
 
-    }
+    /** Force l'initialisation statique de la classe, donc l'enregistrement des items. */
+    public static void init() {}
 
     // Inner work
 
     private static RegistryObject<Item> register(String name) {
-        return register(
-                name,
-                () -> new Item(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB))
-        );
-    }
-
-    private static RegistryObject<Item> registerGlowing(String name) {
-        return register(
-                name,
-                () -> new FactoryIOFoilItem(new Item.Properties().tab(FactoryIOCreativeTab.MOD_TAB))
-        );
+        return register(name, () -> new Item(new Item.Properties()));
     }
 
     private static RegistryObject<Item> register(String name, Supplier<Item> item) {
-        ResourceLocation loc = new ResourceLocation(FactoryIO.MOD_ID, name);
-        RegistryObject<Item> reg = RegistryObject.create(loc, ForgeRegistries.ITEMS);
-
-        ENTRIES.put(reg, () -> item.get().setRegistryName(loc));
+        RegistryObject<Item> reg = FactoryIORegistries.ITEMS.register(name, item);
+        ENTRIES.add(reg);
         return reg;
     }
 }

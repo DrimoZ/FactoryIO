@@ -4,153 +4,134 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.shared.FactoryIOUtils;
 import com.drimoz.factoryio.shared.gui.FactoryIOGuiButton;
 import com.drimoz.factoryio.shared.gui.FactoryIOGuiEnergy;
-import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> extends AbstractContainerScreen<FactoryIOInserterContainer> {
-    public static final ResourceLocation GUI_FILTER_INSERTER = new ResourceLocation(FactoryIO.MOD_ID + ":textures/gui/filter_inserter_gui.png");
-    public static final ResourceLocation GUI_BURNER_INSERTER = new ResourceLocation(FactoryIO.MOD_ID + ":textures/gui/burner_inserter_gui.png");
-    public static final ResourceLocation GUI_INSERTER = new ResourceLocation(FactoryIO.MOD_ID + ":textures/gui/inserter_gui.png");
 
-    public FactoryIOGuiEnergy energyBar;
-    public FactoryIOGuiButton whitelistButton;
+    // Public properties
 
-    Inventory inv;
-    Component name;
+    public static final ResourceLocation GUI_FILTER_INSERTER = new ResourceLocation(FactoryIO.MOD_ID, "textures/gui/filter_inserter_gui.png");
+    public static final ResourceLocation GUI_BURNER_INSERTER = new ResourceLocation(FactoryIO.MOD_ID, "textures/gui/burner_inserter_gui.png");
+    public static final ResourceLocation GUI_INSERTER = new ResourceLocation(FactoryIO.MOD_ID, "textures/gui/inserter_gui.png");
 
+    /** Identifiant du bouton whitelist, partagé avec le paquet C→S. */
+    private static final int WHITELIST_BUTTON = 6;
+
+    // Private properties
+
+    private FactoryIOGuiEnergy energyBar;
+    private FactoryIOGuiButton whitelistButton;
+
+    // Life cycle
 
     public FactoryIOInserterScreen(T pMenu, Inventory pPlayerInventory, Component pTitle) {
         super(pMenu, pPlayerInventory, pTitle);
-        inv = pPlayerInventory;
-        name = pTitle;
-    }
-
-    protected void init() {
-        super.init();
-        int left = this.getGuiLeft();
-        int top = this.getGuiTop();
-        if (getMenu().getBlockEntity().IS_ENERGY)
-            energyBar = new FactoryIOGuiEnergy(left, top, 153, 11, 12, 51, 179, 54);
-        if (getMenu().getBlockEntity().IS_FILTER)
-            whitelistButton = new FactoryIOGuiButton(left, top, 7, 30, 16, 16, 194, 0);
-    }
-    public void render(PoseStack matrix, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(matrix);
-        super.render(matrix, mouseX, mouseY, partialTicks);
-        this.renderTooltip(matrix, mouseX, mouseY);
     }
 
     @Override
-    protected void renderBg(PoseStack pPoseStack, float pPartialTick, int pMouseX, int pMouseY) {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+    protected void init() {
+        super.init();
 
-        if (!getMenu().getBlockEntity().IS_ENERGY)
-            RenderSystem.setShaderTexture(0, GUI_BURNER_INSERTER);
-        else if (getMenu().getBlockEntity().IS_FILTER)
-            RenderSystem.setShaderTexture(0, GUI_FILTER_INSERTER);
-        else
-            RenderSystem.setShaderTexture(0, GUI_INSERTER);
+        int left = this.getGuiLeft();
+        int top = this.getGuiTop();
+
+        if (getMenu().getBlockEntity().IS_ENERGY) {
+            energyBar = new FactoryIOGuiEnergy(left, top, 153, 11, 12, 51, 179, 54);
+        }
+        if (getMenu().getBlockEntity().IS_FILTER) {
+            whitelistButton = new FactoryIOGuiButton(left, top, 7, 30, 16, 16, 194, 0);
+        }
+    }
+
+    // Interface (Rendu)
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        this.renderBackground(graphics);
+        super.render(graphics, mouseX, mouseY, partialTicks);
+
+        // Les tooltips du mod se dessinent après le rendu des slots, sinon ils passent
+        // dessous. L'ancienne version les traçait depuis renderBg.
+        this.renderTooltip(graphics, mouseX, mouseY);
+        this.renderCustomTooltips(graphics, mouseX, mouseY);
+    }
+
+    @Override
+    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+        ResourceLocation texture = backgroundTexture();
 
         int relX = (this.width - this.getXSize()) / 2;
         int relY = (this.height - this.getYSize()) / 2;
 
-        this.blit(pPoseStack, relX, relY, 0, 0, this.getXSize(), this.getYSize());
+        // GuiGraphics.blit prend la texture en argument : plus besoin de
+        // RenderSystem.setShader / setShaderTexture.
+        graphics.blit(texture, relX, relY, 0, 0, this.getXSize(), this.getYSize());
 
         if (getMenu().getBlockEntity().IS_ENERGY && getMenu().hasEnergy()) {
-            energyBar.render(this, pPoseStack,getMenu().getEnergyScaled(51));
+            energyBar.render(graphics, texture, getMenu().getEnergyScaled(51));
         }
 
         if (!getMenu().getBlockEntity().IS_ENERGY && getMenu().hasFuel()) {
             int k = getMenu().getFuelScaled(13);
-            this.blit(pPoseStack, relX + 80, relY + 32 + 12 - k, 176, 12 - k, 14, k + 1);
+            graphics.blit(texture, relX + 80, relY + 32 + 12 - k, 176, 12 - k, 14, k + 1);
         }
 
         if (getMenu().getBlockEntity().IS_FILTER) {
-            whitelistButton.render(this, pPoseStack, pMouseX, pMouseY, getMenu().getBlockEntity().isWhitelist());
-
+            whitelistButton.render(graphics, texture, getMenu().getBlockEntity().isWhitelist());
         }
-        this.addToolTips(pPoseStack, pMouseX, pMouseY);
     }
 
-    public static boolean isShiftKeyDown() {
-        return isKeyDown(GLFW.GLFW_KEY_LEFT_SHIFT) || isKeyDown(GLFW.GLFW_KEY_RIGHT_SHIFT);
-    }
+    // Interface (Interaction)
 
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        double actualMouseX = mouseX - (((double)this.width - (double)this.getXSize()) / 2);
-        double actualMouseY = mouseY - (((double)this.height - (double)this.getYSize()) / 2);
         if (getMenu().getBlockEntity().IS_FILTER) {
-            this.mouseClickedInventoryButtons(button, actualMouseX, actualMouseY);
+            double relativeX = mouseX - this.getGuiLeft();
+            double relativeY = mouseY - this.getGuiTop();
+
+            boolean whitelist = getMenu().getBlockEntity().isWhitelist();
+            whitelistButton.onClick(relativeX, relativeY, getMenu().getBlockEntity().getBlockPos(),
+                    WHITELIST_BUTTON, whitelist ? 0 : 1, true);
         }
+
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    public void mouseClickedInventoryButtons(int button, double mouseX, double mouseY) {
-        if (getMenu().getBlockEntity().IS_FILTER && !getMenu().getBlockEntity().isWhitelist())
-        {
-            whitelistButton.onClick(mouseX, mouseY, getMenu().getBlockEntity().getBlockPos(), 6, 1, true);
-        }
-        else if (getMenu().getBlockEntity().IS_FILTER && getMenu().getBlockEntity().isWhitelist())
-        {
-            whitelistButton.onClick(mouseX, mouseY, getMenu().getBlockEntity().getBlockPos(), 6, 0, true);
-        }
+    // Inner work
+
+    private ResourceLocation backgroundTexture() {
+        if (!getMenu().getBlockEntity().IS_ENERGY) return GUI_BURNER_INSERTER;
+        if (getMenu().getBlockEntity().IS_FILTER) return GUI_FILTER_INSERTER;
+        return GUI_INSERTER;
     }
 
-    private void addToolTips(PoseStack pPoseStack, int mouseX, int mouseY) {
-        if (getMenu().getBlockEntity().IS_ENERGY) {
-            energyBar.renderTooltip(this, pPoseStack, mouseX, mouseY, getMenu().getBlockEntity().getCurrentEnergy(), getMenu().getBlockEntity().getEnergyCapacity(), true);
+    private void renderCustomTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+        FactoryIOInserterBlockEntity blockEntity = getMenu().getBlockEntity();
 
+        if (blockEntity.IS_ENERGY) {
+            energyBar.renderTooltip(graphics, this.font, mouseX, mouseY,
+                    blockEntity.getCurrentEnergy(), blockEntity.getEnergyCapacity(), true);
         }
-        if (getMenu().getBlockEntity().IS_FILTER) {
-            List list = Lists.newArrayList();
 
-            list.add(new TextComponent("" + (getMenu().getBlockEntity().isWhitelist() ?
-                    FactoryIOUtils.tooltipString("whitelist") :
-                    FactoryIOUtils.tooltipString("blacklist"))));
+        if (blockEntity.IS_FILTER) {
+            boolean whitelist = blockEntity.isWhitelist();
 
-            list.add(
-                    new TextComponent(
-                            "§7" + FactoryIOUtils.tooltipString("whitelist_switch") + " §6" +
-                                    ( getMenu().getBlockEntity().isWhitelist() ?
-                                                    FactoryIOUtils.tooltipString("blacklist") :
-                                                    FactoryIOUtils.tooltipString("whitelist")
-                                    )
-                    )
-            );
+            List<Component> lines = new ArrayList<>();
+            lines.add(FactoryIOUtils.tooltipComponent(whitelist ? "whitelist" : "blacklist"));
+            lines.add(FactoryIOUtils.tooltipComponent("whitelist_switch").withStyle(ChatFormatting.GRAY)
+                    .append(Component.literal(" "))
+                    .append(FactoryIOUtils.tooltipComponent(whitelist ? "blacklist" : "whitelist")
+                            .withStyle(ChatFormatting.GOLD)));
 
-            whitelistButton.renderComponentTooltip(this, pPoseStack, list, mouseX, mouseY, true);
+            whitelistButton.renderComponentTooltip(graphics, this.font, lines, mouseX, mouseY, true);
         }
     }
-
-    public static boolean isKeyDown(int glfw) {
-        InputConstants.Key key = InputConstants.Type.KEYSYM.getOrCreate(glfw);
-        int keyCode = key.getValue();
-        if (keyCode != InputConstants.UNKNOWN.getValue()) {
-            long windowHandle = Minecraft.getInstance().getWindow().getWindow();
-            try {
-                if (key.getType() == InputConstants.Type.KEYSYM) {
-                    return InputConstants.isKeyDown(windowHandle, keyCode);
-                } /**else if (key.getType() == InputMappings.Type.MOUSE) {
-                 return GLFW.glfwGetMouseButton(windowHandle, keyCode) == GLFW.GLFW_PRESS;
-                 }**/
-            } catch (Exception ignored) {
-            }
-        }
-        return false;
-    }
-
 }

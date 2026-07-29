@@ -19,14 +19,11 @@ public class FactoryIOCommonConfigs {
     public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_GEN_STACK_INSERTER;
     public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_GEN_STACK_FILTER_INSERTER;
 
-    //CONVOYERS
+    // Convoyeurs : réservé pour la Phase 3, aucune implémentation Java à ce jour.
     public static final ForgeConfigSpec.ConfigValue<Integer> BELT_COOLDOWN;
     public static final ForgeConfigSpec.ConfigValue<Integer> FAST_BELT_COOLDOWN;
     public static final ForgeConfigSpec.ConfigValue<Integer> EXPRESS_BELT_COOLDOWN;
 
-
-    //MISC
-    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOW_ERRORS;
 
     static {
         BUILDER.comment("Factory'I/O Configuration");
@@ -34,8 +31,10 @@ public class FactoryIOCommonConfigs {
 
 
         BUILDER.push("Inserters");
-        BUILDER.comment("Choose here whether the basic Factorio inserters should be created");
-        //BUILDER.comment("If you disable any of these inserters, make sure to delete their associated file in \"config/factory_io/inserters/\" to remove them from being created");
+        BUILDER.comment(
+                "Choose here whether the basic Factorio inserters should be created.",
+                "These values are read before Forge loads this file (block registration happens earlier),",
+                "so a change only takes effect on the NEXT game launch.");
 
         SHOULD_GEN_BURNER_INSERTER = BUILDER
                 .comment("Should create default Burner Inserter")
@@ -79,15 +78,6 @@ public class FactoryIOCommonConfigs {
                 .defineInRange("duration", 10, 1, 999);
         BUILDER.pop();
 
-        BUILDER.pop();
-
-
-
-
-
-        BUILDER.push("MISC");
-        SHOW_ERRORS = BUILDER.comment(" Show furnace settings errors in chat, used for debugging")
-                .define("misc.errors", false);
         BUILDER.pop();
 
         BUILDER.pop();

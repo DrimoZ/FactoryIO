@@ -1,7 +1,7 @@
 package com.drimoz.factoryio.core.registery;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.configs.FactoryIOCommonConfigs;
+import com.drimoz.factoryio.core.configs.FactoryIOEarlyConfig;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.google.gson.*;
 import net.minecraft.resources.ResourceLocation;
@@ -23,10 +23,14 @@ public class FactoryIOInserterLoader {
     // Interface (Global)
 
     public static void setup() {
+        FactoryIOEarlyConfig.load();
+
         FactoryIOInserterRegistry.getInstance().setAllowRegistration(true);
         setupInsertersList();
         createDefaultInserters();
         FactoryIOInserterRegistry.getInstance().setAllowRegistration(false);
+
+        FactoryIOEarlyConfig.close();
     }
 
     private static void setupInsertersList() {
@@ -70,81 +74,83 @@ public class FactoryIOInserterLoader {
     }
 
     private static void createDefaultInserters() {
-        if (FactoryIOCommonConfigs.SHOULD_GEN_BURNER_INSERTER.get()) {
-            registerInserter(
-                    new Inserter(
-                            new ResourceLocation(FactoryIO.MOD_ID, "burner_inserter"), true,
-                            1, 400, 1,
-                            15000, 300
-                    )
-            );
-        }
+        registerBurnerInserter(
+                "burner_inserter", true,
+                1, 400, 1,
+                15000, 300
+        );
 
-        if (FactoryIOCommonConfigs.SHOULD_GEN_INSERTER.get()) {
-            registerInserter(
-                    new Inserter(
-                            new ResourceLocation(FactoryIO.MOD_ID, "inserter"), true,
-                            1, 400, 1,
-                            false,
-                            25000, 5000, 300
-                    )
-            );
-        }
+        registerEnergyInserter(
+                "inserter", true,
+                1, 400, 1,
+                false,
+                25000, 5000, 300
+        );
 
-        if (FactoryIOCommonConfigs.SHOULD_GEN_LONG_HANDED_INSERTER.get()) {
-            registerInserter(
-                    new Inserter(
-                            new ResourceLocation(FactoryIO.MOD_ID, "long_handed_inserter"), true,
-                            2, 400, 1,
-                            false,
-                            25000, 5000, 400
-                    )
-            );
-        }
+        registerEnergyInserter(
+                "long_handed_inserter", true,
+                2, 400, 1,
+                false,
+                25000, 5000, 400
+        );
 
-        if (FactoryIOCommonConfigs.SHOULD_GEN_FILTER_INSERTER.get()) {
-            registerInserter(
-                    new Inserter(
-                            new ResourceLocation(FactoryIO.MOD_ID, "filter_inserter"), true,
-                            1, 400, 1,
-                            true,
-                            25000, 5000, 400
-                    )
-            );
-        }
+        registerEnergyInserter(
+                "filter_inserter", true,
+                1, 400, 1,
+                true,
+                25000, 5000, 400
+        );
 
-        if (FactoryIOCommonConfigs.SHOULD_GEN_FAST_INSERTER.get()) {
-            registerInserter(
-                    new Inserter(
-                            new ResourceLocation(FactoryIO.MOD_ID, "fast_inserter"), true,
-                            1, 250, 1,
-                            false,
-                            25000, 5000, 400
-                    )
-            );
-        }
+        registerEnergyInserter(
+                "fast_inserter", true,
+                1, 250, 1,
+                false,
+                25000, 5000, 400
+        );
 
-        if (FactoryIOCommonConfigs.SHOULD_GEN_STACK_INSERTER.get()) {
-            registerInserter(
-                    new Inserter(
-                            new ResourceLocation(FactoryIO.MOD_ID, "stack_inserter"), true,
-                            1, 400, 3,
-                            false,
-                            25000, 5000, 500
-                    )
-            );
-        }
+        registerEnergyInserter(
+                "stack_inserter", true,
+                1, 400, 3,
+                false,
+                25000, 5000, 500
+        );
 
-        if (FactoryIOCommonConfigs.SHOULD_GEN_STACK_FILTER_INSERTER.get()) {
-            registerInserter(
-                    new Inserter(
-                            new ResourceLocation(FactoryIO.MOD_ID, "stack_filter_inserter"), true,
-                            1, 400, 3,
-                            true,
-                            25000, 5000, 600
-                    )
-            );
-        }
+        registerEnergyInserter(
+                "stack_filter_inserter", true,
+                1, 400, 3,
+                true,
+                25000, 5000, 600
+        );
+    }
+
+    private static void registerBurnerInserter(
+            String name, boolean affectedByRedstone,
+            int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
+            int fuelCapacity, int fuelConsumption
+    ) {
+        if (!FactoryIOEarlyConfig.shouldGenerateInserter(name)) return;
+
+        registerInserter(new Inserter(
+                new ResourceLocation(FactoryIO.MOD_ID, name), affectedByRedstone,
+                grabDistance, cooldownBetweenActions, preferredItemCountPerAction,
+                fuelCapacity, fuelConsumption
+        ));
+    }
+
+    private static void registerEnergyInserter(
+            String name, boolean affectedByRedstone,
+            int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
+            boolean filterable,
+            int energyCapacity, int energyTransferRate, int energyConsumption
+    ) {
+        if (!FactoryIOEarlyConfig.shouldGenerateInserter(name)) return;
+
+        registerInserter(new Inserter(
+                new ResourceLocation(FactoryIO.MOD_ID, name), affectedByRedstone,
+                grabDistance, cooldownBetweenActions, preferredItemCountPerAction,
+                filterable,
+                energyCapacity, energyTransferRate, energyConsumption
+        ));
     }
 
     private static void registerInserter(Inserter inserter) {

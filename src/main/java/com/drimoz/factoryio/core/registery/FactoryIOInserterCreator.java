@@ -4,7 +4,7 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.JsonObject;
-import net.minecraft.network.chat.TextComponent;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 
@@ -42,8 +42,7 @@ public class FactoryIOInserterCreator {
 
         if (json.has("translations")) {
             var translations = GsonHelper.getAsJsonObject(json, "translations");
-            FactoryIO.LOGGER.error("translations");
-            FactoryIO.LOGGER.error(translations.toString());
+            FactoryIO.LOGGER.debug("Traductions déclarées pour {} : {}", id, translations);
 
             for (var t: translations.entrySet()) {
                 inserter.getTranslation().addTranslation(t.getKey(), t.getValue().getAsString());

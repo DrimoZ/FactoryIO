@@ -1,169 +1,99 @@
 package com.drimoz.factoryio.shared.gui;
 
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncC2SWhitelistButton;
 import com.drimoz.factoryio.core.init.FactoryIONetworks;
-import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.drimoz.factoryio.core.network.packet.FactoryIOSyncC2SWhitelistButton;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
+/**
+ * Bouton bascule dessiné dans la texture de fond d'un écran.
+ *
+ * <p>En 1.20 le rendu passe par {@link GuiGraphics} : {@code Screen#blit} et
+ * {@code Screen#renderTooltip} n'existent plus, et {@code blit} prend désormais la
+ * {@link ResourceLocation} de la texture en premier argument.
+ */
 public class FactoryIOGuiButton {
-    public int left;
-    public int top;
-    public int x;
-    public int y;
-    public int width;
-    public int height;
-    public int u;
-    public int v;
-    public int u_hover;
-    public int v_hover;
-    public int u_enabled;
-    public int v_enabled;
 
-    public FactoryIOGuiButton(int left, int top, int x, int y, int width, int height, int u, int v, int u_hover, int v_hover, int u_enabled, int v_enabled)
-    {
+    // Private properties
+
+    private final int left;
+    private final int top;
+    private final int x;
+    private final int y;
+    private final int width;
+    private final int height;
+    private final int uEnabled;
+    private final int vEnabled;
+
+    /** Décalage vertical, dans l'atlas, entre l'état actif et l'état inactif. */
+    private static final int DISABLED_V_OFFSET = 17;
+
+    // Life cycle
+
+    public FactoryIOGuiButton(int left, int top, int x, int y, int width, int height, int uEnabled, int vEnabled) {
         this.left = left;
         this.top = top;
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
-        this.u = u;
-        this.v = v;
-        this.u_hover = u_hover;
-        this.v_hover = v_hover;
-        this.u_enabled = u_enabled;
-        this.v_enabled = v_enabled;
+        this.uEnabled = uEnabled;
+        this.vEnabled = vEnabled;
     }
 
-    public FactoryIOGuiButton(int left, int top, int x, int y, int width, int height)
-    {
-        this(left, top, x, y, width, height, -1, -1, -1, -1, -1, -1);
+    // Interface (Rendu)
+
+    public void render(GuiGraphics graphics, ResourceLocation texture, boolean enabled) {
+        if (!hasUV()) return;
+
+        graphics.blit(
+                texture,
+                left + x, top + y,
+                uEnabled, enabled ? vEnabled : vEnabled + DISABLED_V_OFFSET,
+                width, height);
     }
 
-    public FactoryIOGuiButton(int left, int top, int x, int y, int width, int height, int u_hover, int v_hover)
-    {
-        this(left, top, x, y, width, height, -1, -1, u_hover, v_hover, u_hover, v_hover);
+    public void renderComponentTooltip(GuiGraphics graphics, Font font, List<Component> text, int mouseX, int mouseY, boolean condition) {
+        if (!condition) return;
+        if (!hoveringFromWindow(mouseX, mouseY)) return;
+
+        graphics.renderComponentTooltip(font, text, mouseX, mouseY);
     }
 
-    public void changeEnabledUV(int u, int v)
-    {
-        this.u_enabled = u;
-        this.v_enabled = v;
+    // Interface (Interaction)
+
+    public void onClick(double mouseX, double mouseY, BlockPos pos, int index, int set, boolean condition) {
+        if (!condition) return;
+        if (!hovering(mouseX, mouseY)) return;
+
+        FactoryIONetworks.sendToServer(new FactoryIOSyncC2SWhitelistButton(pos, index, set));
+        Minecraft.getInstance().getSoundManager()
+                .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 0.6F, 0.3F));
     }
 
-    public void onClick(double mouseX, double mouseY, BlockPos pos, int index, int set, boolean condition)
-    {
-        if (condition)
-        {
-            boolean test = hovering(mouseX, mouseY);
-            if (hovering(mouseX, mouseY))
-            {
-                FactoryIONetworks.sendToServer(new FactoryIOSyncC2SWhitelistButton(pos, index, set));
-                Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 0.6F, 0.3F));
-            }
-        }
+    /** Coordonnées relatives au coin haut-gauche de la fenêtre du GUI. */
+    public boolean hovering(double mouseX, double mouseY) {
+        return mouseX >= x && mouseX <= x + width
+                && mouseY >= y && mouseY <= y + height;
     }
 
-    public void onRightClick(double mouseX, double mouseY, int button, BlockPos pos, int index, int set, boolean condition)
-    {
-        if (button == GLFW.GLFW_MOUSE_BUTTON_2)
-        {
-            if (condition)
-            {
-                if (hovering(mouseX, mouseY))
-                {
-                    FactoryIONetworks.sendToServer(new FactoryIOSyncC2SWhitelistButton(pos, index, set));
-                    Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 0.3F, 0.3F));
-                }
-            }
-        }
+    /** Coordonnées absolues à l'écran. */
+    public boolean hoveringFromWindow(double mouseX, double mouseY) {
+        return mouseX >= left + x && mouseX <= left + x + width
+                && mouseY >= top + y && mouseY <= top + y + height;
     }
 
-    public void render(Screen screen, PoseStack matrix, int mouseX, int mouseY, boolean enabled)
-    {
-        //if (!hoveringFromWindow(mouseX, mouseY) && hasUV()) {
-        //    screen.blit(matrix, left + x, top + y, u, v, width, height);
-        //}
-        //if (hoveringFromWindow(mouseX, mouseY) && hasUVHover()) {
-        //    screen.blit(matrix, left + x, top + y, u_hover, v_hover, width, height);
-        //}
-        if (enabled && hasUVEnabled()) {
-            screen.blit(matrix, left + x, top + y, u_enabled, v_enabled, width, height);
-        }
-        else if (!enabled && hasUVEnabled()) {
-            screen.blit(matrix, left + x , top + y, u_enabled, v_enabled + 17, width, height);
-        }
+    // Inner work
 
+    private boolean hasUV() {
+        return uEnabled >= 0 && vEnabled >= 0;
     }
-
-    public boolean hovering(double mouseX, double mouseY)
-    {
-        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
-    }
-
-    public boolean hoveringFromWindow(double mouseX, double mouseY)
-    {
-        return mouseX >= left + x && mouseX <= left + x + width && mouseY >= top + y && mouseY <= top + y + height;
-    }
-
-    public void renderTooltip(Screen screen, PoseStack matrix, Component text, int mouseX, int mouseY, boolean condition)
-    {
-        if (condition)
-            if (hoveringFromWindow(mouseX, mouseY))
-                screen.renderTooltip(matrix, text, mouseX, mouseY);
-    }
-
-    public void renderComponentTooltip(Screen screen, PoseStack matrix, List<Component> text, int mouseX, int mouseY, boolean condition)
-    {
-        if (condition)
-            if (hoveringFromWindow(mouseX, mouseY))
-                screen.renderComponentTooltip(matrix, text, mouseX, mouseY);
-    }
-
-    public boolean hasUV()
-    {
-        return u >= 0 && v >= 0;
-    }
-
-    public boolean hasUVHover()
-    {
-        return u_hover >= 0 && v_hover >= 0;
-    }
-
-    public boolean hasUVEnabled()
-    {
-        return u_enabled >= 0 && v_enabled >= 0;
-    }
-
-    public static boolean isShiftKeyDown() {
-        return isKeyDown(GLFW.GLFW_KEY_LEFT_SHIFT) || isKeyDown(GLFW.GLFW_KEY_RIGHT_SHIFT);
-    }
-
-    public static boolean isKeyDown(int glfw) {
-        InputConstants.Key key = InputConstants.Type.KEYSYM.getOrCreate(glfw);
-        int keyCode = key.getValue();
-        if (keyCode != InputConstants.UNKNOWN.getValue()) {
-            long windowHandle = Minecraft.getInstance().getWindow().getWindow();
-            try {
-                if (key.getType() == InputConstants.Type.KEYSYM) {
-                    return InputConstants.isKeyDown(windowHandle, keyCode);
-                } /**else if (key.getType() == InputMappings.Type.MOUSE) {
-                 return GLFW.glfwGetMouseButton(windowHandle, keyCode) == GLFW.GLFW_PRESS;
-                 }**/
-            } catch (Exception ignored) {
-            }
-        }
-        return false;
-    }
-
-
 }
