@@ -58,6 +58,8 @@ public abstract class FactoryIOEntityBlock extends BaseEntityBlock {
 
     @Override
     public void onPlace(BlockState pState, Level pLevel, BlockPos pPos, BlockState pOldState, boolean pIsMoving) {
+        super.onPlace(pState, pLevel, pPos, pOldState, pIsMoving);
+
         if (!pOldState.is(pState.getBlock())) {
             this.checkPoweredState(pLevel, pPos, pState);
         }
@@ -65,14 +67,33 @@ public abstract class FactoryIOEntityBlock extends BaseEntityBlock {
 
     @Override
     public void neighborChanged(BlockState pState, Level pLevel, BlockPos pPos, Block pBlock, BlockPos pFromPos, boolean pIsMoving) {
+        super.neighborChanged(pState, pLevel, pPos, pBlock, pFromPos, pIsMoving);
+
         this.checkPoweredState(pLevel, pPos, pState);
     }
 
+    /**
+     * Aligne la propriété {@code ENABLED} sur l'absence de signal redstone.
+     *
+     * <p>Trois corrections par rapport à la version précédente (cf. BUG-015) :
+     * l'exécution est réservée au serveur, le bloc doit déclarer réagir au redstone, et
+     * surtout {@code setBlock} utilise {@code UPDATE_ALL} — l'ancien flag 5 omettait le
+     * bit « notifier les clients », d'où un état jamais propagé. C'est précisément ce
+     * que contournait le paquet {@code SyncS2CEnabledState} envoyé à chaque tick.
+     */
     private void checkPoweredState(Level pLevel, BlockPos pPos, BlockState pState) {
-        boolean flag = !pLevel.hasNeighborSignal(pPos);
-        if (flag != pState.getValue(ENABLED)) {
-            pLevel.setBlock(pPos, pState.setValue(ENABLED, Boolean.valueOf(flag)), 5);
+        if (pLevel.isClientSide) return;
+        if (!isAffectedByRedstone()) return;
+
+        boolean enabled = !pLevel.hasNeighborSignal(pPos);
+        if (enabled != pState.getValue(ENABLED)) {
+            pLevel.setBlock(pPos, pState.setValue(ENABLED, enabled), Block.UPDATE_ALL);
         }
+    }
+
+    /** Un bloc qui ne réagit pas au redstone reste toujours actif. */
+    protected boolean isAffectedByRedstone() {
+        return true;
     }
 
 

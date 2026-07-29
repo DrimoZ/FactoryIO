@@ -10,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -28,6 +29,36 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
     private final FactoryIOInserterBlockEntity BLOCK_ENTITY;
 
     private final Inserter inserter;
+
+    /**
+     * Réserve courante, découpée en deux mots de 16 bits.
+     *
+     * <p>{@code ClientboundContainerSetDataPacket} ne transporte qu'un {@code short} :
+     * une capacité configurée au-delà de 32 767 serait tronquée si on envoyait la valeur
+     * telle quelle. Le découpage rend la synchronisation correcte quelle que soit la
+     * valeur définie dans le JSON de l'inserter.
+     */
+    private final int[] syncedPower = new int[2];
+
+    private final ContainerData powerData = new ContainerData() {
+        @Override
+        public int get(int index) {
+            if (!isServerSide()) return syncedPower[index];
+
+            int value = currentPowerOnServer();
+            return index == 0 ? value & 0xFFFF : (value >>> 16) & 0xFFFF;
+        }
+
+        @Override
+        public void set(int index, int value) {
+            syncedPower[index] = value;
+        }
+
+        @Override
+        public int getCount() {
+            return syncedPower.length;
+        }
+    };
 
     // Life cycle
 
@@ -90,6 +121,8 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
                 this.addSlot(new SlotInserterFilter(handler, BLOCK_ENTITY.IS_ENERGY ? FactoryIOInserterBlockEntity.FILTER_SLOTS[4] - 1 : FactoryIOInserterBlockEntity.FILTER_SLOTS[4], 80, 49));
             }
         });
+
+        this.addDataSlots(this.powerData);
     }
 
     // Interface BlockEntity
@@ -102,36 +135,60 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
         return this.BLOCK_ENTITY.stillValid(player);
     }
 
+    /**
+     * Réserve courante : énergie en FE, ou ticks de combustion restants.
+     *
+     * <p>Côté serveur la valeur est lue directement sur le block entity ; côté client
+     * elle vient du {@code ContainerData}, synchronisé automatiquement par le menu et
+     * uniquement vers les joueurs qui ont l'écran ouvert.
+     */
+    public int getPowerStored() {
+        if (isServerSide()) return currentPowerOnServer();
+
+        return (syncedPower[0] & 0xFFFF) | ((syncedPower[1] & 0xFFFF) << 16);
+    }
+
+    /** Capacité maximale, connue des deux côtés : elle vient de la définition. */
+    public int getPowerCapacity() {
+        return BLOCK_ENTITY.IS_ENERGY ? inserter.getEnergyCapacity() : inserter.getFuelCapacity();
+    }
+
     public int getEnergyScaled(int pixels) {
-        if (this.BLOCK_ENTITY.IS_ENERGY) {
-            int i = this.BLOCK_ENTITY.getCurrentEnergy();
-            int j = this.BLOCK_ENTITY.getEnergyCapacity();
-            return j != 0 && i != 0 ? i * pixels / j : 0;
-        }
-        return -1;
+        if (!this.BLOCK_ENTITY.IS_ENERGY) return -1;
+
+        return scaled(pixels);
     }
 
     public int getFuelScaled(int pixels) {
-        if (!this.BLOCK_ENTITY.IS_ENERGY) {
-            int i = this.BLOCK_ENTITY.getCurrentFuelValue();
-            int j = this.BLOCK_ENTITY.getFuelCapacity();
-            return j != 0 && i != 0 ? i * pixels / j : 0;
-        }
-        return -1;
+        if (this.BLOCK_ENTITY.IS_ENERGY) return -1;
+
+        return scaled(pixels);
     }
 
     public boolean hasEnergy() {
-        if (this.BLOCK_ENTITY.IS_ENERGY && this.BLOCK_ENTITY.getCurrentEnergy() > 0) return true;
-        return false;
+        return this.BLOCK_ENTITY.IS_ENERGY && getPowerStored() > 0;
     }
 
     public boolean hasFuel() {
-        if (!this.BLOCK_ENTITY.IS_ENERGY && this.BLOCK_ENTITY.getCurrentFuelValue() > 0) return true;
-        return false;
+        return !this.BLOCK_ENTITY.IS_ENERGY && getPowerStored() > 0;
     }
 
+    // Inner work (Synchronisation)
 
+    private boolean isServerSide() {
+        return BLOCK_ENTITY.getLevel() != null && !BLOCK_ENTITY.getLevel().isClientSide;
+    }
 
+    private int currentPowerOnServer() {
+        return BLOCK_ENTITY.IS_ENERGY ? BLOCK_ENTITY.getCurrentEnergy() : BLOCK_ENTITY.getCurrentFuelValue();
+    }
+
+    private int scaled(int pixels) {
+        int capacity = getPowerCapacity();
+        if (capacity <= 0) return 0;
+
+        return Math.min(pixels, getPowerStored() * pixels / capacity);
+    }
 
 
     // Interface (Inventory Interaction)

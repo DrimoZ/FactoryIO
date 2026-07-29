@@ -1,18 +1,28 @@
 package com.drimoz.factoryio.core.init;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.network.packet.*;
+import com.drimoz.factoryio.core.network.packet.FactoryIOSyncC2SWhitelistButton;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
+/**
+ * Canal réseau du mod.
+ *
+ * <p>Un seul paquet subsiste, et il va du client vers le serveur. Toute la
+ * synchronisation descendante passe désormais par les mécanismes standards :
+ * {@code getUpdateTag} / {@code sendBlockUpdated} pour l'état visible, et le
+ * {@code ContainerData} du menu pour les jauges. Les quatre paquets serveur→client
+ * précédents étaient émis à chaque tick, pour chaque inserter, vers tous les joueurs
+ * du serveur (cf. BUG-004).
+ */
 public class FactoryIONetworks {
+
     private static SimpleChannel INSTANCE;
 
     private static int packetId = 0;
+
     private static int id() {
         return packetId++;
     }
@@ -27,42 +37,14 @@ public class FactoryIONetworks {
 
         INSTANCE = net;
 
-        net.messageBuilder(FactoryIOSyncS2CEnergy.class, id(), NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(FactoryIOSyncS2CEnergy::new)
-                .encoder(FactoryIOSyncS2CEnergy::toBytes)
-                .consumerMainThread(FactoryIOSyncS2CEnergy::handle)
-                .add();
-
-        net.messageBuilder(FactoryIOSyncS2CFuel.class, id(), NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(FactoryIOSyncS2CFuel::new)
-                .encoder(FactoryIOSyncS2CFuel::toBytes)
-                .consumerMainThread(FactoryIOSyncS2CFuel::handle)
-                .add();
-
         net.messageBuilder(FactoryIOSyncC2SWhitelistButton.class, id(), NetworkDirection.PLAY_TO_SERVER)
                 .decoder(FactoryIOSyncC2SWhitelistButton::new)
                 .encoder(FactoryIOSyncC2SWhitelistButton::toBytes)
                 .consumerMainThread(FactoryIOSyncC2SWhitelistButton::handle)
                 .add();
-
-        net.messageBuilder(FactoryIOSyncS2CWhitelistButton.class, id(), NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(FactoryIOSyncS2CWhitelistButton::new)
-                .encoder(FactoryIOSyncS2CWhitelistButton::toBytes)
-                .consumerMainThread(FactoryIOSyncS2CWhitelistButton::handle)
-                .add();
-
-        net.messageBuilder(FactoryIOSyncS2CEnabledState.class, id(), NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(FactoryIOSyncS2CEnabledState::new)
-                .encoder(FactoryIOSyncS2CEnabledState::toBytes)
-                .consumerMainThread(FactoryIOSyncS2CEnabledState::handle)
-                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {
         INSTANCE.sendToServer(message);
-    }
-
-    public static <MSG> void sendToClients(MSG message) {
-        INSTANCE.send(PacketDistributor.ALL.noArg(), message);
     }
 }

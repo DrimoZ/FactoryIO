@@ -51,6 +51,14 @@ public class FactoryIOInserterEntityBlock extends FactoryIOEntityBlockWaterLogge
         this.inserter = inserter;
     }
 
+    // Interface (Redstone)
+
+    /** Respecte enfin le champ déclaré dans la définition de l'inserter (cf. BUG-015). */
+    @Override
+    protected boolean isAffectedByRedstone() {
+        return inserter.isAffectedByRedstone();
+    }
+
     // Interface (Shape)
 
 

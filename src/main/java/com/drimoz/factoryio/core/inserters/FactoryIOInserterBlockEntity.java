@@ -3,16 +3,13 @@ package com.drimoz.factoryio.core.inserters;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.block_entity.FactoryIOBlockEntityMenuProvided;
 import com.drimoz.factoryio.core.generic.container.energy.FactoryIOEnergyContainer;
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CEnabledState;
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CEnergy;
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CFuel;
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CWhitelistButton;
-import com.drimoz.factoryio.core.init.FactoryIONetworks;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.init.FactoryIOTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.network.chat.Component;
@@ -293,6 +290,50 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         this.current_cooldown = tag.getInt("inserterCooldown");
     }
 
+    // Interface (Synchronisation client)
+
+    /**
+     * État envoyé au client à la découverte du bloc et à chaque {@code sendBlockUpdated}.
+     *
+     * <p>Volontairement minimal : seul ce que le client doit connaître <b>en dehors</b>
+     * du GUI. Les jauges d'énergie et de carburant passent par le {@code ContainerData}
+     * du menu, donc uniquement vers les joueurs qui l'ont ouvert.
+     */
+    @Override
+    public CompoundTag getUpdateTag() {
+        CompoundTag tag = new CompoundTag();
+        tag.putBoolean("inserterWhitelist", this.isWhitelist);
+        return tag;
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundTag tag) {
+        if (tag.contains("inserterWhitelist")) {
+            this.isWhitelist = tag.getBoolean("inserterWhitelist");
+        }
+    }
+
+    @Nullable
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet) {
+        CompoundTag tag = packet.getTag();
+        if (tag != null) handleUpdateTag(tag);
+    }
+
+    /** Marque l'état comme modifié et le pousse aux clients qui suivent le chunk. */
+    private void syncToClients() {
+        setChanged();
+
+        if (this.level != null && !this.level.isClientSide) {
+            this.level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+        }
+    }
+
     public boolean stillValid(Player playerEntity) {
         if (this.level.getBlockEntity(this.worldPosition) != this) {
             return false;
@@ -303,26 +344,16 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     // Interface (Ticking)
 
+    /**
+     * Tick serveur uniquement.
+     *
+     * <p>Aucune émission réseau ici. L'état visible passe par {@code getUpdateTag} au
+     * changement, et les jauges du GUI par le {@code ContainerData} du menu — donc
+     * uniquement vers les joueurs qui regardent l'écran. La version précédente envoyait
+     * 3 à 4 paquets par tick et par inserter <i>à tous les joueurs du serveur</i>
+     * (cf. BUG-004).
+     */
     public static void tick(Level pLevel, BlockPos pPos, BlockState pState, final FactoryIOInserterBlockEntity pEntity) {
-
-        if (!pLevel.isClientSide) {
-            if (pState.getValue(FactoryIOInserterEntityBlock.ENABLED)) {
-                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnabledState(true, pPos));
-            }
-            else {
-                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnabledState(false, pPos));
-            }
-
-            if (pEntity.IS_ENERGY) {
-                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnergy(pEntity.getCurrentEnergy(), pPos));
-            }
-            else {
-                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CFuel(pEntity.getCurrentFuelValue(), pPos));
-            }
-            if (pEntity.IS_FILTER) {
-                FactoryIONetworks.sendToClients(new FactoryIOSyncS2CWhitelistButton((pEntity.isWhitelist()? 1 : 0), 6, pPos));
-            }
-        }
 
         if (!pEntity.isEnabled()) return;
 
@@ -484,7 +515,10 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     }
 
     public void setWhitelist(boolean whitelist) {
+        if (this.isWhitelist == whitelist) return;
+
         this.isWhitelist = whitelist;
+        syncToClients();
     }
 
     // Interface (Enabled)

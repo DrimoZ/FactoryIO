@@ -117,8 +117,10 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
         FactoryIOInserterBlockEntity blockEntity = getMenu().getBlockEntity();
 
         if (blockEntity.IS_ENERGY) {
+            // Valeurs lues sur le menu : côté client le block entity n'est plus synchronisé
+            // en continu, c'est le ContainerData qui fait foi (cf. BUG-004).
             energyBar.renderTooltip(graphics, this.font, mouseX, mouseY,
-                    blockEntity.getCurrentEnergy(), blockEntity.getEnergyCapacity(), true);
+                    getMenu().getPowerStored(), getMenu().getPowerCapacity(), true);
         }
 
         if (blockEntity.IS_FILTER) {
