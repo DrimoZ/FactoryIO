@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "factory_io:fast_inserter"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "factory_io:blocks/fast_inserter"
+}

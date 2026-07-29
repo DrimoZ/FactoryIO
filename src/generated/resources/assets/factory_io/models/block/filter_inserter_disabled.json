@@ -1,0 +1,6 @@
+{
+  "parent": "factory_io:block/base_filter_inserter",
+  "textures": {
+    "all": "factory_io:block/inserters/filter_inserter_disabled"
+  }
+}
