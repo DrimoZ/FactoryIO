@@ -153,6 +153,9 @@ Diagnostic établi en comparant le projet à un **MDK Forge 1.20.1 vierge**, une
 | FIO-048 | P0 | M | Vérifier le pack généré au runtime sous la nouvelle API `PackResources` | modèles, langues et loot tables présents en jeu |
 | FIO-049 | P1 | S | Vérifier le rendu GeckoLib 4 (bloc et item) | l'inserter s'affiche en monde et en inventaire |
 | FIO-050 | P1 | S | Vérifier l'onglet créatif et l'ordre de ses items | les 7 inserters + 33 items présents |
+| ~~FIO-044~~ | ✅ | S | Capability énergie sur toutes les faces (BUG-021)
+| ~~FIO-035~~ | ✅ | S | InserterSlotLayout : source unique des index de slots (DT-03)
+| ~~FIO-030..033~~ | ✅ | M | Suppression du broadcast réseau par tick (BUG-004, BUG-015)
 | ~~FIO-051~~ | ✅ | S | Repasser sur Parchment — **fait** : les mappings `official` faisaient échouer le chargement | build vert sous Parchment |
 | ~~FIO-052~~ | ✅ | S | Activer le remapping de refmap Mixin (`mixin.env.remapRefMap`) — **fait** : sans lui GeckoLib plantait au démarrage | plus d'`InvalidInjectionException` |
 

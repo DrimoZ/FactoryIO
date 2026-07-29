@@ -1,9 +1,14 @@
 # 03 — Catalogue des bugs
 
-> **État : Phase 0 appliquée.** Les bugs marqués ✅ sont corrigés dans l'arbre de
-> travail et le projet compile. Ils n'ont **pas encore été validés en jeu** — il
-> n'existe pas de test automatisé (voir [DT-11](04-DETTE-TECHNIQUE.md)).
-> Les bugs restants relèvent des phases 1 et 2.
+> **État : 31 bugs sur 34 corrigés**, plus 1 partiellement.
+>
+> Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Le
+> **comportement** de ces correctifs n'a en revanche jamais été observé en jeu :
+> aucun inserter n'a été posé, aucun transfert testé, et il n'existe toujours
+> aucun test automatisé (voir [DT-11](04-DETTE-TECHNIQUE.md)). Considérer ces ✅
+> comme « écrit et compilé », pas comme « vérifié ».
+>
+> Restent : BUG-014 (modèle de données, FIO-036) et BUG-016 (animation, Phase 2).
 
 Sévérités :
 **S0** bloquant (crash / mod inutilisable) ·
@@ -11,14 +16,14 @@ Sévérités :
 **S2** majeur (fonctionnalité cassée) ·
 **S3** mineur (confort, cosmétique)
 
-✅ corrigé en Phase 0 · 🟡 partiellement traité · (vide) à traiter
+✅ corrigé · 🟡 partiellement traité · (vide) à traiter
 
 | ID | Sév. | Titre | Fichier |
 |---|---|---|---|
 | [BUG-001](#bug-001) | ✅ S0 | Config lue avant enregistrement → réglages ignorés | `FactoryIO.java` |
 | [BUG-002](#bug-002) | ✅ S0 | `FactoryIONetworks.init()` appelé deux fois → exception | `FactoryIO.java` |
 | [BUG-003](#bug-003) | ✅ S1 | Les inserters électriques ne consomment aucune énergie | `…InserterBlockEntity.java` |
-| [BUG-004](#bug-004) | S1 | Broadcast réseau à tous les joueurs, chaque tick, par inserter | `…InserterBlockEntity.java` |
+| [BUG-004](#bug-004) | ✅ S1 | Broadcast réseau à tous les joueurs, chaque tick, par inserter | `…InserterBlockEntity.java` |
 | [BUG-005](#bug-005) | ✅ S1 | `Minecraft.getInstance()` sur serveur dédié | `FactoryIOPackResources.java` |
 | [BUG-006](#bug-006) | ✅ S1 | Items détruits lors des transferts | `…InserterBlockEntity.java` |
 | [BUG-007](#bug-007) | ✅ S1 | Paquet C→S sans validation (crash serveur + exploit) | `…SyncC2SWhitelistButton.java` |
@@ -29,25 +34,25 @@ Sévérités :
 | [BUG-012](#bug-012) | ✅ S2 | Un burner inserter vide ne peut plus se recharger | `…InserterBlockEntity.java` |
 | [BUG-013](#bug-013) | ✅ S2 | Clamp du carburant sans effet → valeurs négatives | `…InserterBlockEntity.java` |
 | [BUG-014](#bug-014) | S2 | `filterable` force `useEnergy` | `Inserter.java` |
-| [BUG-015](#bug-015) | S2 | `affectedByRedstone` ignoré + update côté client | `FactoryIOEntityBlock.java` |
+| [BUG-015](#bug-015) | ✅ S2 | `affectedByRedstone` ignoré + update côté client | `FactoryIOEntityBlock.java` |
 | [BUG-016](#bug-016) | S2 | Animation ciblant un bone inexistant | `animated_block.animation.json` |
 | [BUG-017](#bug-017) | ✅ S2 | Boîte de collision = cube plein | `…InserterEntityBlock.java` |
 | [BUG-018](#bug-018) | ✅ S2 | `setEnabled()` sans effet | `…InserterBlockEntity.java` |
 | [BUG-019](#bug-019) | ✅ S2 | `getInnerFuelCapacity()` récursion infinie | `…InserterBlockEntity.java` |
 | [BUG-020](#bug-020) | 🟡 S2 | NPE potentiel à l'ouverture du menu | `…InserterContainer.java` |
-| [BUG-021](#bug-021) | S2 | Énergie exposée uniquement sur la face `DOWN` | `…InserterBlockEntity.java` |
-| [BUG-022](#bug-022) | S3 | Éjection tout-ou-rien dans un seul slot | `…InserterBlockEntity.java` |
+| [BUG-021](#bug-021) | ✅ S2 | Énergie exposée uniquement sur la face `DOWN` | `…InserterBlockEntity.java` |
+| [BUG-022](#bug-022) | ✅ S3 | Éjection tout-ou-rien dans un seul slot | `…InserterBlockEntity.java` |
 | [BUG-023](#bug-023) | ✅ S3 | Mauvaise face passée à la capability en éjection | `…InserterBlockEntity.java` |
 | [BUG-024](#bug-024) | ✅ S3 | Carburant : NBT perdu, lava bucket mort | `…InserterBlockEntity.java` |
-| [BUG-025](#bug-025) | S3 | `current_cooldown` non borné → débordement `int` | `…InserterBlockEntity.java` |
+| [BUG-025](#bug-025) | ✅ S3 | `current_cooldown` non borné → débordement `int` | `…InserterBlockEntity.java` |
 | [BUG-026](#bug-026) | ✅ S3 | Clé à molette inutilisable (tag vide) | `data/forge/tags/…/wrench.json` |
 | [BUG-027](#bug-027) | ✅ S3 | `mods.toml` non rempli | `META-INF/mods.toml` |
 | [BUG-028](#bug-028) | ✅ S3 | Logs de debug au niveau `ERROR` | `…InserterCreator.java` |
-| [BUG-029](#bug-029) | S3 | Tooltips : unités incorrectes | `…InserterItem.java` |
+| [BUG-029](#bug-029) | ✅ S3 | Tooltips : unités incorrectes | `…InserterItem.java` |
 | [BUG-030](#bug-030) | ✅ S3 | Creative tab avec une clé générique | `FactoryIOCreativeTab.java` |
 | [BUG-031](#bug-031) | ✅ S3 | `PACK_FORMAT` incohérent (8 vs 9) | `…ResourcePackHandler.java` |
-| [BUG-032](#bug-032) | S3 | Namespace forcé lors de l'enregistrement | `…InserterRegistry.java` |
-| [BUG-033](#bug-033) | S3 | Textures d'items orphelines | `assets/…/textures/item/` |
+| [BUG-032](#bug-032) | ✅ S3 | Namespace forcé lors de l'enregistrement | `…InserterRegistry.java` |
+| [BUG-033](#bug-033) | ✅ S3 | Textures d'items orphelines | `assets/…/textures/item/` |
 | [BUG-034](#bug-034) | ✅ S3 | `checkContainerSize` mal employé | `…InserterContainer.java` |
 
 ---
