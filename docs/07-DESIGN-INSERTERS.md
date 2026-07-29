@@ -1,0 +1,335 @@
+# 07 — Design : refonte de l'inserter
+
+Spécification de la Phase 2. Objectif : un inserter dont le comportement, la
+performance et le rendu sont au niveau de la référence Factorio.
+
+---
+
+## 1. Ce qu'un inserter Factorio fait réellement
+
+Il est utile de poser la référence, parce que l'implémentation actuelle en
+diverge sur presque tous les points.
+
+| Propriété | Factorio | Factory'I/O aujourd'hui |
+|---|---|---|
+| Mouvement | bras continu, angle interpolé | téléportation instantanée |
+| Main | contient N items **visibles** | slot buffer invisible |
+| Source | inventaire, **bande transporteuse**, sol | inventaire uniquement |
+| Cible | inventaire, **bande transporteuse**, sol | inventaire uniquement |
+| Blocage | l'inserter garde l'item en main et attend | l'item reste dans un slot |
+| Filtre | par type d'item, whitelist/blacklist | par item **+ NBT** |
+| Taille de main | dépend du type + bonus de recherche | constante 1 ou 3 |
+| Condition circuit | signal/condition réseau | signal redstone binaire |
+| Vitesse | 0,60 à 2,31 items/s | 0,5 items/s (tous) |
+
+---
+
+## 2. Machine à états
+
+Remplacer le compteur `current_cooldown` par un état explicite. C'est ce qui
+rend l'animation, la synchronisation et le debug possibles.
+
+```
+        ┌──────────────────────────────────────────────┐
+        │                                              │
+        ▼                                              │
+   ┌─────────┐  source dispo   ┌──────────┐            │
+   │ WAITING │────────────────▶│ PICKING  │            │
+   └─────────┘   + énergie     └────┬─────┘            │
+        ▲                           │ item pris        │
+        │                           ▼                  │
+        │                    ┌─────────────┐           │
+        │                    │  SWINGING   │ progress 0→1
+        │                    └──────┬──────┘           │
+        │                           │ swing fini       │
+        │                           ▼                  │
+        │  cible pleine     ┌──────────────┐           │
+        │◀──────────────────│  DROPPING    │           │
+        │  (reste en main)  └──────┬───────┘           │
+        │                          │ item déposé       │
+        │                          ▼                   │
+        │                   ┌──────────────┐           │
+        └───────────────────│  RETURNING   │───────────┘
+                            └──────────────┘  progress 1→0
+```
+
+```java
+public enum InserterState { WAITING, PICKING, SWINGING, DROPPING, RETURNING }
+```
+
+État persisté et synchronisé :
+
+| Champ | NBT | Client | Usage |
+|---|---|---|---|
+| `state` | ✅ | ✅ | logique + animation |
+| `progress` (0..`ticksPerSwing`) | ✅ | ✅ (interpolé) | angle du bras |
+| `heldStack` | ✅ | ✅ | rendu de l'item tenu |
+| `fuel` / `energy` | ✅ | via `ContainerData` | barre du GUI |
+| `filters[]`, `whitelistMode` | ✅ | via slots du menu | filtrage |
+| `sleepTicks` | ❌ | ❌ | optimisation locale |
+
+**Point clé** : `DROPPING` échouant ne remet **pas** l'item dans le buffer et ne
+réinitialise pas le swing — l'inserter reste bras tendu, item en main, exactement
+comme dans Factorio. C'est à la fois plus juste visuellement et plus simple à
+coder que la logique actuelle.
+
+---
+
+## 3. Algorithme de transfert sûr
+
+Le principe non négociable : **ne jamais extraire avant d'avoir garanti la
+destination**.
+
+```java
+/** Déplace au plus `max` items de `from[slot]` vers `to`, sans jamais en perdre. */
+static int transfer(IItemHandler from, int fromSlot, ItemSink to, int max, Predicate<ItemStack> accept) {
+    ItemStack probe = from.extractItem(fromSlot, max, /*simulate*/ true);
+    if (probe.isEmpty() || !accept.test(probe)) return 0;
+
+    int movable = to.simulateInsert(probe);          // combien la cible accepte vraiment
+    if (movable <= 0) return 0;
+
+    ItemStack taken = from.extractItem(fromSlot, movable, /*simulate*/ false);
+    ItemStack leftover = to.insert(taken);           // doit être vide par construction
+    if (!leftover.isEmpty()) {                       // filet de sécurité
+        ItemHandlerHelper.insertItem(from, leftover, false);
+        LOGGER.warn("Reliquat inattendu lors d'un transfert : {}", leftover);
+    }
+    return movable;
+}
+```
+
+Trois garanties :
+1. la quantité extraite est exactement celle que la cible a promis d'accepter ;
+2. tout reliquat imprévu est **réinjecté**, jamais jeté ;
+3. un reliquat est un bug — il est journalisé, pas silencieux.
+
+`ItemSink` abstrait la destination : `IItemHandler`, une voie de convoyeur
+(Phase 3), ou le sol.
+
+### Insertion multi-slot
+
+Contrairement à l'implémentation actuelle ([BUG-022](03-BUGS.md)), l'insertion
+doit répartir sur plusieurs slots :
+
+```java
+int simulateInsert(IItemHandler handler, ItemStack stack) {
+    int remaining = stack.getCount();
+    for (int s = 0; s < handler.getSlots() && remaining > 0; s++) {
+        ItemStack rest = handler.insertItem(s, copyWithSize(stack, remaining), true);
+        remaining = rest.getCount();
+    }
+    return stack.getCount() - remaining;
+}
+```
+
+---
+
+## 4. Performance
+
+Trois optimisations, dans cet ordre d'importance.
+
+### 4.1 Cache de capability voisine
+
+Aujourd'hui : `level.getBlockEntity()` + `getCapability()` à chaque action.
+
+```java
+private LazyOptional<IItemHandler> sourceCache = LazyOptional.empty();
+private LazyOptional<IItemHandler> targetCache = LazyOptional.empty();
+
+private LazyOptional<IItemHandler> handlerAt(BlockPos pos, Direction side, LazyOptional<IItemHandler> cache) {
+    if (cache.isPresent()) return cache;
+    BlockEntity be = level.getBlockEntity(pos);
+    if (be == null) return LazyOptional.empty();
+    LazyOptional<IItemHandler> cap = be.getCapability(ITEM_HANDLER_CAPABILITY, side);
+    cap.addListener(l -> invalidate(pos));      // invalidation automatique
+    return cap;
+}
+```
+
+Sur NeoForge 1.21, `BlockCapabilityCache` fait tout cela nativement — c'est un
+argument fort pour le port (voir [`05`](05-ROADMAP.md) §Décision).
+
+### 4.2 Mémorisation du dernier slot
+
+```java
+private int lastSourceSlot = 0;
+// scan circulaire à partir de lastSourceSlot au lieu de repartir de 0
+for (int k = 0; k < slots; k++) {
+    int s = (lastSourceSlot + k) % slots;
+    ...
+}
+```
+
+Sur un coffre de 54 slots dont seuls les derniers sont pleins, on passe de 54
+itérations par action à ~1 en régime établi.
+
+### 4.3 Mise en sommeil
+
+```java
+if (failedAttempts >= 5) {
+    sleepTicks = Math.min(sleepTicks * 2, 40);   // backoff exponentiel plafonné à 2 s
+}
+// réveil immédiat :
+//  - neighborChanged sur les positions source/cible
+//  - invalidation d'une capability cachée
+//  - ouverture du GUI
+```
+
+Un inserter face à un mur passe de 20 évaluations/s à 0,5.
+
+### Budget cible
+
+| Scénario | Budget |
+|---|---|
+| 1 000 inserters endormis | < 0,2 ms/tick |
+| 1 000 inserters actifs | < 2 ms/tick |
+| Trafic réseau au repos | 0 paquet/s |
+
+À vérifier par un benchmark versionné dans le dépôt.
+
+---
+
+## 5. Rééquilibrage
+
+Supprimer `MAX_ACTIONS_PER_TICK` et `cooldownBetweenActions`. Un seul champ :
+`ticksPerSwing` (entier, en ticks Minecraft).
+
+| Inserter | `ticksPerSwing` | `handSize` | items/s | Réf. Factorio |
+|---|---|---|---|---|
+| `burner_inserter` | 33 | 1 | 0,61 | 0,60 |
+| `inserter` | 24 | 1 | 0,83 | 0,83 |
+| `long_handed_inserter` | 17 | 1 | 1,18 | 1,20 |
+| `filter_inserter` | 24 | 1 | 0,83 | 0,83 |
+| `fast_inserter` | 9 | 1 | 2,22 | 2,31 |
+| `stack_inserter` | 9 | 3 | 6,67 | 6,93 |
+| `stack_filter_inserter` | 9 | 3 | 6,67 | 6,93 |
+
+Consommation d'énergie : passer d'un coût **par action** à un coût **par tick
+actif**, ce qui est à la fois plus proche de Factorio et plus lisible dans les
+tooltips.
+
+| Inserter | FE/tick actif | FE/swing |
+|---|---|---|
+| `inserter` | 8 | 192 |
+| `long_handed_inserter` | 10 | 170 |
+| `fast_inserter` | 25 | 225 |
+| `stack_inserter` | 35 | 315 |
+
+Le burner conserve un budget en **ticks de combustion** (`burnTime`), consommé au
+prorata des ticks actifs.
+
+---
+
+## 6. Rendu et animation
+
+### 6.1 Bras
+
+L'animation doit être pilotée par `progress / ticksPerSwing`, pas par
+`query.anim_time`. Deux approches :
+
+- **A. Molang** : exposer `progress` en variable Molang
+  (`query.actor_count` détourné, ou `MolangParser.setValue`) et l'utiliser dans
+  le fichier `.animation.json`.
+- **B. Code** : ignorer le fichier d'animation et poser directement la rotation
+  du bone `inserter` dans `setLivingAnimations` / `setCustomAnimations`.
+
+**Recommandation : B**, plus simple, plus prévisible, et sans dépendance à la
+syntaxe Molang :
+
+```java
+@Override
+public void setCustomAnimations(InserterBlockEntity be, Integer id, AnimationEvent<?> event) {
+    super.setCustomAnimations(be, id, event);
+    IBone arm = this.getAnimationProcessor().getBone("inserter");
+    float t = be.getRenderProgress(event.getPartialTick());   // 0..1
+    arm.setRotationY((float) Mth.lerp(easeInOutSine(t), -Math.PI / 2, Math.PI / 2));
+}
+```
+
+Corriger dans tous les cas le fichier
+[`animated_block.animation.json`](../src/main/resources/assets/factory_io/animations/animated_block.animation.json)
+qui cible un bone `bone2` inexistant ([BUG-016](03-BUGS.md)).
+
+### 6.2 Item tenu
+
+C'est le retour visuel qui manque le plus. Dans le `BlockEntityRenderer` :
+
+```java
+if (!be.getHeldStack().isEmpty()) {
+    poseStack.pushPose();
+    poseStack.translate(handX, handY, handZ);       // position au bout du bras
+    poseStack.scale(0.4F, 0.4F, 0.4F);
+    Minecraft.getInstance().getItemRenderer().renderStatic(
+            be.getHeldStack(), ItemTransforms.TransformType.GROUND,
+            light, overlay, poseStack, buffers, 0);
+    poseStack.popPose();
+}
+```
+
+`heldStack` doit donc faire partie de l'`getUpdateTag`.
+
+### 6.3 Divers
+
+- Remplacer `RenderType.entityTranslucent` par `entityCutoutNoCull` : les
+  textures d'inserter ne sont pas translucides et le tri translucide coûte cher.
+- Supprimer la double source de vérité sur la texture (blockstate `_disabled`
+  **et** `getTextureLocation`) : garder uniquement la seconde.
+- Ne rien rendre au-delà de ~48 blocs (`getViewDistance`).
+
+---
+
+## 7. Nouvelles capacités de gameplay
+
+Par ordre de valeur ajoutée :
+
+| Capacité | Pourquoi | Coût |
+|---|---|---|
+| **Prise/dépose sur convoyeur** | sans elle, les convoyeurs de la Phase 3 sont inutilisables | M (dépend de la Phase 3) |
+| **Prise/dépose au sol** | parité Factorio, débloque des designs simples | M |
+| **Filtre par tag** | `forge:plates` plutôt que 5 slots d'items | S |
+| **Condition redstone analogique** | « n'agir que si signal ≥ N » — équivalent minimal du réseau de circuits | M |
+| **Bonus de taille de main** | permet une progression sans nouveaux blocs | S |
+| **Insertion « ne dépasse pas N »** | limite de remplissage, très demandé en Factorio | S |
+
+À **ne pas** faire en Phase 2 : le réseau de circuits complet (fils rouge/vert,
+combinateurs). C'est un mod à lui seul.
+
+---
+
+## 8. Interface
+
+L'écran actuel a trois textures figées et des positions codées en dur. Une fois
+les types d'inserters devenus dynamiques, cela ne tient plus.
+
+Cible :
+
+- **une** texture de fond composable (fond + zones optionnelles) plutôt que trois
+  images complètes ;
+- disposition calculée depuis l'`InserterSlotLayout` ;
+- widgets réutilisables : `EnergyBar`, `FuelBar`, `ToggleButton`, `GhostSlot` ;
+- toutes les chaînes en clés de traduction (aujourd'hui les codes couleur `§7`,
+  `§b`, `§6` sont concaténés en dur dans le code — impossible à localiser
+  correctement) ;
+- affichage de l'état courant et du débit effectif (items/min), très utile pour
+  déboguer une usine.
+
+---
+
+## 9. Ordre d'implémentation suggéré
+
+```
+1. InserterSlotLayout + InserterDefinition        (prérequis Phase 1)
+2. Machine à états + persistance + synchro        FIO-060
+3. transfer() sûr + insertion multi-slot          FIO-061
+4. Cache capability + slot mémorisé + sommeil     FIO-062/063/064
+5. Benchmark → verrouiller le budget              FIO-073
+6. Rééquilibrage temporel                         FIO-065
+7. Animation pilotée par l'état                   FIO-066
+8. Rendu de l'item tenu                           FIO-067
+9. Filtres par tag, condition redstone            FIO-069/070
+10. Refonte du GUI                                FIO-071
+```
+
+Les étapes 2 à 5 forment un bloc : ne pas livrer l'une sans les autres, sous
+peine d'avoir un inserter à la fois nouveau **et** lent.
