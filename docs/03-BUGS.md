@@ -1,14 +1,14 @@
 # 03 — Catalogue des bugs
 
-> **État : 33 bugs sur 40 corrigés**, plus 1 partiellement (BUG-020).
+> **État : 35 bugs sur 40 corrigés**, plus 1 partiellement (BUG-020).
 >
 > Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Six GameTests
 > couvrent désormais les invariants (`./gradlew runGameTestServer`), mais le **rendu**
 > n'est validé par aucun test : ce qui touche à l'affichage reste « écrit et compilé »,
 > pas « vu à l'écran » (cf. FIO-054).
 >
-> Restent à traiter : BUG-016 (géométrie du bras à redécouper, FIO-066 abandonné) et
-> BUG-036 à BUG-040, tous S3, relevés lors de l'audit du 30/07/2026.
+> Restent à traiter : BUG-016 (géométrie du bras à redécouper, FIO-066 en pause), BUG-036,
+> BUG-038 et BUG-040 — tous S3, relevés lors de l'audit du 30/07/2026.
 
 Sévérités :
 **S0** bloquant (crash / mod inutilisable) ·
@@ -56,7 +56,7 @@ Sévérités :
 | [BUG-034](#bug-034) | ✅ S3 | `checkContainerSize` mal employé | `…InserterContainer.java` |
 | [BUG-035](#bug-035) | ✅ S3 | Mémorisation du slot cible inopérante | `…InserterBlockEntity.java` |
 | [BUG-036](#bug-036) | S3 | `quickMoveStack` ignore `Slot#mayPickup` | `…InserterContainer.java` |
-| [BUG-037](#bug-037) | S3 | L'arrivée d'énergie ne réveille pas un inserter endormi | `…InserterBlockEntity.java` |
+| [BUG-037](#bug-037) | ✅ S3 | L'arrivée d'énergie ne réveille pas un inserter endormi | `…InserterBlockEntity.java` |
 | [BUG-038](#bug-038) | S3 | Débit réel moitié du débit documenté | `…InserterBlockEntity.java` |
 | [BUG-039](#bug-039) | ✅ S3 | `README` : nom de jar et mappings faux | `README.md` |
 | [BUG-040](#bug-040) | S3 | Aucun test JUnit alors que FIO-035 l'exigeait | `src/test/` |
@@ -815,7 +815,7 @@ traiter avec la réécriture prévue en [FIO-045](06-BACKLOG.md).
 
 ---
 
-## BUG-037 — L'arrivée d'énergie ne réveille pas un inserter endormi (S3)
+## BUG-037 — L'arrivée d'énergie ne réveille pas un inserter endormi (S3) ✅
 
 **Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java)
 

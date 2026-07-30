@@ -149,6 +149,11 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
                 @Override
                 protected void onEnergyChanged() {
                     FactoryIOInserterBlockEntity.this.setChanged();
+
+                    // Un inserter à plat s'endort comme n'importe quel inserter qui
+                    // n'aboutit pas. Sans ce réveil, le courant qui revient mettait
+                    // jusqu'à MAX_SLEEP_TICKS à être pris en compte (cf. BUG-037).
+                    FactoryIOInserterBlockEntity.this.wakeUp();
                 }
 
                 // Contrat externe : un bloc voisin ne doit jamais pouvoir vider

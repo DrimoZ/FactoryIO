@@ -56,7 +56,7 @@ Colonne « ✓ » = critère d'acceptation.
 | 🟡 FIO-045 | P3 | S | `checkContainerSize` correct + `quickMoveStack` réécrit selon le patron vanilla (DT-08), en respectant `Slot#mayPickup` ([BUG-036](03-BUGS.md)) | shift-clic du buffer sans effet |
 | FIO-046 | P3 | M | Renommage des packages (`registery`→`registry`, `ressourcepack`→`resourcepack`, suppression du préfixe `FactoryIO`) (DT-12) | à faire en **un seul** commit |
 | FIO-055 | P1 | S | **Socle JUnit** : `sourceSet` de test, dépendance, premiers tests sur `InserterSlotLayout` et `InserterCarryPath` ([BUG-040](03-BUGS.md), DT-11) | `./gradlew test` exécute des tests |
-| FIO-056 | P2 | XS | `wakeUp()` sur `onEnergyChanged` ([BUG-037](03-BUGS.md)) | le courant qui revient relance l'inserter dans le tick |
+| ~~FIO-056~~ | ✅ | XS | `wakeUp()` sur `onEnergyChanged` ([BUG-037](03-BUGS.md)) | le courant qui revient relance l'inserter dans le tick |
 | ~~FIO-057~~ | ✅ | XS | Corriger le `README` : nom de jar et mappings ([BUG-039](03-BUGS.md)) | — |
 
 ## Épic C — Inserters (Phase 2)
