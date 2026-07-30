@@ -150,3 +150,16 @@ publishing {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
+
+// Les structures de GameTest sont lues depuis un dossier du répertoire de jeu
+// (StructureTemplateManager.TEST_STRUCTURES_DIR = "gameteststructures"), et non depuis
+// un datapack. On les garde donc versionnées dans src/gametest/structures et on les
+// recopie avant chaque exécution — run/ étant ignoré par git.
+tasks.register('copyGameTestStructures', Copy) {
+    from 'src/gametest/structures'
+    into file('run/gameteststructures')
+}
+
+tasks.matching { it.name in ['runGameTestServer', 'runClient', 'runServer'] }.configureEach {
+    dependsOn 'copyGameTestStructures'
+}

@@ -2,16 +2,16 @@ package com.drimoz.factoryio.core.registery;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.init.FactoryIORegistries;
-import com.drimoz.factoryio.core.inserters.*;
+import com.drimoz.factoryio.core.inserters.FactoryIOInserterBlockEntity;
+import com.drimoz.factoryio.core.inserters.FactoryIOInserterContainer;
+import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
+import com.drimoz.factoryio.core.inserters.FactoryIOInserterItem;
 import com.drimoz.factoryio.core.model.Inserter;
-import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.registries.RegistryObject;
 
@@ -87,19 +87,12 @@ public class FactoryIOInserterRegistry {
         this.inserters.values().forEach(this::registerInserterContent);
     }
 
-    public void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        this.inserters.values().forEach((i) ->
-                event.registerBlockEntityRenderer(
-                        i.getBlockEntityType().get(),
-                        (pContext -> new FactoryIOInserterBlockEntityRenderer(i))));
-    }
-
-    public void onRegisterScreens() {
-        this.inserters.values().forEach((i) ->
-                MenuScreens.register(
-                        i.getMenuType().get(),
-                        FactoryIOInserterScreen<FactoryIOInserterContainer>::new));
-    }
+    // L'enregistrement des renderers et des écrans vit dans com.drimoz.factoryio.client.
+    //
+    // Il ne peut PAS rester ici : la vérification de cette classe par la JVM résout les
+    // types manipulés dans le corps des méthodes. Construire un GeoBlockRenderer chargeait
+    // donc BlockEntityRenderer — une classe client — au simple chargement du registre,
+    // ce qui fait échouer la construction du mod sur serveur dédié (cf. DT-09).
 
     // Inner work
 

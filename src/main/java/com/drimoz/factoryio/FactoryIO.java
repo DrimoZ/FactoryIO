@@ -18,7 +18,6 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
@@ -54,7 +53,6 @@ public class FactoryIO
 
         eventBus.register(new FactoryIODataGenerators());
         eventBus.addListener(this::onCommonSetup);
-        eventBus.addListener(this::onClientSetup);
         eventBus.addListener(this::onRegisterResourcePacks);
 
         FactoryIONetworks.init();
@@ -95,7 +93,6 @@ public class FactoryIO
         FactoryIOInserterRegistry.getInstance().onCommonSetup();
     }
 
-    public void onClientSetup(final FMLClientSetupEvent event) {
-        event.enqueueWork(() -> FactoryIOInserterRegistry.getInstance().onRegisterScreens());
-    }
+    // L'enregistrement des écrans et des renderers vit dans FactoryIOClientEvents,
+    // hors d'atteinte du serveur dédié.
 }
