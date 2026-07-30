@@ -1,6 +1,6 @@
 # 03 — Catalogue des bugs
 
-> **État : 31 bugs sur 34 corrigés**, plus 1 partiellement.
+> **État : 32 bugs sur 34 corrigés**, plus 1 partiellement.
 >
 > Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Le
 > **comportement** de ces correctifs n'a en revanche jamais été observé en jeu :
@@ -8,7 +8,7 @@
 > aucun test automatisé (voir [DT-11](04-DETTE-TECHNIQUE.md)). Considérer ces ✅
 > comme « écrit et compilé », pas comme « vérifié ».
 >
-> Restent : BUG-014 (modèle de données, FIO-036) et BUG-016 (animation, Phase 2).
+> Reste : BUG-016 (animation GeckoLib), traité en Phase 2 avec la refonte du rendu.
 
 Sévérités :
 **S0** bloquant (crash / mod inutilisable) ·
@@ -33,7 +33,7 @@ Sévérités :
 | [BUG-011](#bug-011) | ✅ S2 | Aucune traduction générée par défaut | pipeline datagen |
 | [BUG-012](#bug-012) | ✅ S2 | Un burner inserter vide ne peut plus se recharger | `…InserterBlockEntity.java` |
 | [BUG-013](#bug-013) | ✅ S2 | Clamp du carburant sans effet → valeurs négatives | `…InserterBlockEntity.java` |
-| [BUG-014](#bug-014) | S2 | `filterable` force `useEnergy` | `Inserter.java` |
+| [BUG-014](#bug-014) | ✅ S2 | `filterable` force `useEnergy` | `Inserter.java` |
 | [BUG-015](#bug-015) | ✅ S2 | `affectedByRedstone` ignoré + update côté client | `FactoryIOEntityBlock.java` |
 | [BUG-016](#bug-016) | S2 | Animation ciblant un bone inexistant | `animated_block.animation.json` |
 | [BUG-017](#bug-017) | ✅ S2 | Boîte de collision = cube plein | `…InserterEntityBlock.java` |

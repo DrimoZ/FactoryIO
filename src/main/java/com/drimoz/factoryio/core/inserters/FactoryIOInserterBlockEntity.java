@@ -88,6 +88,15 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     private boolean isWhitelist = true;
     private int current_fuel_value = 0;
 
+    /**
+     * Tick de jeu auquel le mouvement de bras en cours se termine.
+     *
+     * <p>Synchronisé au déclenchement d'une action, pas à chaque tick : le client
+     * calcule seul la progression à partir de cette échéance et de sa propre horloge
+     * (cf. BUG-004, on ne réintroduit pas de trafic périodique).
+     */
+    private long swingEndTick = 0L;
+
     private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
 
     // Life cycle
@@ -310,6 +319,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     public CompoundTag getUpdateTag() {
         CompoundTag tag = new CompoundTag();
         tag.putBoolean("inserterWhitelist", this.isWhitelist);
+        tag.putLong("inserterSwingEnd", this.swingEndTick);
         return tag;
     }
 
@@ -318,6 +328,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         if (tag.contains("inserterWhitelist")) {
             this.isWhitelist = tag.getBoolean("inserterWhitelist");
         }
+        this.swingEndTick = tag.getLong("inserterSwingEnd");
     }
 
     @Nullable
@@ -383,11 +394,13 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
                         if (suckItems(pEntity, pLevel, pEntity.getGrabDistance(), pEntity.isWhitelist())) {
                             pEntity.current_cooldown = 0;
                             pEntity.useFuelOrEnergy();
+                            pEntity.startSwing();
                         }
                     } else {
                         if (expelItems(pEntity, pLevel, pEntity.getGrabDistance())) {
                             pEntity.current_cooldown = 0;
                             pEntity.useFuelOrEnergy();
+                            pEntity.startSwing();
                         }
                     }
                 }
@@ -395,6 +408,38 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         }
 
         pEntity.burnFuel();
+    }
+
+    // Interface (Animation)
+
+    /** Durée d'un mouvement de bras, en ticks. */
+    public int getTicksPerSwing() {
+        return Math.max(1, getDurationBetweenActions() / MAX_ACTIONS_PER_TICK);
+    }
+
+    /** Démarre un mouvement de bras et le fait connaître aux clients qui suivent le chunk. */
+    private void startSwing() {
+        if (this.level == null) return;
+
+        this.swingEndTick = this.level.getGameTime() + getTicksPerSwing();
+        syncToClients();
+    }
+
+    /**
+     * @return progression du mouvement en cours, de 0 (au repos) à 1 (fin de course)
+     *
+     * <p>Calculée côté client à partir de l'échéance synchronisée : aucun trafic réseau
+     * pendant le mouvement.
+     */
+    public float getSwingProgress(float partialTick) {
+        if (this.level == null || this.swingEndTick <= 0L) return 0f;
+
+        int duration = getTicksPerSwing();
+        double remaining = this.swingEndTick - (this.level.getGameTime() + partialTick);
+
+        if (remaining <= 0 || remaining >= duration) return 0f;
+
+        return (float) (1.0 - remaining / duration);
     }
 
     /** @return {@code true} si la réserve permet de payer une action */

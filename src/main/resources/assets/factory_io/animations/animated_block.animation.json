@@ -1,16 +1,19 @@
 {
+  "_comment": [
+    "L'animation « idle » est volontairement vide : le mouvement du bras est piloté",
+    "par le code, dans FactoryIOInserterBlockEntityModel#handleAnimations, à partir de",
+    "la progression réelle du swing.",
+    "",
+    "La version précédente animait un bone nommé « bone2 », absent des trois",
+    "géométries (qui déclarent inserter, bearing, base et base_top). GeckoLib ignore",
+    "silencieusement les bones introuvables : l'animation ne faisait donc rien du tout",
+    "(cf. BUG-016)."
+  ],
   "format_version": "1.8.0",
   "animations": {
     "idle": {
       "loop": true,
-      "animation_length": 2.96,
-      "bones": {
-        "bone2": {
-          "position": {
-            "vector": [0, "math.sin(query.anim_time*120)", 0]
-          }
-        }
-      }
+      "animation_length": 1.0
     }
   },
   "geckolib_format_version": 2

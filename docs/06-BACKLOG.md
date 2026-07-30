@@ -44,7 +44,7 @@ Colonne « ✓ » = critère d'acceptation.
 | FIO-033 | P0 | S | **Supprimer les 5 paquets S→C** devenus inutiles ([BUG-004](03-BUGS.md)) | 100 inserters = 0 paquet/s au repos |
 | FIO-034 | P0 | M | `InserterDefinition` en `record` + `Codec` (DT-04) | JSON invalide → message d'erreur explicite |
 | FIO-035 | P0 | S | `InserterSlotLayout` : source unique des index de slots (DT-03) | JUnit sur les 4 combinaisons énergie×filtre |
-| FIO-036 | P1 | M | Rendre `filterable` indépendant de `useEnergy` ([BUG-014](03-BUGS.md)) | un `burner_filter_inserter` fonctionne |
+| ~~FIO-036~~ | ✅ | M | Rendre `filterable` indépendant de `useEnergy` ([BUG-014](03-BUGS.md)) | un `burner_filter_inserter` fonctionne |
 | FIO-037 | P1 | L | Définitions chargées par datapack (`SimpleJsonResourceReloadListener`) (DT-05) | `/reload` applique un changement de vitesse |
 | FIO-038 | P1 | M | Générer les assets par défaut via `runData` et les committer (DT-05) | `src/generated/resources` versionné |
 | FIO-039 | P1 | M | Génération runtime confinée au client, en mémoire, invalidée au reload (DT-05) | ajouter un JSON puis F3+T suffit |
