@@ -42,8 +42,8 @@ Colonne « ✓ » = critère d'acceptation.
 | FIO-031 | P0 | M | Énergie et carburant via `ContainerData` (DT-01) | la barre se met à jour, zéro paquet custom |
 | FIO-032 | P0 | S | Corriger `checkPoweredState` : garde serveur, `affectedByRedstone`, flag `UPDATE_ALL` ([BUG-015](03-BUGS.md)) | la texture `_disabled` apparaît sans paquet custom |
 | FIO-033 | P0 | S | **Supprimer les 5 paquets S→C** devenus inutiles ([BUG-004](03-BUGS.md)) | 100 inserters = 0 paquet/s au repos |
-| FIO-034 | P0 | M | `InserterDefinition` en `record` + `Codec` (DT-04) | JSON invalide → message d'erreur explicite |
-| FIO-035 | P0 | S | `InserterSlotLayout` : source unique des index de slots (DT-03) | JUnit sur les 4 combinaisons énergie×filtre |
+| 🟡 FIO-034 | P1 | M | `Codec` pour les définitions — le modèle est déjà immuable et validé, reste la sérialisation (DT-04) | JSON invalide → message d'erreur explicite |
+| ~~FIO-035~~ | ✅ | S | `InserterSlotLayout` : source unique des index de slots (DT-03) | JUnit sur les 4 combinaisons énergie×filtre |
 | ~~FIO-036~~ | ✅ | M | Rendre `filterable` indépendant de `useEnergy` ([BUG-014](03-BUGS.md)) | un `burner_filter_inserter` fonctionne |
 | FIO-037 | P1 | L | Définitions chargées par datapack (`SimpleJsonResourceReloadListener`) (DT-05) | `/reload` applique un changement de vitesse |
 | FIO-038 | P1 | M | Générer les assets par défaut via `runData` et les committer (DT-05) | `src/generated/resources` versionné |
@@ -52,7 +52,7 @@ Colonne « ✓ » = critère d'acceptation.
 | FIO-041 | P0 | M | Socle GameTest + CI GitHub Actions (DT-11) | `gameTestServer` vert sur chaque PR |
 | FIO-042 | P0 | M | 6 GameTests d'invariants (conservation, persistance, redstone, filtre, carburant, énergie) | — |
 | ~~FIO-043~~ | ✅ | XL | **Port de version** vers Forge 1.20.1 | compile ; **reste à valider en jeu** |
-| FIO-044 | P2 | S | Corriger l'exposition de la capability énergie (toutes faces + `side == null`) ([BUG-021](03-BUGS.md)) | The One Probe affiche l'énergie |
+| ~~FIO-044~~ | ✅ | S | Corriger l'exposition de la capability énergie (toutes faces + `side == null`) ([BUG-021](03-BUGS.md)) | The One Probe affiche l'énergie |
 | FIO-045 | P2 | S | `checkContainerSize` correct + `quickMoveStack` réécrit selon le patron vanilla (DT-08) | — |
 | FIO-046 | P3 | M | Renommage des packages (`registery`→`registry`, `ressourcepack`→`resourcepack`, suppression du préfixe `FactoryIO`) (DT-12) | à faire en **un seul** commit |
 
@@ -62,14 +62,14 @@ Colonne « ✓ » = critère d'acceptation.
 |---|---|---|---|---|
 | FIO-060 | P1 | L | Machine à états de l'inserter ([`07`](07-DESIGN-INSERTERS.md)) | l'état est observable et persisté |
 | FIO-061 | P1 | M | Réécriture des transferts : incrémental, multi-slot ([BUG-022](03-BUGS.md), DT-02) | remplir un four dont l'input est presque plein |
-| FIO-062 | P1 | M | Cache de capability voisine (invalidation par listener) (DT-07) | profilage : plus de `getBlockEntity` dans le chemin chaud |
-| FIO-063 | P1 | S | Mémorisation du dernier slot fructueux (DT-07) | coffre 54 slots : coût constant |
-| FIO-064 | P1 | M | Mise en sommeil après N échecs, réveil sur `neighborChanged` (DT-07) | 1 000 inserters bloqués ≈ coût nul |
+| ~~FIO-062~~ | ✅ | M | Cache de capability voisine (invalidation par listener) (DT-07) | profilage : plus de `getBlockEntity` dans le chemin chaud |
+| ~~FIO-063~~ | ✅ | S | Mémorisation du dernier slot fructueux (DT-07) | coffre 54 slots : coût constant |
+| ~~FIO-064~~ | ✅ | M | Mise en sommeil après N échecs, réveil sur `neighborChanged` (DT-07) | 1 000 inserters bloqués ≈ coût nul |
 | FIO-065 | P1 | S | Rééquilibrage temporel sur le barème Factorio (DT-10) | `fast_inserter` ≈ 2,3 items/s |
-| FIO-066 | P1 | M | Animation du bras pilotée par l'état ([BUG-016](03-BUGS.md)) | le bras suit réellement le swing |
+| ~~FIO-066~~ | ✅ | M | Animation du bras pilotée par l'état ([BUG-016](03-BUGS.md)) | le bras suit réellement le swing |
 | FIO-067 | P1 | M | **Rendu de l'item tenu** dans la main de l'inserter | on voit l'item traverser |
 | FIO-068 | P2 | M | Ramassage et dépôt d'items au sol (parité Factorio) | inserter → sol → inserter |
-| FIO-069 | P2 | S | Filtres par type d'item + support des tags ([DT-02](04-DETTE-TECHNIQUE.md)) | filtrer `forge:plates` |
+| 🟡 FIO-069 | P2 | S | Filtres par type d'item faits ; reste le support des tags ([DT-02](04-DETTE-TECHNIQUE.md)) | filtrer `forge:plates` |
 | FIO-070 | P2 | M | Mode circuit : condition sur signal redstone analogique | « n'agir que si signal ≥ 5 » |
 | FIO-071 | P2 | S | `GhostSlot` réutilisable, suppression de la surcharge de `clicked()` (DT-08) | — |
 | FIO-072 | P2 | S | Tooltips avec les bonnes unités ([BUG-029](03-BUGS.md)) | items/s et FE/s corrects |
