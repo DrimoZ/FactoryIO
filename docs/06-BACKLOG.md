@@ -13,47 +13,47 @@ Colonne « ✓ » = critère d'acceptation.
 
 | ID | P | Est. | Ticket | ✓ |
 |---|---|---|---|---|
-| FIO-001 | P0 | XS | Supprimer `event.enqueueWork(FactoryIONetworks::init)` dans `onCommonSetup` ([BUG-002](03-BUGS.md)) | `runClient` démarre sans exception réseau |
-| FIO-002 | P0 | S | Déplacer `FactoryIOInserterLoader.setup()` après le chargement effectif de la config ([BUG-001](03-BUGS.md)) | désactiver `stack_inserter` dans le TOML le retire du jeu |
-| FIO-003 | P0 | S | Consommer réellement l'énergie : `consumeInternal()` interne + wrapper lecture seule pour la capability ([BUG-003](03-BUGS.md)) | un `inserter` alimenté à 300 FE fait exactement 1 swing |
-| FIO-004 | P0 | M | Transferts sans destruction d'items : simuler → calculer le mouvable → extraire ([BUG-006](03-BUGS.md)) | GameTest : coffre A (64 items) → coffre B, total conservé |
-| FIO-005 | P0 | S | Valider `FactoryIOSyncC2SWhitelistButton` (null, `instanceof`, distance, menu ouvert) ([BUG-007](03-BUGS.md)) | paquet forgé sur une position vide → aucun effet, aucun crash |
-| FIO-006 | P0 | S | Supprimer `Minecraft.getInstance()` de `FactoryIOPackResources` ([BUG-005](03-BUGS.md)) | `runServer` démarre |
-| FIO-007 | P0 | S | Persister `isWhitelist` et `current_cooldown` en NBT ([BUG-008](03-BUGS.md)) | GameTest : blacklist survit à un rechargement |
-| FIO-008 | P1 | XS | Corriger les bornes de `moveItemStackTo` dans `quickMoveStack` ([BUG-009](03-BUGS.md)) | shift-clic du charbon vers le slot carburant |
-| FIO-009 | P1 | S | Auto-alimentation du burner quand le buffer est bas ([BUG-012](03-BUGS.md)) | GameTest : burner à sec + coffre de charbon → redémarre |
-| FIO-010 | P1 | XS | `Mth.clamp` dans `overrideCurrentFuelValue` ([BUG-013](03-BUGS.md)) | la valeur reste dans `[0, capacity]` |
-| FIO-011 | P1 | XS | Corriger `getStateForPlacement` pour le waterlogging ([BUG-010](03-BUGS.md)) | placer dans l'eau conserve l'eau |
-| FIO-012 | P1 | XS | Corriger `setEnabled()` ([BUG-018](03-BUGS.md)) et supprimer `getInnerFuelCapacity()` ([BUG-019](03-BUGS.md)) | — |
-| FIO-013 | P1 | S | `en_us.json` et `fr_fr.json` complets : 7 blocs + 33 items + tooltips ([BUG-011](03-BUGS.md)) | aucune clé brute affichée en jeu |
-| FIO-014 | P1 | S | Ajuster la `VoxelShape` de l'inserter ([BUG-017](03-BUGS.md)) | le joueur passe devant une rangée d'inserters |
-| FIO-015 | P1 | S | Item `factory_io:wrench` + peuplement du tag ([BUG-026](03-BUGS.md)) | la rotation fonctionne sans mod tiers |
-| FIO-016 | P1 | XS | Remplir `mods.toml` (description, logo, URLs, credits) ([BUG-027](03-BUGS.md)) | plus de warning `examplemod.png` |
-| FIO-017 | P1 | S | Nettoyer `build.gradle` : mods de test derrière un flag, supprimer GSON (DT-13) | `runClient` sans mods tiers par défaut |
-| FIO-018 | P1 | S | Supprimer le code mort ([`02`](02-ETAT-DES-LIEUX.md) §6) | ~500 lignes en moins, compilation OK |
-| FIO-019 | P2 | XS | Passer les logs de debug en `debug` / supprimer les `System.out` ([BUG-028](03-BUGS.md)) | — |
-| FIO-020 | P2 | XS | Renommer la creative tab en `factory_io` ([BUG-030](03-BUGS.md)) | — |
+| ~~FIO-001~~ | ✅ | XS | Supprimer `event.enqueueWork(FactoryIONetworks::init)` dans `onCommonSetup` ([BUG-002](03-BUGS.md)) | `runClient` démarre sans exception réseau |
+| ~~FIO-002~~ | ✅ | S | Déplacer `FactoryIOInserterLoader.setup()` après le chargement effectif de la config ([BUG-001](03-BUGS.md)) | désactiver `stack_inserter` dans le TOML le retire du jeu |
+| ~~FIO-003~~ | ✅ | S | Consommer réellement l'énergie : `consumeInternal()` interne + wrapper lecture seule pour la capability ([BUG-003](03-BUGS.md)) | un `inserter` alimenté à 300 FE fait exactement 1 swing |
+| ~~FIO-004~~ | ✅ | M | Transferts sans destruction d'items : simuler → calculer le mouvable → extraire ([BUG-006](03-BUGS.md)) | GameTest : coffre A (64 items) → coffre B, total conservé |
+| ~~FIO-005~~ | ✅ | S | Valider `FactoryIOSyncC2SWhitelistButton` (null, `instanceof`, distance, menu ouvert) ([BUG-007](03-BUGS.md)) | paquet forgé sur une position vide → aucun effet, aucun crash |
+| ~~FIO-006~~ | ✅ | S | Supprimer `Minecraft.getInstance()` de `FactoryIOPackResources` ([BUG-005](03-BUGS.md)) | `runServer` démarre |
+| ~~FIO-007~~ | ✅ | S | Persister `isWhitelist` et `current_cooldown` en NBT ([BUG-008](03-BUGS.md)) | GameTest : blacklist survit à un rechargement |
+| ~~FIO-008~~ | ✅ | XS | Corriger les bornes de `moveItemStackTo` dans `quickMoveStack` ([BUG-009](03-BUGS.md)) | shift-clic du charbon vers le slot carburant |
+| ~~FIO-009~~ | ✅ | S | Auto-alimentation du burner quand le buffer est bas ([BUG-012](03-BUGS.md)) | GameTest : burner à sec + coffre de charbon → redémarre |
+| ~~FIO-010~~ | ✅ | XS | `Mth.clamp` dans `overrideCurrentFuelValue` ([BUG-013](03-BUGS.md)) | la valeur reste dans `[0, capacity]` |
+| ~~FIO-011~~ | ✅ | XS | Corriger `getStateForPlacement` pour le waterlogging ([BUG-010](03-BUGS.md)) | placer dans l'eau conserve l'eau |
+| ~~FIO-012~~ | ✅ | XS | Corriger `setEnabled()` ([BUG-018](03-BUGS.md)) et supprimer `getInnerFuelCapacity()` ([BUG-019](03-BUGS.md)) | — |
+| ~~FIO-013~~ | ✅ | S | `en_us.json` et `fr_fr.json` complets : 7 blocs + 33 items + tooltips ([BUG-011](03-BUGS.md)) | aucune clé brute affichée en jeu |
+| ~~FIO-014~~ | ✅ | S | Ajuster la `VoxelShape` de l'inserter ([BUG-017](03-BUGS.md)) | le joueur passe devant une rangée d'inserters |
+| ~~FIO-015~~ | ✅ | S | Item `factory_io:wrench` + peuplement du tag ([BUG-026](03-BUGS.md)) | la rotation fonctionne sans mod tiers |
+| ~~FIO-016~~ | ✅ | XS | Remplir `mods.toml` (description, logo, URLs, credits) ([BUG-027](03-BUGS.md)) | plus de warning `examplemod.png` |
+| ~~FIO-017~~ | ✅ | S | Nettoyer `build.gradle` : mods de test derrière un flag, supprimer GSON (DT-13) | `runClient` sans mods tiers par défaut |
+| ~~FIO-018~~ | ✅ | S | Supprimer le code mort ([`02`](02-ETAT-DES-LIEUX.md) §6) | ~500 lignes en moins, compilation OK |
+| ~~FIO-019~~ | ✅ | XS | Passer les logs de debug en `debug` / supprimer les `System.out` ([BUG-028](03-BUGS.md)) | — |
+| ~~FIO-020~~ | ✅ | XS | Renommer la creative tab en `factory_io` ([BUG-030](03-BUGS.md)) | — |
 
 ## Épic B — Fondations (Phase 1)
 
 | ID | P | Est. | Ticket | ✓ |
 |---|---|---|---|---|
-| FIO-030 | P0 | M | `getUpdateTag` / `getUpdatePacket` / `onDataPacket` sur le BlockEntity (DT-01) | le client voit le bon état après un `/reload` |
-| FIO-031 | P0 | M | Énergie et carburant via `ContainerData` (DT-01) | la barre se met à jour, zéro paquet custom |
-| FIO-032 | P0 | S | Corriger `checkPoweredState` : garde serveur, `affectedByRedstone`, flag `UPDATE_ALL` ([BUG-015](03-BUGS.md)) | la texture `_disabled` apparaît sans paquet custom |
-| FIO-033 | P0 | S | **Supprimer les 5 paquets S→C** devenus inutiles ([BUG-004](03-BUGS.md)) | 100 inserters = 0 paquet/s au repos |
+| ~~FIO-030~~ | ✅ | M | `getUpdateTag` / `getUpdatePacket` / `onDataPacket` sur le BlockEntity (DT-01) | le client voit le bon état après un `/reload` |
+| ~~FIO-031~~ | ✅ | M | Énergie et carburant via `ContainerData` (DT-01) | la barre se met à jour, zéro paquet custom |
+| ~~FIO-032~~ | ✅ | S | Corriger `checkPoweredState` : garde serveur, `affectedByRedstone`, flag `UPDATE_ALL` ([BUG-015](03-BUGS.md)) | la texture `_disabled` apparaît sans paquet custom |
+| ~~FIO-033~~ | ✅ | S | **Supprimer les 5 paquets S→C** devenus inutiles ([BUG-004](03-BUGS.md)) | 100 inserters = 0 paquet/s au repos |
 | 🟡 FIO-034 | P1 | M | `Codec` pour les définitions — le modèle est déjà immuable et validé, reste la sérialisation (DT-04) | JSON invalide → message d'erreur explicite |
 | ~~FIO-035~~ | ✅ | S | `InserterSlotLayout` : source unique des index de slots (DT-03) | JUnit sur les 4 combinaisons énergie×filtre |
 | ~~FIO-036~~ | ✅ | M | Rendre `filterable` indépendant de `useEnergy` ([BUG-014](03-BUGS.md)) | un `burner_filter_inserter` fonctionne |
 | FIO-037 | P1 | L | Définitions chargées par datapack (`SimpleJsonResourceReloadListener`) (DT-05) | `/reload` applique un changement de vitesse |
-| FIO-038 | P1 | M | Générer les assets par défaut via `runData` et les committer (DT-05) | `src/generated/resources` versionné |
+| ~~FIO-038~~ | ✅ | M | Générer les assets par défaut via `runData` et les committer (DT-05) | `src/generated/resources` versionné |
 | FIO-039 | P1 | M | Génération runtime confinée au client, en mémoire, invalidée au reload (DT-05) | ajouter un JSON puis F3+T suffit |
 | ~~FIO-040~~ | ✅ | L | Migration vers `DeferredRegister` (DT-06) — **fait pendant le port** | plus aucun `setRegistryName` |
 | FIO-041 | P0 | M | Socle GameTest + CI GitHub Actions (DT-11) | `gameTestServer` vert sur chaque PR |
 | FIO-042 | P0 | M | 6 GameTests d'invariants (conservation, persistance, redstone, filtre, carburant, énergie) | — |
 | ~~FIO-043~~ | ✅ | XL | **Port de version** vers Forge 1.20.1 | compile ; **reste à valider en jeu** |
 | ~~FIO-044~~ | ✅ | S | Corriger l'exposition de la capability énergie (toutes faces + `side == null`) ([BUG-021](03-BUGS.md)) | The One Probe affiche l'énergie |
-| FIO-045 | P2 | S | `checkContainerSize` correct + `quickMoveStack` réécrit selon le patron vanilla (DT-08) | — |
+| 🟡 FIO-045 | P3 | S | `checkContainerSize` correct + `quickMoveStack` réécrit selon le patron vanilla (DT-08) | — |
 | FIO-046 | P3 | M | Renommage des packages (`registery`→`registry`, `ressourcepack`→`resourcepack`, suppression du préfixe `FactoryIO`) (DT-12) | à faire en **un seul** commit |
 
 ## Épic C — Inserters (Phase 2)
@@ -61,7 +61,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ID | P | Est. | Ticket | ✓ |
 |---|---|---|---|---|
 | FIO-060 | P1 | L | Machine à états de l'inserter ([`07`](07-DESIGN-INSERTERS.md)) | l'état est observable et persisté |
-| FIO-061 | P1 | M | Réécriture des transferts : incrémental, multi-slot ([BUG-022](03-BUGS.md), DT-02) | remplir un four dont l'input est presque plein |
+| ~~FIO-061~~ | ✅ | M | Réécriture des transferts : incrémental, multi-slot ([BUG-022](03-BUGS.md), DT-02) | remplir un four dont l'input est presque plein |
 | ~~FIO-062~~ | ✅ | M | Cache de capability voisine (invalidation par listener) (DT-07) | profilage : plus de `getBlockEntity` dans le chemin chaud |
 | ~~FIO-063~~ | ✅ | S | Mémorisation du dernier slot fructueux (DT-07) | coffre 54 slots : coût constant |
 | ~~FIO-064~~ | ✅ | M | Mise en sommeil après N échecs, réveil sur `neighborChanged` (DT-07) | 1 000 inserters bloqués ≈ coût nul |
@@ -72,10 +72,10 @@ Colonne « ✓ » = critère d'acceptation.
 | 🟡 FIO-069 | P2 | S | Filtres par type d'item faits ; reste le support des tags ([DT-02](04-DETTE-TECHNIQUE.md)) | filtrer `forge:plates` |
 | FIO-070 | P2 | M | Mode circuit : condition sur signal redstone analogique | « n'agir que si signal ≥ 5 » |
 | FIO-071 | P2 | S | `GhostSlot` réutilisable, suppression de la surcharge de `clicked()` (DT-08) | — |
-| FIO-072 | P2 | S | Tooltips avec les bonnes unités ([BUG-029](03-BUGS.md)) | items/s et FE/s corrects |
+| ~~FIO-072~~ | ✅ | S | Tooltips avec les bonnes unités ([BUG-029](03-BUGS.md)) | items/s et FE/s corrects |
 | FIO-073 | P2 | M | Benchmark : 1 000 inserters actifs < 2 ms/tick (DT-07) | résultat consigné dans le dépôt |
-| FIO-074 | P3 | S | Face correcte passée à la capability en éjection ([BUG-023](03-BUGS.md)) | — |
-| FIO-075 | P3 | S | Carburant : `shrink(1)`, `getCraftingRemainingItem`, comparaison `<=` ([BUG-024](03-BUGS.md)) | un seau de lave rend un seau |
+| ~~FIO-074~~ | ✅ | S | Face correcte passée à la capability en éjection ([BUG-023](03-BUGS.md)) | — |
+| ~~FIO-075~~ | ✅ | S | Carburant : `shrink(1)`, `getCraftingRemainingItem`, comparaison `<=` ([BUG-024](03-BUGS.md)) | un seau de lave rend un seau |
 
 ## Épic D — Convoyeurs (Phase 3)
 
@@ -134,7 +134,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ID | P | Est. | Ticket | ✓ |
 |---|---|---|---|---|
 | ~~FIO-047~~ | ✅ | M | **Débloquer `runClient`** — **fait**. Deux causes, isolées en comparant avec un MDK 1.20.1 vierge (voir ci-dessous). | le client démarre, `Loaded 7 inserters` |
-| FIO-053 | P1 | S | Modèles `base_*_inserter_c.json` : `"textures": { "0": "" }` → `JsonSyntaxException: Missing texture` au chargement. Antérieurs au port, apparemment référencés par rien. À compléter ou supprimer. | plus aucun `Failed to load model` |
+| ~~FIO-053~~ | ✅ | S | Modèles `base_*_inserter_c.json` : `"textures": { "0": "" }` → `JsonSyntaxException: Missing texture` au chargement. Antérieurs au port, apparemment référencés par rien. À compléter ou supprimer. | plus aucun `Failed to load model` |
 | FIO-054 | P0 | M | **Valider le mod en jeu** : poser un inserter, vérifier le rendu GeckoLib, l'onglet créatif, et que le pack généré au runtime fournit modèles et loot tables | une chaîne coffre → inserter → four fonctionne |
 
 ### Pourquoi `runClient` ne démarrait pas (FIO-047)
@@ -151,7 +151,7 @@ Diagnostic établi en comparant le projet à un **MDK Forge 1.20.1 vierge**, une
 - *« Les mappings `official` sont en cause. »* Non : le MDK utilise `official` par défaut et démarre parfaitement. L'erreur nº2 était présente sous `official` **et** sous Parchment. Le projet est resté sur Parchment pour les noms de paramètres, pas par nécessité.
 - *« Le plugin de lancement `eventbus` ne transforme aucune classe (aucun marqueur `pl:eventbus`). »* Non : le MDK qui fonctionne n'a pas non plus ces marqueurs. Leur absence est normale.
 | FIO-048 | P0 | M | Vérifier le pack généré au runtime sous la nouvelle API `PackResources` | modèles, langues et loot tables présents en jeu |
-| FIO-049 | P1 | S | Vérifier le rendu GeckoLib 4 (bloc et item) | l'inserter s'affiche en monde et en inventaire |
+| ~~FIO-049~~ | ✅ | S | Vérifier le rendu GeckoLib 4 (bloc et item) | l'inserter s'affiche en monde et en inventaire |
 | FIO-050 | P1 | S | Vérifier l'onglet créatif et l'ordre de ses items | les 7 inserters + 33 items présents |
 | ~~FIO-044~~ | ✅ | S | Capability énergie sur toutes les faces (BUG-021)
 | ~~FIO-035~~ | ✅ | S | InserterSlotLayout : source unique des index de slots (DT-03)
