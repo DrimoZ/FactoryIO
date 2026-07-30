@@ -3,8 +3,7 @@ package com.drimoz.factoryio.gametest;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
-import com.drimoz.factoryio.core.inserters.InserterCarryPath;
-import com.drimoz.factoryio.core.inserters.InserterSwingPhase;
+import com.drimoz.factoryio.core.inserters.InserterState;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
 import net.minecraft.core.BlockPos;
@@ -13,7 +12,6 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -30,6 +28,9 @@ import net.minecraftforge.items.IItemHandler;
  * refonte peut casser en silence : conservation des items, persistance de l'état,
  * réaction au redstone. Ce sont exactement les régressions que la Phase 0 a corrigées
  * et qu'il ne faut pas réintroduire.
+ *
+ * <p>Ce qui relève du calcul pur — plan des slots, trajectoire, barème — est testé en
+ * JUnit dans {@code src/test} : ces tests n'ont pas besoin d'un serveur (cf. DT-11).
  *
  * <p>Disposition commune : coffre source, inserter, coffre cible, alignés sur l'axe X.
  * L'inserter regarde vers l'est, donc il aspire depuis l'ouest et dépose vers l'est.
@@ -118,13 +119,13 @@ public class FactoryIOGameTests {
     }
 
     /**
-     * L'item transporté doit partir vers les clients, sinon rien n'est affiché (FIO-067).
+     * L'item en main doit partir vers les clients, sinon rien n'est affiché (FIO-067).
      *
      * <p>Le rendu lui-même n'est pas testable sans client ; ce qui l'est, et ce qui casse
      * en silence, c'est le contenu du tag de synchronisation.
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 600)
-    public static void carriedItemIsSentToClients(GameTestHelper helper) {
+    public static void heldItemIsSentToClients(GameTestHelper helper) {
         setupChain(helper, "burner_inserter");
         fuelInserter(helper);
 
@@ -132,41 +133,112 @@ public class FactoryIOGameTests {
 
         helper.succeedWhen(() -> {
             FactoryIOInserterBlockEntity blockEntity = inserter(helper);
+
+            helper.assertTrue(blockEntity.getState().isCarrying(),
+                    "L'inserter ne porte rien : " + blockEntity.getState());
+
             CompoundTag tag = blockEntity.getUpdateTag();
 
-            helper.assertTrue(tag.contains("inserterSwingStack"),
-                    "L'item transporté n'est pas dans le tag de synchronisation");
+            helper.assertTrue(tag.contains("inserterHeldStack"),
+                    "L'item en main n'est pas dans le tag de synchronisation");
 
-            ItemStack synced = ItemStack.of(tag.getCompound("inserterSwingStack"));
+            ItemStack synced = ItemStack.of(tag.getCompound("inserterHeldStack"));
             helper.assertTrue(synced.is(Items.COBBLESTONE),
                     "L'item synchronisé n'est pas celui déplacé : " + synced);
-
-            helper.assertTrue(blockEntity.getSwingPhase() != InserterSwingPhase.NONE,
-                    "Aucun sens de mouvement n'est renseigné");
         });
     }
 
     /**
-     * La trajectoire affichée doit aller de la source vers la cible, pas l'inverse.
+     * Cible pleine : l'inserter doit rester bras tendu, item en main (FIO-060).
      *
-     * <p>Un signe inversé sur {@code facing} est l'erreur la plus facile à commettre ici,
-     * et la seule que le calcul de trajectoire peut contenir (FIO-067).
+     * <p>C'est le point clé du design (§2), et l'invariant le plus facile à casser en
+     * refondant la machine à états : la tentation est de rendre l'item au buffer et de
+     * repartir au repos, ce qui perd à la fois le retour visuel et la garantie que l'item
+     * n'est nulle part ailleurs.
      */
-    @GameTest(template = TEMPLATE, timeoutTicks = 20)
-    public static void carryPathRunsFromSourceToTarget(GameTestHelper helper) {
-        // Inserter tourné vers l'est : il aspire à l'ouest (x < 0.5) et dépose à l'est.
-        Vec3 pickup = InserterCarryPath.positionOf(Direction.EAST, 1, InserterSwingPhase.INBOUND, 0f);
-        Vec3 dropoff = InserterCarryPath.positionOf(Direction.EAST, 1, InserterSwingPhase.OUTBOUND, 1f);
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void fullTargetLeavesTheItemInHand(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
 
-        helper.assertTrue(pickup.x < 0.5, "La prise ne part pas du côté source : " + pickup);
-        helper.assertTrue(dropoff.x > 0.5, "La dépose n'arrive pas du côté cible : " + dropoff);
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+        fillWithStone(container(helper, TARGET));
 
-        // Portée 2 : le point de prise s'éloigne d'autant (long_handed_inserter).
-        Vec3 farPickup = InserterCarryPath.positionOf(Direction.EAST, 2, InserterSwingPhase.INBOUND, 0f);
-        helper.assertTrue(farPickup.x < pickup.x,
-                "La portée n'est pas prise en compte : " + farPickup);
+        helper.succeedWhen(() -> {
+            FactoryIOInserterBlockEntity blockEntity = inserter(helper);
 
-        helper.succeed();
+            helper.assertTrue(blockEntity.getState() == InserterState.BLOCKED,
+                    "L'inserter devrait être bloqué, il est " + blockEntity.getState());
+
+            helper.assertTrue(blockEntity.getHeldStack().is(Items.COBBLESTONE),
+                    "L'inserter bloqué ne garde pas son item : " + blockEntity.getHeldStack());
+
+            // Et l'item n'a été ni dupliqué ni perdu en cours de route.
+            int total = countCobblestone(helper);
+            helper.assertTrue(total == MOVED_ITEMS,
+                    "Les items ne sont pas conservés pendant le blocage : " + total);
+        });
+    }
+
+    /**
+     * Un inserter bloqué doit reprendre son cycle dès que la cible se libère (FIO-060).
+     *
+     * <p>{@code BLOCKED} est le seul état dont on ne sort pas par une échéance : s'il
+     * n'est pas réessayé, l'inserter reste figé pour de bon.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 800)
+    public static void blockedInserterResumesWhenTargetFrees(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+        fillWithStone(container(helper, TARGET));
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(
+                        inserter(helper).getState() == InserterState.BLOCKED,
+                        "L'inserter ne s'est pas bloqué"))
+                .thenExecute(() -> container(helper, TARGET).setItem(0, ItemStack.EMPTY))
+                .thenWaitUntil(() -> helper.assertTrue(
+                        countIn(container(helper, TARGET)) > 0,
+                        "L'inserter bloqué n'a pas repris après libération de la cible"))
+                .thenSucceed();
+    }
+
+    /**
+     * L'état du bras doit survivre à une sauvegarde (FIO-060).
+     *
+     * <p>Sans cela, un inserter bloqué se réveille au repos avec un item dans son buffer —
+     * la combinaison que la machine à états n'admet pas.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void armStateSurvivesReload(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+        fillWithStone(container(helper, TARGET));
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(
+                        inserter(helper).getState() == InserterState.BLOCKED,
+                        "L'inserter ne s'est pas bloqué"))
+                .thenExecute(() -> {
+                    FactoryIOInserterBlockEntity blockEntity = inserter(helper);
+                    BlockEntity reloaded = helper.getBlockEntity(INSERTER);
+
+                    reloaded.load(blockEntity.saveWithoutMetadata());
+
+                    helper.assertTrue(
+                            ((FactoryIOInserterBlockEntity) reloaded).getState() == InserterState.BLOCKED,
+                            "L'état bloqué n'a pas survécu à la sérialisation : "
+                                    + ((FactoryIOInserterBlockEntity) reloaded).getState());
+
+                    helper.assertTrue(
+                            ((FactoryIOInserterBlockEntity) reloaded).getHeldStack().is(Items.COBBLESTONE),
+                            "L'item en main n'a pas survécu à la sérialisation");
+                })
+                .thenSucceed();
     }
 
     // Inner work
@@ -187,6 +259,16 @@ public class FactoryIOGameTests {
     private static void fuelInserter(GameTestHelper helper) {
         inserterHandler(helper).insertItem(
                 inserter(helper).LAYOUT.fuel(), new ItemStack(Items.COAL, 8), false);
+    }
+
+    /**
+     * Sature un conteneur avec un item qui ne peut fusionner avec rien de ce que
+     * l'inserter transporte : la cible n'a alors plus aucune place à offrir.
+     */
+    private static void fillWithStone(Container container) {
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            container.setItem(slot, new ItemStack(Items.STONE, 64));
+        }
     }
 
     private static FactoryIOInserterBlockEntity inserter(GameTestHelper helper) {

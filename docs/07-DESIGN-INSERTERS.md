@@ -12,22 +12,57 @@ diverge sur presque tous les points.
 
 | Propriété | Factorio | Factory'I/O aujourd'hui |
 |---|---|---|
-| Mouvement | bras continu, angle interpolé | téléportation instantanée |
-| Main | contient N items **visibles** | slot buffer invisible |
+| Mouvement | bras continu, angle interpolé | 🟡 item interpolé, bras figé (FIO-060, FIO-066) |
+| Main | contient N items **visibles** | ✅ item visible en main (FIO-067) |
 | Source | inventaire, **bande transporteuse**, sol | inventaire uniquement |
 | Cible | inventaire, **bande transporteuse**, sol | inventaire uniquement |
-| Blocage | l'inserter garde l'item en main et attend | l'item reste dans un slot |
-| Filtre | par type d'item, whitelist/blacklist | par item **+ NBT** |
+| Blocage | l'inserter garde l'item en main et attend | ✅ état `BLOCKED` (FIO-060) |
+| Filtre | par type d'item, whitelist/blacklist | ✅ par type (BUG-022) ; tags à faire (FIO-069) |
 | Taille de main | dépend du type + bonus de recherche | constante 1 ou 3 |
 | Condition circuit | signal/condition réseau | signal redstone binaire |
 | Vitesse | 0,60 à 2,31 items/s | ✅ 0,59 à 2,50 items/s (FIO-065) — auparavant 0,25 pour tous |
 
 ---
 
-## 2. Machine à états
+## 2. Machine à états — ✅ **appliquée (FIO-060)**
 
-Remplacer le compteur `current_cooldown` par un état explicite. C'est ce qui
-rend l'animation, la synchronisation et le debug possibles.
+Le compteur de cooldown est remplacé par un état explicite
+([`InserterState`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterState.java)).
+C'est ce qui rend l'animation, la synchronisation et le debug possibles.
+
+**Deux écarts assumés avec le diagramme ci-dessous.**
+
+`PICKING` et `DROPPING` n'existent pas comme états : ils n'ont aucune durée, ce sont les
+transitions elles-mêmes. Les inscrire dans l'énumération aurait produit des états
+traversés en zéro tick — jamais observables, jamais persistés, à contre-emploi du but du
+ticket. Ils vivent comme méthodes (`tickWaiting` saisit, `tryDrop` dépose). Restent quatre
+états, qui durent tous :
+
+```
+  WAITING ──saisie──▶ SWINGING ──dépose──▶ RETURNING ──arrivée──▶ WAITING
+                           │                    ▲
+                   cible pleine                 │
+                           ▼                    │
+                       BLOCKED ────dépose───────┘
+```
+
+`BLOCKED` remplace le retour vers `WAITING` que dessinait le diagramme : l'inserter ne
+« repasse » pas au repos quand la cible est pleine, il **reste bloqué**, bras tendu et item
+en main, jusqu'à ce que la place se libère. C'est ce que le texte du design demandait ; le
+diagramme le contredisait.
+
+**Trafic réseau.** Un cycle nominal coûte deux paquets, comme avant la refonte :
+`WAITING→SWINGING` et `SWINGING→RETURNING`. La transition `RETURNING→WAITING` n'est
+délibérément **pas** synchronisée — le client connaît déjà l'échéance du retour, et il n'y
+a rien à afficher ni dans l'un ni dans l'autre.
+
+**Le carburant** emprunte le même cycle avec un trajet raccourci : il rejoint son slot dès
+la saisie, le mouvement n'est plus qu'un déplacement à afficher qui s'arrête à la main, et
+il reste gratuit (cf. BUG-012 — faire payer un burner à sec pour aller chercher de quoi
+redémarrer le condamnerait).
+
+<details>
+<summary>Diagramme et tableau d'origine</summary>
 
 ```
         ┌──────────────────────────────────────────────┐
@@ -72,6 +107,28 @@ public enum InserterState { WAITING, PICKING, SWINGING, DROPPING, RETURNING }
 réinitialise pas le swing — l'inserter reste bras tendu, item en main, exactement
 comme dans Factorio. C'est à la fois plus juste visuellement et plus simple à
 coder que la logique actuelle.
+
+</details>
+
+Ce qui est réellement persisté et synchronisé :
+
+| Champ | NBT | Client | Usage |
+|---|---|---|---|
+| `state` | ✅ | ✅ | logique + rendu |
+| `swingEndTick` (échéance absolue) | ✅ | ✅ | progression interpolée sans trafic |
+| `carryingFuel` | ✅ | ✅ | trajet raccourci du carburant |
+| `heldStack` | via le slot buffer | ✅ | rendu de l'item tenu |
+| `fuel` / `energy` | ✅ | via `ContainerData` | barre du GUI |
+| `filters[]`, `whitelistMode` | ✅ | via slots du menu | filtrage |
+| `sleepTicks`, `failedAttempts` | ❌ | ❌ | optimisation locale |
+
+`swingEndTick` est une **échéance absolue** et non un compteur : envoyée une fois au
+changement d'état, elle laisse le client interpoler seul. Un compteur devrait être
+synchronisé à chaque tick, ce qui ramènerait exactement le trafic périodique supprimé par
+[BUG-004](03-BUGS.md).
+
+Trois GameTests verrouillent le comportement : la cible pleine laisse l'item en main, un
+inserter bloqué reprend dès qu'une place se libère, et l'état survit à une sauvegarde.
 
 ---
 

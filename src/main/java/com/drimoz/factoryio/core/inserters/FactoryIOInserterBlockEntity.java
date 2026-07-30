@@ -81,14 +81,14 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     // private properties
 
+    /** État du bras. Remplace le compteur de cooldown (cf. FIO-060). */
+    private InserterState state = InserterState.WAITING;
+
     /**
-     * Ticks écoulés depuis le dernier mouvement.
-     *
-     * <p>Un compteur de ticks, tout simplement. La version précédente accumulait dix par
-     * tick pour les comparer à un {@code cooldownBetweenActions} dix fois plus grand que
-     * la durée qu'il décrivait (cf. DT-10, FIO-065).
+     * Le bras rapporte du carburant pour l'inserter lui-même, et non un item pour la
+     * cible : le trajet s'arrête à la main.
      */
-    private int ticksSinceSwing = 0;
+    private boolean carryingFuel = false;
 
     private boolean isWhitelist = true;
     private int current_fuel_value = 0;
@@ -96,22 +96,21 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     /**
      * Tick de jeu auquel le mouvement de bras en cours se termine.
      *
-     * <p>Synchronisé au déclenchement d'une action, pas à chaque tick : le client
-     * calcule seul la progression à partir de cette échéance et de sa propre horloge
-     * (cf. BUG-004, on ne réintroduit pas de trafic périodique).
+     * <p>Une échéance absolue, et non un compteur : elle est envoyée une fois, au
+     * changement d'état, et le client en déduit seul la progression à partir de sa propre
+     * horloge. Un compteur devrait être synchronisé à chaque tick, ce qui ramènerait
+     * exactement le trafic périodique supprimé par BUG-004.
      */
     private long swingEndTick = 0L;
 
     /**
-     * Sens du mouvement en cours et item qu'il transporte.
+     * Copie de l'item en main, pour le rendu.
      *
-     * <p>Purement présentationnels : la vérité sur l'item reste le slot buffer (pendant
-     * une prise) ou l'inventaire cible (après une dépose). {@code swingStack} n'en est
-     * qu'une copie, le temps du mouvement — d'où l'absence de persistance NBT : un
-     * mouvement interrompu par un rechargement de monde n'a rien à reprendre.
+     * <p>La vérité reste le slot buffer, mais le client n'en reçoit pas le contenu : les
+     * slots du menu ne sont synchronisés qu'aux joueurs ayant l'écran ouvert. Cette copie
+     * voyage dans {@code getUpdateTag} et sert au rendu de tous les autres.
      */
-    private InserterSwingPhase swingPhase = InserterSwingPhase.NONE;
-    private ItemStack swingStack = ItemStack.EMPTY;
+    private ItemStack heldStack = ItemStack.EMPTY;
 
     // Optimisations du tick (DT-07) — jamais persistées, purement locales.
 
@@ -319,10 +318,15 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             tag.putInt("inserterFuelLevel",this.getCurrentFuelValue());
         }
 
-        // Sans ces deux lignes, chaque rechargement de monde remettait tous les filtres
-        // en whitelist et repartait d'un compteur nul (cf. BUG-008).
+        // Sans ces lignes, chaque rechargement de monde remettait tous les filtres en
+        // whitelist et repartait d'un compteur nul (cf. BUG-008).
         tag.putBoolean("inserterWhitelist", this.isWhitelist);
-        tag.putInt("inserterTicksSinceSwing", this.ticksSinceSwing);
+
+        // L'état du bras est persisté : un inserter bloqué doit se retrouver bloqué au
+        // rechargement, pas remis au repos avec un item fantôme en main.
+        tag.putByte("inserterState", (byte) this.state.ordinal());
+        tag.putBoolean("inserterCarryingFuel", this.carryingFuel);
+        tag.putLong("inserterSwingEnd", this.swingEndTick);
 
         super.saveAdditional(tag);
     }
@@ -343,12 +347,19 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         // getBoolean() renverrait false — soit l'inverse du défaut attendu.
         this.isWhitelist = !tag.contains("inserterWhitelist") || tag.getBoolean("inserterWhitelist");
 
-        // Borné, et pas seulement par prudence : un monde sauvegardé avant FIO-065 porte
-        // un « inserterCooldown » exprimé dans l'ancienne unité — dix fois trop grand, et
-        // sans rapport avec le nouveau barème. Le clamp le ramène à « mouvement terminé »,
-        // ce qui laisse l'inserter agir au tick suivant plutôt que de l'immobiliser.
-        this.ticksSinceSwing = Mth.clamp(
-                tag.getInt("inserterTicksSinceSwing"), 0, getTicksPerSwing());
+        this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
+        this.carryingFuel = tag.getBoolean("inserterCarryingFuel");
+        this.swingEndTick = tag.getLong("inserterSwingEnd");
+        this.heldStack = this.itemStorage.getStackInSlot(InserterSlotLayout.BUFFER).copy();
+
+        // Un monde sauvegardé avant FIO-060 n'a pas d'état : « inserterState » vaut alors 0,
+        // soit WAITING, ce qui est le bon défaut. Mais son buffer peut contenir un item —
+        // l'ancien modèle le gardait entre deux actions. WAITING avec la main pleine est
+        // une combinaison que la machine à états n'admet pas : on la ramène à BLOCKED,
+        // l'état qui décrit exactement « un item à livrer et rien pour l'instant ».
+        if (this.state == InserterState.WAITING && !this.heldStack.isEmpty()) {
+            this.state = InserterState.BLOCKED;
+        }
     }
 
     // Interface (Synchronisation client)
@@ -364,13 +375,14 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     public CompoundTag getUpdateTag() {
         CompoundTag tag = new CompoundTag();
         tag.putBoolean("inserterWhitelist", this.isWhitelist);
+        tag.putByte("inserterState", (byte) this.state.ordinal());
+        tag.putBoolean("inserterCarryingFuel", this.carryingFuel);
         tag.putLong("inserterSwingEnd", this.swingEndTick);
-        tag.putByte("inserterSwingPhase", (byte) this.swingPhase.ordinal());
 
-        // Un slot vide n'écrit rien : le tag part à chaque sendBlockUpdated, autant ne
-        // pas y traîner un ItemStack.EMPTY sérialisé.
-        if (!this.swingStack.isEmpty()) {
-            tag.put("inserterSwingStack", this.swingStack.save(new CompoundTag()));
+        // Rien pour une main vide : le tag part à chaque sendBlockUpdated, autant ne pas y
+        // traîner un ItemStack.EMPTY sérialisé.
+        if (!this.heldStack.isEmpty()) {
+            tag.put("inserterHeldStack", this.heldStack.save(new CompoundTag()));
         }
 
         return tag;
@@ -381,10 +393,11 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         if (tag.contains("inserterWhitelist")) {
             this.isWhitelist = tag.getBoolean("inserterWhitelist");
         }
+        this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
+        this.carryingFuel = tag.getBoolean("inserterCarryingFuel");
         this.swingEndTick = tag.getLong("inserterSwingEnd");
-        this.swingPhase = InserterSwingPhase.byOrdinal(tag.getByte("inserterSwingPhase"));
-        this.swingStack = tag.contains("inserterSwingStack")
-                ? ItemStack.of(tag.getCompound("inserterSwingStack"))
+        this.heldStack = tag.contains("inserterHeldStack")
+                ? ItemStack.of(tag.getCompound("inserterHeldStack"))
                 : ItemStack.EMPTY;
     }
 
@@ -420,11 +433,11 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     // Interface (Ticking)
 
     /**
-     * Tick serveur uniquement.
+     * Tick serveur uniquement : fait avancer la machine à états (cf. FIO-060).
      *
-     * <p>Aucune émission réseau ici. L'état visible passe par {@code getUpdateTag} au
-     * changement, et les jauges du GUI par le {@code ContainerData} du menu — donc
-     * uniquement vers les joueurs qui regardent l'écran. La version précédente envoyait
+     * <p>Aucune émission réseau périodique. L'état visible ne part qu'aux <b>changements
+     * d'état</b>, et les jauges du GUI par le {@code ContainerData} du menu — donc
+     * uniquement vers les joueurs qui regardent l'écran. La version d'origine envoyait
      * 3 à 4 paquets par tick et par inserter <i>à tous les joueurs du serveur</i>
      * (cf. BUG-004).
      */
@@ -434,55 +447,106 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
         pEntity.burnFuel();
 
+        switch (pEntity.state) {
+            case WAITING -> pEntity.tickWaiting();
+            case SWINGING -> pEntity.tickSwinging();
+            case BLOCKED -> pEntity.tickBlocked();
+            case RETURNING -> pEntity.tickReturning();
+        }
+    }
+
+    /** Main vide, bras côté source : chercher quelque chose à saisir. */
+    private void tickWaiting() {
         // Inserter endormi : rien à faire tant qu'il n'est pas réveillé (cf. DT-07).
-        if (pEntity.sleepTicks > 0) {
-            pEntity.sleepTicks--;
+        if (this.sleepTicks > 0) {
+            this.sleepTicks--;
             return;
         }
 
-        // Le bras est encore en mouvement : rien de neuf avant la fin de sa course.
-        if (pEntity.ticksSinceSwing < pEntity.getTicksPerSwing()) {
-            pEntity.ticksSinceSwing++;
+        // Le ravitaillement est gratuit et prioritaire : le conditionner à la réserve
+        // courante enfermerait tout burner à sec dans un blocage définitif (cf. BUG-012).
+        if (needsFuel()) {
+            ItemStack fuel = refuel(this, getGrabDistance());
+
+            if (!fuel.isEmpty()) {
+                // Le carburant est déjà dans son slot ; le mouvement n'est plus qu'un
+                // trajet à afficher, qui s'arrête à la main.
+                this.carryingFuel = true;
+                beginSwing(InserterState.SWINGING, fuel);
+                return;
+            }
+        }
+
+        if (!hasPowerForAction()) {
+            registerFailedAttempt();
             return;
         }
 
-        boolean acted = false;
+        ItemStack picked = suckItems(this, getGrabDistance(), isWhitelist());
 
-        // Le ravitaillement en carburant est gratuit et prioritaire : le conditionner
-        // à la réserve courante enfermerait tout burner à sec dans un blocage
-        // définitif (cf. BUG-012).
-        if (pEntity.needsFuel()) {
-            ItemStack fetched = refuel(pEntity, pEntity.getGrabDistance());
-
-            if (!fetched.isEmpty()) {
-                pEntity.startSwing(InserterSwingPhase.INBOUND, fetched);
-                acted = true;
-            }
+        if (picked.isEmpty()) {
+            registerFailedAttempt();
+            return;
         }
 
-        if (!acted && pEntity.hasPowerForAction()) {
-            // Buffer vide = le bras part chercher ; buffer plein = il livre. C'est aussi
-            // ce qui détermine le sens du trajet affiché (cf. FIO-067).
-            boolean fetching = pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty();
+        this.carryingFuel = false;
+        beginSwing(InserterState.SWINGING, picked);
+    }
 
-            ItemStack moved = fetching
-                    ? suckItems(pEntity, pEntity.getGrabDistance(), pEntity.isWhitelist())
-                    : expelItems(pEntity, pEntity.getGrabDistance());
+    /** Main pleine, bras en route : à l'arrivée, tenter la dépose. */
+    private void tickSwinging() {
+        if (isSwingRunning()) return;
 
-            if (!moved.isEmpty()) {
-                pEntity.useFuelOrEnergy();
-                pEntity.startSwing(
-                        fetching ? InserterSwingPhase.INBOUND : InserterSwingPhase.OUTBOUND,
-                        moved);
-                acted = true;
-            }
+        // Le carburant a déjà rejoint son slot au moment de la saisie : il n'y a rien à
+        // déposer, le bras repart.
+        if (this.carryingFuel) {
+            beginSwing(InserterState.RETURNING, ItemStack.EMPTY);
+            return;
         }
 
-        if (acted) {
-            pEntity.failedAttempts = 0;
-        } else {
-            pEntity.registerFailedAttempt();
+        if (!tryDrop()) {
+            // Cible pleine ou absente : le bras reste tendu, item en main. C'est le point
+            // clé du design (§2) — rendre l'item au buffer pour le reprendre au cycle
+            // suivant serait à la fois plus faux visuellement et plus compliqué.
+            enterState(InserterState.BLOCKED);
+            registerFailedAttempt();
         }
+    }
+
+    /** Bras tendu au-dessus d'une cible qui refuse : réessayer. */
+    private void tickBlocked() {
+        if (this.sleepTicks > 0) {
+            this.sleepTicks--;
+            return;
+        }
+
+        if (tryDrop()) return;
+
+        registerFailedAttempt();
+    }
+
+    /** Bras vide en route vers la source. */
+    private void tickReturning() {
+        if (isSwingRunning()) return;
+
+        // Pas de syncToClients ici : le client sait déjà que le retour s'achève à
+        // swingEndTick, et il n'y a rien à afficher ni en RETURNING ni en WAITING. Le
+        // paquet économisé est la moitié du trafic d'un cycle nominal.
+        this.state = InserterState.WAITING;
+        setChanged();
+    }
+
+    /**
+     * Dépose la main dans l'inventaire cible et repart si elle est partie.
+     *
+     * @return {@code true} si la dépose a abouti
+     */
+    private boolean tryDrop() {
+        ItemStack dropped = expelItems(this, getGrabDistance());
+        if (dropped.isEmpty()) return false;
+
+        beginSwing(InserterState.RETURNING, ItemStack.EMPTY);
+        return true;
     }
 
     /**
@@ -512,58 +576,84 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     // Interface (Animation)
 
-    /** Valeur renvoyée par {@link #getSwingProgress(float)} quand le bras est au repos. */
-    public static final float NO_SWING = -1f;
-
     /**
      * Démarre un mouvement de bras et le fait connaître aux clients qui suivent le chunk.
      *
-     * @param carried item transporté, dont une copie sera affichée pendant le mouvement
+     * <p>Le coût est facturé ici, au démarrage : un mouvement engagé va toujours à son
+     * terme. Un inserter qui tombe à sec en cours de route finit sa course plutôt que de
+     * se figer avec un item en l'air.
+     *
+     * @param carried item en main pendant le mouvement, vide pour un retour
      */
-    private void startSwing(InserterSwingPhase phase, ItemStack carried) {
+    private void beginSwing(InserterState movingState, ItemStack carried) {
         if (this.level == null) return;
 
-        this.ticksSinceSwing = 0;
-        this.swingPhase = phase;
-        this.swingStack = carried.copy();
+        this.heldStack = carried.copy();
         this.swingEndTick = this.level.getGameTime() + getTicksPerSwing();
+
+        // Le trajet du carburant est offert : c'est déjà le cas depuis BUG-012, et faire
+        // payer un burner à sec pour aller chercher de quoi redémarrer le condamnerait.
+        if (!this.carryingFuel) {
+            useFuelOrEnergy();
+        }
+
+        // Toute action qui aboutit annule le recul accumulé (cf. DT-07).
+        wakeUp();
+
+        enterState(movingState);
+    }
+
+    /** Change d'état et le pousse aux clients qui suivent le chunk. */
+    private void enterState(InserterState next) {
+        this.state = next;
 
         syncToClients();
     }
 
+    /** @return {@code true} si le mouvement en cours n'est pas encore arrivé à son terme */
+    private boolean isSwingRunning() {
+        return this.level != null && this.level.getGameTime() < this.swingEndTick;
+    }
+
     /**
-     * @return progression du mouvement en cours, de 0 à 1, ou {@link #NO_SWING} si aucun
-     *         mouvement n'est en cours
+     * @return avancement du bras sur sa course, de 0 (au départ) à 1 (arrivé)
      *
-     * <p>Calculée côté client à partir de l'échéance synchronisée : aucun trafic réseau
-     * pendant le mouvement.
+     * <p>Calculé à partir de l'échéance synchronisée et de l'horloge locale : le client
+     * interpole seul, sans un paquet pendant le mouvement.
+     *
+     * <p>Un bras arrivé mais qui n'est pas reparti — {@code BLOCKED} — vaut 1 : il reste
+     * tendu au-dessus de la cible.
      */
-    public float getSwingProgress(float partialTick) {
-        if (this.level == null || this.swingEndTick <= 0L) return NO_SWING;
+    public float getArmProgress(float partialTick) {
+        if (this.level == null || this.state == InserterState.BLOCKED) return 1f;
 
         int duration = getTicksPerSwing();
         double remaining = this.swingEndTick - (this.level.getGameTime() + partialTick);
 
-        // > et non >= : au tick de départ il reste exactement `duration`, ce qui est une
-        // progression nulle et non une absence de mouvement.
-        if (remaining <= 0 || remaining > duration) return NO_SWING;
+        if (remaining <= 0) return 1f;
+        if (remaining >= duration) return 0f;
 
         return (float) (1.0 - remaining / duration);
     }
 
-    /** Sens du mouvement en cours. */
-    public InserterSwingPhase getSwingPhase() {
-        return this.swingPhase;
+    /** État du bras. */
+    public InserterState getState() {
+        return this.state;
     }
 
     /**
-     * @return copie de l'item transporté par le mouvement en cours, pour le rendu
+     * @return copie de l'item en main, vide si le bras est vide
      *
-     * <p>Non vide ne signifie pas qu'un mouvement est en cours : croiser avec
-     * {@link #getSwingProgress(float)}.
+     * <p>À croiser avec {@link #getState()} : seuls {@code SWINGING} et {@code BLOCKED}
+     * portent réellement un item.
      */
-    public ItemStack getSwingStack() {
-        return this.swingStack;
+    public ItemStack getHeldStack() {
+        return this.heldStack;
+    }
+
+    /** @return {@code true} si la main porte du carburant destiné à l'inserter lui-même */
+    public boolean isCarryingFuel() {
+        return this.carryingFuel;
     }
 
     /** @return {@code true} si la réserve permet de payer une action */
@@ -975,7 +1065,15 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         return ItemStack.EMPTY;
     }
 
-    /** @return la pile prélevée depuis l'inventaire arrière, vide si rien n'a bougé */
+    /**
+     * Saisit une main d'items dans l'inventaire arrière.
+     *
+     * <p>Le ravitaillement en carburant ne passe plus par ici : c'est {@code tickWaiting}
+     * qui le tente d'abord, et cette méthode n'est appelée qu'avec la main vide — un
+     * invariant de l'état {@code WAITING}.
+     *
+     * @return la pile prélevée, vide si rien n'a bougé
+     */
     @Nonnull
     private static ItemStack suckItems(FactoryIOInserterBlockEntity pEntity, int pDistance, boolean isWhitelist) {
         Direction facing = getFacing(pEntity);
@@ -984,22 +1082,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         IItemHandler source = pEntity.neighbourHandler(true, facing.getOpposite(), pDistance, facing);
         if (source == null) return ItemStack.EMPTY;
 
-        // 1. Ravitaillement en carburant tant que le buffer interne n'est pas rempli.
-        //    La condition portait auparavant sur un slot NON vide, ce qui empêchait tout
-        //    redémarrage après panne sèche (cf. BUG-012).
-        if (pEntity.needsFuel()) {
-            ItemStack fetched = grabInto(
-                    pEntity, source, pEntity.LAYOUT.fuel(), stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL));
-
-            if (!fetched.isEmpty()) return fetched;
-        }
-
-        // 2. Buffer de transport, uniquement s'il est libre.
-        if (pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()) {
-            return grabInto(pEntity, source, BUFFER_SLOT, stack -> matchesFilters(pEntity, stack, isWhitelist));
-        }
-
-        return ItemStack.EMPTY;
+        return grabInto(pEntity, source, BUFFER_SLOT, stack -> matchesFilters(pEntity, stack, isWhitelist));
     }
 
     /** @return la pile déposée dans l'inventaire avant, vide si rien n'a bougé */

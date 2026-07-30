@@ -64,14 +64,14 @@ Colonne « ✓ » = critère d'acceptation.
 
 | ID | P | Est. | Ticket | ✓ |
 |---|---|---|---|---|
-| FIO-060 | P1 | L | Machine à états de l'inserter ([`07`](07-DESIGN-INSERTERS.md)) | l'état est observable et persisté |
+| ~~FIO-060~~ | ✅ | L | Machine à états de l'inserter ([`07`](07-DESIGN-INSERTERS.md) §2) : 4 états qui durent, `BLOCKED` garde l'item en main, échéance absolue plutôt que compteur | l'état est observable et persisté ; 3 GameTests |
 | ~~FIO-061~~ | ✅ | M | Réécriture des transferts : incrémental, multi-slot ([BUG-022](03-BUGS.md), DT-02) | remplir un four dont l'input est presque plein |
 | ~~FIO-062~~ | ✅ | M | Cache de capability voisine (invalidation par listener) (DT-07) | profilage : plus de `getBlockEntity` dans le chemin chaud |
 | ~~FIO-063~~ | ✅ | S | Mémorisation du dernier slot fructueux (DT-07) | coffre 54 slots : coût constant |
 | ~~FIO-064~~ | ✅ | M | Mise en sommeil après N échecs, réveil sur `neighborChanged` (DT-07) | 1 000 inserters bloqués ≈ coût nul |
 | ~~FIO-065~~ | ✅ | S | Rééquilibrage temporel sur le barème Factorio (DT-10) : champ unique `ticksPerSwing`, 2 mouvements par item ([BUG-038](03-BUGS.md)), barème extrait dans `InserterDefaults` et verrouillé par 24 tests | `fast_inserter` à 2,5 items/s, écart ≤ 10 % sur les 7 |
 | ⏸ FIO-066 | P2 | M | **Découper la géométrie dans Blockbench** puis animer le bras. Bloqué par la géométrie, pas par le code : le bone `inserter` porte tout l'assemblage, socle 16×16 compris (y=0 à 16), et `bearing`/`base`/`base_top` en sont des enfants — le faire pivoter bascule le bloc entier. La progression de swing est synchronisée et disponible côté client, elle pilote déjà FIO-067. | le bras seul suit le swing |
-| ~~FIO-067~~ | ✅ | M | **Rendu de l'item transporté** : trajectoire en arc source → main → cible, pilotée par la progression de swing déjà synchronisée. L'item tenu en permanence par un inserter *bloqué* relève de la machine à états (FIO-060). | l'item traverse ; 2 GameTests |
+| ~~FIO-067~~ | ✅ | M | **Rendu de l'item transporté** : arc source → cible pilotée par la progression du bras. Le découpage en deux demi-arcs de la première version a été remplacé par un arc unique avec FIO-060 — un item traverse en un mouvement, le suivant ramène le bras à vide. | l'item traverse ; item immobile si la cible est pleine |
 | FIO-068 | P2 | M | Ramassage et dépôt d'items au sol (parité Factorio) | inserter → sol → inserter |
 | 🟡 FIO-069 | P2 | S | Filtres par type d'item faits ; reste le support des tags ([DT-02](04-DETTE-TECHNIQUE.md)) | filtrer `forge:plates` |
 | FIO-070 | P2 | M | Mode circuit : condition sur signal redstone analogique | « n'agir que si signal ≥ 5 » |

@@ -8,13 +8,16 @@ import net.minecraft.world.phys.Vec3;
  * Trajet de l'item transporté par un inserter, en coordonnées <b>locales au bloc</b>
  * (0,0,0 = coin inférieur nord-ouest de l'inserter, une unité = un bloc).
  *
- * <p>Le trajet complet d'un item est découpé en deux mouvements, exactement comme la
- * logique de transfert : {@code INBOUND} l'amène du voisin arrière jusqu'à la main, puis
- * {@code OUTBOUND} de la main jusqu'au voisin avant. Bout à bout, cela donne un arc
- * continu de la source vers la cible — le retour visuel qui manquait complètement
- * (cf. FIO-067).
+ * <p>Un seul arc, parcouru pendant l'état {@code SWINGING} : de l'inventaire arrière au
+ * sommet de l'inserter, puis à l'inventaire avant. Le retour du bras se fait à vide, donc
+ * sans rien à afficher.
  *
- * <p>La géométrie GeckoLib du bras étant figée (cf. FIO-066, abandonné), la « main » est
+ * <p>La première version (FIO-067) découpait le trajet en deux demi-arcs, un par action de
+ * transfert. La machine à états (FIO-060) a rendu ce découpage inutile <i>et</i> faux : un
+ * item traverse en un seul mouvement, et c'est le mouvement suivant — à vide — qui ramène
+ * le bras. C'est aussi le cycle de Factorio.
+ *
+ * <p>La géométrie GeckoLib du bras étant figée (cf. FIO-066, en pause), la « main » est
  * ici une position tenue pour telle : le sommet du mât. Les trois constantes ci-dessous
  * sont les seules à ajuster si la géométrie est un jour redécoupée.
  *
@@ -29,39 +32,29 @@ public final class InserterCarryPath {
     /** Hauteur de la main, au sommet de l'inserter. */
     private static final double HAND_Y = 1.2;
 
-    /** Surélévation à mi-parcours, qui transforme le segment en arc. */
-    private static final double ARC_LIFT = 0.12;
-
     private InserterCarryPath() {}
 
     /**
-     * @param facing       orientation de l'inserter : il aspire derrière, dépose devant
+     * Position de l'item porté par le bras.
+     *
+     * @param facing       orientation de l'inserter : il saisit derrière, dépose devant
      * @param grabDistance portée en blocs, 2 pour un {@code long_handed_inserter}
-     * @param phase        sens du mouvement en cours
-     * @param progress     progression de 0 à 1
+     * @param towardSelf   {@code true} pour du carburant, qui s'arrête à la main au lieu
+     *                     de continuer vers la cible
+     * @param progress     progression du mouvement, de 0 à 1
      */
-    public static Vec3 positionOf(Direction facing, int grabDistance, InserterSwingPhase phase, float progress) {
+    public static Vec3 positionOf(Direction facing, int grabDistance, boolean towardSelf, float progress) {
+        Vec3 source = neighbourCentre(facing.getOpposite(), grabDistance);
         Vec3 hand = new Vec3(0.5, HAND_Y, 0.5);
-        Vec3 from;
-        Vec3 to;
-
-        if (phase == InserterSwingPhase.OUTBOUND) {
-            from = hand;
-            to = neighbourCentre(facing, grabDistance);
-        } else {
-            from = neighbourCentre(facing.getOpposite(), grabDistance);
-            to = hand;
-        }
+        Vec3 destination = towardSelf ? hand : neighbourCentre(facing, grabDistance);
 
         // Accélération puis décélération : un bras mécanique ne démarre pas à pleine
-        // vitesse, et le raccord entre les deux mouvements est ainsi moins sec.
+        // vitesse.
         float eased = smoothStep(Mth.clamp(progress, 0f, 1f));
-        double lift = ARC_LIFT * Math.sin(Math.PI * eased);
 
-        return new Vec3(
-                Mth.lerp(eased, from.x, to.x),
-                Mth.lerp(eased, from.y, to.y) + lift,
-                Mth.lerp(eased, from.z, to.z));
+        // Interpolation quadratique de Bézier : la main sert de point de contrôle, ce qui
+        // donne l'arc au-dessus de l'inserter sans avoir à ajouter de terme de hauteur.
+        return quadratic(source, hand, destination, eased);
     }
 
     /** Centre du voisin visé, à hauteur de transport. */
@@ -70,6 +63,19 @@ public final class InserterCarryPath {
                 0.5 + offset.getStepX() * (double) distance,
                 NEIGHBOUR_Y,
                 0.5 + offset.getStepZ() * (double) distance);
+    }
+
+    /** Courbe de Bézier quadratique : passe par {@code from} et {@code to}, tirée vers {@code control}. */
+    private static Vec3 quadratic(Vec3 from, Vec3 control, Vec3 to, float t) {
+        double inverse = 1.0 - t;
+        double a = inverse * inverse;
+        double b = 2.0 * inverse * t;
+        double c = t * t;
+
+        return new Vec3(
+                a * from.x + b * control.x + c * to.x,
+                a * from.y + b * control.y + c * to.y,
+                a * from.z + b * control.z + c * to.z);
     }
 
     private static float smoothStep(float t) {

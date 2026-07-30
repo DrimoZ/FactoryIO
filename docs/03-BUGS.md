@@ -3,7 +3,7 @@
 > **État : 37 bugs sur 41 corrigés**, plus 1 partiellement (BUG-020).
 >
 > Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Six GameTests
-> couvrent les invariants de monde (`./gradlew runGameTestServer`) et 55 tests JUnit le
+> couvrent les invariants de monde (`./gradlew runGameTestServer`) et 67 tests JUnit le
 > calcul pur (`./gradlew test`). Le **rendu**, lui, n'est validé par aucun test : ce qui
 > touche à l'affichage reste « écrit et compilé », pas « vu à l'écran » (cf. FIO-054).
 >

@@ -345,9 +345,14 @@ sub-tick, le traiter explicitement avec un accumulateur en millièmes de tick.
 | « un burner à sec se réalimente depuis un coffre » | GameTest | ✅ |
 | « les filtres survivent à un rechargement de monde » | GameTest | ✅ |
 | « un signal redstone désactive l'inserter » | GameTest | ✅ |
-| « l'item transporté part vers les clients » | GameTest | ✅ |
+| « l'item en main part vers les clients » | GameTest | ✅ |
+| « une cible pleine laisse l'item en main » | GameTest | ✅ |
+| « un inserter bloqué reprend quand la place se libère » | GameTest | ✅ |
+| « l'état du bras survit à une sauvegarde » | GameTest | ✅ |
 | `InserterSlotLayout` : cohérence pour les 4 combinaisons | JUnit | ✅ |
-| `InserterCarryPath` : sens, continuité, bornes | JUnit | ✅ |
+| `InserterCarryPath` : sens, arc, monotonie, bornes | JUnit | ✅ |
+| `InserterState` : décodage réseau, prédicats dérivés | JUnit | ✅ |
+| `InserterDefaults` : barème contre la référence Factorio | JUnit | ✅ |
 | `InserterDefinition` : parsing JSON valide / invalide | JUnit | avec FIO-034 |
 | 1 000 inserters actifs < 2 ms/tick | benchmark | FIO-073 |
 

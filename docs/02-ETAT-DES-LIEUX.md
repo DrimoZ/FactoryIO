@@ -9,9 +9,10 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > appliqués (voir [`03-BUGS.md`](03-BUGS.md)), le mod compile et **le client démarre**
 > (`Loaded 7 inserters`, aucune erreur fatale).
 >
-> Le comportement est désormais partiellement vérifié : 6 GameTests couvrent les
+> Le comportement est désormais partiellement vérifié : 8 GameTests couvrent les
 > invariants de monde (conservation, ravitaillement, redstone, persistance, synchro de
-> l'item transporté) et 55 tests JUnit le calcul pur. Le transfert
+> l'item transporté, blocage, persistance de l'état du bras) et 67 tests JUnit le calcul
+> pur. Le transfert
 > ainsi que le ravitaillement du burner ont été confirmés en jeu. Le rendu, lui,
 > n'est validé par aucun test et n'a jamais été observé (FIO-054).
 
@@ -30,8 +31,8 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Pack de ressources/data généré au runtime | 🟡 | ne dépend plus du code client (BUG-005) ; toujours pas de régénération à chaud ni de nettoyage |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 6 tests d'invariants de monde, `./gradlew runGameTestServer` |
-| Tests (JUnit) | ✅ | 55 tests de calcul pur, `./gradlew test`, exécutés par `build` |
+| Tests (GameTest) | ✅ | 8 tests d'invariants de monde, `./gradlew runGameTestServer` |
+| Tests (JUnit) | ✅ | 67 tests de calcul pur, `./gradlew test`, exécutés par `build` |
 | Benchmark de charge | ⬜ | budget DT-07 non mesuré (FIO-073) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
 
@@ -50,6 +51,8 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Réception d'énergie | ✅ | toutes faces + `side == null` (BUG-021) |
 | Consommation de carburant | 🟡 | bornée (BUG-013) ; un carburant plus riche que la capacité bloque le slot (BUG-041) |
 | Vitesse et débit | ✅ | barème Factorio, 0,59 à 7,5 items/s selon le modèle (FIO-065) |
+| Machine à états du bras | ✅ | `WAITING` / `SWINGING` / `BLOCKED` / `RETURNING`, persistée et synchronisée (FIO-060) |
+| Cible pleine | ✅ | l'item reste en main, bras tendu, jusqu'à libération (FIO-060) |
 | Auto-alimentation en carburant | ✅ | se réapprovisionne sous le seuil `FUEL_BUFFER_TARGET`, hors de la garde de réserve (BUG-012) |
 | Réaction au redstone | ✅ | garde serveur, `affectedByRedstone` respecté, couvert par un GameTest (BUG-015) |
 | Shift-clic dans le GUI | ✅ | bornes corrigées (BUG-009) |
@@ -58,7 +61,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Noms traduits des blocs et items | ✅ | `en_us` et `fr_fr` complets ; le générateur runtime n'agit plus qu'en surcharge (BUG-011) |
 | Modèle / texture | ✅ | GeckoLib, 3 géométries, textures normale + `_disabled` |
 | Animation du bras | 🔴 | abandonnée : le bone `inserter` porte tout l'assemblage, socle compris (BUG-016, FIO-066) |
-| Rendu de l'item transporté | 🟡 | trajectoire en arc source → main → cible pendant le swing (FIO-067) ; **non validé à l'écran**. Un inserter bloqué n'affiche encore rien (FIO-060) |
+| Rendu de l'item transporté | 🟡 | arc source → cible pendant le mouvement, item immobile en bout de course si la cible est pleine (FIO-067, FIO-060) ; **non validé à l'écran** |
 | Boîte de collision | ✅ | socle + palier calqués sur le modèle (BUG-017) |
 | Recettes | 🟡 | **1 seule** (`burner_inserter`) ; les 6 autres sont créatif-only |
 | Loot tables | ✅ | générées par `runData` et versionnées |

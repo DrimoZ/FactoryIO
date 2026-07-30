@@ -72,27 +72,33 @@ public class FactoryIOInserterBlockEntityRenderer implements BlockEntityRenderer
     // Inner work (Item transporté)
 
     /**
-     * Affiche l'item en cours de transport le long de sa trajectoire (cf. FIO-067).
+     * Affiche l'item en main, le long de sa trajectoire (cf. FIO-067, FIO-060).
      *
      * <p>Avant cela l'item se téléportait d'un coffre à l'autre : rien à l'écran ne
      * distinguait un inserter qui travaille d'un inserter bloqué. Le bras lui-même reste
      * figé faute de géométrie animable (cf. FIO-066) ; l'item est donc le seul retour
      * visuel du transfert.
+     *
+     * <p>L'état suffit à décider : {@code SWINGING} donne un item en mouvement,
+     * {@code BLOCKED} le même item immobile en bout de course — un inserter dont la cible
+     * est pleine <b>montre</b> ce qu'il attend de livrer.
      */
     private static void renderCarriedItem(FactoryIOInserterBlockEntity inserter, float partialTick,
                                           PoseStack poseStack, MultiBufferSource bufferSource, int packedOverlay) {
-        ItemStack carried = inserter.getSwingStack();
-        if (carried.isEmpty()) return;
+        if (!inserter.getState().isCarrying()) return;
 
-        float progress = inserter.getSwingProgress(partialTick);
-        if (progress == FactoryIOInserterBlockEntity.NO_SWING) return;
+        ItemStack carried = inserter.getHeldStack();
+        if (carried.isEmpty()) return;
 
         BlockState state = inserter.getBlockState();
         if (!state.hasProperty(FactoryIOInserterEntityBlock.FACING)) return;
 
         Direction facing = state.getValue(FactoryIOInserterEntityBlock.FACING);
         Vec3 position = InserterCarryPath.positionOf(
-                facing, inserter.getGrabDistance(), inserter.getSwingPhase(), progress);
+                facing,
+                inserter.getGrabDistance(),
+                inserter.isCarryingFuel(),
+                inserter.getArmProgress(partialTick));
 
         poseStack.pushPose();
         poseStack.translate(position.x, position.y, position.z);
