@@ -49,8 +49,8 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-038~~ | ✅ | M | Générer les assets par défaut via `runData` et les committer (DT-05) | `src/generated/resources` versionné |
 | FIO-039 | P1 | M | Génération runtime confinée au client, en mémoire, invalidée au reload (DT-05) | ajouter un JSON puis F3+T suffit |
 | ~~FIO-040~~ | ✅ | L | Migration vers `DeferredRegister` (DT-06) — **fait pendant le port** | plus aucun `setRegistryName` |
-| FIO-041 | P0 | M | Socle GameTest + CI GitHub Actions (DT-11) | `gameTestServer` vert sur chaque PR |
-| FIO-042 | P0 | M | 6 GameTests d'invariants (conservation, persistance, redstone, filtre, carburant, énergie) | — |
+| ~~FIO-041~~ | ✅ | M | Socle GameTest, structure SNBT versionnée + tâche Gradle de copie (DT-11) | `runGameTestServer` vert |
+| ~~FIO-042~~ | ✅ | M | 4 GameTests d'invariants : conservation, ravitaillement, redstone, persistance du filtre | 4/4 verts |
 | ~~FIO-043~~ | ✅ | XL | **Port de version** vers Forge 1.20.1 | compile ; **reste à valider en jeu** |
 | ~~FIO-044~~ | ✅ | S | Corriger l'exposition de la capability énergie (toutes faces + `side == null`) ([BUG-021](03-BUGS.md)) | The One Probe affiche l'énergie |
 | 🟡 FIO-045 | P3 | S | `checkContainerSize` correct + `quickMoveStack` réécrit selon le patron vanilla (DT-08) | — |
@@ -122,7 +122,7 @@ Colonne « ✓ » = critère d'acceptation.
 | FIO-152 | P1 | M | i18n complète, extraction de toutes les chaînes en dur (les codes `§7`/`§b` en dur dans les tooltips) |
 | FIO-153 | P2 | M | Sons |
 | FIO-154 | P2 | L | Guide en jeu (Patchouli) |
-| FIO-155 | P1 | S | CI de publication sur tag (CurseForge + Modrinth) |
+| FIO-155 | P1 | S | Documenter la procédure de publication (CurseForge + Modrinth), sans CI |
 | FIO-156 | P2 | S | `updateJSONURL` + fichier de mise à jour |
 | FIO-157 | P2 | M | Passe d'accessibilité GUI (contrastes, tooltips, clavier) |
 | FIO-158 | P1 | S | `CHANGELOG.md` et politique de versionnage |

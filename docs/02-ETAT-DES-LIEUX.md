@@ -9,9 +9,10 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > appliqués (voir [`03-BUGS.md`](03-BUGS.md)), le mod compile et **le client démarre**
 > (`Loaded 7 inserters`, aucune erreur fatale).
 >
-> En revanche le **comportement** n'a toujours pas été observé : aucun inserter n'a
-> été posé, aucun transfert testé, et il n'existe aucun test automatisé. Les états
-> ci-dessous décrivent le code tel qu'il est écrit, pas ce qui a été constaté en jeu.
+> Le comportement est désormais partiellement vérifié : 4 GameTests couvrent les
+> invariants (conservation, ravitaillement, redstone, persistance), et le transfert
+> ainsi que le ravitaillement du burner ont été confirmés en jeu. Le rendu animé,
+> lui, reste non fonctionnel.
 
 ---
 
@@ -26,10 +27,10 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Config Forge (`ForgeConfigSpec`) | 🟡 | lue en amont via `FactoryIOEarlyConfig` ; **prend effet au lancement suivant** (contrainte Forge, cf. BUG-001) |
 | Réseau (`SimpleChannel`) | ✅ | `init()` n'est plus appelé qu'une fois |
 | Pack de ressources/data généré au runtime | 🟡 | ne dépend plus du code client (BUG-005) ; toujours pas de régénération à chaud ni de nettoyage |
-| Data generation Gradle (`runData`) | ⬜ | providers branchés mais `src/generated/resources` absent, jamais lancé |
-| Tests (unitaires ou GameTest) | ⬜ | `forge.enabledGameTestNamespaces` configuré, **zéro test** |
-| CI | ⬜ | |
-| `mods.toml` | 🔴 | encore le template MDK (lorem ipsum, `logoFile="examplemod.png"` inexistant, credits « Thanks … goes to Java ») |
+| Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
+
+| Tests (GameTest) | ✅ | 4 invariants, `./gradlew runGameTestServer` |
+| `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
 
 ## 2. Inserters
 
@@ -43,20 +44,20 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Filtres (5 slots, items fantômes) | ✅ | état whitelist/blacklist persisté en NBT (BUG-008) |
 | Bascule whitelist/blacklist | ✅ | paquet C→S validé : expéditeur, chunk, distance, menu ouvert, type de bloc (BUG-007) |
 | Consommation d'énergie (FE) | ✅ | `consumeInternal()` distinct du contrat externe (BUG-003) |
-| Réception d'énergie | 🟡 | capability exposée **uniquement sur la face `DOWN`**, et pas pour `side == null` (BUG-021) |
+| Réception d'énergie | ✅ | toutes faces + `side == null` (BUG-021) |
 | Consommation de carburant | ✅ | valeur bornée par `Mth.clamp` (BUG-013) |
 | Auto-alimentation en carburant | ✅ | se réapprovisionne sous le seuil `FUEL_BUFFER_TARGET`, hors de la garde de réserve (BUG-012) |
-| Réaction au redstone | 🟡 | fonctionne, mais `affectedByRedstone` est **ignoré** et l'update tourne aussi côté client (BUG-015) |
+| Réaction au redstone | ✅ | garde serveur, `affectedByRedstone` respecté, couvert par un GameTest (BUG-015) |
 | Shift-clic dans le GUI | ✅ | bornes corrigées (BUG-009) |
-| Barre d'énergie / de carburant | 🟡 | rendue, toujours alimentée par du broadcast par tick (BUG-004) |
-| Tooltips d'item (Shift) | 🟡 | valeurs affichées en « /tick » alors qu'elles sont « /action » (BUG-029) |
+| Barre d'énergie / de carburant | ✅ | `ContainerData`, synchronisée aux seuls joueurs ayant le GUI ouvert (BUG-004) |
+| Tooltips d'item (Shift) | ✅ | valeurs par action, unités correctes (BUG-029) |
 | Noms traduits des blocs et items | ✅ | `en_us` et `fr_fr` complets ; le générateur runtime n'agit plus qu'en surcharge (BUG-011) |
 | Modèle / texture | ✅ | GeckoLib, 3 géométries, textures normale + `_disabled` |
-| Animation du bras | 🔴 | anime un bone `bone2` inexistant ⇒ no-op silencieux (BUG-016, Phase 2) |
+| Animation du bras | 🟡 | progression synchronisée et disponible ; la géométrie doit être redécoupée dans Blockbench (BUG-016, FIO-066) |
 | Rendu de l'item transporté | ⬜ | l'item se téléporte, rien n'est affiché dans la main |
 | Boîte de collision | ✅ | socle + palier calqués sur le modèle (BUG-017) |
 | Recettes | 🟡 | **1 seule** (`burner_inserter`) ; les 6 autres sont créatif-only |
-| Loot tables | 🟡 | générées au runtime ⇒ dépendent du pack virtuel (donc cassées sur serveur dédié) |
+| Loot tables | ✅ | générées par `runData` et versionnées |
 
 ## 3. Convoyeurs (« transport belts »)
 
@@ -93,11 +94,11 @@ Spécification proposée : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).
 | Aspect | État |
 |---|---|
 | Enregistrement + textures | ✅ |
-| Modèles d'item | 🟡 générés au runtime (donc absents si le pack échoue) |
-| Noms traduits | 🔴 aucun |
+| Modèles d'item | ✅ générés et versionnés |
+| Noms traduits | ✅ `en_us` et `fr_fr` |
 | Recettes | ⬜ aucune |
 | Usage en jeu | ⬜ aucun |
-| Tags (`forge:plates/*`) | 🟡 générés au runtime uniquement |
+| Tags (`forge:plates/*`) | ✅ générés et versionnés |
 
 `stone` et `stone_brick` **dupliquent** des items vanilla — à supprimer ou à
 remplacer par les tags vanilla.
@@ -108,8 +109,8 @@ remplacer par les tags vanilla.
 |---|---|
 | JEI | 🔴 API en `compileOnly` dans `build.gradle`, **aucun plugin écrit** |
 | The One Probe | 🔴 dépendance runtime déclarée, **aucun provider** |
-| Mekanism / Thermal / CoFH | 🔴 dépendances runtime de test, aucun code |
-| Forge Energy | 🟡 côté réception seulement, et sur une seule face |
+| Mekanism / Thermal / CoFH | ⬜ retirés des dépendances par défaut (`-PwithTestMods`) |
+| Forge Energy | 🟡 côté réception seulement, mais sur toutes les faces |
 | Forge `IItemHandler` | ✅ consommé correctement |
 
 ## 6. Code mort recensé

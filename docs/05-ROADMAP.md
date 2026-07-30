@@ -15,7 +15,7 @@ Phase 1  Refonte des fondations  ~3 sem   synchro, registres, données, assets, 
 Phase 2  Inserters « Factorio »  ~2 sem   algo, animation, perfs, UX
 Phase 3  Convoyeurs             ~4-6 sem  LE gros morceau
 Phase 4  Machines & progression  ~4 sem   assembleurs, fours, recettes, arbre tech
-Phase 5  Finition & publication  ~2 sem   JEI, TOP, i18n, CI, release
+Phase 5  Finition & publication  ~2 sem   JEI, TOP, i18n, release
 ```
 
 Estimations pour **un développeur à temps partiel régulier**. Elles supposent que
@@ -171,7 +171,7 @@ n'ont pas été lancés, et aucun test manuel n'a été fait. C'est la prochaine
 - Socle GameTest : structure de test, coffre → inserter → coffre.
 - 6 GameTests couvrant les invariants listés en DT-11.
 - JUnit sur le parsing des définitions et sur `InserterSlotLayout`.
-- CI GitHub Actions : `build` + `gameTestServer` sur chaque PR.
+- Les tests se lancent en local : `./gradlew runGameTestServer`. Pas de CI — choix assumé du projet.
 
 **Critère de sortie** : les tests passent, aucun paquet custom S→C ne subsiste,
 `./gradlew runData` régénère les assets à l'identique.
@@ -269,7 +269,7 @@ circuits électroniques sans mode créatif.
 | Sons (swing d'inserter, ronronnement de convoyeur) |
 | Guide en jeu (Patchouli) ou page de wiki |
 | `mods.toml` complet : logo, `displayURL`, `issueTrackerURL`, `updateJSONURL` |
-| CI : build + tests + publication automatique sur tag |
+| Procédure de publication documentée (build, tests, upload manuel) |
 | Pages CurseForge / Modrinth, captures, changelog |
 | Passe d'accessibilité : contrastes GUI, tooltips, navigation clavier |
 
