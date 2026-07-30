@@ -66,7 +66,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-063~~ | ✅ | S | Mémorisation du dernier slot fructueux (DT-07) | coffre 54 slots : coût constant |
 | ~~FIO-064~~ | ✅ | M | Mise en sommeil après N échecs, réveil sur `neighborChanged` (DT-07) | 1 000 inserters bloqués ≈ coût nul |
 | FIO-065 | P1 | S | Rééquilibrage temporel sur le barème Factorio (DT-10) | `fast_inserter` ≈ 2,3 items/s |
-| ~~FIO-066~~ | ✅ | M | Animation du bras pilotée par l'état ([BUG-016](03-BUGS.md)) | le bras suit réellement le swing |
+| FIO-066 | P1 | M | **Découper la géométrie dans Blockbench** puis animer le bras. Les 4 bones sont des frères sans hiérarchie, et `inserter` désigne tout l'assemblage vertical (y=0 à 16), pas le bras : le faire pivoter bascule le bloc entier. La progression de swing est déjà synchronisée et disponible côté client. | le bras seul suit le swing |
 | FIO-067 | P1 | M | **Rendu de l'item tenu** dans la main de l'inserter | on voit l'item traverser |
 | FIO-068 | P2 | M | Ramassage et dépôt d'items au sol (parité Factorio) | inserter → sol → inserter |
 | 🟡 FIO-069 | P2 | S | Filtres par type d'item faits ; reste le support des tags ([DT-02](04-DETTE-TECHNIQUE.md)) | filtrer `forge:plates` |

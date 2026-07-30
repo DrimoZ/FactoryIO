@@ -3,7 +3,6 @@ package com.drimoz.factoryio.core.inserters;
 import com.drimoz.factoryio.core.model.Inserter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
-import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.model.GeoModel;
 
 public class FactoryIOInserterBlockEntityModel extends GeoModel<FactoryIOInserterBlockEntity> {
@@ -42,38 +41,19 @@ public class FactoryIOInserterBlockEntityModel extends GeoModel<FactoryIOInserte
         return FactoryIOInserterGeo.ANIMATIONS;
     }
 
-    /**
-     * Pilote le bras depuis l'état réel du block entity.
-     *
-     * <p>Le mouvement n'est pas décrit dans le fichier {@code .animation.json} mais
-     * calculé ici : une animation en boucle sur une horloge ne peut pas refléter le
-     * rythme d'un inserter, qui dépend de sa vitesse et de la disponibilité des items
-     * (cf. 07-DESIGN-INSERTERS §6.1).
-     *
-     * <p>{@code sin(progress · π)} décrit un aller-retour complet : le bras part du
-     * repos, atteint l'extension maximale à mi-course, et revient exactement au repos
-     * en fin de cycle — donc aucune discontinuité entre deux mouvements.
-     */
-    @Override
-    public void handleAnimations(FactoryIOInserterBlockEntity animatable, long instanceId, AnimationState<FactoryIOInserterBlockEntity> state) {
-        super.handleAnimations(animatable, instanceId, state);
-
-        getBone(ARM_BONE).ifPresent(arm -> {
-            float progress = animatable.getSwingProgress(state.getPartialTick());
-            float angle = SWING_AMPLITUDE_RAD * (float) Math.sin(progress * Math.PI);
-
-            arm.setRotX(angle);
-        });
-    }
-
-    /** Bone du bras dans les trois géométries. */
-    private static final String ARM_BONE = "inserter";
-
-    /**
-     * Amplitude du balancement, en radians.
-     *
-     * <p>À ajuster visuellement : l'axe et le signe dépendent de l'orientation du bone
-     * dans le modèle Blockbench, qui n'a pas été vérifiée en jeu.
-     */
-    private static final float SWING_AMPLITUDE_RAD = (float) Math.toRadians(70);
+    // Le mouvement de bras n'est volontairement pas rendu pour l'instant.
+    //
+    // La plomberie existe et fonctionne : FactoryIOInserterBlockEntity expose une
+    // progression de swing, synchronisée au déclenchement de l'action et interpolée
+    // côté client sans trafic réseau. Elle servira aussi au rendu de l'item tenu.
+    //
+    // Ce qui manque est la géométrie. Les quatre bones des trois modèles (inserter,
+    // bearing, base, base_top) sont des FRÈRES, sans hiérarchie parent/enfant, et
+    // « inserter » ne désigne pas le bras : c'est tout l'assemblage vertical, du socle
+    // (y=0) au sommet (y≈16). Le faire pivoter bascule le bloc entier au lieu d'animer
+    // le seul bras.
+    //
+    // Un vrai mouvement suppose de redécouper la géométrie dans Blockbench : un bone
+    // pour le mât, un bone enfant pour le bras, un bone petit-fils pour la main.
+    // Voir FIO-066.
 }

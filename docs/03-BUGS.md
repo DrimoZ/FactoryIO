@@ -8,7 +8,8 @@
 > aucun test automatisé (voir [DT-11](04-DETTE-TECHNIQUE.md)). Considérer ces ✅
 > comme « écrit et compilé », pas comme « vérifié ».
 >
-> Reste : BUG-016 (animation GeckoLib), traité en Phase 2 avec la refonte du rendu.
+> Reste : BUG-016 — le bone fantôme est corrigé, mais la géométrie doit être
+> redécoupée dans Blockbench avant de pouvoir animer le bras seul (FIO-066).
 
 Sévérités :
 **S0** bloquant (crash / mod inutilisable) ·
