@@ -17,7 +17,7 @@ diverge sur presque tous les points.
 | Source | inventaire, **bande transporteuse**, sol | inventaire uniquement |
 | Cible | inventaire, **bande transporteuse**, sol | inventaire uniquement |
 | Blocage | l'inserter garde l'item en main et attend | ✅ état `BLOCKED` (FIO-060) |
-| Filtre | par type d'item, whitelist/blacklist | ✅ par type (BUG-022) ; tags à faire (FIO-069) |
+| Filtre | par type d'item, whitelist/blacklist | ✅ par type ou par tag, au choix par slot (FIO-069) |
 | Taille de main | dépend du type + bonus de recherche | constante 1 ou 3 |
 | Condition circuit | signal/condition réseau | signal redstone binaire |
 | Vitesse | 0,60 à 2,31 items/s | ✅ 0,59 à 2,50 items/s (FIO-065) — auparavant 0,25 pour tous |
@@ -370,7 +370,7 @@ Par ordre de valeur ajoutée :
 |---|---|---|
 | **Prise/dépose sur convoyeur** | sans elle, les convoyeurs de la Phase 3 sont inutilisables | M (dépend de la Phase 3) |
 | **Prise/dépose au sol** | parité Factorio, débloque des designs simples | M |
-| **Filtre par tag** | `forge:plates` plutôt que 5 slots d'items | S |
+| ~~**Filtre par tag**~~ | ✅ **fait (FIO-069)** — clic droit sur un filtre posé bascule entre l'item exact et ses tags. Volontairement large : « partage un tag » plutôt qu'un tag désigné, tant que le GUI ne permet pas d'en choisir un (FIO-071) | S |
 | **Condition redstone analogique** | « n'agir que si signal ≥ N » — équivalent minimal du réseau de circuits | M |
 | **Bonus de taille de main** | permet une progression sans nouveaux blocs | S |
 | **Insertion « ne dépasse pas N »** | limite de remplissage, très demandé en Factorio | S |

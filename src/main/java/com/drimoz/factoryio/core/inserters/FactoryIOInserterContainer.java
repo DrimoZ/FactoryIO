@@ -238,6 +238,12 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
     /**
      * Comportement « fantôme » des slots de filtre : cliquer y dépose une copie d'un
      * seul item sans consommer ce que le joueur tient, et cliquer à vide efface.
+     *
+     * <p>Le <b>clic droit</b> sur un filtre posé bascule sa correspondance entre l'item
+     * exact et son tag (cf. FIO-069). Aucun paquet custom n'est nécessaire : vanilla
+     * achemine déjà ce clic jusqu'au serveur, qui a vérifié que ce joueur a bien ce menu
+     * ouvert. Ajouter un bouton aurait demandé une case libre dans une texture de GUI
+     * figée — ce que la refonte du GUI règlera (FIO-071).
      */
     @Override
     public void clicked(int pSlotId, int pButton, ClickType pClickType, Player pPlayer) {
@@ -245,6 +251,11 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
                 && (pClickType == ClickType.PICKUP || pClickType == ClickType.QUICK_MOVE);
 
         if (ghostClick && !slots.get(pSlotId).getItem().isEmpty()) {
+            if (pButton == RIGHT_CLICK && pClickType == ClickType.PICKUP) {
+                BLOCK_ENTITY.toggleTagFilter(pSlotId - TE_INVENTORY_FIRST_SLOT_INDEX - LAYOUT.firstFilter());
+                return;
+            }
+
             if (this.getCarried().isEmpty()) {
                 slots.get(pSlotId).set(ItemStack.EMPTY);
             } else {
@@ -256,6 +267,16 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
         }
 
         super.clicked(pSlotId, pButton, pClickType, pPlayer);
+    }
+
+    /** Bouton droit, tel que vanilla le transmet dans {@code clicked}. */
+    private static final int RIGHT_CLICK = 1;
+
+    /** @return le rang du slot de filtre affiché à {@code menuSlotId}, ou -1 */
+    public int filterIndexOf(int menuSlotId) {
+        if (!isFilterMenuSlot(menuSlotId)) return -1;
+
+        return menuSlotId - TE_INVENTORY_FIRST_SLOT_INDEX - LAYOUT.firstFilter();
     }
 
     // Inner work (Slots)

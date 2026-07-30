@@ -1,6 +1,5 @@
 {
   "itemGroup.factory_io": "Factory'I/O",
-
   "block.factory_io.burner_inserter": "Burner Inserter",
   "block.factory_io.inserter": "Inserter",
   "block.factory_io.long_handed_inserter": "Long Handed Inserter",
@@ -8,11 +7,9 @@
   "block.factory_io.fast_inserter": "Fast Inserter",
   "block.factory_io.stack_inserter": "Stack Inserter",
   "block.factory_io.stack_filter_inserter": "Stack Filter Inserter",
-
   "item.factory_io.electronic_circuit": "Electronic Circuit",
   "item.factory_io.advanced_circuit": "Advanced Circuit",
   "item.factory_io.processing_unit": "Processing Unit",
-
   "item.factory_io.automation_science_pack": "Automation Science Pack",
   "item.factory_io.logistic_science_pack": "Logistic Science Pack",
   "item.factory_io.military_science_pack": "Military Science Pack",
@@ -20,11 +17,9 @@
   "item.factory_io.production_science_pack": "Production Science Pack",
   "item.factory_io.utility_science_pack": "Utility Science Pack",
   "item.factory_io.space_science_pack": "Space Science Pack",
-
   "item.factory_io.copper_plate": "Copper Plate",
   "item.factory_io.iron_plate": "Iron Plate",
   "item.factory_io.steel_plate": "Steel Plate",
-
   "item.factory_io.efficiency_module": "Efficiency Module",
   "item.factory_io.efficiency_module_2": "Efficiency Module 2",
   "item.factory_io.efficiency_module_3": "Efficiency Module 3",
@@ -34,7 +29,6 @@
   "item.factory_io.speed_module": "Speed Module",
   "item.factory_io.speed_module_2": "Speed Module 2",
   "item.factory_io.speed_module_3": "Speed Module 3",
-
   "item.factory_io.explosives": "Explosives",
   "item.factory_io.flying_robot_frame": "Flying Robot Frame",
   "item.factory_io.low_density_structure": "Low Density Structure",
@@ -48,28 +42,27 @@
   "item.factory_io.used_up_uranium_fuel_cell": "Used Up Uranium Fuel Cell",
   "item.factory_io.uranium_235": "Uranium-235",
   "item.factory_io.uranium_238": "Uranium-238",
-
   "tooltip.factory_io.energy_name": "FE",
   "tooltip.factory_io.tick": "Tick",
   "tooltip.factory_io.second": "s",
-
   "tooltip.factory_io.blacklist": "Blacklist",
   "tooltip.factory_io.whitelist": "Whitelist",
   "tooltip.factory_io.whitelist_switch": "Click to switch into a",
-
   "tooltip.factory_io.items": "Item(s)",
   "tooltip.factory_io.blocks": "Block(s)",
-
   "tooltip.factory_io.capacity": "Capacity :",
   "tooltip.factory_io.consumption": "Consumption :",
   "tooltip.factory_io.fuel_consumption": "Fuel Consumption :",
   "tooltip.factory_io.speed": "Speed : ",
   "tooltip.factory_io.hand_size": "Hand :",
   "tooltip.factory_io.grab": "Grab Items from",
-
   "tooltip.factory_io.gui_close": "Close",
   "tooltip.factory_io.gui_hold_shift": "Hold",
   "tooltip.factory_io.gui_shift_more_options": "for more options",
   "tooltip.factory_io.for_details": "for details.",
-  "tooltip.factory_io.hold": "Hold"
+  "tooltip.factory_io.hold": "Hold",
+  "tooltip.factory_io.filter_exact": "Matches this item",
+  "tooltip.factory_io.filter_tag": "Matches this item's tags",
+  "tooltip.factory_io.filter_tag_none": "This item has no tag",
+  "tooltip.factory_io.filter_tag_switch": "Right-click to switch"
 }

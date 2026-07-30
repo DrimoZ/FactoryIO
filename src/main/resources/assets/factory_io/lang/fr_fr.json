@@ -1,6 +1,5 @@
 {
   "itemGroup.factory_io": "Factory'I/O",
-
   "block.factory_io.burner_inserter": "Bras à combustion",
   "block.factory_io.inserter": "Bras mécanique",
   "block.factory_io.long_handed_inserter": "Bras mécanique long",
@@ -8,11 +7,9 @@
   "block.factory_io.fast_inserter": "Bras mécanique rapide",
   "block.factory_io.stack_inserter": "Bras mécanique de piles",
   "block.factory_io.stack_filter_inserter": "Bras mécanique de piles filtrant",
-
   "item.factory_io.electronic_circuit": "Circuit électronique",
   "item.factory_io.advanced_circuit": "Circuit avancé",
   "item.factory_io.processing_unit": "Unité de traitement",
-
   "item.factory_io.automation_science_pack": "Pack de science d'automatisation",
   "item.factory_io.logistic_science_pack": "Pack de science logistique",
   "item.factory_io.military_science_pack": "Pack de science militaire",
@@ -20,11 +17,9 @@
   "item.factory_io.production_science_pack": "Pack de science de production",
   "item.factory_io.utility_science_pack": "Pack de science utilitaire",
   "item.factory_io.space_science_pack": "Pack de science spatiale",
-
   "item.factory_io.copper_plate": "Plaque de cuivre",
   "item.factory_io.iron_plate": "Plaque de fer",
   "item.factory_io.steel_plate": "Plaque d'acier",
-
   "item.factory_io.efficiency_module": "Module d'efficacité",
   "item.factory_io.efficiency_module_2": "Module d'efficacité 2",
   "item.factory_io.efficiency_module_3": "Module d'efficacité 3",
@@ -34,7 +29,6 @@
   "item.factory_io.speed_module": "Module de vitesse",
   "item.factory_io.speed_module_2": "Module de vitesse 2",
   "item.factory_io.speed_module_3": "Module de vitesse 3",
-
   "item.factory_io.explosives": "Explosifs",
   "item.factory_io.flying_robot_frame": "Châssis de robot volant",
   "item.factory_io.low_density_structure": "Structure à faible densité",
@@ -48,28 +42,27 @@
   "item.factory_io.used_up_uranium_fuel_cell": "Cellule d'uranium usagée",
   "item.factory_io.uranium_235": "Uranium 235",
   "item.factory_io.uranium_238": "Uranium 238",
-
   "tooltip.factory_io.energy_name": "FE",
   "tooltip.factory_io.tick": "Tick",
   "tooltip.factory_io.second": "s",
-
   "tooltip.factory_io.blacklist": "Liste noire",
   "tooltip.factory_io.whitelist": "Liste blanche",
   "tooltip.factory_io.whitelist_switch": "Cliquer pour transformer en",
-
   "tooltip.factory_io.items": "Item(s)",
   "tooltip.factory_io.blocks": "Bloc(s)",
-
   "tooltip.factory_io.capacity": "Capacité :",
   "tooltip.factory_io.consumption": "Consommation :",
   "tooltip.factory_io.fuel_consumption": "Consommation de carburant :",
   "tooltip.factory_io.speed": "Vitesse : ",
   "tooltip.factory_io.hand_size": "Main :",
   "tooltip.factory_io.grab": "Récupère de",
-
   "tooltip.factory_io.gui_close": "Fermer",
   "tooltip.factory_io.gui_hold_shift": "Maintenir",
   "tooltip.factory_io.gui_shift_more_options": "pour plus d'options",
   "tooltip.factory_io.for_details": "pour les détails",
-  "tooltip.factory_io.hold": "Maintenir"
+  "tooltip.factory_io.hold": "Maintenir",
+  "tooltip.factory_io.filter_exact": "Correspond à cet item",
+  "tooltip.factory_io.filter_tag": "Correspond aux tags de cet item",
+  "tooltip.factory_io.filter_tag_none": "Cet item n'a aucun tag",
+  "tooltip.factory_io.filter_tag_switch": "Clic droit pour changer"
 }

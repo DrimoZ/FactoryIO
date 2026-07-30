@@ -3,6 +3,7 @@ package com.drimoz.factoryio.gametest;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
+import com.drimoz.factoryio.core.init.FactoryIOItems;
 import com.drimoz.factoryio.core.inserters.InserterState;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
@@ -12,6 +13,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -128,6 +130,39 @@ public class FactoryIOGameTests {
 
         helper.succeedWhen(() -> helper.assertBlockProperty(
                 INSERTER, FactoryIOInserterEntityBlock.ENABLED, false));
+    }
+
+    /**
+     * Un filtre en mode tag doit laisser passer tout item partageant un tag (FIO-069).
+     *
+     * <p>C'est le critère du ticket : filtrer `forge:plates` en posant une plaque, sans
+     * avoir à énumérer les trois métaux. Le test vérifie aussi la contrepartie — un item
+     * hors du tag reste refusé — sans quoi « tout passe » satisferait la première moitié.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void tagFilterAcceptsTheWholeTag(GameTestHelper helper) {
+        setupChain(helper, "filter_inserter");
+
+        FactoryIOInserterBlockEntity blockEntity = inserter(helper);
+        blockEntity.overrideCurrentEnergy(blockEntity.getEnergyCapacity());
+
+        // Un filtre posé avec une plaque de fer, basculé en correspondance par tag.
+        setFilter(helper, 0, FactoryIOItems.IRON_PLATE.get());
+        blockEntity.toggleTagFilter(0);
+
+        Container source = container(helper, SOURCE);
+        source.setItem(0, new ItemStack(FactoryIOItems.COPPER_PLATE.get(), 8));
+        source.setItem(1, new ItemStack(Items.COBBLESTONE, 8));
+
+        helper.succeedWhen(() -> {
+            Container target = container(helper, TARGET);
+
+            helper.assertTrue(countOf(target, FactoryIOItems.COPPER_PLATE.get()) > 0,
+                    "La plaque de cuivre n'est pas passée alors qu'elle partage forge:plates");
+
+            helper.assertTrue(countOf(target, Items.COBBLESTONE) == 0,
+                    "La cobblestone est passée alors qu'elle ne partage aucun tag");
+        });
     }
 
     /** Le mode blacklist doit survivre à un déchargement du block entity (BUG-008). */
@@ -298,6 +333,29 @@ public class FactoryIOGameTests {
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
             container.setItem(slot, new ItemStack(Items.STONE, 64));
         }
+    }
+
+    /**
+     * Pose un item fantôme dans un slot de filtre.
+     *
+     * <p>Passe par {@code setStackInSlot} : l'{@code IItemHandler} exposé refuse toute
+     * insertion hors du slot de carburant, ce qui est précisément son rôle.
+     */
+    private static void setFilter(GameTestHelper helper, int filterIndex, Item item) {
+        FactoryIOInserterBlockEntity blockEntity = inserter(helper);
+
+        blockEntity.setFilter(filterIndex, new ItemStack(item));
+    }
+
+    private static int countOf(Container container, Item item) {
+        int total = 0;
+
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack stack = container.getItem(slot);
+            if (stack.is(item)) total += stack.getCount();
+        }
+
+        return total;
     }
 
     private static FactoryIOInserterBlockEntity inserter(GameTestHelper helper) {

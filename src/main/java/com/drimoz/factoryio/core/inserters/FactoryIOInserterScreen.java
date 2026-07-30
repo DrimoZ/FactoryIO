@@ -10,6 +10,8 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,11 +60,35 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
         this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTicks);
 
+        // Les slots en mode tag sont teintés par-dessus leur contenu : la texture de GUI
+        // est figée et n'a pas de case libre pour une icône (cf. FIO-069, FIO-071).
+        this.renderTagFilterHighlights(graphics);
+
         // Les tooltips du mod se dessinent après le rendu des slots, sinon ils passent
         // dessous. L'ancienne version les traçait depuis renderBg.
         this.renderTooltip(graphics, mouseX, mouseY);
         this.renderCustomTooltips(graphics, mouseX, mouseY);
     }
+
+    /** Teinte les slots de filtre dont la correspondance porte sur le tag. */
+    private void renderTagFilterHighlights(GuiGraphics graphics) {
+        if (!getMenu().getBlockEntity().IS_FILTER) return;
+
+        for (int menuSlotId = 0; menuSlotId < getMenu().slots.size(); menuSlotId++) {
+            int filterIndex = getMenu().filterIndexOf(menuSlotId);
+            if (filterIndex < 0) continue;
+            if (!getMenu().getBlockEntity().isTagFilter(filterIndex)) continue;
+
+            Slot slot = getMenu().slots.get(menuSlotId);
+            int x = this.getGuiLeft() + slot.x;
+            int y = this.getGuiTop() + slot.y;
+
+            graphics.fill(x, y, x + 16, y + 16, TAG_FILTER_TINT);
+        }
+    }
+
+    /** Teinte des slots en mode tag : ARGB, assez transparente pour laisser voir l'item. */
+    private static final int TAG_FILTER_TINT = 0x6033B5E5;
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
@@ -103,6 +129,44 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    /**
+     * Ajoute au tooltip d'un slot de filtre son mode de correspondance et les tags
+     * concernés.
+     *
+     * <p>Sans cela, le mode par tag serait invisible : ni la teinte ni le clic droit ne
+     * sont devinables, et la liste des tags est ce qui permet de comprendre <i>pourquoi</i>
+     * un item passe le filtre.
+     */
+    @Override
+    protected List<Component> getTooltipFromContainerItem(ItemStack stack) {
+        List<Component> lines = new ArrayList<>(super.getTooltipFromContainerItem(stack));
+
+        if (this.hoveredSlot == null) return lines;
+
+        int filterIndex = getMenu().filterIndexOf(this.hoveredSlot.index);
+        if (filterIndex < 0 || stack.isEmpty()) return lines;
+
+        boolean byTag = getMenu().getBlockEntity().isTagFilter(filterIndex);
+
+        lines.add(FactoryIOUtils.tooltipComponent(byTag ? "filter_tag" : "filter_exact")
+                .withStyle(byTag ? ChatFormatting.AQUA : ChatFormatting.GRAY));
+
+        if (byTag) {
+            List<String> tags = stack.getTags().map(tag -> tag.location().toString()).toList();
+
+            if (tags.isEmpty()) {
+                lines.add(FactoryIOUtils.tooltipComponent("filter_tag_none").withStyle(ChatFormatting.RED));
+            } else {
+                tags.forEach(tag -> lines.add(
+                        Component.literal(" " + tag).withStyle(ChatFormatting.DARK_AQUA)));
+            }
+        }
+
+        lines.add(FactoryIOUtils.tooltipComponent("filter_tag_switch").withStyle(ChatFormatting.DARK_GRAY));
+
+        return lines;
     }
 
     // Inner work

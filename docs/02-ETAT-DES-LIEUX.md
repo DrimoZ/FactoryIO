@@ -9,12 +9,13 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > appliqués (voir [`03-BUGS.md`](03-BUGS.md)), le mod compile et **le client démarre**
 > (`Loaded 7 inserters`, aucune erreur fatale).
 >
-> Le comportement est désormais partiellement vérifié : 9 GameTests couvrent les
-> invariants de monde (conservation, ravitaillement, redstone, persistance, synchro de
-> l'item transporté, blocage, persistance de l'état du bras) et 67 tests JUnit le calcul
-> pur. Le transfert
-> ainsi que le ravitaillement du burner ont été confirmés en jeu. Le rendu, lui,
-> n'est validé par aucun test et n'a jamais été observé (FIO-054).
+> Le comportement est désormais largement vérifié. **Le mod est validé en jeu** par le
+> mainteneur (FIO-054, 30/07/2026), et 10 GameTests couvrent les invariants de monde —
+> conservation, ravitaillement, redstone, persistance, synchro de l'item en main, blocage
+> sur cible pleine, filtres par tag — doublés de 67 tests JUnit sur le calcul pur.
+>
+> Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil, pas
+> par une assertion. C'est la limite à garder en tête à chaque changement d'affichage.
 
 ---
 
@@ -31,7 +32,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Pack de ressources/data généré au runtime | 🟡 | ne dépend plus du code client (BUG-005) ; toujours pas de régénération à chaud ni de nettoyage |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 9 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
+| Tests (GameTest) | ✅ | 10 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
 | Tests (JUnit) | ✅ | 67 tests de calcul pur, `./gradlew test`, exécutés par `build` |
 | Benchmark de charge | ✅ | consigné ; budget actif tenu, budget endormi à la limite ([`10`](10-BENCHMARKS.md), FIO-073, FIO-076) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
@@ -45,7 +46,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Aspiration d'items depuis un inventaire | 🟡 | marche pour les BlockEntity ; ignore les items au sol, minecarts, entités |
 | Éjection vers un inventaire | ✅ | répartition multi-slot (BUG-022) et face de capability correcte (BUG-023) |
 | Perte d'items | ✅ | simulation avant extraction ; tout reliquat est réinjecté ou lâché au sol (BUG-006) |
-| Filtres (5 slots, items fantômes) | ✅ | état whitelist/blacklist persisté en NBT (BUG-008) |
+| Filtres (5 slots, items fantômes) | ✅ | whitelist/blacklist persisté (BUG-008) ; correspondance par item ou par tag, au choix par slot (FIO-069) |
 | Bascule whitelist/blacklist | ✅ | paquet C→S validé : expéditeur, chunk, distance, menu ouvert, type de bloc (BUG-007) |
 | Consommation d'énergie (FE) | ✅ | `consumeInternal()` distinct du contrat externe (BUG-003) |
 | Réception d'énergie | ✅ | toutes faces + `side == null` (BUG-021) |
@@ -61,7 +62,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Noms traduits des blocs et items | ✅ | `en_us` et `fr_fr` complets ; le générateur runtime n'agit plus qu'en surcharge (BUG-011) |
 | Modèle / texture | ✅ | GeckoLib, 3 géométries, textures normale + `_disabled` |
 | Animation du bras | 🔴 | abandonnée : le bone `inserter` porte tout l'assemblage, socle compris (BUG-016, FIO-066) |
-| Rendu de l'item transporté | 🟡 | arc source → cible pendant le mouvement, item immobile en bout de course si la cible est pleine (FIO-067, FIO-060) ; **non validé à l'écran** |
+| Rendu de l'item transporté | ✅ | arc source → cible pendant le mouvement, item immobile en bout de course si la cible est pleine (FIO-067, FIO-060) ; validé en jeu (FIO-054) |
 | Boîte de collision | ✅ | socle + palier calqués sur le modèle (BUG-017) |
 | Recettes | 🟡 | **1 seule** (`burner_inserter`) ; les 6 autres sont créatif-only |
 | Loot tables | ✅ | générées par `runData` et versionnées |

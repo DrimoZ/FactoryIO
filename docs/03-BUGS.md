@@ -2,10 +2,11 @@
 
 > **État : 38 bugs sur 41 corrigés**, plus 1 partiellement (BUG-020).
 >
-> Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Onze GameTests
-> couvrent les invariants de monde (`./gradlew runGameTestServer`) et 67 tests JUnit le
-> calcul pur (`./gradlew test`). Le **rendu**, lui, n'est validé par aucun test : ce qui
-> touche à l'affichage reste « écrit et compilé », pas « vu à l'écran » (cf. FIO-054).
+> Le mod est porté sur Forge 1.20.1 et **validé en jeu** par le mainteneur le 30/07/2026
+> (FIO-054). Douze GameTests couvrent les invariants de monde
+> (`./gradlew runGameTestServer`) et 67 tests JUnit le calcul pur (`./gradlew test`).
+> Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil, pas
+> par une assertion.
 >
 > Restent à traiter : BUG-016 (géométrie du bras à redécouper, FIO-066 en pause)
 > et BUG-036 — S3, relevé lors de l'audit du 30/07/2026.

@@ -94,6 +94,15 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     private int current_fuel_value = 0;
 
     /**
+     * Slots de filtre passés en « correspondance par tag », un bit par slot.
+     *
+     * <p>Un masque plutôt que cinq booléens : cela tient dans un entier, se persiste et se
+     * synchronise d'une pièce, et le nombre de filtres reste une donnée de
+     * {@link InserterSlotLayout} plutôt qu'une constante répétée ici.
+     */
+    private int tagFilterMask = 0;
+
+    /**
      * Tick de jeu auquel le mouvement de bras en cours se termine.
      *
      * <p>Une échéance absolue, et non un compteur : elle est envoyée une fois, au
@@ -321,6 +330,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         // Sans ces lignes, chaque rechargement de monde remettait tous les filtres en
         // whitelist et repartait d'un compteur nul (cf. BUG-008).
         tag.putBoolean("inserterWhitelist", this.isWhitelist);
+        tag.putInt("inserterTagFilters", this.tagFilterMask);
 
         // L'état du bras est persisté : un inserter bloqué doit se retrouver bloqué au
         // rechargement, pas remis au repos avec un item fantôme en main.
@@ -346,6 +356,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         // contains() : un monde sauvegardé avant ce correctif n'a pas ces clés, et
         // getBoolean() renverrait false — soit l'inverse du défaut attendu.
         this.isWhitelist = !tag.contains("inserterWhitelist") || tag.getBoolean("inserterWhitelist");
+        this.tagFilterMask = tag.getInt("inserterTagFilters");
 
         this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
         this.carryingFuel = tag.getBoolean("inserterCarryingFuel");
@@ -375,6 +386,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     public CompoundTag getUpdateTag() {
         CompoundTag tag = new CompoundTag();
         tag.putBoolean("inserterWhitelist", this.isWhitelist);
+        tag.putInt("inserterTagFilters", this.tagFilterMask);
         tag.putByte("inserterState", (byte) this.state.ordinal());
         tag.putBoolean("inserterCarryingFuel", this.carryingFuel);
         tag.putLong("inserterSwingEnd", this.swingEndTick);
@@ -393,6 +405,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         if (tag.contains("inserterWhitelist")) {
             this.isWhitelist = tag.getBoolean("inserterWhitelist");
         }
+        this.tagFilterMask = tag.getInt("inserterTagFilters");
         this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
         this.carryingFuel = tag.getBoolean("inserterCarryingFuel");
         this.swingEndTick = tag.getLong("inserterSwingEnd");
@@ -846,6 +859,10 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
      * <p>La comparaison porte sur le <b>type</b> d'item et non sur son NBT : un filtre
      * posé avec une pioche neuve doit aussi laisser passer une pioche usée
      * (cf. DT-02).
+     *
+     * <p>Un slot passé en mode tag élargit la correspondance à tout item partageant un tag
+     * avec lui : un filtre posé avec une plaque de fer laisse alors passer toutes les
+     * plaques (cf. FIO-069).
      */
     private static boolean matchesFilters(FactoryIOInserterBlockEntity pEntity, ItemStack stack, boolean isWhitelist) {
         InserterSlotLayout layout = pEntity.LAYOUT;
@@ -859,7 +876,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             if (filter.isEmpty()) continue;
 
             anyFilterSet = true;
-            if (ItemStack.isSameItem(filter, stack)) {
+            if (matchesFilter(filter, stack, pEntity.isTagFilter(i))) {
                 listed = true;
                 break;
             }
@@ -868,6 +885,53 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         if (!anyFilterSet) return true;
 
         return isWhitelist == listed;
+    }
+
+    /** @return {@code true} si {@code stack} correspond au filtre {@code filter} */
+    public static boolean matchesFilter(ItemStack filter, ItemStack stack, boolean byTag) {
+        if (ItemStack.isSameItem(filter, stack)) return true;
+        if (!byTag) return false;
+
+        // Un tag partagé suffit. C'est volontairement large : tant que le joueur ne peut
+        // pas désigner *quel* tag — ce que la refonte du GUI apportera (FIO-071) — poser
+        // une plaque de fer pour dire « les plaques » est le geste le plus naturel.
+        return filter.getTags().anyMatch(stack::is);
+    }
+
+    // Interface (Filtres par tag)
+
+    /** @param filterIndex rang du slot de filtre, 0-based */
+    public boolean isTagFilter(int filterIndex) {
+        return (this.tagFilterMask & (1 << filterIndex)) != 0;
+    }
+
+    /**
+     * Pose un item fantôme dans un slot de filtre.
+     *
+     * <p>Le menu passe encore par ses {@code Slot}, qui écrivent dans le handler ; il
+     * viendra ici avec la refonte du GUI (FIO-071), qui doit de toute façon sortir la
+     * logique fantôme du menu.
+     *
+     * @param filterIndex rang du slot de filtre, 0-based
+     */
+    public void setFilter(int filterIndex, @Nonnull ItemStack filter) {
+        if (!LAYOUT.hasFilters() || filterIndex < 0 || filterIndex >= LAYOUT.filterCount()) return;
+
+        ItemStack ghost = filter.copy();
+        ghost.setCount(1);
+
+        this.itemStorage.setStackInSlot(LAYOUT.filter(filterIndex), ghost);
+    }
+
+    /** Bascule un slot de filtre entre correspondance exacte et correspondance par tag. */
+    public void toggleTagFilter(int filterIndex) {
+        if (!LAYOUT.hasFilters() || filterIndex < 0 || filterIndex >= LAYOUT.filterCount()) return;
+
+        this.tagFilterMask ^= 1 << filterIndex;
+
+        // Un filtre qui change relance un inserter que ce même filtre avait endormi.
+        wakeUp();
+        syncToClients();
     }
 
     private ItemStack insertItemInternal(int slot, @Nonnull ItemStack itemStack, boolean simulate) {

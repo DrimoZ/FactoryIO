@@ -73,7 +73,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ⏸ FIO-066 | P2 | M | **Découper la géométrie dans Blockbench** puis animer le bras. Bloqué par la géométrie, pas par le code : le bone `inserter` porte tout l'assemblage, socle 16×16 compris (y=0 à 16), et `bearing`/`base`/`base_top` en sont des enfants — le faire pivoter bascule le bloc entier. La progression de swing est synchronisée et disponible côté client, elle pilote déjà FIO-067. | le bras seul suit le swing |
 | ~~FIO-067~~ | ✅ | M | **Rendu de l'item transporté** : arc source → cible pilotée par la progression du bras. Le découpage en deux demi-arcs de la première version a été remplacé par un arc unique avec FIO-060 — un item traverse en un mouvement, le suivant ramène le bras à vide. | l'item traverse ; item immobile si la cible est pleine |
 | FIO-068 | P2 | M | Ramassage et dépôt d'items au sol (parité Factorio) | inserter → sol → inserter |
-| 🟡 FIO-069 | P2 | S | Filtres par type d'item faits ; reste le support des tags ([DT-02](04-DETTE-TECHNIQUE.md)) | filtrer `forge:plates` |
+| ~~FIO-069~~ | ✅ | S | Filtres par tag : clic droit sur un filtre posé bascule entre l'item exact et ses tags ([DT-02](04-DETTE-TECHNIQUE.md)) | une plaque de fer en mode tag laisse passer le cuivre, pas la cobblestone |
 | FIO-070 | P2 | M | Mode circuit : condition sur signal redstone analogique | « n'agir que si signal ≥ 5 » |
 | FIO-071 | P2 | S | `GhostSlot` réutilisable, suppression de la surcharge de `clicked()` (DT-08) | — |
 | ~~FIO-072~~ | ✅ | S | Tooltips avec les bonnes unités ([BUG-029](03-BUGS.md)) | items/s et FE/s corrects |
@@ -140,7 +140,7 @@ Colonne « ✓ » = critère d'acceptation.
 |---|---|---|---|---|
 | ~~FIO-047~~ | ✅ | M | **Débloquer `runClient`** — **fait**. Deux causes, isolées en comparant avec un MDK 1.20.1 vierge (voir ci-dessous). | le client démarre, `Loaded 7 inserters` |
 | ~~FIO-053~~ | ✅ | S | Modèles `base_*_inserter_c.json` : `"textures": { "0": "" }` → `JsonSyntaxException: Missing texture` au chargement. Antérieurs au port, apparemment référencés par rien. À compléter ou supprimer. | plus aucun `Failed to load model` |
-| FIO-054 | P0 | M | **Valider le mod en jeu** : poser un inserter, vérifier le rendu GeckoLib, l'onglet créatif, et que le pack généré au runtime fournit modèles et loot tables | une chaîne coffre → inserter → four fonctionne |
+| ~~FIO-054~~ | ✅ | M | **Valider le mod en jeu** : poser un inserter, vérifier le rendu GeckoLib, l'onglet créatif, et que le pack généré au runtime fournit modèles et loot tables | **validé en jeu par le mainteneur le 30/07/2026** |
 
 ### Pourquoi `runClient` ne démarrait pas (FIO-047)
 
@@ -155,9 +155,9 @@ Diagnostic établi en comparant le projet à un **MDK Forge 1.20.1 vierge**, une
 
 - *« Les mappings `official` sont en cause. »* Non : le MDK utilise `official` par défaut et démarre parfaitement. L'erreur nº2 était présente sous `official` **et** sous Parchment. Le projet est resté sur Parchment pour les noms de paramètres, pas par nécessité.
 - *« Le plugin de lancement `eventbus` ne transforme aucune classe (aucun marqueur `pl:eventbus`). »* Non : le MDK qui fonctionne n'a pas non plus ces marqueurs. Leur absence est normale.
-| FIO-048 | P0 | M | Vérifier le pack généré au runtime sous la nouvelle API `PackResources` | modèles, langues et loot tables présents en jeu |
+| ~~FIO-048~~ | ✅ | M | Vérifier le pack généré au runtime sous la nouvelle API `PackResources` | couvert par la validation en jeu (FIO-054) |
 | ~~FIO-049~~ | ✅ | S | Vérifier le rendu GeckoLib 4 (bloc et item) | l'inserter s'affiche en monde et en inventaire |
-| FIO-050 | P1 | S | Vérifier l'onglet créatif et l'ordre de ses items | les 7 inserters + 33 items présents |
+| ~~FIO-050~~ | ✅ | S | Vérifier l'onglet créatif et l'ordre de ses items | couvert par la validation en jeu (FIO-054) |
 | ~~FIO-044~~ | ✅ | S | Capability énergie sur toutes les faces (BUG-021)
 | ~~FIO-035~~ | ✅ | S | InserterSlotLayout : source unique des index de slots (DT-03)
 | ~~FIO-030..033~~ | ✅ | M | Suppression du broadcast réseau par tick (BUG-004, BUG-015)
