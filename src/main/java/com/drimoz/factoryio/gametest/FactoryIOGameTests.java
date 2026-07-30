@@ -89,6 +89,35 @@ public class FactoryIOGameTests {
         });
     }
 
+    /**
+     * Le carburant n'est consommé qu'au dernier moment (BUG-041).
+     *
+     * <p>L'ancienne règle brûlait un item dès qu'il restait de la place pour lui : avec
+     * une réserve de 3 200 et du charbon à 1 600, deux items partaient d'un coup au
+     * premier tick. Le four vanilla n'entame le suivant que lorsque le précédent est
+     * épuisé, et c'est la seule règle qui ne gaspille pas quand la réserve est presque
+     * pleine.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void fuelIsConsumedOneItemAtATime(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+
+        int coalCount = 4;
+        inserterHandler(helper).insertItem(
+                inserter(helper).LAYOUT.fuel(), new ItemStack(Items.COAL, coalCount), false);
+
+        helper.runAfterDelay(40, () -> {
+            int remaining = inserterHandler(helper)
+                    .getStackInSlot(inserter(helper).LAYOUT.fuel()).getCount();
+
+            helper.assertTrue(remaining == coalCount - 1,
+                    "L'inserter a consommé " + (coalCount - remaining)
+                            + " charbons au lieu d'un seul");
+
+            helper.succeed();
+        });
+    }
+
     /** Un signal redstone doit désactiver l'inserter (BUG-015). */
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void redstoneDisablesInserter(GameTestHelper helper) {

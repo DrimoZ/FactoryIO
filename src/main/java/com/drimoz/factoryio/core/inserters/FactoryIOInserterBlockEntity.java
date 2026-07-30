@@ -685,16 +685,38 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         return grabInto(pEntity, source, pEntity.LAYOUT.fuel(), stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL));
     }
 
-    /** Convertit un item du slot de carburant en réserve de combustion. */
+    /**
+     * Convertit un item du slot de carburant en réserve de combustion.
+     *
+     * <p>Deux règles, toutes deux calquées sur le four vanilla (cf. BUG-041) :
+     *
+     * <p>1. <b>Consommer tardivement</b>, seulement quand la réserve ne suffit plus à
+     * payer un mouvement. Brûler dès qu'il reste de la place gaspillait la différence à
+     * chaque conversion.
+     *
+     * <p>2. <b>Écrêter, ne pas refuser.</b> L'ancienne garde exigeait que le
+     * {@code burnTime} entier tienne dans la place restante, si bien qu'un carburant plus
+     * riche que la capacité n'était <i>jamais</i> converti — mais l'inserter le ramenait
+     * quand même, et bouchait son propre slot sans un mot.
+     */
     private void burnFuel() {
         if (IS_ENERGY) return;
+
+        // La réserve couvre encore le prochain mouvement : rien à consommer.
+        if (this.current_fuel_value >= getFuelConsumptionPerAction()) return;
 
         ItemStack stack = this.itemStorage.getStackInSlot(LAYOUT.fuel());
         if (stack.isEmpty()) return;
 
         int burnTime = ForgeHooks.getBurnTime(stack, null);
         if (burnTime <= 0) return;
-        if (burnTime > this.getFuelCapacity() - this.current_fuel_value) return;
+
+        int wasted = Math.max(0, burnTime - (this.getFuelCapacity() - this.current_fuel_value));
+        if (wasted > 0) {
+            FactoryIO.LOGGER.debug(
+                    "{} en {} : {} ticks de combustion perdus, la réserve ne fait que {}",
+                    stack.getItem(), this.worldPosition, wasted, this.getFuelCapacity());
+        }
 
         this.addToCurrentFuelValue(burnTime);
 
