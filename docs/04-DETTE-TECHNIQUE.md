@@ -155,6 +155,24 @@ Le `Codec` donne gratuitement : validation avec messages d'erreur exploitables,
 sérialisation réseau (pour la synchro serveur→client des définitions), et
 compatibilité avec les datapacks.
 
+### ✅ Traité pour la sérialisation (FIO-034)
+
+[`InserterCodec`](../src/main/java/com/drimoz/factoryio/core/model/InserterCodec.java)
+lit et écrit les définitions, avec des motifs d'erreur qui nomment le champ fautif. Le
+modèle `Inserter` était déjà immuable et validé depuis BUG-014 ; la séparation en
+`InserterDefinition` / `InserterHolder` proposée ci-dessus n'a **pas** été faite, et n'est
+plus nécessaire à la sérialisation. Elle reste souhaitable pour sortir les quatre
+`Supplier` runtime du modèle de données, mais c'est un renommage massif à traiter avec
+[FIO-046](06-BACKLOG.md), pas un préalable.
+
+**Un piège de DFU, consigné parce qu'il a failli annuler tout le ticket** :
+`Codec#optionalFieldOf` est **clément**. Il rattrape l'échec de lecture d'un champ *présent
+mais invalide* et rend la valeur par défaut. Un codec écrit naïvement acceptait donc
+`"ticksPerSwing": -4000` et `"grabDistance": "loin"` exactement comme la lecture manuelle
+qu'il remplaçait : sans un mot. `ExtraCodecs.strictOptionalField` corrigerait cela mais
+n'existe pas en 1.20.1, d'où le `strictOptional` maison dans `InserterCodec`. Ce sont les
+tests qui l'ont révélé, pas la relecture.
+
 ---
 
 ## DT-05 — Pipeline d'assets : datagen au runtime dans le dossier `config`

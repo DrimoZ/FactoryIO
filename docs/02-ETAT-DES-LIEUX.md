@@ -12,7 +12,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > Le comportement est désormais largement vérifié. **Le mod est validé en jeu** par le
 > mainteneur (FIO-054, 30/07/2026), et 12 GameTests couvrent les invariants de monde —
 > conservation, ravitaillement, redstone, persistance, synchro de l'item en main, blocage
-> sur cible pleine, filtres par tag — doublés de 67 tests JUnit sur le calcul pur.
+> sur cible pleine, filtres par tag — doublés de 82 tests JUnit sur le calcul pur.
 >
 > Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil, pas
 > par une assertion. C'est la limite à garder en tête à chaque changement d'affichage.
@@ -26,14 +26,14 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Build ForgeGradle 6 / Forge 1.20.1 / Java 17 | ✅ | Gradle 8.8 |
 | Mappings Parchment | ✅ | `official` faisait échouer le chargement, cf. FIO-051 |
 | Registre data-driven d'inserters | ✅ | migré sur `DeferredRegister` lors du port |
-| Chargement de JSON utilisateur | 🟡 | lu depuis `config/`, pas depuis un datapack ; pas de rechargement à chaud ; pas de validation |
+| Chargement de JSON utilisateur | 🟡 | validé par `Codec`, erreurs nommées (FIO-034) ; toujours lu depuis `config/` et sans rechargement à chaud (FIO-037) |
 | Config Forge (`ForgeConfigSpec`) | 🟡 | lue en amont via `FactoryIOEarlyConfig` ; **prend effet au lancement suivant** (contrainte Forge, cf. BUG-001) |
 | Réseau (`SimpleChannel`) | ✅ | `init()` n'est plus appelé qu'une fois |
 | Pack de ressources/data généré au runtime | 🟡 | ne dépend plus du code client (BUG-005) ; toujours pas de régénération à chaud ni de nettoyage |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
 | Tests (GameTest) | ✅ | 12 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
-| Tests (JUnit) | ✅ | 67 tests de calcul pur, `./gradlew test`, exécutés par `build` |
+| Tests (JUnit) | ✅ | 82 tests de calcul pur, `./gradlew test`, exécutés par `build` |
 | Benchmark de charge | ✅ | consigné ; budget actif tenu, budget endormi à la limite ([`10`](10-BENCHMARKS.md), FIO-073, FIO-076) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
 

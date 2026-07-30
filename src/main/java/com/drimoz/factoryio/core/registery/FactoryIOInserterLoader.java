@@ -3,23 +3,24 @@ package com.drimoz.factoryio.core.registery;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.configs.FactoryIOEarlyConfig;
 import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.model.InserterCodec;
 import com.drimoz.factoryio.core.model.InserterDefaults;
-import com.google.gson.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.loading.FMLPaths;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 
+import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 public class FactoryIOInserterLoader {
-
-    // Private Properties
-
-    private static final Gson GSON = new GsonBuilder().create();
 
     // Interface (Global)
 
@@ -41,36 +42,36 @@ public class FactoryIOInserterLoader {
         }
 
         var files = dir.listFiles((FileFilter) FileFilterUtils.suffixFileFilter(".json"));
-
-        if (files == null)
-            return;
-
-
+        if (files == null) return;
 
         for (var file : files) {
-            JsonObject json;
-            InputStreamReader reader = null;
-            ResourceLocation id = null;
-            Inserter inserter = null;
+            String name = file.getName().replace(".json", "");
+            ResourceLocation id = new ResourceLocation(FactoryIO.MOD_ID, name);
 
-            try {
-                var parser = new JsonParser();
-                reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
-                json = parser.parse(reader).getAsJsonObject();
-                var name = file.getName().replace(".json", "");
-                id = new ResourceLocation(FactoryIO.MOD_ID, name);
+            read(file, id).ifPresent(FactoryIOInserterRegistry.getInstance()::registerInserter);
+        }
+    }
 
-                inserter = FactoryIOInserterCreator.create(id, json);
+    /**
+     * Lit un fichier de définition.
+     *
+     * <p>Une définition invalide est <b>écartée avec son motif</b>, pas silencieusement
+     * ramenée à des valeurs par défaut. C'est tout l'intérêt du codec : avant, une faute
+     * de frappe dans une clé passait pour une absence, donc pour le défaut, et l'inserter
+     * se retrouvait en jeu avec des caractéristiques que personne n'avait demandées
+     * (cf. FIO-034, DT-04).
+     */
+    private static Optional<Inserter> read(File file, ResourceLocation id) {
+        try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+            JsonElement json = JsonParser.parseReader(reader);
 
-                reader.close();
-            } catch (Exception e) {
-                FactoryIO.LOGGER.error("An error occurred while creating inserter with id {}", id, e);
-            } finally {
-                IOUtils.closeQuietly(reader);
-            }
+            return InserterCodec.forId(id).parse(JsonOps.INSTANCE, json)
+                    .resultOrPartial(error -> FactoryIO.LOGGER.error(
+                            "Définition d'inserter invalide dans {} : {}", file.getName(), error));
+        } catch (Exception e) {
+            FactoryIO.LOGGER.error("Lecture impossible de {}", file.getName(), e);
 
-            if (inserter != null)
-                FactoryIOInserterRegistry.getInstance().registerInserter(inserter);
+            return Optional.empty();
         }
     }
 

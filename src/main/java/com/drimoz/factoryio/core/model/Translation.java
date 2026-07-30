@@ -5,6 +5,8 @@ import com.drimoz.factoryio.core.registery.FactoryIOTranslations;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class Translation {
 
@@ -34,6 +36,15 @@ public class Translation {
 
     public HashMap<TranslationCode, String> getTranslations() {
         return translations;
+    }
+
+    /** @return les traductions indexées par code de langue, pour la sérialisation */
+    public Map<String, String> asMap() {
+        Map<String, String> map = new LinkedHashMap<>();
+
+        translations.forEach((code, value) -> map.put(code.getFullCode(), value));
+
+        return map;
     }
 
     public @Nullable String getTranslation(TranslationCode langCode) {

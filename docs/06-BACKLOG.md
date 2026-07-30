@@ -42,7 +42,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-031~~ | ✅ | M | Énergie et carburant via `ContainerData` (DT-01) | la barre se met à jour, zéro paquet custom |
 | ~~FIO-032~~ | ✅ | S | Corriger `checkPoweredState` : garde serveur, `affectedByRedstone`, flag `UPDATE_ALL` ([BUG-015](03-BUGS.md)) | la texture `_disabled` apparaît sans paquet custom |
 | ~~FIO-033~~ | ✅ | S | **Supprimer les 5 paquets S→C** devenus inutiles ([BUG-004](03-BUGS.md)) | 100 inserters = 0 paquet/s au repos |
-| 🟡 FIO-034 | P1 | M | `Codec` pour les définitions — le modèle est déjà immuable et validé, reste la sérialisation (DT-04) | JSON invalide → message d'erreur explicite |
+| ~~FIO-034~~ | ✅ | M | `Codec` pour les définitions (DT-04) : validation stricte, motifs nommant le champ fautif, aller-retour pour le réseau | JSON invalide → message explicite ; 15 tests JUnit |
 | ~~FIO-035~~ | ✅ | S | `InserterSlotLayout` : source unique des index de slots (DT-03) | JUnit sur les 4 combinaisons énergie×filtre |
 | ~~FIO-036~~ | ✅ | M | Rendre `filterable` indépendant de `useEnergy` ([BUG-014](03-BUGS.md)) | un `burner_filter_inserter` fonctionne |
 | FIO-037 | P1 | L | Définitions chargées par datapack (`SimpleJsonResourceReloadListener`) (DT-05) | `/reload` applique un changement de vitesse |

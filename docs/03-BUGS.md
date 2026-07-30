@@ -4,7 +4,7 @@
 >
 > Le mod est porté sur Forge 1.20.1 et **validé en jeu** par le mainteneur le 30/07/2026
 > (FIO-054). Quatorze GameTests couvrent les invariants de monde
-> (`./gradlew runGameTestServer`) et 67 tests JUnit le calcul pur (`./gradlew test`).
+> (`./gradlew runGameTestServer`) et 82 tests JUnit le calcul pur (`./gradlew test`).
 > Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil, pas
 > par une assertion.
 >
