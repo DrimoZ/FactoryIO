@@ -14,10 +14,12 @@ import java.util.function.Supplier;
 /**
  * Définition d'un type d'inserter.
  *
- * <p>Les paramètres de gameplay sont <b>immuables</b> et validés à la construction.
- * L'ancienne version exposait quatorze setters publics dont l'ordre d'appel comptait
- * — {@code setUseEnergy} devait précéder {@code setEnergyCapacity}, faute de quoi la
- * capacité était silencieusement remise à -1 (cf. DT-04).
+ * <p>Les paramètres de gameplay sont validés à la construction et regroupés dans un
+ * {@link InserterTuning} remplacé d'un bloc, jamais champ par champ. L'ancienne version
+ * exposait quatorze setters publics dont l'ordre d'appel comptait — {@code setUseEnergy}
+ * devait précéder {@code setEnergyCapacity}, faute de quoi la capacité était
+ * silencieusement remise à -1 (cf. DT-04). C'était l'ordre d'appel le problème, pas la
+ * mutabilité : un datapack doit pouvoir régler la vitesse à chaud (FIO-037).
  *
  * <p>Les valeurs hors bornes sont toujours ramenées dans le domaine valide, mais avec
  * un message dans le journal : une erreur dans un JSON utilisateur ne doit pas passer
@@ -32,20 +34,27 @@ public class Inserter {
 
     private final ResourceLocation id;
 
+    /**
+     * Traits structurels, figés à l'enregistrement.
+     *
+     * <p>Ils décident du plan d'inventaire, du type de block entity, du menu et de la
+     * géométrie : les changer supposerait de reconstruire blocs et items, donc
+     * d'invalider ceux déjà posés. Un datapack ne peut pas y toucher (cf. FIO-037).
+     */
     private final boolean filterable;
     private final boolean useEnergy;
-    private final boolean affectedByRedstone;
 
-    private final int energyCapacity;
-    private final int energyTransferRate;
-    private final int energyConsumption;
+    /**
+     * Réglages, remplaçables à chaud par un datapack.
+     *
+     * <p>Volontairement non final : c'est le seul état mutable qui subsiste, et il est
+     * remplacé d'un bloc plutôt que champ par champ — l'écueil que DT-04 reprochait aux
+     * quatorze setters d'origine était l'ordre d'appel, pas la mutabilité elle-même.
+     */
+    private InserterTuning tuning;
 
-    private final int fuelCapacity;
-    private final int fuelConsumption;
-
-    private final int grabDistance;
-    private final int ticksPerSwing;
-    private final int preferredItemCountPerAction;
+    /** Réglages d'origine, pour revenir en arrière quand un datapack disparaît. */
+    private final InserterTuning defaultTuning;
 
     private ResourceLocation texture;
 
@@ -102,18 +111,18 @@ public class Inserter {
         this.filterable = filterable;
         this.useEnergy = useEnergy;
 
-        this.affectedByRedstone = affectedByRedstone;
+        this.defaultTuning = new InserterTuning(
+                affectedByRedstone,
+                atLeastOne(id, "grabDistance", grabDistance),
+                atLeastOne(id, "ticksPerSwing", ticksPerSwing),
+                atLeastOne(id, "preferredItemCountPerAction", preferredItemCountPerAction),
+                useEnergy ? atLeastOne(id, "energyCapacity", energyCapacity) : UNUSED,
+                useEnergy ? atLeastOne(id, "energyTransferRate", energyTransferRate) : UNUSED,
+                useEnergy ? atLeastOne(id, "energyConsumption", energyConsumption) : UNUSED,
+                useEnergy ? UNUSED : atLeastOne(id, "fuelCapacity", fuelCapacity),
+                useEnergy ? UNUSED : atLeastOne(id, "fuelConsumption", fuelConsumption));
 
-        this.grabDistance = atLeastOne(id, "grabDistance", grabDistance);
-        this.ticksPerSwing = atLeastOne(id, "ticksPerSwing", ticksPerSwing);
-        this.preferredItemCountPerAction = atLeastOne(id, "preferredItemCountPerAction", preferredItemCountPerAction);
-
-        this.energyCapacity = useEnergy ? atLeastOne(id, "energyCapacity", energyCapacity) : UNUSED;
-        this.energyTransferRate = useEnergy ? atLeastOne(id, "energyTransferRate", energyTransferRate) : UNUSED;
-        this.energyConsumption = useEnergy ? atLeastOne(id, "energyConsumption", energyConsumption) : UNUSED;
-
-        this.fuelCapacity = useEnergy ? UNUSED : atLeastOne(id, "fuelCapacity", fuelCapacity);
-        this.fuelConsumption = useEnergy ? UNUSED : atLeastOne(id, "fuelConsumption", fuelConsumption);
+        this.tuning = this.defaultTuning;
 
         this.texture = new ResourceLocation(FactoryIO.MOD_ID, "block/inserters/" + getName());
     }
@@ -144,36 +153,36 @@ public class Inserter {
     }
 
     public boolean isAffectedByRedstone() {
-        return affectedByRedstone;
+        return tuning.affectedByRedstone();
     }
 
     public int getEnergyCapacity() {
-        return energyCapacity;
+        return tuning.energyCapacity();
     }
 
     public int getEnergyTransferRate() {
-        return energyTransferRate;
+        return tuning.energyTransferRate();
     }
 
     public int getEnergyConsumption() {
-        return energyConsumption;
+        return tuning.energyConsumption();
     }
 
     public int getFuelCapacity() {
-        return fuelCapacity;
+        return tuning.fuelCapacity();
     }
 
     public int getFuelConsumption() {
-        return fuelConsumption;
+        return tuning.fuelConsumption();
     }
 
     public int getGrabDistance() {
-        return grabDistance;
+        return tuning.grabDistance();
     }
 
     /** Durée d'un mouvement de bras, en ticks. */
     public int getTicksPerSwing() {
-        return ticksPerSwing;
+        return tuning.ticksPerSwing();
     }
 
     /**
@@ -184,17 +193,17 @@ public class Inserter {
      * L'oublier fait annoncer le double du débit réel (cf. BUG-038).
      */
     public int getTicksPerItem() {
-        return 2 * ticksPerSwing;
+        return 2 * getTicksPerSwing();
     }
 
     /** Débit théorique en items par seconde, à 20 ticks par seconde. */
     public double getItemsPerSecond() {
-        return 20.0 * preferredItemCountPerAction / getTicksPerItem();
+        return 20.0 * getPreferredItemCountPerAction() / getTicksPerItem();
     }
 
     /** Taille de la main : nombre d'items déplacés par cycle. */
     public int getPreferredItemCountPerAction() {
-        return preferredItemCountPerAction;
+        return tuning.handSize();
     }
 
     public ResourceLocation getTexture() {
@@ -207,6 +216,28 @@ public class Inserter {
 
     public Translation getTranslation() {
         return translation;
+    }
+
+    // Interface (Réglages rechargeables)
+
+    /** Réglages courants. */
+    public InserterTuning getTuning() {
+        return this.tuning;
+    }
+
+    /** Réglages tels que définis au chargement, avant tout datapack. */
+    public InserterTuning getDefaultTuning() {
+        return this.defaultTuning;
+    }
+
+    /** Remplace les réglages — un datapack vient d'être appliqué (cf. FIO-037). */
+    public void applyTuning(InserterTuning tuning) {
+        this.tuning = tuning;
+    }
+
+    /** Revient aux réglages d'origine : plus aucun datapack ne surcharge cet inserter. */
+    public void resetTuning() {
+        this.tuning = this.defaultTuning;
     }
 
     // Interface (Références runtime)
@@ -264,15 +295,15 @@ public class Inserter {
                 "id=" + id +
                 ", filterable=" + filterable +
                 ", useEnergy=" + useEnergy +
-                ", affectedByRedstone=" + affectedByRedstone +
-                ", energyCapacity=" + energyCapacity +
-                ", energyTransferRate=" + energyTransferRate +
-                ", energyConsumption=" + energyConsumption +
-                ", fuelCapacity=" + fuelCapacity +
-                ", fuelConsumption=" + fuelConsumption +
-                ", grabDistance=" + grabDistance +
-                ", ticksPerSwing=" + ticksPerSwing +
-                ", preferredItemCountPerAction=" + preferredItemCountPerAction +
+                ", affectedByRedstone=" + tuning.affectedByRedstone() +
+                ", energyCapacity=" + tuning.energyCapacity() +
+                ", energyTransferRate=" + tuning.energyTransferRate() +
+                ", energyConsumption=" + tuning.energyConsumption() +
+                ", fuelCapacity=" + tuning.fuelCapacity() +
+                ", fuelConsumption=" + tuning.fuelConsumption() +
+                ", grabDistance=" + tuning.grabDistance() +
+                ", ticksPerSwing=" + getTicksPerSwing() +
+                ", preferredItemCountPerAction=" + tuning.handSize() +
                 ", texture=" + texture +
                 '}';
     }

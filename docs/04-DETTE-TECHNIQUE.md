@@ -213,6 +213,23 @@ Pour les **définitions** elles-mêmes, la bonne primitive Minecraft est un
 pas un dossier `config/`. Avantages : rechargement `/reload`, synchronisation
 serveur→client automatique, packaging en modpack, surcharge par datapack.
 
+### ✅ Fait pour les réglages, impossible pour la liste (FIO-037)
+
+Le listener existe
+([`FactoryIOInserterReloadListener`](../src/main/java/com/drimoz/factoryio/core/registery/FactoryIOInserterReloadListener.java))
+et la synchronisation serveur→client passe par `OnDatapackSyncEvent`.
+
+Mais la phrase ci-dessus se trompait sur un point, et c'est important pour la suite :
+**un datapack ne peut pas décider quels inserters existent.** `useEnergy` et `filterable`
+déterminent le bloc, l'item, le block entity et le menu, tous enregistrés au chargement du
+mod ; un datapack est lu bien après. Les rendre dynamiques demanderait un registre à chaud
+que Minecraft ne fournit pas, et invaliderait les blocs déjà posés dans les mondes
+existants.
+
+La séparation retenue est donc : **`config/` décide qui existe, le datapack règle comment
+ils se comportent.** Ce n'est pas un compromis d'implémentation mais la limite du système
+de registres — le noter ici évite de rouvrir le sujet à chaque relecture de DT-05.
+
 ---
 
 ## DT-06 — API d'enregistrement Forge *legacy* — ✅ **résolu**

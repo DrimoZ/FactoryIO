@@ -26,13 +26,13 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Build ForgeGradle 6 / Forge 1.20.1 / Java 17 | ✅ | Gradle 8.8 |
 | Mappings Parchment | ✅ | `official` faisait échouer le chargement, cf. FIO-051 |
 | Registre data-driven d'inserters | ✅ | migré sur `DeferredRegister` lors du port |
-| Chargement de JSON utilisateur | 🟡 | validé par `Codec`, erreurs nommées (FIO-034) ; toujours lu depuis `config/` et sans rechargement à chaud (FIO-037) |
+| Chargement de JSON utilisateur | ✅ | validé par `Codec`, erreurs nommées (FIO-034) ; la **liste** vient de `config/`, les **réglages** d'un datapack rechargeable à chaud (FIO-037) |
 | Config Forge (`ForgeConfigSpec`) | 🟡 | lue en amont via `FactoryIOEarlyConfig` ; **prend effet au lancement suivant** (contrainte Forge, cf. BUG-001) |
-| Réseau (`SimpleChannel`) | ✅ | `init()` n'est plus appelé qu'une fois |
+| Réseau (`SimpleChannel`) | ✅ | 2 paquets : réglages du GUI (C→S) et réglages d'inserter à la connexion / `/reload` (S→C) |
 | Pack de ressources/data généré au runtime | 🟡 | ne dépend plus du code client (BUG-005) ; toujours pas de régénération à chaud ni de nettoyage |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 12 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
+| Tests (GameTest) | ✅ | 13 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
 | Tests (JUnit) | ✅ | 82 tests de calcul pur, `./gradlew test`, exécutés par `build` |
 | Benchmark de charge | ✅ | consigné ; budget actif tenu, budget endormi à la limite ([`10`](10-BENCHMARKS.md), FIO-073, FIO-076) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |

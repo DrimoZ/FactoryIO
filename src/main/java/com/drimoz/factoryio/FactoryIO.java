@@ -5,7 +5,9 @@ import com.drimoz.factoryio.core.datagen.FactoryIODataGenerators;
 import com.drimoz.factoryio.core.init.FactoryIOItems;
 import com.drimoz.factoryio.core.init.FactoryIONetworks;
 import com.drimoz.factoryio.core.init.FactoryIORegistries;
+import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CInserterTunings;
 import com.drimoz.factoryio.core.registery.FactoryIOInserterLoader;
+import com.drimoz.factoryio.core.registery.FactoryIOInserterReloadListener;
 import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
 import com.drimoz.factoryio.core.ressourcepack.EPackType;
 import com.drimoz.factoryio.core.ressourcepack.FactoryIORepositorySource;
@@ -14,7 +16,10 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.server.packs.PackType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddPackFindersEvent;
+import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.event.OnDatapackSyncEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -91,6 +96,36 @@ public class FactoryIO
         // Ne PAS ré-appeler FactoryIONetworks.init() ici : NetworkRegistry lève une
         // IllegalArgumentException si le canal factory_io:messages est déjà enregistré.
         FactoryIOInserterRegistry.getInstance().onCommonSetup();
+    }
+
+    /**
+     * Branche la lecture des réglages d'inserter apportés par un datapack (FIO-037).
+     *
+     * <p>Sur le bus Forge et non sur celui du mod : c'est un événement de serveur, rejoué
+     * à chaque {@code /reload}.
+     */
+    @SubscribeEvent
+    public void onAddReloadListener(AddReloadListenerEvent event) {
+        event.addListener(new FactoryIOInserterReloadListener());
+    }
+
+    /**
+     * Transmet les réglages au client, à la connexion et après chaque {@code /reload}.
+     *
+     * <p>{@code OnDatapackSyncEvent} est exactement le moment voulu : Forge le déclenche
+     * pour un joueur qui se connecte, puis pour tous après un rechargement de datapacks.
+     */
+    @SubscribeEvent
+    public void onDatapackSync(OnDatapackSyncEvent event) {
+        FactoryIOSyncS2CInserterTunings message = FactoryIOSyncS2CInserterTunings.current();
+
+        if (event.getPlayer() != null) {
+            FactoryIONetworks.sendToPlayer(message, event.getPlayer());
+            return;
+        }
+
+        event.getPlayerList().getPlayers()
+                .forEach(player -> FactoryIONetworks.sendToPlayer(message, player));
     }
 
     // L'enregistrement des écrans et des renderers vit dans FactoryIOClientEvents,

@@ -6,6 +6,7 @@ import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
 import com.drimoz.factoryio.core.init.FactoryIOItems;
 import com.drimoz.factoryio.core.inserters.InserterState;
 import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.model.InserterTuning;
 import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -242,6 +243,59 @@ public class FactoryIOGameTests {
         helper.succeed();
     }
 
+    /**
+     * Un réglage de datapack doit changer le comportement, pas seulement la définition
+     * (FIO-037).
+     *
+     * <p>Le test applique le réglage comme le fait le listener de rechargement, puis
+     * vérifie que l'inserter <b>déjà posé</b> en tient compte : c'est le point qui casserait
+     * si le block entity avait copié la vitesse à sa construction au lieu de la relire.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void datapackTuningReachesPlacedInserters(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+
+        FactoryIOInserterBlockEntity blockEntity = inserter(helper);
+        Inserter definition = definitionOf("burner_inserter");
+
+        int original = blockEntity.getTicksPerSwing();
+
+        try {
+            InserterTuning slower = new InserterTuning(
+                    definition.isAffectedByRedstone(),
+                    definition.getGrabDistance(),
+                    original * 2,
+                    definition.getPreferredItemCountPerAction(),
+                    definition.getEnergyCapacity(),
+                    definition.getEnergyTransferRate(),
+                    definition.getEnergyConsumption(),
+                    definition.getFuelCapacity(),
+                    definition.getFuelConsumption());
+
+            definition.applyTuning(slower);
+
+            helper.assertTrue(blockEntity.getTicksPerSwing() == original * 2,
+                    "L'inserter posé n'a pas suivi le réglage : " + blockEntity.getTicksPerSwing()
+                            + " au lieu de " + (original * 2));
+
+            // Et le retrait du datapack rend la vitesse **du barème**, pas la dernière
+            // valeur observée : c'est toute la raison d'être du réglage par défaut, et ce
+            // qui permet à un datapack retiré de ne pas laisser de trace.
+            definition.resetTuning();
+
+            int fromDefaults = definition.getDefaultTuning().ticksPerSwing();
+
+            helper.assertTrue(blockEntity.getTicksPerSwing() == fromDefaults,
+                    "Le retrait du réglage n'a pas rendu la vitesse du barème : "
+                            + blockEntity.getTicksPerSwing() + " au lieu de " + fromDefaults);
+        } finally {
+            // Le barème est partagé par tous les tests : ne pas le laisser modifié.
+            definition.resetTuning();
+        }
+
+        helper.succeed();
+    }
+
     /** Le mode blacklist doit survivre à un déchargement du block entity (BUG-008). */
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void filterModeSurvivesReload(GameTestHelper helper) {
@@ -384,14 +438,20 @@ public class FactoryIOGameTests {
 
     // Inner work
 
-    private static void setupChain(GameTestHelper helper, String inserterName) {
-        helper.setBlock(SOURCE, Blocks.CHEST);
-        helper.setBlock(TARGET, Blocks.CHEST);
-
+    private static Inserter definitionOf(String inserterName) {
         Inserter definition = FactoryIOInserterRegistry.getInstance().getInserterByName(inserterName);
         if (definition == null) {
             throw new IllegalStateException("Inserter introuvable : " + inserterName);
         }
+
+        return definition;
+    }
+
+    private static void setupChain(GameTestHelper helper, String inserterName) {
+        helper.setBlock(SOURCE, Blocks.CHEST);
+        helper.setBlock(TARGET, Blocks.CHEST);
+
+        Inserter definition = definitionOf(inserterName);
 
         helper.setBlock(INSERTER, definition.getBlock().get().defaultBlockState()
                 .setValue(FactoryIOInserterEntityBlock.FACING, Direction.EAST));

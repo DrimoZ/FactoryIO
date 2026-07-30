@@ -45,7 +45,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-034~~ | ✅ | M | `Codec` pour les définitions (DT-04) : validation stricte, motifs nommant le champ fautif, aller-retour pour le réseau | JSON invalide → message explicite ; 15 tests JUnit |
 | ~~FIO-035~~ | ✅ | S | `InserterSlotLayout` : source unique des index de slots (DT-03) | JUnit sur les 4 combinaisons énergie×filtre |
 | ~~FIO-036~~ | ✅ | M | Rendre `filterable` indépendant de `useEnergy` ([BUG-014](03-BUGS.md)) | un `burner_filter_inserter` fonctionne |
-| FIO-037 | P1 | L | Définitions chargées par datapack (`SimpleJsonResourceReloadListener`) (DT-05) | `/reload` applique un changement de vitesse |
+| ~~FIO-037~~ | ✅ | L | **Réglages** par datapack (`SimpleJsonResourceReloadListener`) + synchro client sur `OnDatapackSyncEvent` (DT-05). Un datapack règle les inserters existants ; il n'en **crée** pas — voir la note sous le tableau. | `/reload` applique un changement de vitesse ; vérifié de bout en bout |
 | ~~FIO-038~~ | ✅ | M | Générer les assets par défaut via `runData` et les committer (DT-05) | `src/generated/resources` versionné |
 | FIO-039 | P1 | M | Génération runtime confinée au client, en mémoire, invalidée au reload (DT-05) | ajouter un JSON puis F3+T suffit |
 | ~~FIO-040~~ | ✅ | L | Migration vers `DeferredRegister` (DT-06) — **fait pendant le port** | plus aucun `setRegistryName` |
@@ -59,6 +59,25 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-056~~ | ✅ | XS | `wakeUp()` sur `onEnergyChanged` ([BUG-037](03-BUGS.md)) | le courant qui revient relance l'inserter dans le tick |
 | ~~FIO-057~~ | ✅ | XS | Corriger le `README` : nom de jar et mappings ([BUG-039](03-BUGS.md)) | — |
 | ~~FIO-058~~ | ✅ | XS | Carburant : consommer tardivement, et écrêter au lieu de refuser ([BUG-041](03-BUGS.md)) | un carburant trop riche ne bloque plus le slot |
+
+### Ce qu'un datapack peut faire (FIO-037)
+
+Il **règle** : vitesse, portée, taille de main, coûts. À chaud, via `/reload`.
+
+Il ne **crée** pas d'inserter, n'en supprime pas, et ne change ni `useEnergy` ni
+`filterable`. Ces traits décident du bloc, de l'item, du block entity et du menu, tous
+enregistrés au chargement du mod — bien avant qu'un datapack ne soit lu. Les rendre
+dynamiques demanderait un registre à chaud, que Minecraft ne fournit pas, et invaliderait
+les blocs déjà posés dans les mondes existants. **La liste des inserters reste donc pilotée
+par `config/factory_io/inserters/`** ; un JSON de datapack qui vise un inserter inconnu
+est signalé dans le journal, pas ignoré.
+
+Le chemin scruté est `data/<namespace>/factory_io/inserters/<nom>.json`. Il n'est pas
+couvert par un test automatique — un datapack de test ne survivrait pas au monde temporaire
+que crée `runGameTestServer`. Il a été **vérifié à la main le 30/07/2026** en déposant
+temporairement un `burner_inserter.json` dans `src/main/resources/data/factory_io/`, le
+datapack intégré du mod : le journal a confirmé « 1 réglage(s) appliqué(s) », et la vitesse
+imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de doute.
 
 ## Épic C — Inserters (Phase 2)
 
