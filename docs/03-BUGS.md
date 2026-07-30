@@ -22,7 +22,7 @@ Sévérités :
 | ID | Sév. | Titre | Fichier |
 |---|---|---|---|
 | [BUG-001](#bug-001) | ✅ S0 | Config lue avant enregistrement → réglages ignorés | `FactoryIO.java` |
-| [BUG-002](#bug-002) | ✅ S0 | `FactoryIONetworks.init()` appelé deux fois → exception | `FactoryIO.java` |
+| [BUG-002](#bug-002) | ✅ S0 | `ModNetworks.init()` appelé deux fois → exception | `FactoryIO.java` |
 | [BUG-003](#bug-003) | ✅ S1 | Les inserters électriques ne consomment aucune énergie | `…InserterBlockEntity.java` |
 | [BUG-004](#bug-004) | ✅ S1 | Broadcast réseau à tous les joueurs, chaque tick, par inserter | `…InserterBlockEntity.java` |
 | [BUG-005](#bug-005) | ✅ S1 | `Minecraft.getInstance()` sur serveur dédié | `FactoryIOPackResources.java` |
@@ -35,7 +35,7 @@ Sévérités :
 | [BUG-012](#bug-012) | ✅ S2 | Un burner inserter vide ne peut plus se recharger | `…InserterBlockEntity.java` |
 | [BUG-013](#bug-013) | ✅ S2 | Clamp du carburant sans effet → valeurs négatives | `…InserterBlockEntity.java` |
 | [BUG-014](#bug-014) | ✅ S2 | `filterable` force `useEnergy` | `Inserter.java` |
-| [BUG-015](#bug-015) | ✅ S2 | `affectedByRedstone` ignoré + update côté client | `FactoryIOEntityBlock.java` |
+| [BUG-015](#bug-015) | ✅ S2 | `affectedByRedstone` ignoré + update côté client | `ModEntityBlock.java` |
 | [BUG-016](#bug-016) | S2 | Animation ciblant un bone inexistant | `animated_block.animation.json` |
 | [BUG-017](#bug-017) | ✅ S2 | Boîte de collision = cube plein | `…InserterEntityBlock.java` |
 | [BUG-018](#bug-018) | ✅ S2 | `setEnabled()` sans effet | `…InserterBlockEntity.java` |
@@ -50,7 +50,7 @@ Sévérités :
 | [BUG-027](#bug-027) | ✅ S3 | `mods.toml` non rempli | `META-INF/mods.toml` |
 | [BUG-028](#bug-028) | ✅ S3 | Logs de debug au niveau `ERROR` | `…InserterCreator.java` |
 | [BUG-029](#bug-029) | ✅ S3 | Tooltips : unités incorrectes | `…InserterItem.java` |
-| [BUG-030](#bug-030) | ✅ S3 | Creative tab avec une clé générique | `FactoryIOCreativeTab.java` |
+| [BUG-030](#bug-030) | ✅ S3 | Creative tab avec une clé générique | `ModCreativeTab.java` |
 | [BUG-031](#bug-031) | ✅ S3 | `PACK_FORMAT` incohérent (8 vs 9) | `…ResourcePackHandler.java` |
 | [BUG-032](#bug-032) | ✅ S3 | Namespace forcé lors de l'enregistrement | `…InserterRegistry.java` |
 | [BUG-033](#bug-033) | ✅ S3 | Textures d'items orphelines | `assets/…/textures/item/` |
@@ -71,13 +71,13 @@ Sévérités :
 
 ```java
 public FactoryIO() {
-    FactoryIOInserterLoader.setup();               // ← lit SHOULD_GEN_*.get()
+    InserterLoader.setup();               // ← lit SHOULD_GEN_*.get()
     ...
     ModLoadingContext.get().registerConfig(COMMON, SPEC, "...");  // ← seulement ici
 ```
 
-`FactoryIOInserterLoader.createDefaultInserters()` appelle
-`FactoryIOCommonConfigs.SHOULD_GEN_*.get()`. À ce stade, `spec.childConfig` est
+`InserterLoader.createDefaultInserters()` appelle
+`CommonConfig.SHOULD_GEN_*.get()`. À ce stade, `spec.childConfig` est
 encore `null` ; en 1.18.2 `ForgeConfigSpec.ConfigValue#get()` renvoie alors
 **silencieusement la valeur par défaut**.
 
@@ -92,14 +92,14 @@ datapack (voir [BACKLOG FIO-021](06-BACKLOG.md)).
 
 ---
 
-## BUG-002 — `FactoryIONetworks.init()` appelé deux fois (S0)
+## BUG-002 — `ModNetworks.init()` appelé deux fois (S0)
 
 **Fichier** : [`FactoryIO.java:54`](../src/main/java/com/drimoz/factoryio/FactoryIO.java#L54) et [`:94`](../src/main/java/com/drimoz/factoryio/FactoryIO.java#L94)
 
 ```java
-FactoryIONetworks.init();                       // ligne 54, constructeur
+ModNetworks.init();                       // ligne 54, constructeur
 ...
-event.enqueueWork(FactoryIONetworks::init);     // ligne 94, onCommonSetup
+event.enqueueWork(ModNetworks::init);     // ligne 94, onCommonSetup
 ```
 
 `init()` appelle `NetworkRegistry.ChannelBuilder.named(factory_io:messages).simpleChannel()`.
@@ -121,10 +121,10 @@ Forge ne laisse pas d'échappatoire.
 
 ## BUG-003 — Les inserters électriques ne consomment aucune énergie (S1)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:121-129`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L121)
+**Fichier** : [`InserterBlockEntity.java:121-129`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L121)
 
 ```java
-this.energyStorage = new FactoryIOEnergyContainer(...) {
+this.energyStorage = new EnergyContainer(...) {
     @Override public int extractEnergy(int maxExtract, boolean simulate) { return 0; }
     @Override public boolean canExtract() { return false; }
 };
@@ -150,12 +150,12 @@ dès qu'ils ont reçu 1 FE. Toute la progression énergétique du mod est neutra
 
 ## BUG-004 — Broadcast réseau par tick à tous les joueurs (S1)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:293-310`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L293)
+**Fichier** : [`InserterBlockEntity.java:293-310`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L293)
 
 ```java
-FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnabledState(...));  // PacketDistributor.ALL
-FactoryIONetworks.sendToClients(new FactoryIOSyncS2CEnergy(...));
-FactoryIONetworks.sendToClients(new FactoryIOSyncS2CWhitelistButton(...));
+ModNetworks.sendToClients(new FactoryIOSyncS2CEnabledState(...));  // PacketDistributor.ALL
+ModNetworks.sendToClients(new FactoryIOSyncS2CEnergy(...));
+ModNetworks.sendToClients(new FactoryIOSyncS2CWhitelistButton(...));
 ```
 
 Envoyé **inconditionnellement**, à chaque tick, pour chaque inserter, à **tous**
@@ -182,11 +182,11 @@ usine. Rédhibitoire pour un mod dont c'est le sujet.
 
 ## BUG-005 — `Minecraft.getInstance()` sur serveur dédié (S1)
 
-**Fichier** : [`FactoryIOPackResources.java:41`](../src/main/java/com/drimoz/factoryio/core/ressourcepack/FactoryIOPackResources.java#L41)
+**Fichier** : `FactoryIOPackResources.java:41` *(supprimée depuis)*
 
 ```java
 InputStream in = Minecraft.getInstance().getResourceManager()
-        .getResource(FactoryIOResourcePackHandler.DUMMY_PACK_META).getInputStream();
+        .getResource(PackConstants.DUMMY_PACK_META).getInputStream();
 ```
 
 Cette classe est instanciée pour le pack **`SERVER_DATA`** aussi
@@ -204,7 +204,7 @@ supprimer complètement cette surcharge.
 
 ## BUG-006 — Items détruits lors des transferts (S1)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:553-563`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L553) et `:580-588`
+**Fichier** : [`InserterBlockEntity.java:553-563`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L553) et `:580-588`
 
 ```java
 pEntity.insertItemInternal(
@@ -221,7 +221,7 @@ slot carburant, une source contenant du `charcoal`. `charcoal` passe le test du
 tag `inserter_fuel`, est extrait de la source, puis `canItemStacksStack` échoue
 → `insertItemInternal` renvoie la pile entière → **le charbon de bois disparaît**.
 
-Idem dans `expelItems` ([`:620-626`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L620)),
+Idem dans `expelItems` ([`:620-626`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L620)),
 où le retour de `insertItem` est ignoré.
 
 **Impact** : perte d'items silencieuse. En modpack, c'est un bug de confiance
@@ -242,11 +242,11 @@ insertItemInternal(slot, source.extractItem(i, movable, false), false);
 
 ## BUG-007 — Paquet C→S sans validation (S1)
 
-**Fichier** : [`FactoryIOSyncC2SWhitelistButton.java:45-56`](../src/main/java/com/drimoz/factoryio/core/network/packet/FactoryIOSyncC2SWhitelistButton.java#L45)
+**Fichier** : `FactoryIOSyncC2SWhitelistButton.java:45-56` *(supprimée depuis)*
 
 ```java
-FactoryIOInserterBlockEntity te =
-        (FactoryIOInserterBlockEntity) player.getLevel().getBlockEntity(pos);   // ligne 47
+InserterBlockEntity te =
+        (InserterBlockEntity) player.getLevel().getBlockEntity(pos);   // ligne 47
 if (player.level.isLoaded(pos)) {                                              // ligne 48
 ```
 
@@ -267,16 +267,16 @@ ServerPlayer player = ctx.get().getSender();
 if (player == null) return;
 if (!player.level.isLoaded(pos)) return;
 if (player.distanceToSqr(Vec3.atCenterOf(pos)) > 64.0) return;
-if (!(player.containerMenu instanceof FactoryIOInserterContainer menu)) return;
+if (!(player.containerMenu instanceof InserterContainer menu)) return;
 if (!menu.getBlockEntity().getBlockPos().equals(pos)) return;
-if (!(player.level.getBlockEntity(pos) instanceof FactoryIOInserterBlockEntity te)) return;
+if (!(player.level.getBlockEntity(pos) instanceof InserterBlockEntity te)) return;
 ```
 
 ---
 
 ## BUG-008 — État whitelist et cooldown non persistés (S2)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:254-279`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L254)
+**Fichier** : [`InserterBlockEntity.java:254-279`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L254)
 
 `saveAdditional` n'écrit que `inserterInventory` et le niveau d'énergie/carburant.
 Les champs `isWhitelist` et `current_cooldown` sont perdus.
@@ -291,7 +291,7 @@ whitelist. Une usine configurée en blacklist se dérègle silencieusement.
 
 ## BUG-009 — Shift-clic impossible depuis l'inventaire joueur (S2)
 
-**Fichier** : [`FactoryIOInserterContainer.java:140`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterContainer.java#L140)
+**Fichier** : [`InserterContainer.java:140`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterContainer.java#L140)
 
 ```java
 if (!moveItemStackTo(sourceStack, TE_INVENTORY_FIRST_SLOT_INDEX,
@@ -313,7 +313,7 @@ Cette méthode mérite en réalité d'être réécrite entièrement (voir
 
 ## BUG-010 — Waterlogging jamais appliqué (S2)
 
-**Fichier** : [`FactoryIOEntityBlockWaterLogged.java:35-39`](../src/main/java/com/drimoz/factoryio/core/generic/block/FactoryIOEntityBlockWaterLogged.java#L35)
+**Fichier** : [`WaterloggedEntityBlock.java:35-39`](../src/main/java/com/drimoz/factoryio/core/generic/block/WaterloggedEntityBlock.java#L35)
 
 ```java
 FluidState fluidState = pContext.getLevel().getFluidState(pContext.getClickedPos());
@@ -341,11 +341,11 @@ public BlockState getStateForPlacement(BlockPlaceContext ctx) {
 
 ## BUG-011 — Aucune traduction générée par défaut (S2)
 
-**Fichier** : [`FactoryIOPackGeneratorManager.java:43-45`](../src/main/java/com/drimoz/factoryio/core/ressourcepack/FactoryIOPackGeneratorManager.java#L43)
+**Fichier** : [`PackGenerator.java:43-45`](../src/main/java/com/drimoz/factoryio/core/resourcepack/PackGenerator.java#L43)
 
 ```java
-FactoryIOTranslations.getINSTANCE().getTranslationList().forEach(code ->
-        generator.addProvider(new FactoryIOLangGenerator(generator, MOD_ID, code)));
+Translations.getINSTANCE().getTranslationList().forEach(code ->
+        generator.addProvider(new ModLangGenerator(generator, MOD_ID, code)));
 ```
 
 `translationList` n'est alimenté que par
@@ -369,7 +369,7 @@ dans `src/main/resources` et ne générer que les surcharges.
 
 ## BUG-012 — Un burner inserter vide ne peut plus se recharger (S2)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:542`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L542)
+**Fichier** : [`InserterBlockEntity.java:542`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L542)
 
 ```java
 if (!pEntity.IS_ENERGY && !pEntity.itemStorage.getStackInSlot(FUEL_SLOT).isEmpty()) {
@@ -398,7 +398,7 @@ if (!pEntity.IS_ENERGY && needsFuel) { ... }
 
 ## BUG-013 — Clamp du carburant sans effet (S2)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:397-403`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L397)
+**Fichier** : [`InserterBlockEntity.java:397-403`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L397)
 
 ```java
 public void overrideCurrentFuelValue(int fuel) {
@@ -441,7 +441,7 @@ au constructeur carburant et à `FactoryIOInserterCreator`.
 
 ## BUG-015 — `affectedByRedstone` ignoré + update côté client (S2)
 
-**Fichier** : [`FactoryIOEntityBlock.java:60-77`](../src/main/java/com/drimoz/factoryio/core/generic/block/FactoryIOEntityBlock.java#L60)
+**Fichier** : [`ModEntityBlock.java:60-77`](../src/main/java/com/drimoz/factoryio/core/generic/block/ModEntityBlock.java#L60)
 
 ```java
 public void neighborChanged(BlockState pState, Level pLevel, ...) {
@@ -501,7 +501,7 @@ temps — voir [`07-DESIGN-INSERTERS.md`](07-DESIGN-INSERTERS.md) § Animation.
 
 ## BUG-017 — Boîte de collision = cube plein (S2)
 
-**Fichier** : [`FactoryIOInserterEntityBlock.java:32`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterEntityBlock.java#L32)
+**Fichier** : [`InserterBlock.java:32`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlock.java#L32)
 
 ```java
 private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 16, 16);
@@ -521,7 +521,7 @@ sélection plus grand que la collision.
 
 ## BUG-018 — `setEnabled()` sans effet (S2)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:435-437`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L435)
+**Fichier** : [`InserterBlockEntity.java:435-437`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L435)
 
 ```java
 public void setEnabled(boolean enabled) {
@@ -538,7 +538,7 @@ c'est une bombe à retardement.
 
 ## BUG-019 — `getInnerFuelCapacity()` récursion infinie (S2)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:391-395`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L391)
+**Fichier** : [`InserterBlockEntity.java:391-395`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L391)
 
 ```java
 public int getInnerFuelCapacity() {
@@ -553,7 +553,7 @@ Jamais appelée aujourd'hui. À supprimer ou à corriger (`return inserter.getFu
 
 ## BUG-020 — NPE potentiel à l'ouverture du menu (S2)
 
-**Fichier** : [`FactoryIOInserterContainer.java:61-62`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterContainer.java#L61)
+**Fichier** : [`InserterContainer.java:61-62`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterContainer.java#L61)
 
 ```java
 this.BLOCK_ENTITY = inserterData.getBlockEntityType().get().getBlockEntity(pLevel, pPos);
@@ -577,7 +577,7 @@ d'introduire une fabrique de menu capable d'échouer — hors périmètre de la 
 
 ## BUG-021 — Énergie exposée uniquement sur `DOWN` (S2)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:230`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L230)
+**Fichier** : [`InserterBlockEntity.java:230`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L230)
 
 ```java
 if (cap == CapabilityEnergy.ENERGY && IS_ENERGY && side == Direction.DOWN) return lazyEnergy.cast();
@@ -600,7 +600,7 @@ sortie — un hopper peut donc pomper dans l'inserter par n'importe quel côté.
 
 ## BUG-022 — Éjection tout-ou-rien dans un seul slot (S3)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:609-630`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L609)
+**Fichier** : [`InserterBlockEntity.java:609-630`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L609)
 
 `expelItems` cherche **un** slot capable d'accepter la pile entière. Si le
 `stack_inserter` tient 3 items et que chaque slot cible n'a de place que pour 2,
@@ -613,7 +613,7 @@ et réinjecter ce qui reste dans le buffer.
 
 ## BUG-023 — Mauvaise face passée à la capability en éjection (S3)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:604`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L604)
+**Fichier** : [`InserterBlockEntity.java:604`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L604)
 
 ```java
 pBackEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, getFacing(pEntity))
@@ -631,7 +631,7 @@ façon — mais c'est faux pour tout bloc ayant des faces asymétriques.
 
 ## BUG-024 — Carburant : NBT perdu, lava bucket mort (S3)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:337-348`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L337)
+**Fichier** : [`InserterBlockEntity.java:337-348`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L337)
 
 ```java
 pEntity.itemStorage.setStackInSlot(FUEL_SLOT, new ItemStack(stack.getItem(), stack.getCount()-1));
@@ -640,7 +640,7 @@ pEntity.itemStorage.setStackInSlot(FUEL_SLOT, new ItemStack(stack.getItem(), sta
 - reconstruit la pile → **NBT et enchantements perdus** ; il faut `stack.shrink(1)` ;
 - le cas `LAVA_BUCKET` est inatteignable : `getBurnTime(lava) = 20 000 >
   fuelCapacity = 15 000`, la condition `burnTime < capacity - current` est
-  toujours fausse ; et de toute façon `SlotInserterFuel.mayPlace` exige le tag
+  toujours fausse ; et de toute façon `InserterFuelSlot.mayPlace` exige le tag
   `factory_io:inserter_fuel` qui ne contient que `coal` et `charcoal` ;
 - le retour d'item devrait passer par
   `ForgeHooks.getCraftingRemainingItem` / `stack.getCraftingRemainingItem()`
@@ -652,7 +652,7 @@ pEntity.itemStorage.setStackInSlot(FUEL_SLOT, new ItemStack(stack.getItem(), sta
 
 ## BUG-025 — `current_cooldown` non borné (S3)
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java:314`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L314)
+**Fichier** : [`InserterBlockEntity.java:314`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L314)
 
 `current_cooldown += 10` chaque tick, remis à zéro **uniquement** en cas
 d'action réussie. Deux conséquences :
@@ -675,7 +675,7 @@ et le persister en NBT.
 ```
 
 Le tag est vide, et le mod ne fournit aucune clé. La rotation par outil
-([`FactoryIOInserterEntityBlock.java:85-87`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterEntityBlock.java#L85))
+([`InserterBlock.java:85-87`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlock.java#L85))
 n'est donc accessible qu'avec un mod tiers qui peuple ce tag.
 
 **Correctif** : ajouter un item `factory_io:wrench`, ou au minimum documenter la
@@ -694,17 +694,17 @@ pas de `displayURL`.
 
 ## BUG-028 — Logs de debug au niveau `ERROR` (S3)
 
-- [`FactoryIOInserterCreator.java:45-46`](../src/main/java/com/drimoz/factoryio/core/registery/FactoryIOInserterCreator.java#L45) :
+- `FactoryIOInserterCreator.java:45-46` *(supprimée depuis)* :
   `LOGGER.error("translations")` puis le dump du JSON
-- [`FactoryIOColorHandler.java:19-20`](../src/main/java/com/drimoz/factoryio/core/registery/FactoryIOColorHandler.java#L19) : idem
-- [`FactoryIOInserterContainer.java:157`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterContainer.java#L157) :
+- `FactoryIOColorHandler.java:19-20` *(supprimée depuis)* : idem
+- [`InserterContainer.java:157`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterContainer.java#L157) :
   `System.out.println("Invalid slotIndex:" + index)`
 
 ---
 
 ## BUG-029 — Tooltips : unités incorrectes (S3)
 
-**Fichier** : [`FactoryIOInserterItem.java:94-121`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterItem.java#L94)
+**Fichier** : [`InserterItem.java:94-121`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterItem.java#L94)
 
 `inserter.getEnergyConsumption() / MAX_ACTIONS_PER_TICK` est affiché comme
 « FE / tick », alors que `energyConsumption` est une consommation **par action**.
@@ -718,7 +718,7 @@ sur une division entière ne fait rien.
 
 ## BUG-030 — Creative tab avec une clé générique (S3)
 
-**Fichier** : [`FactoryIOCreativeTab.java:9`](../src/main/java/com/drimoz/factoryio/shared/FactoryIOCreativeTab.java#L9)
+**Fichier** : [`ModCreativeTab.java:9`](../src/main/java/com/drimoz/factoryio/shared/ModCreativeTab.java#L9)
 
 ```java
 new CreativeModeTab("creativeTab")
@@ -731,7 +731,7 @@ probable avec d'autres mods. Utiliser `factory_io` → `itemGroup.factory_io`.
 
 ## BUG-031 — `PACK_FORMAT` incohérent (S3)
 
-`FactoryIOResourcePackHandler.PACK_FORMAT = 8`, alors que `pack.mcmeta` et
+`PackConstants.PACK_FORMAT = 8`, alors que `pack.mcmeta` et
 `factory_io.pack.mcmeta` déclarent `"pack_format": 9`. Pour 1.18.2 : resource
 pack = 8, data pack = 9. Une seule constante ne peut pas couvrir les deux
 `EPackType`.
@@ -740,7 +740,7 @@ pack = 8, data pack = 9. Une seule constante ne peut pas couvrir les deux
 
 ## BUG-032 — Namespace forcé lors de l'enregistrement (S3)
 
-**Fichier** : [`FactoryIOInserterRegistry.java:94`](../src/main/java/com/drimoz/factoryio/core/registery/FactoryIOInserterRegistry.java#L94), `:114`, `:132`, `:154`
+**Fichier** : [`InserterRegistry.java:94`](../src/main/java/com/drimoz/factoryio/core/registry/InserterRegistry.java#L94), `:114`, `:132`, `:154`
 
 ```java
 defaultInserterBlock.setRegistryName(i.getName());   // path seul
@@ -757,7 +757,7 @@ sous `factory_io:`. Utiliser `setRegistryName(i.getId())`.
 
 `assets/factory_io/textures/item/` contient `logic_science_pack.png`,
 `trouvernom_science_pack.png` (nom manifestement provisoire — « trouver nom ») et
-`uranium_fuel_cell.png` sans item correspondant dans `FactoryIOItems`.
+`uranium_fuel_cell.png` sans item correspondant dans `ModItems`.
 Inversement, `used_up_uranium_fuel_cell` est enregistré sans que
 `uranium_fuel_cell` ne le soit.
 
@@ -765,7 +765,7 @@ Inversement, `used_up_uranium_fuel_cell` est enregistré sans que
 
 ## BUG-034 — `checkContainerSize` mal employé (S3)
 
-**Fichier** : [`FactoryIOInserterContainer.java:64`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterContainer.java#L64)
+**Fichier** : [`InserterContainer.java:64`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterContainer.java#L64)
 
 ```java
 checkContainerSize(pPlayerInv, this.TE_INVENTORY_SLOT_COUNT);
@@ -779,7 +779,7 @@ conteneur ouvert** a la taille attendue. Ici on valide l'inventaire du **joueur*
 
 ## BUG-035 — Mémorisation du slot cible inopérante (S3) ✅
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java) — `expelItems`
+**Fichier** : [`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java) — `expelItems`
 
 ```java
 int startSlot = Math.floorMod(pEntity.lastTargetSlot, Math.max(1, target.getSlots()));
@@ -801,9 +801,9 @@ rebalayait tout.
 
 ## BUG-036 — `quickMoveStack` ignore `Slot#mayPickup` (S3) ✅
 
-**Fichier** : [`FactoryIOInserterContainer.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterContainer.java) — `quickMoveStack`
+**Fichier** : [`InserterContainer.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterContainer.java) — `quickMoveStack`
 
-`SlotInserterBuffer` déclare `mayPickup() == false` : le joueur ne doit pas pouvoir
+`InserterBufferSlot` déclare `mayPickup() == false` : le joueur ne doit pas pouvoir
 retirer l'item en transit à la main. Mais `quickMoveStack` ne teste que
 `sourceSlot.hasItem()` avant d'appeler `moveItemStackTo` : un **shift-clic**
 contourne la garde et vide le buffer.
@@ -819,7 +819,7 @@ traiter avec la réécriture prévue en [FIO-045](06-BACKLOG.md).
 
 ## BUG-037 — L'arrivée d'énergie ne réveille pas un inserter endormi (S3) ✅
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java)
+**Fichier** : [`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java)
 
 La mise en sommeil ([FIO-064](06-BACKLOG.md)) compte tout tick sans action comme un
 échec — y compris un échec par **manque d'énergie**. Un inserter électrique à plat
@@ -837,7 +837,7 @@ déjà présent.
 
 ## BUG-038 — Débit réel moitié du débit documenté (S3) ✅
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java) — `tick`
+**Fichier** : [`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java) — `tick`
 
 Un item consomme **deux** actions : une prise (buffer vide → aspiration) puis une
 dépose (buffer plein → éjection). Chacune attend un cooldown complet. Avec
@@ -881,7 +881,7 @@ calcul pur. Ajouter le socle JUnit reste à faire — c'est le préalable nature
 
 ## BUG-041 — Un carburant trop riche est refusé sans un mot et bloque le slot (S3) ✅
 
-**Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java) — `burnFuel`
+**Fichier** : [`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java) — `burnFuel`
 
 ```java
 if (burnTime > this.getFuelCapacity() - this.current_fuel_value) return;

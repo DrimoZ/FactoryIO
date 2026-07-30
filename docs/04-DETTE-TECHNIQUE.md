@@ -54,10 +54,10 @@ Les 6 paquets custom peuvent alors tous disparaître, sauf un
 
 Les six paquets ont disparu. Il en reste deux, et la cible est atteinte à une nuance près :
 
-- **C→S** : [`FactoryIOSyncC2SInserterSetting`](../src/main/java/com/drimoz/factoryio/core/network/packet/FactoryIOSyncC2SInserterSetting.java),
+- **C→S** : [`C2SInserterSetting`](../src/main/java/com/drimoz/factoryio/core/network/packet/C2SInserterSetting.java),
   exactement le `C2SInserterSettings` prévu. Il porte le mode de filtrage et les deux
   moitiés de la condition redstone (FIO-070), avec la validation de BUG-007.
-- **S→C** : [`FactoryIOSyncS2CInserterTunings`](../src/main/java/com/drimoz/factoryio/core/network/packet/FactoryIOSyncS2CInserterTunings.java),
+- **S→C** : [`S2CInserterTunings`](../src/main/java/com/drimoz/factoryio/core/network/packet/S2CInserterTunings.java),
   qui n'était pas prévu. Il est apparu avec les réglages par datapack (FIO-037) : le client
   a besoin du barème pour ses tooltips et la trajectoire de l'item. Émis à la connexion et
   après `/reload`, jamais périodiquement — ce que la refonte proscrivait, et qui reste vrai.
@@ -69,7 +69,7 @@ Les six paquets ont disparu. Il en reste deux, et la cible est atteinte à une n
 **Impact : élevé · Effort : M · Quand : Phase 2**
 
 `suckItems` / `expelItems`
-([`FactoryIOInserterBlockEntity.java:533-633`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java#L533))
+([`InserterBlockEntity.java:533-633`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java#L533))
 cumulent :
 
 1. **extraction avant validation** → destruction d'items ([BUG-006](03-BUGS.md)) ;
@@ -100,8 +100,8 @@ complet dans [`07-DESIGN-INSERTERS.md`](07-DESIGN-INSERTERS.md).
 
 | Endroit | Convention |
 |---|---|
-| `FactoryIOInserterBlockEntity` | constantes `BUFFER_SLOT=0`, `FUEL_SLOT=1`, `FILTER_SLOTS={2..6}` |
-| `FactoryIOInserterContainer` | `FILTER_SLOTS[i] - 1` si `IS_ENERGY` |
+| `InserterBlockEntity` | constantes `BUFFER_SLOT=0`, `FUEL_SLOT=1`, `FILTER_SLOTS={2..6}` |
+| `InserterContainer` | `FILTER_SLOTS[i] - 1` si `IS_ENERGY` |
 | `checkItemStackNotPresentInWhitelist`, `drops()` | `getSlots() - 5` … `getSlots() - 1` |
 
 Sur un inserter électrique filtrant, **le premier slot de filtre porte l'index 1,
@@ -253,7 +253,7 @@ serveur→client automatique, packaging en modpack, surcharge par datapack.
 ### ✅ Fait pour les réglages, impossible pour la liste (FIO-037)
 
 Le listener existe
-([`FactoryIOInserterReloadListener`](../src/main/java/com/drimoz/factoryio/core/registery/FactoryIOInserterReloadListener.java))
+([`InserterReloadListener`](../src/main/java/com/drimoz/factoryio/core/registry/InserterReloadListener.java))
 et la synchronisation serveur→client passe par `OnDatapackSyncEvent`.
 
 Mais la phrase ci-dessus se trompait sur un point, et c'est important pour la suite :
@@ -272,14 +272,14 @@ de registres — le noter ici évite de rouvrir le sujet à chaque relecture de 
 ## DT-06 — API d'enregistrement Forge *legacy* — ✅ **résolu**
 
 **Résolu lors du port en Forge 1.20.1.** Tout passe désormais par
-`DeferredRegister` ([`FactoryIORegistries`](../src/main/java/com/drimoz/factoryio/core/init/FactoryIORegistries.java)),
+`DeferredRegister` ([`ModRegistries`](../src/main/java/com/drimoz/factoryio/core/init/ModRegistries.java)),
 `setRegistryName` et `RegistryEvent.Register` ont disparu du code. Le paragraphe
 ci-dessous est conservé pour mémoire.
 
 **Impact : bloquant pour tout port · Effort : M · Quand : Phase 1**
 
 Le mod utilise `RegistryEvent.Register<T>` + `setRegistryName(String)`, déprécié
-en 1.18.2 et **supprimé en 1.19.2**. `FactoryIOItems` va jusqu'à recréer
+en 1.18.2 et **supprimé en 1.19.2**. `ModItems` va jusqu'à recréer
 manuellement des `RegistryObject` puis appeler `reg.updateReference(registry)`
 — une réimplémentation partielle de `DeferredRegister`.
 
@@ -364,7 +364,7 @@ déplace tous les index pour aucun gain fonctionnel.
 
 **Impact : moyen · Effort : S · Quand : Phase 2**
 
-[`FactoryIOInserterContainer`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterContainer.java) :
+[`InserterContainer`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterContainer.java) :
 
 - `quickMoveStack` est cassé ([BUG-009](03-BUGS.md)) et son ancienne version est
   conservée en commentaire sur 28 lignes ;
@@ -390,7 +390,7 @@ et zéro surcharge de `clicked()`.
 **Impact : moyen · Effort : S · Quand : Phase 1**
 
 - `@OnlyIn(Dist.CLIENT)` posé sur des **méthodes de surcharge**
-  (`FactoryIOInserterItem.appendHoverText`, `FactoryIOBlockEntities.onClientSetup`) :
+  (`InserterItem.appendHoverText`, `FactoryIOBlockEntities.onClientSetup`) :
   ça fonctionne, mais `@OnlyIn` est réservé au code Mojang stripé par Forge ;
   le bon outil côté mod est `DistExecutor` ou
   `@Mod.EventBusSubscriber(value = Dist.CLIENT)`.
@@ -445,7 +445,7 @@ sub-tick, le traiter explicitement avec un accumulateur en millièmes de tick.
 **Largement traité.** Deux étages de tests, avec un partage net des rôles :
 
 - **GameTests** — les invariants de monde, ceux qui demandent un serveur, des blocs et
-  des ticks ([`FactoryIOGameTests`](../src/main/java/com/drimoz/factoryio/gametest/FactoryIOGameTests.java),
+  des ticks ([`InserterGameTests`](../src/main/java/com/drimoz/factoryio/gametest/InserterGameTests.java),
   `./gradlew runGameTestServer`).
 - **JUnit** — le calcul pur, sans monde : plans de slots, trajectoires, barèmes
   (`src/test/java`, `./gradlew test`, exécuté par `build`). Les classes Minecraft de
@@ -470,7 +470,7 @@ sub-tick, le traiter explicitement avec un accumulateur en millièmes de tick.
 | 1 000 inserters actifs < 2 ms/tick | benchmark | ✅ |
 
 Le **benchmark** existe désormais aussi
-([`FactoryIOBenchmarks`](../src/main/java/com/drimoz/factoryio/gametest/FactoryIOBenchmarks.java),
+([`InserterBenchmarks`](../src/main/java/com/drimoz/factoryio/gametest/InserterBenchmarks.java),
 résultats dans [`10-BENCHMARKS.md`](10-BENCHMARKS.md)) : il mesure les deux régimes, endormi
 et actif, et échoue si le budget de DT-07 est dépassé d'un ordre de grandeur. Le seuil est
 volontairement large — une assertion temporelle serrée échouerait sur le bruit de la
@@ -481,17 +481,30 @@ client et ne se chronomètrent pas de la même façon.
 
 ---
 
-## DT-12 — Nommage et organisation
+## DT-12 — Nommage et organisation — 🟡 **en partie traité**
+
+**Traité par FIO-046** : les deux fautes de frappe de packages sont corrigées, et le préfixe
+`FactoryIO` a disparu de 51 classes. La règle qui a remplacé le retrait mécanique — la
+moitié des noms collisionnait avec un type de Minecraft ou de Forge — est consignée dans
+[`09-CONVENTIONS.md`](09-CONVENTIONS.md) §2.
+
+**Reste** : la réorganisation en `content/`, `client/`, `data/`, `util/` décrite dans
+[`09`](09-CONVENTIONS.md) §1, et le mélange `pLevel` / `level` dans les mêmes fichiers.
+Le premier est un déplacement de fichiers sans valeur immédiate ; le second se corrige au
+fil des retouches.
+
+<details>
+<summary>Rédaction initiale</summary>
 
 **Impact : faible · Effort : S · Quand : opportuniste**
 
 - Le package `ressourcepack` comporte une faute (`resourcepack`).
 - Le package `registery` comporte une faute (`registry`).
-- `FactoryIOInserterEntityBlock` : l'ordre naturel est `InserterBlockEntityBlock`…
+- `InserterBlock` : l'ordre naturel est `InserterBlockEntityBlock`…
   en réalité c'est un `Block`, donc `InserterBlock` suffirait.
 - Le préfixe `FactoryIO` sur **les 64 classes** est du bruit : le package
   identifie déjà le mod. `com.drimoz.factoryio.inserter.InserterBlockEntity` se
-  lit mieux que `…core.inserters.FactoryIOInserterBlockEntity`.
+  lit mieux que `…core.inserters.InserterBlockEntity`.
 - `core/` contient tout ; `generic/` et `shared/` ont des rôles qui se recouvrent.
 - Mélange de conventions de paramètres : `pLevel` (Mojang) et `level` (mod)
   cohabitent dans le même fichier.

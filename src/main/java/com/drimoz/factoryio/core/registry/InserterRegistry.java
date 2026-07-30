@@ -1,0 +1,165 @@
+package com.drimoz.factoryio.core.registry;
+
+import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.init.ModRegistries;
+import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
+import com.drimoz.factoryio.core.inserters.InserterContainer;
+import com.drimoz.factoryio.core.inserters.InserterBlock;
+import com.drimoz.factoryio.core.inserters.InserterItem;
+import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.model.InserterDefaults;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraftforge.common.extensions.IForgeMenuType;
+import net.minecraftforge.registries.RegistryObject;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class InserterRegistry {
+
+    // Private properties
+
+    private static final InserterRegistry INSTANCE = new InserterRegistry();
+
+    private Map<ResourceLocation, Inserter> inserters = new LinkedHashMap<>();
+
+    private boolean allowRegistration = false;
+
+    // Lifecycle
+
+    InserterRegistry() {}
+
+    // Interface ( Common )
+
+    public static InserterRegistry getInstance() {
+        return INSTANCE;
+    }
+
+    public void onCommonSetup() {
+        FactoryIO.LOGGER.info("Loaded {} inserters", this.inserters.size());
+    }
+
+    public void setAllowRegistration(boolean allowed) {
+        this.allowRegistration = allowed;
+    }
+
+    // Interface ( Inserters )
+
+    public void registerInserter (Inserter inserter) {
+        if (this.allowRegistration) {
+            if (this.inserters.values().stream().noneMatch((i) -> {
+                return i.getName().equals(inserter.getName());
+            })) {
+                this.inserters.put(inserter.getId(), inserter);
+            } else {
+                FactoryIO.LOGGER.info("{} tried to register a duplicate inserter with name {}, skipping", inserter.getModId(), inserter.getName());
+            }
+        } else {
+            FactoryIO.LOGGER.error("{} tried to register inserter {} outside of registration valid zone, skipping", inserter.getModId(), inserter.getName());
+        }
+    }
+
+    public List<Inserter> getInserters() {
+        return List.copyOf(this.inserters.values());
+    }
+
+    public Inserter getInserterById(ResourceLocation id) {
+        return this.inserters.get(id);
+    }
+
+    /**
+     * Les inserters qui ne viennent pas du barème livré, c'est-à-dire ceux qu'un JSON
+     * utilisateur a ajoutés.
+     *
+     * <p>Eux seuls ont besoin d'assets générés à chaud : les sept inserters du barème ont
+     * les leurs versionnés dans {@code src/generated/resources} depuis FIO-038
+     * (cf. FIO-039).
+     */
+    public List<Inserter> getUserDefinedInserters() {
+        Set<ResourceLocation> shipped = InserterDefaults.all().stream()
+                .map(Inserter::getId)
+                .collect(Collectors.toSet());
+
+        return this.inserters.values().stream()
+                .filter(inserter -> !shipped.contains(inserter.getId()))
+                .toList();
+    }
+
+    public Inserter getInserterByName(String name) {
+        return this.inserters.values().stream().filter((i) -> name.equals(i.getName())).findFirst().orElse(null);
+    }
+
+    /**
+     * Déclare bloc, item, block entity et menu de chaque inserter auprès des
+     * {@code DeferredRegister}.
+     *
+     * <p>Appelé une seule fois, depuis le constructeur du mod. Les {@code RegistryObject}
+     * renvoyés se résolvent paresseusement, ce qui gère automatiquement les dépendances
+     * croisées (l'item a besoin du bloc, le block entity aussi).
+     */
+    public void registerAll() {
+        this.inserters = this.getSortedInsertersMap(this.inserters.values());
+
+        this.inserters.values().forEach(this::registerInserterContent);
+    }
+
+    // L'enregistrement des renderers et des écrans vit dans com.drimoz.factoryio.client.
+    //
+    // Il ne peut PAS rester ici : la vérification de cette classe par la JVM résout les
+    // types manipulés dans le corps des méthodes. Construire un GeoBlockRenderer chargeait
+    // donc BlockEntityRenderer — une classe client — au simple chargement du registre,
+    // ce qui fait échouer la construction du mod sur serveur dédié (cf. DT-09).
+
+    // Inner work
+
+    private void registerInserterContent(Inserter inserter) {
+        String name = inserter.getName();
+
+        RegistryObject<InserterBlock> block = ModRegistries.BLOCKS.register(
+                name,
+                () -> {
+                    BlockBehaviour.Properties props = BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion();
+
+                    if (inserter.isAffectedByRedstone()) {
+                        props.isRedstoneConductor((pState, pLevel, pPos) -> false);
+                    }
+
+                    return new InserterBlock(props, inserter);
+                });
+        inserter.setBlock(block);
+
+        inserter.setItem(ModRegistries.ITEMS.register(
+                name,
+                () -> InserterItem.create(new Item.Properties(), inserter)));
+
+        inserter.setBlockEntityType(ModRegistries.BLOCK_ENTITIES.register(
+                name,
+                () -> BlockEntityType.Builder
+                        .of((pPos, pState) -> new InserterBlockEntity(pPos, pState, inserter), block.get())
+                        .build(null)));
+
+        inserter.setMenuType(ModRegistries.MENUS.register(
+                name,
+                () -> IForgeMenuType.create(
+                        (windowId, inv, data) -> new InserterContainer(
+                                windowId,
+                                inserter,
+                                inv,
+                                inv.player.getCommandSenderWorld(),
+                                data.readBlockPos()))));
+    }
+
+    private Map<ResourceLocation, Inserter> getSortedInsertersMap(Collection<Inserter> inserterCollection) {
+        LinkedHashMap<ResourceLocation, Inserter> sorted = new LinkedHashMap<>();
+
+        inserterCollection.stream().sorted(Comparator.comparing(Inserter::getName)).forEach((c) -> {
+            sorted.put(c.getId(), c);
+        });
+
+        return sorted;
+    }
+}

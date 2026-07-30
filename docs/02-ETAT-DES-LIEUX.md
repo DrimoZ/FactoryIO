@@ -27,7 +27,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Mappings Parchment | ✅ | `official` faisait échouer le chargement, cf. FIO-051 |
 | Registre data-driven d'inserters | ✅ | migré sur `DeferredRegister` lors du port |
 | Chargement de JSON utilisateur | ✅ | validé par `Codec`, erreurs nommées (FIO-034) ; la **liste** vient de `config/`, les **réglages** d'un datapack rechargeable à chaud (FIO-037) |
-| Config Forge (`ForgeConfigSpec`) | 🟡 | lue en amont via `FactoryIOEarlyConfig` ; **prend effet au lancement suivant** (contrainte Forge, cf. BUG-001) |
+| Config Forge (`ForgeConfigSpec`) | 🟡 | lue en amont via `EarlyConfig` ; **prend effet au lancement suivant** (contrainte Forge, cf. BUG-001) |
 | Réseau (`SimpleChannel`) | ✅ | 2 paquets : réglages d'inserter (C→S, filtrage et redstone) et barème à la connexion / `/reload` (S→C) |
 | Pack de ressources/data généré au runtime | ✅ | en mémoire, refait à chaque rechargement, limité aux inserters utilisateur (FIO-039) |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
@@ -87,7 +87,7 @@ Spécification proposée : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).
 
 ## 4. Items et progression
 
-33 items enregistrés dans [`FactoryIOItems`](../src/main/java/com/drimoz/factoryio/core/init/FactoryIOItems.java) :
+33 items enregistrés dans [`ModItems`](../src/main/java/com/drimoz/factoryio/core/init/ModItems.java) :
 
 - plaques : `iron_plate`, `copper_plate`, `steel_plate`
 - circuits : `electronic_circuit`, `advanced_circuit`, `processing_unit`
@@ -131,15 +131,15 @@ Supprimé en Phase 0 (FIO-018) :
 | `FactoryIOPaths` (classe entière, jamais référencée) | supprimé |
 | `FactoryIOScreen` (classe vide) | supprimé |
 | `FactoryIOSyncS2CItemStack` (+ son enregistrement réseau) | supprimé |
-| `FactoryIOFoilItem` + `FactoryIOItems.registerGlowing()` | supprimé |
-| `FactoryIONetworks.sendToPlayer()` | supprimé |
-| `FactoryIOResourcePackHandler.init()` et `DUMMY_PACK_META` | supprimés |
+| `FactoryIOFoilItem` + `ModItems.registerGlowing()` | supprimé |
+| `ModNetworks.sendToPlayer()` | supprimé |
+| `PackConstants.init()` et `DUMMY_PACK_META` | supprimés |
 | `Inserter.filterSlotCount` | supprimé |
-| `FactoryIOInserterBlockEntity.menuType` (+ paramètre de constructeur) | supprimé |
+| `InserterBlockEntity.menuType` (+ paramètre de constructeur) | supprimé |
 | `getInnerFuelCapacity()` (récursion infinie) | supprimé |
 | `quickMoveStack2()` (28 lignes commentées) | supprimé |
-| `FactoryIOCommonConfigs.SHOW_ERRORS` | supprimé |
-| Blocs de rendu commentés dans `FactoryIOGuiButton.render()` | supprimés |
+| `CommonConfig.SHOW_ERRORS` | supprimé |
+| Blocs de rendu commentés dans `GuiButton.render()` | supprimés |
 
 Reste volontairement en place :
 
@@ -148,6 +148,6 @@ Reste volontairement en place :
 | `Inserter.texture` (assigné, jamais lu) | à raccorder au rendu en Phase 2 |
 | ~~`getActionMultiplier()`~~ | supprimé par FIO-065 avec le reste du modèle temporel |
 | `*_BELT_COOLDOWN` | réservé pour la Phase 3 |
-| `FactoryIOTags.Items.INSERTERS`, `FactoryIOTags.Blocks.TOOL_*` | consommés par les générateurs de tags |
-| `FactoryIOGuiButton.onRightClick()`, `hasUV()`, `hasUVHover()` | API du widget, utile à la refonte GUI (FIO-071) |
+| `ModTags.Items.INSERTERS`, `ModTags.Blocks.TOOL_*` | consommés par les générateurs de tags |
+| `GuiButton.onRightClick()`, `hasUV()`, `hasUVHover()` | API du widget, utile à la refonte GUI (FIO-071) |
 | `StringHelper.getShiftInfoGui()` | ses clés de langue existent désormais |

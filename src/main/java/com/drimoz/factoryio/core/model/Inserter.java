@@ -1,10 +1,10 @@
 package com.drimoz.factoryio.core.model;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.inserters.FactoryIOInserterBlockEntity;
-import com.drimoz.factoryio.core.inserters.FactoryIOInserterContainer;
-import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
-import com.drimoz.factoryio.core.inserters.FactoryIOInserterItem;
+import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
+import com.drimoz.factoryio.core.inserters.InserterContainer;
+import com.drimoz.factoryio.core.inserters.InserterBlock;
+import com.drimoz.factoryio.core.inserters.InserterItem;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -58,10 +58,10 @@ public class Inserter {
 
     private ResourceLocation texture;
 
-    private Supplier<FactoryIOInserterEntityBlock> blockSupplier;
-    private Supplier<FactoryIOInserterItem> itemSupplier;
-    private Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> blockEntityTypeSupplier;
-    private Supplier<MenuType<FactoryIOInserterContainer>> menuTypeSupplier;
+    private Supplier<InserterBlock> blockSupplier;
+    private Supplier<InserterItem> itemSupplier;
+    private Supplier<BlockEntityType<InserterBlockEntity>> blockEntityTypeSupplier;
+    private Supplier<MenuType<InserterContainer>> menuTypeSupplier;
 
     private final Translation translation = new Translation();
 
@@ -242,35 +242,35 @@ public class Inserter {
 
     // Interface (Références runtime)
 
-    public Supplier<FactoryIOInserterEntityBlock> getBlock() {
+    public Supplier<InserterBlock> getBlock() {
         return this.blockSupplier;
     }
 
-    public void setBlock(Supplier<FactoryIOInserterEntityBlock> blockSupplier) {
+    public void setBlock(Supplier<InserterBlock> blockSupplier) {
         this.blockSupplier = blockSupplier;
     }
 
-    public Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> getBlockEntityType() {
+    public Supplier<BlockEntityType<InserterBlockEntity>> getBlockEntityType() {
         return this.blockEntityTypeSupplier;
     }
 
-    public void setBlockEntityType(Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> blockEntityTypeSupplier) {
+    public void setBlockEntityType(Supplier<BlockEntityType<InserterBlockEntity>> blockEntityTypeSupplier) {
         this.blockEntityTypeSupplier = blockEntityTypeSupplier;
     }
 
-    public Supplier<FactoryIOInserterItem> getItem() {
+    public Supplier<InserterItem> getItem() {
         return this.itemSupplier;
     }
 
-    public void setItem(Supplier<FactoryIOInserterItem> itemSupplier) {
+    public void setItem(Supplier<InserterItem> itemSupplier) {
         this.itemSupplier = itemSupplier;
     }
 
-    public Supplier<MenuType<FactoryIOInserterContainer>> getMenuType() {
+    public Supplier<MenuType<InserterContainer>> getMenuType() {
         return this.menuTypeSupplier;
     }
 
-    public void setMenuType(Supplier<MenuType<FactoryIOInserterContainer>> menuTypeSupplier) {
+    public void setMenuType(Supplier<MenuType<InserterContainer>> menuTypeSupplier) {
         this.menuTypeSupplier = menuTypeSupplier;
     }
 

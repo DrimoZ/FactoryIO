@@ -11,11 +11,11 @@ import net.minecraftforge.items.IItemHandler;
  */
 public class InserterFilterSlot extends GhostSlot {
 
-    private final FactoryIOInserterBlockEntity inserter;
+    private final InserterBlockEntity inserter;
     private final int filterIndex;
 
     public InserterFilterSlot(
-            FactoryIOInserterBlockEntity inserter, IItemHandler itemHandler,
+            InserterBlockEntity inserter, IItemHandler itemHandler,
             int filterIndex, int xPosition, int yPosition) {
 
         super(itemHandler, inserter.LAYOUT.filter(filterIndex), xPosition, yPosition);

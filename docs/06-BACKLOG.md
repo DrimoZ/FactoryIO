@@ -13,8 +13,8 @@ Colonne « ✓ » = critère d'acceptation.
 
 | ID | P | Est. | Ticket | ✓ |
 |---|---|---|---|---|
-| ~~FIO-001~~ | ✅ | XS | Supprimer `event.enqueueWork(FactoryIONetworks::init)` dans `onCommonSetup` ([BUG-002](03-BUGS.md)) | `runClient` démarre sans exception réseau |
-| ~~FIO-002~~ | ✅ | S | Déplacer `FactoryIOInserterLoader.setup()` après le chargement effectif de la config ([BUG-001](03-BUGS.md)) | désactiver `stack_inserter` dans le TOML le retire du jeu |
+| ~~FIO-001~~ | ✅ | XS | Supprimer `event.enqueueWork(ModNetworks::init)` dans `onCommonSetup` ([BUG-002](03-BUGS.md)) | `runClient` démarre sans exception réseau |
+| ~~FIO-002~~ | ✅ | S | Déplacer `InserterLoader.setup()` après le chargement effectif de la config ([BUG-001](03-BUGS.md)) | désactiver `stack_inserter` dans le TOML le retire du jeu |
 | ~~FIO-003~~ | ✅ | S | Consommer réellement l'énergie : `consumeInternal()` interne + wrapper lecture seule pour la capability ([BUG-003](03-BUGS.md)) | un `inserter` alimenté à 300 FE fait exactement 1 swing |
 | ~~FIO-004~~ | ✅ | M | Transferts sans destruction d'items : simuler → calculer le mouvable → extraire ([BUG-006](03-BUGS.md)) | GameTest : coffre A (64 items) → coffre B, total conservé |
 | ~~FIO-005~~ | ✅ | S | Valider `FactoryIOSyncC2SWhitelistButton` (null, `instanceof`, distance, menu ouvert) ([BUG-007](03-BUGS.md)) | paquet forgé sur une position vide → aucun effet, aucun crash |
@@ -54,7 +54,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-043~~ | ✅ | XL | **Port de version** vers Forge 1.20.1 | compile ; **reste à valider en jeu** |
 | ~~FIO-044~~ | ✅ | S | Corriger l'exposition de la capability énergie (toutes faces + `side == null`) ([BUG-021](03-BUGS.md)) | The One Probe affiche l'énergie |
 | ~~FIO-045~~ | ✅ | S | `quickMoveStack` réécrit selon le patron vanilla (DT-08), respectant `Slot#mayPickup` ([BUG-036](03-BUGS.md)) | shift-clic du buffer sans effet ; 2 GameTests |
-| FIO-046 | P3 | M | Renommage des packages (`registery`→`registry`, `ressourcepack`→`resourcepack`, suppression du préfixe `FactoryIO`) (DT-12) | à faire en **un seul** commit |
+| ~~FIO-046~~ | ✅ | M | Renommage : deux packages fautifs corrigés, préfixe `FactoryIO` retiré de 51 classes (DT-12). Retrait **non mécanique** : la moitié aurait collisionné avec un type MC/Forge — règle consignée dans [`09`](09-CONVENTIONS.md) §2. | un seul commit, zéro changement fonctionnel |
 | ~~FIO-055~~ | ✅ | S | **Socle JUnit** : dépendance + `useJUnitPlatform()`, 31 tests sur `InserterSlotLayout` et `InserterCarryPath` ([BUG-040](03-BUGS.md), DT-11) | `./gradlew test` vert, inclus dans `build` |
 | ~~FIO-056~~ | ✅ | XS | `wakeUp()` sur `onEnergyChanged` ([BUG-037](03-BUGS.md)) | le courant qui revient relance l'inserter dans le tick |
 | ~~FIO-057~~ | ✅ | XS | Corriger le `README` : nom de jar et mappings ([BUG-039](03-BUGS.md)) | — |
@@ -168,7 +168,7 @@ Diagnostic établi en comparant le projet à un **MDK Forge 1.20.1 vierge**, une
 | # | Cause | Preuve | Correctif |
 |---|---|---|---|
 | 1 | **Refmap Mixin non traduit.** GeckoLib embarque un refmap en noms SRG (`m_118506_`) ; en workspace de développement les classes portent les noms mappés, donc ses `@Inject` ne trouvent aucune cible → `InvalidInjectionException` fatale. | Ajouter GeckoLib **seul** au MDK vierge reproduit l'erreur à l'identique. Y ajouter le correctif la fait disparaître. | `mixin.env.remapRefMap` + `mixin.env.refMapRemappingFile` dans les run configs (`build.gradle`) |
-| 2 | **Régression introduite par le port.** `VanillaRegistries.createLookup()` était appelé depuis le constructeur du mod, en `CompletableFuture.supplyAsync` — donc sur le pool commun, en concurrence avec la construction des autres mods et avant que les registres vanilla soient prêts. Le mod `forge` lui-même échouait alors à se construire (`NoSuchMethodException: EntityJoinLevelEvent.<init>()`). | Le MDK + GeckoLib + correctif nº1 démarre ; notre projet non. La construction paresseuse règle le problème. | `FactoryIOPackGeneratorManager#buildGenerator()`, appelé depuis `generate()` |
+| 2 | **Régression introduite par le port.** `VanillaRegistries.createLookup()` était appelé depuis le constructeur du mod, en `CompletableFuture.supplyAsync` — donc sur le pool commun, en concurrence avec la construction des autres mods et avant que les registres vanilla soient prêts. Le mod `forge` lui-même échouait alors à se construire (`NoSuchMethodException: EntityJoinLevelEvent.<init>()`). | Le MDK + GeckoLib + correctif nº1 démarre ; notre projet non. La construction paresseuse règle le problème. | `PackGenerator#buildGenerator()`, appelé depuis `generate()` |
 
 **Deux fausses pistes, consignées pour ne pas les reprendre :**
 

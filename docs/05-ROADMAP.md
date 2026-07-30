@@ -76,7 +76,7 @@ construire une chaîne coffre → inserter → four, et rien ne disparaît.
 
 | # | Action | Réf. |
 |---|---|---|
-| 1 | Supprimer le 2ᵉ `FactoryIONetworks.init()` | [BUG-002](03-BUGS.md) |
+| 1 | Supprimer le 2ᵉ `ModNetworks.init()` | [BUG-002](03-BUGS.md) |
 | 2 | Déplacer la lecture de config après `registerConfig` | [BUG-001](03-BUGS.md) |
 | 3 | Consommer réellement l'énergie | [BUG-003](03-BUGS.md) |
 | 4 | Ne plus détruire d'items lors des transferts | [BUG-006](03-BUGS.md) |
@@ -112,7 +112,7 @@ n'ont pas été lancés, et aucun test manuel n'a été fait. C'est la prochaine
 - **FIO-002** ne pouvait pas être résolu comme prévu. `LOAD_REGISTRIES` appartient
   à `ModLoadingPhase.GATHER` et `CONFIG_LOAD` à `ModLoadingPhase.LOAD` : les blocs
   sont enregistrés **avant** que Forge ne charge la config. La classe
-  `FactoryIOEarlyConfig` lit donc le TOML directement. Conséquence à documenter
+  `EarlyConfig` lit donc le TOML directement. Conséquence à documenter
   pour les joueurs : un changement de config prend effet **au lancement suivant**.
 - **FIO-015** n'ajoute pas d'item « clé à molette » (aucune texture disponible) ;
   la rotation se fait au shift + clic droit à main nue, en plus du tag

@@ -103,7 +103,7 @@ public final class BeltBlockEntity extends BlockEntity {
 ### Vitesses
 
 `ticksPerSlot` dérivé du tier (et surchargeable par config, les clés existent
-déjà dans `FactoryIOCommonConfigs`) :
+déjà dans `CommonConfig`) :
 
 | Convoyeur | ticks/bloc | ticks/slot | items/s (2 voies) | Réf. Factorio |
 |---|---|---|---|---|

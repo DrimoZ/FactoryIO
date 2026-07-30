@@ -44,9 +44,35 @@ Règles :
 | ID de registre | `snake_case` | `fast_transport_belt` |
 | Clé de traduction | `<type>.factory_io.<id>` | `block.factory_io.inserter` |
 
-Le préfixe `FactoryIO` sur les 64 classes actuelles est du bruit : le package
-identifie déjà le mod. Le renommage se fait en **un seul commit**
-([FIO-046](06-BACKLOG.md)), jamais mélangé à un changement fonctionnel.
+Le préfixe `FactoryIO` était du bruit : le package identifie déjà le mod. Il a été retiré
+en un seul commit ([FIO-046](06-BACKLOG.md)), sans aucun changement fonctionnel.
+
+### Le retrait n'a pas pu être mécanique
+
+Une bonne moitié des classes serait entrée en **collision avec un type de Minecraft ou de
+Forge** : `Items`, `Item`, `BlockEntity`, `Registries`, `Container`, `BaseEntityBlock`…
+Toutes sont importées dans les mêmes fichiers, et une collision se paie en imports
+qualifiés à rallonge — exactement le bruit qu'on voulait supprimer.
+
+La règle appliquée, à retenir pour les prochaines classes :
+
+| Situation | Règle | Exemples |
+|---|---|---|
+| Nom sans ambiguïté | pas de préfixe | `InserterBlockEntity`, `InserterScreen`, `GhostSlot` |
+| Point d'entrée d'enregistrement | préfixe `Mod` | `ModItems`, `ModTags`, `ModRegistries`, `ModNetworks` |
+| Classe de base du mod | nom décrivant le rôle | `BaseBlockEntity`, `BaseMenu`, `ModEntityBlock` |
+| Producteur de datagen | préfixe `Mod` | `ModLootGenerator`, `ModBlockTagsGenerator` |
+
+Deux renommages en profitent pour dire ce que la classe est vraiment :
+`FactoryIOInserterEntityBlock` devient **`InserterBlock`** — c'est un `Block`, pas un
+`BlockEntity` — et les slots passent de `SlotInserterFuel` à `InserterFuelSlot`, aligné sur
+`GhostSlot` et `InserterFilterSlot`.
+
+Le seul `FactoryIO` qui subsiste est la classe `@Mod` elle-même, où le nom est justifié.
+
+### Deux fautes de frappe corrigées
+
+`core.registery` → `core.registry`, `core.ressourcepack` → `core.resourcepack`.
 
 ## 3. Règles de code
 

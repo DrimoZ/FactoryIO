@@ -1,7 +1,7 @@
 package com.drimoz.factoryio.core.model;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.registery.FactoryIOTranslations;
+import com.drimoz.factoryio.core.registry.Translations;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -27,7 +27,7 @@ public class Translation {
             TranslationCode translationCode = TranslationCode.create(code);
 
             addTranslation(translationCode, value);
-            FactoryIOTranslations.getINSTANCE().addTranslation(translationCode);
+            Translations.getINSTANCE().addTranslation(translationCode);
         }
         catch (IllegalArgumentException e) {
             FactoryIO.LOGGER.error("Error occurred for " + value + "TranslationCode registration : " + e);

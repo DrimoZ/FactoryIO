@@ -1,6 +1,6 @@
 # 10 — Mesures de performance
 
-Résultats de [`FactoryIOBenchmarks`](../src/main/java/com/drimoz/factoryio/gametest/FactoryIOBenchmarks.java),
+Résultats de [`InserterBenchmarks`](../src/main/java/com/drimoz/factoryio/gametest/InserterBenchmarks.java),
 qui répond au budget posé par [DT-07](04-DETTE-TECHNIQUE.md) et au ticket FIO-073.
 
 ```bash
@@ -14,7 +14,7 @@ dépassé **d'un ordre de grandeur** — voir « Pourquoi les seuils sont larges
 
 ## Ce qui est mesuré
 
-Les benchmarks appellent directement `FactoryIOInserterBlockEntity.tick` en boucle et
+Les benchmarks appellent directement `InserterBlockEntity.tick` en boucle et
 chronomètrent. La mesure porte donc sur **le code du mod**, sans le bruit du reste du tick
 serveur : rendu, réseau, IA des entités, sauvegarde.
 

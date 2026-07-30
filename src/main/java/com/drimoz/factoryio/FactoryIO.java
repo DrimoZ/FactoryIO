@@ -1,17 +1,17 @@
 package com.drimoz.factoryio;
 
-import com.drimoz.factoryio.core.configs.FactoryIOCommonConfigs;
-import com.drimoz.factoryio.core.datagen.FactoryIODataGenerators;
-import com.drimoz.factoryio.core.init.FactoryIOItems;
-import com.drimoz.factoryio.core.init.FactoryIONetworks;
-import com.drimoz.factoryio.core.init.FactoryIORegistries;
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CInserterTunings;
-import com.drimoz.factoryio.core.registery.FactoryIOInserterLoader;
-import com.drimoz.factoryio.core.registery.FactoryIOInserterReloadListener;
-import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
-import com.drimoz.factoryio.core.ressourcepack.EPackType;
-import com.drimoz.factoryio.core.ressourcepack.FactoryIORepositorySource;
-import com.drimoz.factoryio.shared.FactoryIOCreativeTab;
+import com.drimoz.factoryio.core.configs.CommonConfig;
+import com.drimoz.factoryio.core.datagen.ModDataGenerators;
+import com.drimoz.factoryio.core.init.ModItems;
+import com.drimoz.factoryio.core.init.ModNetworks;
+import com.drimoz.factoryio.core.init.ModRegistries;
+import com.drimoz.factoryio.core.network.packet.S2CInserterTunings;
+import com.drimoz.factoryio.core.registry.InserterLoader;
+import com.drimoz.factoryio.core.registry.InserterReloadListener;
+import com.drimoz.factoryio.core.registry.InserterRegistry;
+import com.drimoz.factoryio.core.resourcepack.EPackType;
+import com.drimoz.factoryio.core.resourcepack.PackRepositorySource;
+import com.drimoz.factoryio.shared.ModCreativeTab;
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.packs.PackType;
 import net.minecraftforge.common.MinecraftForge;
@@ -38,32 +38,32 @@ public class FactoryIO
 
     public FactoryIO()
     {
-        // Doit précéder FactoryIORegistries.register() : la liste des inserters
+        // Doit précéder ModRegistries.register() : la liste des inserters
         // détermine les blocs, items, block entities et menus à déclarer.
-        FactoryIOInserterLoader.setup();
-        FactoryIOInserterRegistry.getInstance().registerAll();
+        InserterLoader.setup();
+        InserterRegistry.getInstance().registerAll();
 
         // Déclenche l'initialisation statique des deux classes, donc leurs register().
-        FactoryIOItems.init();
-        FactoryIOCreativeTab.MOD_TAB.getId();
+        ModItems.init();
+        ModCreativeTab.MOD_TAB.getId();
 
         // Le générateur du pack runtime est construit paresseusement, à l'ouverture du
-        // pack — surtout pas ici (cf. FactoryIOPackGeneratorManager#buildGenerator).
+        // pack — surtout pas ici (cf. PackGenerator#buildGenerator).
 
         IEventBus eventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        FactoryIORegistries.register(eventBus);
+        ModRegistries.register(eventBus);
 
-        eventBus.register(new FactoryIODataGenerators());
+        eventBus.register(new ModDataGenerators());
         eventBus.addListener(this::onCommonSetup);
         eventBus.addListener(this::onRegisterResourcePacks);
 
-        FactoryIONetworks.init();
+        ModNetworks.init();
 
         // Génère et corrige le fichier TOML ; sa lecture effective se fait en amont
-        // via FactoryIOEarlyConfig (cf. la javadoc de cette classe).
+        // via EarlyConfig (cf. la javadoc de cette classe).
         ModLoadingContext.get().registerConfig(
-                ModConfig.Type.COMMON, FactoryIOCommonConfigs.SPEC, "factory_io/factory_io-common.toml");
+                ModConfig.Type.COMMON, CommonConfig.SPEC, "factory_io/factory_io-common.toml");
 
         GeckoLib.initialize();
 
@@ -76,10 +76,10 @@ public class FactoryIO
      */
     private void onRegisterResourcePacks(AddPackFindersEvent e) {
         if (e.getPackType() == PackType.SERVER_DATA) {
-            e.addRepositorySource(new FactoryIORepositorySource(EPackType.DATA));
+            e.addRepositorySource(new PackRepositorySource(EPackType.DATA));
         }
         else {
-            e.addRepositorySource(new FactoryIORepositorySource(EPackType.RESOURCE));
+            e.addRepositorySource(new PackRepositorySource(EPackType.RESOURCE));
         }
 
         FactoryIO.LOGGER.debug("Dépôt de packs {} enregistré", e.getPackType());
@@ -87,9 +87,9 @@ public class FactoryIO
 
     public void onCommonSetup(final FMLCommonSetupEvent event)
     {
-        // Ne PAS ré-appeler FactoryIONetworks.init() ici : NetworkRegistry lève une
+        // Ne PAS ré-appeler ModNetworks.init() ici : NetworkRegistry lève une
         // IllegalArgumentException si le canal factory_io:messages est déjà enregistré.
-        FactoryIOInserterRegistry.getInstance().onCommonSetup();
+        InserterRegistry.getInstance().onCommonSetup();
     }
 
     /**
@@ -100,7 +100,7 @@ public class FactoryIO
      */
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
-        event.addListener(new FactoryIOInserterReloadListener());
+        event.addListener(new InserterReloadListener());
     }
 
     /**
@@ -111,17 +111,17 @@ public class FactoryIO
      */
     @SubscribeEvent
     public void onDatapackSync(OnDatapackSyncEvent event) {
-        FactoryIOSyncS2CInserterTunings message = FactoryIOSyncS2CInserterTunings.current();
+        S2CInserterTunings message = S2CInserterTunings.current();
 
         if (event.getPlayer() != null) {
-            FactoryIONetworks.sendToPlayer(message, event.getPlayer());
+            ModNetworks.sendToPlayer(message, event.getPlayer());
             return;
         }
 
         event.getPlayerList().getPlayers()
-                .forEach(player -> FactoryIONetworks.sendToPlayer(message, player));
+                .forEach(player -> ModNetworks.sendToPlayer(message, player));
     }
 
-    // L'enregistrement des écrans et des renderers vit dans FactoryIOClientEvents,
+    // L'enregistrement des écrans et des renderers vit dans ClientEvents,
     // hors d'atteinte du serveur dédié.
 }

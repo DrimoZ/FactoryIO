@@ -14,8 +14,8 @@ com.drimoz.factoryio
 │   ├── configs/                    ← ForgeConfigSpec (COMMON)
 │   ├── datagen/                    ← providers de data generation
 │   ├── generic/                    ← classes de base réutilisables
-│   │   ├── block/                  ← FactoryIOEntityBlock(+WaterLogged)
-│   │   ├── block_entity/           ← FactoryIOBlockEntity(+MenuProvided)
+│   │   ├── block/                  ← ModEntityBlock(+WaterLogged)
+│   │   ├── block_entity/           ← BaseBlockEntity(+MenuProvided)
 │   │   ├── container/              ← menu de base + slots + energy storage
 │   │   ├── item/                   ← Item / ItemBlock / Foil / Colored
 │   │   └── screen/                 ← FactoryIOScreen (VIDE — coquille)
@@ -29,7 +29,7 @@ com.drimoz.factoryio
 ```
 
 **Taille** : 64 fichiers Java, 4 560 lignes. Le fichier le plus gros est
-[`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java)
+[`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java)
 (679 lignes) — c'est le cœur du mod et aussi le principal foyer de dette.
 
 ---
@@ -41,30 +41,30 @@ Ordre réel d'exécution, tel qu'écrit dans
 
 ```
 Constructeur @Mod FactoryIO()
- 1. FactoryIOInserterLoader.setup()
+ 1. InserterLoader.setup()
       ├── registry.setAllowRegistration(true)
       ├── setupInsertersList()        → lit config/factory_io/inserters/*.json
       │                                 → FactoryIOInserterCreator.create()
       └── createDefaultInserters()    → 7 inserters codés en dur,
                                         chacun conditionné par un ConfigValue
- 2. FactoryIOPackGeneratorManager.registerDataProviders()
+ 2. PackGenerator.registerDataProviders()
       → construit un DataGenerator pointant sur config/factory_io/generated
  3. eventBus.register(FactoryIOBlocks / BlockEntities / Items / MenuTypes / DataGenerators)
- 4. FactoryIONetworks.init()                    ← 1re création du SimpleChannel
+ 4. ModNetworks.init()                    ← 1re création du SimpleChannel
  5. ModLoadingContext.registerConfig(COMMON, SPEC)
  6. addListener(onCommonSetup / onClientSetup)
  7. GeckoLib.initialize()
- 8. FactoryIOResourcePackHandler.init()         ← ne fait qu'un LOGGER.info
+ 8. PackConstants.init()         ← ne fait qu'un LOGGER.info
  9. addListener(onRegisterResourcePacks)
 10. MinecraftForge.EVENT_BUS.register(this)
 
 RegistryEvent.Register<Block>          → InserterRegistry.onRegisterBlocks
 RegistryEvent.Register<BlockEntityType>→ InserterRegistry.onRegisterBlockEntities
-RegistryEvent.Register<Item>           → FactoryIOItems.ENTRIES + onRegisterItems
+RegistryEvent.Register<Item>           → ModItems.ENTRIES + onRegisterItems
 RegistryEvent.Register<MenuType>       → InserterRegistry.onRegisterContainers
 
-AddPackFindersEvent                    → ajoute FactoryIORepositorySource
-FMLCommonSetupEvent                    → log + FactoryIONetworks::init  ⚠ 2e appel
+AddPackFindersEvent                    → ajoute PackRepositorySource
+FMLCommonSetupEvent                    → log + ModNetworks::init  ⚠ 2e appel
 FMLClientSetupEvent                    → MenuScreens.register par inserter
 EntityRenderersEvent.RegisterRenderers → BER GeckoLib par inserter
 ```
@@ -103,7 +103,7 @@ invalide dans un JSON utilisateur ne produit **aucun message d'erreur**.
 
 ### Inserters par défaut
 
-Définis dans [`FactoryIOInserterLoader.createDefaultInserters()`](../src/main/java/com/drimoz/factoryio/core/registery/FactoryIOInserterLoader.java#L72) :
+Définis dans [`InserterLoader.createDefaultInserters()`](../src/main/java/com/drimoz/factoryio/core/registry/InserterLoader.java#L72) :
 
 | Nom | Énergie | Filtre | Portée | Cooldown | Items/action | Capacité | Conso |
 |---|---|---|---|---|---|---|---|
@@ -121,18 +121,18 @@ Définis dans [`FactoryIOInserterLoader.createDefaultInserters()`](../src/main/j
 
 ## 4. Le registre dynamique
 
-[`FactoryIOInserterRegistry`](../src/main/java/com/drimoz/factoryio/core/registery/FactoryIOInserterRegistry.java) — singleton, `LinkedHashMap<ResourceLocation, Inserter>`.
+[`InserterRegistry`](../src/main/java/com/drimoz/factoryio/core/registry/InserterRegistry.java) — singleton, `LinkedHashMap<ResourceLocation, Inserter>`.
 
 Il expose une garde `allowRegistration` ouverte uniquement pendant `setup()` et
 pendant `RegistryEvent.Register<Block>`. Pour chaque inserter il fabrique à la volée :
 
 | Méthode | Crée |
 |---|---|
-| `onRegisterBlocks` | `FactoryIOInserterEntityBlock` (props copiées de `IRON_BLOCK`, `noOcclusion`) |
+| `onRegisterBlocks` | `InserterBlock` (props copiées de `IRON_BLOCK`, `noOcclusion`) |
 | `onRegisterBlockEntities` | `BlockEntityType.Builder.of(...).build(null)` |
-| `onRegisterItems` | `FactoryIOInserterItem.create(...)` avec `BlockEntityWithoutLevelRenderer` GeckoLib |
+| `onRegisterItems` | `InserterItem.create(...)` avec `BlockEntityWithoutLevelRenderer` GeckoLib |
 | `onRegisterContainers` | `IForgeMenuType.create(...)` lisant un `BlockPos` du buffer |
-| `onRegisterRenderers` | `FactoryIOInserterBlockEntityRenderer` |
+| `onRegisterRenderers` | `InserterBlockRenderer` |
 | `onRegisterScreens` | `MenuScreens.register(...)` |
 
 C'est **la bonne idée architecturale du projet** : ajouter un inserter = ajouter
@@ -145,8 +145,8 @@ supprimée à partir de 1.19.2 — c'est un mur pour toute montée de version.
 ## 5. Chaîne bloc / block entity / menu / écran
 
 ```
-FactoryIOInserterEntityBlock  (extends FactoryIOEntityBlockWaterLogged
-                                       → FactoryIOEntityBlock → BaseEntityBlock)
+InserterBlock  (extends WaterloggedEntityBlock
+                                       → ModEntityBlock → BaseEntityBlock)
    ├── properties : FACING (horizontal), ENABLED, WATERLOGGED
    ├── getShape        → cube plein 16³            ⚠ ne correspond pas au modèle
    ├── getRenderShape  → ENTITYBLOCK_ANIMATED      (rendu par le BER GeckoLib)
@@ -154,24 +154,24 @@ FactoryIOInserterEntityBlock  (extends FactoryIOEntityBlockWaterLogged
    ├── onRemove()      → drops()
    └── getTicker()     → serveur uniquement
 
-FactoryIOInserterBlockEntity  (extends FactoryIOBlockEntityMenuProvided, IAnimatable)
+InserterBlockEntity  (extends MenuBlockEntity, IAnimatable)
    ├── ItemStackHandler itemStorage   (taille = 1 + [1 si carburant] + [5 si filtre])
-   ├── FactoryIOEnergyContainer energyStorage (si électrique)
+   ├── EnergyContainer energyStorage (si électrique)
    ├── tick() statique                ← toute la logique de gameplay
    ├── suckItems() / expelItems()     ← transferts d'items
    ├── insertItemInternal() / extractItemInternal()
    └── createMenu()
 
-FactoryIOInserterContainer (extends FactoryIOContainer → AbstractContainerMenu)
+InserterContainer (extends BaseMenu → AbstractContainerMenu)
    ├── 36 slots joueur (index 0-35), puis slots machine (36+)
-   ├── SlotInserterBuffer / SlotInserterFuel / SlotInserterFilter ×5
+   ├── InserterBufferSlot / InserterFuelSlot / SlotInserterFilter ×5
    ├── quickMoveStack()  ⚠ cassé (BUG-009)
    └── clicked()         ← surcharge pour le comportement « fantôme » des filtres
 
-FactoryIOInserterScreen<T> (extends AbstractContainerScreen)
+InserterScreen<T> (extends AbstractContainerScreen)
    ├── 3 textures de GUI selon le type
-   ├── FactoryIOGuiEnergy (barre FE) / barre de carburant en dur
-   └── FactoryIOGuiButton (bascule whitelist/blacklist)
+   ├── GuiEnergyBar (barre FE) / barre de carburant en dur
+   └── GuiButton (bascule whitelist/blacklist)
 ```
 
 ### Plan des slots (piège majeur)
@@ -190,7 +190,7 @@ type :
 Sur un inserter électrique filtrant, **le premier slot de filtre porte l'index 1,
 soit la valeur de `FUEL_SLOT`**. Le container compense avec des
 `FILTER_SLOTS[i] - 1` disséminés
-([`FactoryIOInserterContainer.java:77-81`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterContainer.java#L77)),
+([`InserterContainer.java:77-81`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterContainer.java#L77)),
 et le BlockEntity avec des `getSlots() - 5`. Trois conventions différentes pour
 la même chose. C'est le foyer de dette n°1 du fichier.
 
@@ -199,7 +199,7 @@ la même chose. C'est le foyer de dette n°1 du fichier.
 ## 6. Modèle temporel
 
 ```java
-// FactoryIOInserterBlockEntity
+// InserterBlockEntity
 public static final int MAX_ACTIONS_PER_TICK = 10;   // nom trompeur : c'est un pas
 current_cooldown += MAX_ACTIONS_PER_TICK;            // +10 par tick
 if (current_cooldown >= getDurationBetweenActions())  // seuil = 400 ou 250
@@ -244,17 +244,17 @@ C'est le problème de performance n°1 ([BUG-004](03-BUGS.md)).
 ## 8. Pipeline d'assets (le mécanisme le plus original… et le plus risqué)
 
 ```
-FactoryIOPackGeneratorManager.registerDataProviders()   ← constructeur du mod
+PackGenerator.registerDataProviders()   ← constructeur du mod
       DataGenerator(output = config/factory_io/generated)
-      + FactoryIOLootGenerator          (loot tables des blocs)
-      + FactoryIOLangGenerator × N      (1 par TranslationCode déclaré en JSON)
+      + ModLootGenerator          (loot tables des blocs)
+      + ModLangGenerator × N      (1 par TranslationCode déclaré en JSON)
       + [client seulement] BlockModel / ItemModel / ItemTags / BlockTags
 
 AddPackFindersEvent
-      → FactoryIORepositorySource(DATA)     si PackType.SERVER_DATA
-      → FactoryIORepositorySource(RESOURCE) sinon
+      → PackRepositorySource(DATA)     si PackType.SERVER_DATA
+      → PackRepositorySource(RESOURCE) sinon
             loadPacks() → createSupplier()
-                  → FactoryIOPackGeneratorManager.generate()   ← écrit les fichiers
+                  → PackGenerator.generate()   ← écrit les fichiers
                   → new FactoryIOPackResources(...)            ← PathResourcePack
 ```
 
@@ -265,7 +265,7 @@ Conséquences :
   complet du jeu.
 - Les fichiers obsolètes ne sont **jamais nettoyés** : supprimer un inserter
   laisse ses modèles orphelins dans le pack.
-- [`FactoryIOPackResources.getMetadataSection()`](../src/main/java/com/drimoz/factoryio/core/ressourcepack/FactoryIOPackResources.java#L41)
+- `FactoryIOPackResources.getMetadataSection()` *(supprimée depuis)*
   appelle `Minecraft.getInstance()` — **classe absente d'un serveur dédié**
   (voir [BUG-005](03-BUGS.md)).
 - `PACK_FORMAT = 8` alors que les `pack.mcmeta` du mod déclarent `9`.
@@ -273,7 +273,7 @@ Conséquences :
   traduction ⇒ **par défaut, aucun nom d'objet n'est traduit** ([BUG-011](03-BUGS.md)).
 
 Le même ensemble de providers est aussi branché sur `GatherDataEvent`
-([`FactoryIODataGenerators`](../src/main/java/com/drimoz/factoryio/core/datagen/FactoryIODataGenerators.java))
+([`ModDataGenerators`](../src/main/java/com/drimoz/factoryio/core/datagen/ModDataGenerators.java))
 pour la tâche Gradle `runData` — mais `src/generated/resources` n'existe pas dans
 le dépôt, donc cette voie n'a jamais été utilisée.
 
@@ -281,11 +281,11 @@ le dépôt, donc cette voie n'a jamais été utilisée.
 
 ## 9. Rendu
 
-- **Bloc** : `FactoryIOInserterBlockEntityRenderer extends GeoBlockRenderer`,
+- **Bloc** : `InserterBlockRenderer extends GeoBlockRenderer`,
   `RenderType.entityTranslucent` (translucide pour un bloc opaque → tri des faces
   hasardeux).
-- **Item** : `FactoryIOInserterItemRenderer extends GeoItemRenderer`, branché via
-  `IItemRenderProperties` dans `FactoryIOInserterItem.create()`.
+- **Item** : `InserterItemRenderer extends GeoItemRenderer`, branché via
+  `IItemRenderProperties` dans `InserterItem.create()`.
 - **Modèles GeckoLib** : `geo/{energy,filter,fuel}_inserter.geo.json`, bones
   `inserter`, `bearing`, `base`, `base_top`.
 - **Animation** : `animations/animated_block.animation.json` anime un bone nommé
@@ -293,7 +293,7 @@ le dépôt, donc cette voie n'a jamais été utilisée.
   silencieusement ignorée ([BUG-016](03-BUGS.md)).
 - Le blockstate généré choisit entre texture normale et `_disabled` selon
   `ENABLED`, mais le BER GeckoLib choisit lui aussi la texture via
-  `FactoryIOInserterBlockEntityModel.getTextureLocation()` : double source de
+  `InserterGeoModel.getTextureLocation()` : double source de
   vérité.
 
 ---
@@ -305,7 +305,7 @@ modèles et textures pour **3 convoyeurs** (`transport_belt`, `fast_`, `express_
 avec une propriété `connected` à 8 valeurs et 8 variantes de modèle par direction.
 
 Il n'existe **aucune classe Java** correspondante. Ces fichiers sont inertes.
-`FactoryIOCommonConfigs` réserve déjà `BELT_COOLDOWN`, `FAST_BELT_COOLDOWN`,
+`CommonConfig` réserve déjà `BELT_COOLDOWN`, `FAST_BELT_COOLDOWN`,
 `EXPRESS_BELT_COOLDOWN` — jamais lus.
 
 De même, 33 items (plaques, circuits, science packs, modules, uranium…) sont

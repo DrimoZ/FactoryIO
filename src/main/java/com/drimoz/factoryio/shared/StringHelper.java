@@ -23,15 +23,15 @@ public final class StringHelper {
                 .append(Component.literal(" / ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(normalize(format.format(capacity))).withStyle(ChatFormatting.RED))
                 .append(Component.literal(" ").withStyle(ChatFormatting.DARK_RED)
-                        .append(FactoryIOUtils.tooltipComponent("energy_name")));
+                        .append(ModUtils.tooltipComponent("energy_name")));
     }
 
     // Interface (Tooltips)
 
     public static Component getShiftInfoText() {
-        MutableComponent hold = FactoryIOUtils.tooltipComponent("hold").withStyle(ChatFormatting.GRAY);
+        MutableComponent hold = ModUtils.tooltipComponent("hold").withStyle(ChatFormatting.GRAY);
         MutableComponent shift = Component.literal(" [Shift] ").withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC);
-        MutableComponent details = FactoryIOUtils.tooltipComponent("for_details").withStyle(ChatFormatting.GRAY);
+        MutableComponent details = ModUtils.tooltipComponent("for_details").withStyle(ChatFormatting.GRAY);
 
         return hold.append(shift).append(details);
     }
