@@ -110,6 +110,12 @@ dependencies {
     compileOnly fg.deobf("mezz.jei:jei-${mc_version}-common-api:${jei_version}")
     compileOnly fg.deobf("mezz.jei:jei-${mc_version}-forge-api:${jei_version}")
 
+    // JUnit couvre le calcul pur : plans de slots, trajectoires, barèmes. Tout ce qui
+    // demande un monde reste du ressort des GameTests (cf. DT-11).
+    testImplementation platform("org.junit:junit-bom:${junit_version}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
     // Mods tiers utilisés uniquement pour les tests manuels d'interopérabilité.
     // Désactivés par défaut : ils ralentissent runClient et peuvent entrer en conflit.
     //   ./gradlew runClient -PwithTestMods
@@ -149,6 +155,18 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+// Les tests JUnit touchent des classes Minecraft (Direction, Mth, Vec3) sans démarrer de
+// serveur. Le classpath suffit : ces classes n'ont pas besoin de Bootstrap.bootStrap()
+// tant qu'on ne touche ni aux registres ni aux ressources. Un test qui en aurait besoin
+// est un test qui appartient aux GameTests.
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+    }
 }
 
 // Les structures de GameTest sont lues depuis un dossier du répertoire de jeu

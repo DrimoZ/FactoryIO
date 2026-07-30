@@ -321,20 +321,19 @@ Barème Factorio de référence (à 60 UPS, converti en ticks Minecraft à 20 tp
 
 ---
 
-## DT-11 — Tests partiels, aucune mesure
+## DT-11 — Tests en place, mesure toujours absente
 
 **Impact : élevé · Effort : M · Quand : Phase 1 puis continu**
 
-**Partiellement traité.** Six GameTests existent
-([`FactoryIOGameTests`](../src/main/java/com/drimoz/factoryio/gametest/FactoryIOGameTests.java),
-`./gradlew runGameTestServer`) et couvrent les invariants de monde : conservation des
-items, ravitaillement, redstone, persistance du filtre, synchronisation de l'item
-transporté.
+**Largement traité.** Deux étages de tests, avec un partage net des rôles :
 
-Reste à faire : le **socle JUnit** pour le calcul pur — `src/test/` est un dossier vide,
-`build.gradle` ne déclare ni `sourceSet` de test ni dépendance
-([BUG-040](03-BUGS.md), FIO-055) — et le **benchmark** de charge, toujours absent
-(FIO-073). Le tableau ci-dessous liste les tests visés ; ceux marqués ✅ existent.
+- **GameTests** — les invariants de monde, ceux qui demandent un serveur, des blocs et
+  des ticks ([`FactoryIOGameTests`](../src/main/java/com/drimoz/factoryio/gametest/FactoryIOGameTests.java),
+  `./gradlew runGameTestServer`).
+- **JUnit** — le calcul pur, sans monde : plans de slots, trajectoires, barèmes
+  (`src/test/java`, `./gradlew test`, exécuté par `build`). Les classes Minecraft de
+  valeur (`Direction`, `Mth`, `Vec3`) s'y chargent sans `Bootstrap.bootStrap()` ; dès
+  qu'un test aurait besoin des registres ou des ressources, c'est un GameTest.
 
 | Test | Type | |
 |---|---|---|
@@ -343,9 +342,13 @@ Reste à faire : le **socle JUnit** pour le calcul pur — `src/test/` est un do
 | « les filtres survivent à un rechargement de monde » | GameTest | ✅ |
 | « un signal redstone désactive l'inserter » | GameTest | ✅ |
 | « l'item transporté part vers les clients » | GameTest | ✅ |
-| `InserterDefinition` : parsing JSON valide / invalide | JUnit | |
-| `InserterSlotLayout` : cohérence pour les 4 combinaisons | JUnit | |
-| 1 000 inserters actifs < 2 ms/tick | benchmark | |
+| `InserterSlotLayout` : cohérence pour les 4 combinaisons | JUnit | ✅ |
+| `InserterCarryPath` : sens, continuité, bornes | JUnit | ✅ |
+| `InserterDefinition` : parsing JSON valide / invalide | JUnit | avec FIO-034 |
+| 1 000 inserters actifs < 2 ms/tick | benchmark | FIO-073 |
+
+Reste donc la **mesure** : aucun benchmark n'existe, et le budget de DT-07 n'est pour
+l'instant qu'une intention (FIO-073).
 
 ---
 

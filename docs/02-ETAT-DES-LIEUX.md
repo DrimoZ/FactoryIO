@@ -29,8 +29,9 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Pack de ressources/data généré au runtime | 🟡 | ne dépend plus du code client (BUG-005) ; toujours pas de régénération à chaud ni de nettoyage |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 6 tests, `./gradlew runGameTestServer` |
-| Tests (JUnit) | ⬜ | `src/test/` est vide, aucun `sourceSet` déclaré (BUG-040, FIO-055) |
+| Tests (GameTest) | ✅ | 6 tests d'invariants de monde, `./gradlew runGameTestServer` |
+| Tests (JUnit) | ✅ | 31 tests de calcul pur, `./gradlew test`, exécutés par `build` |
+| Benchmark de charge | ⬜ | budget DT-07 non mesuré (FIO-073) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
 
 ## 2. Inserters

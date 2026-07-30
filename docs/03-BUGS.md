@@ -1,14 +1,14 @@
 # 03 — Catalogue des bugs
 
-> **État : 35 bugs sur 40 corrigés**, plus 1 partiellement (BUG-020).
+> **État : 36 bugs sur 40 corrigés**, plus 1 partiellement (BUG-020).
 >
 > Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Six GameTests
-> couvrent désormais les invariants (`./gradlew runGameTestServer`), mais le **rendu**
-> n'est validé par aucun test : ce qui touche à l'affichage reste « écrit et compilé »,
-> pas « vu à l'écran » (cf. FIO-054).
+> couvrent les invariants de monde (`./gradlew runGameTestServer`) et 31 tests JUnit le
+> calcul pur (`./gradlew test`). Le **rendu**, lui, n'est validé par aucun test : ce qui
+> touche à l'affichage reste « écrit et compilé », pas « vu à l'écran » (cf. FIO-054).
 >
-> Restent à traiter : BUG-016 (géométrie du bras à redécouper, FIO-066 en pause), BUG-036,
-> BUG-038 et BUG-040 — tous S3, relevés lors de l'audit du 30/07/2026.
+> Restent à traiter : BUG-016 (géométrie du bras à redécouper, FIO-066 en pause),
+> BUG-036 et BUG-038 — tous S3, relevés lors de l'audit du 30/07/2026.
 
 Sévérités :
 **S0** bloquant (crash / mod inutilisable) ·
@@ -59,7 +59,7 @@ Sévérités :
 | [BUG-037](#bug-037) | ✅ S3 | L'arrivée d'énergie ne réveille pas un inserter endormi | `…InserterBlockEntity.java` |
 | [BUG-038](#bug-038) | S3 | Débit réel moitié du débit documenté | `…InserterBlockEntity.java` |
 | [BUG-039](#bug-039) | ✅ S3 | `README` : nom de jar et mappings faux | `README.md` |
-| [BUG-040](#bug-040) | S3 | Aucun test JUnit alors que FIO-035 l'exigeait | `src/test/` |
+| [BUG-040](#bug-040) | ✅ S3 | Aucun test JUnit alors que FIO-035 l'exigeait | `src/test/` |
 
 ---
 
@@ -863,7 +863,7 @@ sans quoi tous les inserters seront deux fois trop lents.
 
 ---
 
-## BUG-040 — Aucun test JUnit alors que FIO-035 l'exigeait (S3)
+## BUG-040 — Aucun test JUnit alors que FIO-035 l'exigeait (S3) ✅
 
 Le critère d'acceptation de [FIO-035](06-BACKLOG.md) est « JUnit sur les 4
 combinaisons énergie×filtre », et [DT-11](04-DETTE-TECHNIQUE.md) prévoit des tests
