@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.generic.block;
 
+import com.drimoz.factoryio.core.inserters.FactoryIOInserterBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.MenuProvider;
@@ -70,6 +71,12 @@ public abstract class FactoryIOEntityBlock extends BaseEntityBlock {
         super.neighborChanged(pState, pLevel, pPos, pBlock, pFromPos, pIsMoving);
 
         this.checkPoweredState(pLevel, pPos, pState);
+
+        // Un coffre posé ou cassé à côté doit invalider les inventaires mémorisés et
+        // relancer la machine (cf. DT-07).
+        if (!pLevel.isClientSide && pLevel.getBlockEntity(pPos) instanceof FactoryIOInserterBlockEntity inserter) {
+            inserter.onNeighbourChanged();
+        }
     }
 
     /**

@@ -97,6 +97,20 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
      */
     private long swingEndTick = 0L;
 
+    // Optimisations du tick (DT-07) — jamais persistées, purement locales.
+
+    /** Inventaires voisins mémorisés ; {@code null} = à résoudre. */
+    private LazyOptional<IItemHandler> cachedSource;
+    private LazyOptional<IItemHandler> cachedTarget;
+
+    /** Dernier slot ayant abouti, pour repartir de là plutôt que du slot 0. */
+    private int lastSourceSlot = 0;
+    private int lastTargetSlot = 0;
+
+    /** Mise en sommeil après des tentatives infructueuses répétées. */
+    private int failedAttempts = 0;
+    private int sleepTicks = 0;
+
     private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
 
     // Life cycle
@@ -147,6 +161,9 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             @Override
             protected void onContentsChanged(int slot) {
                 setChanged();
+
+                // Du carburant déposé à la main doit relancer un inserter endormi.
+                wakeUp();
             }
 
             @NotNull
@@ -375,40 +392,76 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
         if (!pEntity.isEnabled()) return;
 
+        pEntity.burnFuel();
+
+        // Inserter endormi : rien à faire tant qu'il n'est pas réveillé (cf. DT-07).
+        if (pEntity.sleepTicks > 0) {
+            pEntity.sleepTicks--;
+            return;
+        }
+
         if (pEntity.current_cooldown < pEntity.getDurationBetweenActions()) {
             pEntity.current_cooldown += MAX_ACTIONS_PER_TICK;
         }
 
-        if (pEntity.current_cooldown >= pEntity.getDurationBetweenActions()) {
+        if (pEntity.current_cooldown < pEntity.getDurationBetweenActions()) return;
 
-            // Le ravitaillement en carburant est gratuit et prioritaire : le conditionner
-            // à la réserve courante enfermerait tout burner à sec dans un blocage
-            // définitif (cf. BUG-012).
-            if (pEntity.needsFuel() && refuel(pEntity, pLevel, pEntity.getGrabDistance())) {
-                pEntity.current_cooldown = 0;
-            }
-            else if (pEntity.hasPowerForAction()) {
-                // TODO : Multiply item/energy count instead of for loop
-                for (int i = 0; i < pEntity.getActionMultiplier(); i++) {
-                    if (pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()) {
-                        if (suckItems(pEntity, pLevel, pEntity.getGrabDistance(), pEntity.isWhitelist())) {
-                            pEntity.current_cooldown = 0;
-                            pEntity.useFuelOrEnergy();
-                            pEntity.startSwing();
-                        }
-                    } else {
-                        if (expelItems(pEntity, pLevel, pEntity.getGrabDistance())) {
-                            pEntity.current_cooldown = 0;
-                            pEntity.useFuelOrEnergy();
-                            pEntity.startSwing();
-                        }
-                    }
+        boolean acted = false;
+
+        // Le ravitaillement en carburant est gratuit et prioritaire : le conditionner
+        // à la réserve courante enfermerait tout burner à sec dans un blocage
+        // définitif (cf. BUG-012).
+        if (pEntity.needsFuel() && refuel(pEntity, pLevel, pEntity.getGrabDistance())) {
+            pEntity.current_cooldown = 0;
+            acted = true;
+        }
+        else if (pEntity.hasPowerForAction()) {
+            // TODO : Multiply item/energy count instead of for loop
+            for (int i = 0; i < pEntity.getActionMultiplier(); i++) {
+                boolean moved = pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()
+                        ? suckItems(pEntity, pLevel, pEntity.getGrabDistance(), pEntity.isWhitelist())
+                        : expelItems(pEntity, pLevel, pEntity.getGrabDistance());
+
+                if (moved) {
+                    pEntity.current_cooldown = 0;
+                    pEntity.useFuelOrEnergy();
+                    pEntity.startSwing();
+                    acted = true;
                 }
             }
         }
 
-        pEntity.burnFuel();
+        if (acted) {
+            pEntity.failedAttempts = 0;
+        } else {
+            pEntity.registerFailedAttempt();
+        }
     }
+
+    /**
+     * Espace les tentatives d'un inserter qui n'aboutit pas.
+     *
+     * <p>Un inserter face à un mur, ou dont le coffre est vide, réévaluait la situation
+     * vingt fois par seconde indéfiniment. Le recul est plafonné à une seconde pour que
+     * la reprise reste imperceptible — et parce qu'un voisin situé à deux blocs ne
+     * déclenche aucun {@code neighborChanged} qui pourrait réveiller l'inserter.
+     */
+    private void registerFailedAttempt() {
+        this.failedAttempts++;
+
+        if (this.failedAttempts < FAILURES_BEFORE_SLEEP) return;
+
+        this.sleepTicks = Math.min(this.failedAttempts, MAX_SLEEP_TICKS);
+    }
+
+    /** Relance immédiatement un inserter endormi. */
+    private void wakeUp() {
+        this.failedAttempts = 0;
+        this.sleepTicks = 0;
+    }
+
+    private static final int FAILURES_BEFORE_SLEEP = 5;
+    private static final int MAX_SLEEP_TICKS = 20;
 
     // Interface (Animation)
 
@@ -460,7 +513,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     private static boolean refuel(FactoryIOInserterBlockEntity pEntity, Level pLevel, int pDistance) {
         Direction facing = getFacing(pEntity);
 
-        IItemHandler source = neighbourHandler(pEntity, pLevel, facing.getOpposite(), pDistance, facing);
+        IItemHandler source = pEntity.neighbourHandler(true, facing.getOpposite(), pDistance, facing);
         if (source == null) return false;
 
         return grabInto(pEntity, source, pEntity.LAYOUT.fuel(), stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL));
@@ -695,12 +748,47 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
      * @param offset  direction dans laquelle chercher le voisin, depuis l'inserter
      * @param side    face du voisin en contact avec l'inserter, du point de vue du voisin
      */
+    /**
+     * Résout l'inventaire voisin, avec cache.
+     *
+     * <p>Sans cache, chaque action coûtait un {@code getBlockEntity} suivi d'un
+     * {@code getCapability} — sur le chemin le plus chaud du mod (cf. DT-07).
+     *
+     * <p>Seuls les résultats <b>positifs</b> sont mémorisés, et l'invalidation est
+     * confiée au {@code LazyOptional} lui-même. Mettre en cache une absence serait
+     * dangereux : un coffre posé à deux blocs (long handed inserter) ne déclenche aucun
+     * {@code neighborChanged} sur l'inserter, le cache négatif ne serait donc jamais
+     * invalidé. C'est la mise en sommeil qui borne le coût des recherches infructueuses.
+     */
     @Nullable
-    private static IItemHandler neighbourHandler(BlockEntity pEntity, Level pLevel, Direction offset, int pDistance, Direction side) {
-        BlockEntity neighbour = pLevel.getBlockEntity(pEntity.getBlockPos().relative(offset, pDistance));
+    private IItemHandler neighbourHandler(boolean source, Direction offset, int pDistance, Direction side) {
+        LazyOptional<IItemHandler> cached = source ? cachedSource : cachedTarget;
+        if (cached != null && cached.isPresent()) return cached.orElse(null);
+
+        if (this.level == null) return null;
+
+        BlockEntity neighbour = this.level.getBlockEntity(this.worldPosition.relative(offset, pDistance));
         if (neighbour == null) return null;
 
-        return neighbour.getCapability(ForgeCapabilities.ITEM_HANDLER, side).orElse(null);
+        LazyOptional<IItemHandler> capability = neighbour.getCapability(ForgeCapabilities.ITEM_HANDLER, side);
+        if (!capability.isPresent()) return null;
+
+        if (source) {
+            cachedSource = capability;
+            capability.addListener(ignored -> cachedSource = null);
+        } else {
+            cachedTarget = capability;
+            capability.addListener(ignored -> cachedTarget = null);
+        }
+
+        return capability.orElse(null);
+    }
+
+    /** Oublie les inventaires voisins et relance l'inserter. */
+    public void onNeighbourChanged() {
+        this.cachedSource = null;
+        this.cachedTarget = null;
+        wakeUp();
     }
 
     /** Nombre d'items de {@code stack} que le slot interne {@code slot} peut réellement accueillir. */
@@ -716,11 +804,18 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         return Math.max(0, Math.min(stack.getCount(), current.getMaxStackSize() - current.getCount()));
     }
 
-    /** Nombre d'items de {@code stack} que {@code handler} accepte, tous slots confondus. */
-    private static int simulateInsert(IItemHandler handler, @Nonnull ItemStack stack) {
+    /**
+     * Nombre d'items de {@code stack} que {@code handler} accepte, tous slots confondus.
+     *
+     * <p>Balaye dans le même ordre que {@link #insertDistributed}, sans quoi la quantité
+     * simulée ne correspondrait pas à ce qui sera réellement inséré.
+     */
+    private static int simulateInsert(IItemHandler handler, @Nonnull ItemStack stack, int startSlot) {
         int remaining = stack.getCount();
+        int slots = handler.getSlots();
 
-        for (int slot = 0; slot < handler.getSlots() && remaining > 0; slot++) {
+        for (int offset = 0; offset < slots && remaining > 0; offset++) {
+            int slot = Math.floorMod(startSlot + offset, slots);
             remaining = handler.insertItem(slot, ItemHandlerHelper.copyStackWithSize(stack, remaining), true).getCount();
         }
 
@@ -729,10 +824,12 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     /** Insère en répartissant sur plusieurs slots. @return ce qui n'a pas pu être placé */
     @Nonnull
-    private static ItemStack insertDistributed(IItemHandler handler, @Nonnull ItemStack stack) {
+    private static ItemStack insertDistributed(IItemHandler handler, @Nonnull ItemStack stack, int startSlot) {
         ItemStack remaining = stack;
+        int slots = handler.getSlots();
 
-        for (int slot = 0; slot < handler.getSlots() && !remaining.isEmpty(); slot++) {
+        for (int offset = 0; offset < slots && !remaining.isEmpty(); offset++) {
+            int slot = Math.floorMod(startSlot + offset, slots);
             remaining = handler.insertItem(slot, remaining, false);
         }
 
@@ -772,8 +869,14 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
      */
     private static boolean grabInto(FactoryIOInserterBlockEntity pEntity, IItemHandler source, int targetSlot, Predicate<ItemStack> accept) {
         int wanted = pEntity.getMaximumItemCountPerAction();
+        int slots = source.getSlots();
 
-        for (int slot = 0; slot < source.getSlots(); slot++) {
+        for (int offset = 0; offset < slots; offset++) {
+            // Balayage circulaire depuis le dernier slot fructueux : sur un grand coffre
+            // dont seuls les derniers slots sont remplis, le coût devient constant en
+            // régime établi au lieu d'être proportionnel à la taille (cf. DT-07).
+            int slot = Math.floorMod(pEntity.lastSourceSlot + offset, slots);
+
             ItemStack probe = source.extractItem(slot, wanted, true);
             if (probe.isEmpty() || !accept.test(probe)) continue;
 
@@ -783,6 +886,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             ItemStack taken = source.extractItem(slot, movable, false);
             if (taken.isEmpty()) continue;
 
+            pEntity.lastSourceSlot = slot;
             pEntity.rescueLeftover(
                     pEntity.insertItemInternal(targetSlot, taken, false),
                     rest -> ItemHandlerHelper.insertItem(source, rest, false));
@@ -796,7 +900,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         Direction facing = getFacing(pEntity);
 
         // La face du coffre en contact avec l'inserter, vue depuis le coffre, est `facing`.
-        IItemHandler source = neighbourHandler(pEntity, pLevel, facing.getOpposite(), pDistance, facing);
+        IItemHandler source = pEntity.neighbourHandler(true, facing.getOpposite(), pDistance, facing);
         if (source == null) return false;
 
         // 1. Ravitaillement en carburant tant que le buffer interne n'est pas rempli.
@@ -824,7 +928,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
         // La face de la cible en contact avec l'inserter, vue depuis la cible, est l'opposé
         // de `facing` (cf. BUG-023).
-        IItemHandler target = neighbourHandler(pEntity, pLevel, facing, pDistance, facing.getOpposite());
+        IItemHandler target = pEntity.neighbourHandler(false, facing, pDistance, facing.getOpposite());
         if (target == null) return false;
 
         int wanted = Math.min(buffer.getCount(), pEntity.getMaximumItemCountPerAction());
@@ -832,14 +936,17 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         ItemStack probe = pEntity.extractItemInternal(BUFFER_SLOT, wanted, true);
         if (probe.isEmpty()) return false;
 
-        int movable = simulateInsert(target, probe);
+        int startSlot = Math.floorMod(pEntity.lastTargetSlot, Math.max(1, target.getSlots()));
+
+        int movable = simulateInsert(target, probe, startSlot);
         if (movable <= 0) return false;
 
         ItemStack taken = pEntity.extractItemInternal(BUFFER_SLOT, movable, false);
         if (taken.isEmpty()) return false;
 
+        pEntity.lastTargetSlot = startSlot;
         pEntity.rescueLeftover(
-                insertDistributed(target, taken),
+                insertDistributed(target, taken, startSlot),
                 rest -> pEntity.insertItemInternal(BUFFER_SLOT, rest, false));
         return true;
     }
