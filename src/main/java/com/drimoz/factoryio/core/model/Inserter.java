@@ -5,31 +5,48 @@ import com.drimoz.factoryio.core.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterContainer;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterItem;
-import net.minecraft.network.chat.Component;
-
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.util.function.Supplier;
 
+/**
+ * Définition d'un type d'inserter.
+ *
+ * <p>Les paramètres de gameplay sont <b>immuables</b> et validés à la construction.
+ * L'ancienne version exposait quatorze setters publics dont l'ordre d'appel comptait
+ * — {@code setUseEnergy} devait précéder {@code setEnergyCapacity}, faute de quoi la
+ * capacité était silencieusement remise à -1 (cf. DT-04).
+ *
+ * <p>Les valeurs hors bornes sont toujours ramenées dans le domaine valide, mais avec
+ * un message dans le journal : une erreur dans un JSON utilisateur ne doit pas passer
+ * inaperçue.
+ *
+ * <p>Seules les références runtime (bloc, item, block entity, menu) restent mutables :
+ * elles sont renseignées pendant l'enregistrement, une fois par type.
+ */
 public class Inserter {
 
     // Private Properties
 
     private final ResourceLocation id;
-    private final Component displayNameComponent;
-    private boolean filterable;
-    private boolean useEnergy;
-    private boolean affectedByRedstone;
-    private int energyCapacity;
-    private int energyTransferRate;
-    private int energyConsumption;
-    private int fuelCapacity;
-    private int fuelConsumption;
-    private int grabDistance;
-    private int cooldownBetweenActions;
-    private int preferredItemCountPerAction;
+
+    private final boolean filterable;
+    private final boolean useEnergy;
+    private final boolean affectedByRedstone;
+
+    private final int energyCapacity;
+    private final int energyTransferRate;
+    private final int energyConsumption;
+
+    private final int fuelCapacity;
+    private final int fuelConsumption;
+
+    private final int grabDistance;
+    private final int cooldownBetweenActions;
+    private final int preferredItemCountPerAction;
+
     private ResourceLocation texture;
 
     private Supplier<FactoryIOInserterEntityBlock> blockSupplier;
@@ -37,40 +54,41 @@ public class Inserter {
     private Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> blockEntityTypeSupplier;
     private Supplier<MenuType<FactoryIOInserterContainer>> menuTypeSupplier;
 
-    private Translation translation = new Translation();
+    private final Translation translation = new Translation();
 
     // Lifecycle
 
-    public Inserter (
+    /** Inserter à carburant. */
+    public static Inserter burner(
             ResourceLocation id, boolean affectedByRedstone,
             int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
+            boolean filterable,
             int fuelCapacity, int fuelConsumption
     ) {
-        this(
+        return new Inserter(
                 id, affectedByRedstone,
                 grabDistance, cooldownBetweenActions, preferredItemCountPerAction,
-                false, false,
+                filterable, false,
                 fuelCapacity, fuelConsumption,
-                -1, -1, -1
-        );
+                0, 0, 0);
     }
 
-    public Inserter (
+    /** Inserter électrique. */
+    public static Inserter electric(
             ResourceLocation id, boolean affectedByRedstone,
             int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
             boolean filterable,
             int energyCapacity, int energyTransferRate, int energyConsumption
     ) {
-        this(
+        return new Inserter(
                 id, affectedByRedstone,
                 grabDistance, cooldownBetweenActions, preferredItemCountPerAction,
                 filterable, true,
-                -1, -1,
-                energyCapacity, energyTransferRate, energyConsumption
-        );
+                0, 0,
+                energyCapacity, energyTransferRate, energyConsumption);
     }
 
-    public Inserter (
+    public Inserter(
             ResourceLocation id, boolean affectedByRedstone,
             int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
             boolean filterable, boolean useEnergy,
@@ -79,28 +97,29 @@ public class Inserter {
     ) {
         this.id = id;
 
+        // Les deux dimensions sont indépendantes : un inserter filtrant à carburant est
+        // une combinaison légitime, que l'ancien setUseEnergy interdisait (cf. BUG-014).
         this.filterable = filterable;
-
-        setUseEnergy(useEnergy);
+        this.useEnergy = useEnergy;
 
         this.affectedByRedstone = affectedByRedstone;
 
-        setEnergyCapacity(energyCapacity);
-        setEnergyTransferRate(energyTransferRate);
-        setEnergyConsumption(energyConsumption);
+        this.grabDistance = atLeastOne(id, "grabDistance", grabDistance);
+        this.cooldownBetweenActions = atLeastOne(id, "cooldownBetweenActions", cooldownBetweenActions);
+        this.preferredItemCountPerAction = atLeastOne(id, "preferredItemCountPerAction", preferredItemCountPerAction);
 
-        setFuelCapacity(fuelCapacity);
-        setFuelConsumption(fuelConsumption);
+        this.energyCapacity = useEnergy ? atLeastOne(id, "energyCapacity", energyCapacity) : UNUSED;
+        this.energyTransferRate = useEnergy ? atLeastOne(id, "energyTransferRate", energyTransferRate) : UNUSED;
+        this.energyConsumption = useEnergy ? atLeastOne(id, "energyConsumption", energyConsumption) : UNUSED;
 
+        this.fuelCapacity = useEnergy ? UNUSED : atLeastOne(id, "fuelCapacity", fuelCapacity);
+        this.fuelConsumption = useEnergy ? UNUSED : atLeastOne(id, "fuelConsumption", fuelConsumption);
 
-        setGrabDistance(grabDistance);
-        setCooldownBetweenActions(cooldownBetweenActions);
-        setPreferredItemCountPerAction(preferredItemCountPerAction);
-
-        this.displayNameComponent = Component.translatable(String.format("%s.%s", FactoryIO.MOD_ID, this.getName()));
         this.texture = new ResourceLocation(FactoryIO.MOD_ID, "block/inserters/" + getName());
-
     }
+
+    /** Valeur des champs sans objet pour ce mode d'alimentation. */
+    public static final int UNUSED = -1;
 
     // Interface
 
@@ -116,100 +135,48 @@ public class Inserter {
         return this.getId().getNamespace();
     }
 
-    public String getNameWithSuffix(String suffix) {
-        return String.format("%s_%s", this.getName(), suffix);
-    }
-
-    public Component getDisplayNameComponent() {
-        return this.displayNameComponent;
-    }
-
     public boolean isFilterable() {
         return filterable;
-    }
-
-    public void setFilterable(boolean filterable) {
-        this.filterable = filterable;
     }
 
     public boolean useEnergy() {
         return useEnergy;
     }
 
-    public void setUseEnergy(boolean useEnergy) {
-        this.useEnergy = isFilterable() || useEnergy;
-    }
-
     public boolean isAffectedByRedstone() {
         return affectedByRedstone;
-    }
-
-    public void setAffectedByRedstone(boolean affectedByRedstone) {
-        this.affectedByRedstone = affectedByRedstone;
     }
 
     public int getEnergyCapacity() {
         return energyCapacity;
     }
 
-    public void setEnergyCapacity(int energyCapacity) {
-        this.energyCapacity = useEnergy ? energyCapacity > 0 ? energyCapacity : 1 : -1;
-    }
-
     public int getEnergyTransferRate() {
         return energyTransferRate;
-    }
-
-    public void setEnergyTransferRate(int energyTransferRate) {
-        this.energyTransferRate = useEnergy ? energyTransferRate > 0 ? energyTransferRate : 1 : -1;
     }
 
     public int getEnergyConsumption() {
         return energyConsumption;
     }
 
-    public void setEnergyConsumption(int energyConsumption) {
-        this.energyConsumption = useEnergy ? energyConsumption > 0 ? energyConsumption : 1 : -1;
-    }
-
     public int getFuelCapacity() {
         return fuelCapacity;
-    }
-
-    public void setFuelCapacity(int fuelCapacity) {
-        this.fuelCapacity = !useEnergy ? fuelCapacity > 0 ? fuelCapacity : 1 : -1;
     }
 
     public int getFuelConsumption() {
         return fuelConsumption;
     }
 
-    public void setFuelConsumption(int fuelConsumption) {
-        this.fuelConsumption = !useEnergy ? fuelConsumption > 0 ? fuelConsumption : 1 : -1;
-    }
-
     public int getGrabDistance() {
         return grabDistance;
-    }
-
-    public void setGrabDistance(int grabDistance) {
-        this.grabDistance = grabDistance > 0 ? grabDistance : 1;
     }
 
     public int getCooldownBetweenActions() {
         return cooldownBetweenActions;
     }
 
-    public void setCooldownBetweenActions(int cooldownBetweenActions) {
-        this.cooldownBetweenActions = cooldownBetweenActions > 0 ? cooldownBetweenActions : 1;
-    }
-
     public int getPreferredItemCountPerAction() {
         return preferredItemCountPerAction;
-    }
-
-    public void setPreferredItemCountPerAction(int preferredItemCountPerAction) {
-        this.preferredItemCountPerAction = preferredItemCountPerAction > 0 ? preferredItemCountPerAction : 1;
     }
 
     public ResourceLocation getTexture() {
@@ -219,6 +186,12 @@ public class Inserter {
     public void setTexture(ResourceLocation texture) {
         this.texture = texture;
     }
+
+    public Translation getTranslation() {
+        return translation;
+    }
+
+    // Interface (Références runtime)
 
     public Supplier<FactoryIOInserterEntityBlock> getBlock() {
         return this.blockSupplier;
@@ -232,17 +205,16 @@ public class Inserter {
         return this.blockEntityTypeSupplier;
     }
 
+    public void setBlockEntityType(Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> blockEntityTypeSupplier) {
+        this.blockEntityTypeSupplier = blockEntityTypeSupplier;
+    }
+
     public Supplier<FactoryIOInserterItem> getItem() {
         return this.itemSupplier;
     }
 
     public void setItem(Supplier<FactoryIOInserterItem> itemSupplier) {
         this.itemSupplier = itemSupplier;
-    }
-
-
-    public void setBlockEntityType(Supplier<BlockEntityType<FactoryIOInserterBlockEntity>> blockEntityTypeSupplier) {
-        this.blockEntityTypeSupplier = blockEntityTypeSupplier;
     }
 
     public Supplier<MenuType<FactoryIOInserterContainer>> getMenuType() {
@@ -253,15 +225,25 @@ public class Inserter {
         this.menuTypeSupplier = menuTypeSupplier;
     }
 
-    public Translation getTranslation() {
-        return translation;
+    // Inner work
+
+    /**
+     * Ramène une valeur à 1 minimum, en le signalant.
+     *
+     * <p>La coercition silencieuse de l'ancien code ({@code x > 0 ? x : 1}) masquait
+     * les fautes de frappe dans les JSON utilisateur.
+     */
+    private static int atLeastOne(ResourceLocation id, String field, int value) {
+        if (value >= 1) return value;
+
+        FactoryIO.LOGGER.warn("{} : {} = {} est invalide, valeur ramenée à 1", id, field, value);
+        return 1;
     }
 
     @Override
     public String toString() {
         return "Inserter{" +
                 "id=" + id +
-                ", displayName=" + displayNameComponent +
                 ", filterable=" + filterable +
                 ", useEnergy=" + useEnergy +
                 ", affectedByRedstone=" + affectedByRedstone +
@@ -274,9 +256,6 @@ public class Inserter {
                 ", cooldownBetweenActions=" + cooldownBetweenActions +
                 ", preferredItemCountPerAction=" + preferredItemCountPerAction +
                 ", texture=" + texture +
-                ", blockEntityTypeSupplier=" + blockEntityTypeSupplier +
-                ", blockSupplier=" + blockSupplier +
-                ", menuTypeSupplier=" + menuTypeSupplier +
                 '}';
     }
 }

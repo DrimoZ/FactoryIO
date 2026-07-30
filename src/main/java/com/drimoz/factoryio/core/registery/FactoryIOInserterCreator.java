@@ -15,28 +15,32 @@ public class FactoryIOInserterCreator {
 
         var useEnergy = GsonHelper.getAsBoolean(json, "useEnergy", false);
 
+        // « filterable » est lu dans les deux modes : un inserter filtrant à carburant
+        // est une combinaison valide (cf. BUG-014). Auparavant la clé n'était même pas
+        // consultée pour un inserter à carburant.
+        var filterable = GsonHelper.getAsBoolean(json, "filterable", false);
+        var affectedByRedstone = GsonHelper.getAsBoolean(json, "affectedByRedstone", false);
+        var grabDistance = GsonHelper.getAsInt(json, "grabDistance", 1);
+        var cooldown = GsonHelper.getAsInt(json, "cooldownBetweenActions", 400);
+        var itemsPerAction = GsonHelper.getAsInt(json, "preferredItemCountPerAction", 1);
+
         if (useEnergy) {
-            inserter = new Inserter(
-                    id,
-                    GsonHelper.getAsBoolean(json, "affectedByRedstone", false),
-                    GsonHelper.getAsInt(json, "grabDistance", -1),
-                    GsonHelper.getAsInt(json, "cooldownBetweenActions", -1),
-                    GsonHelper.getAsInt(json, "preferredItemCountPerAction", -1),
-                    GsonHelper.getAsBoolean(json, "filterable", false),
-                    GsonHelper.getAsInt(json, "energyCapacity", -1),
-                    GsonHelper.getAsInt(json, "energyTransferRate", -1),
-                    GsonHelper.getAsInt(json, "energyConsumption", -1)
+            inserter = Inserter.electric(
+                    id, affectedByRedstone,
+                    grabDistance, cooldown, itemsPerAction,
+                    filterable,
+                    GsonHelper.getAsInt(json, "energyCapacity", 25000),
+                    GsonHelper.getAsInt(json, "energyTransferRate", 5000),
+                    GsonHelper.getAsInt(json, "energyConsumption", 300)
             );
         }
         else {
-            inserter = new Inserter(
-                    id,
-                    GsonHelper.getAsBoolean(json, "affectedByRedstone", false),
-                    GsonHelper.getAsInt(json, "grabDistance", -1),
-                    GsonHelper.getAsInt(json, "cooldownBetweenActions", -1),
-                    GsonHelper.getAsInt(json, "preferredItemCountPerAction", -1),
-                    GsonHelper.getAsInt(json, "fuelCapacity", -1),
-                    GsonHelper.getAsInt(json, "fuelConsumption", -1)
+            inserter = Inserter.burner(
+                    id, affectedByRedstone,
+                    grabDistance, cooldown, itemsPerAction,
+                    filterable,
+                    GsonHelper.getAsInt(json, "fuelCapacity", 15000),
+                    GsonHelper.getAsInt(json, "fuelConsumption", 300)
             );
         }
 

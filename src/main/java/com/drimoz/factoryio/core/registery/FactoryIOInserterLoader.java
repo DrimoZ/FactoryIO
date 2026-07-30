@@ -77,6 +77,7 @@ public class FactoryIOInserterLoader {
         registerBurnerInserter(
                 "burner_inserter", true,
                 1, 400, 1,
+                false,
                 15000, 300
         );
 
@@ -126,13 +127,15 @@ public class FactoryIOInserterLoader {
     private static void registerBurnerInserter(
             String name, boolean affectedByRedstone,
             int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
+            boolean filterable,
             int fuelCapacity, int fuelConsumption
     ) {
         if (!FactoryIOEarlyConfig.shouldGenerateInserter(name)) return;
 
-        registerInserter(new Inserter(
+        registerInserter(Inserter.burner(
                 new ResourceLocation(FactoryIO.MOD_ID, name), affectedByRedstone,
                 grabDistance, cooldownBetweenActions, preferredItemCountPerAction,
+                filterable,
                 fuelCapacity, fuelConsumption
         ));
     }
@@ -145,7 +148,7 @@ public class FactoryIOInserterLoader {
     ) {
         if (!FactoryIOEarlyConfig.shouldGenerateInserter(name)) return;
 
-        registerInserter(new Inserter(
+        registerInserter(Inserter.electric(
                 new ResourceLocation(FactoryIO.MOD_ID, name), affectedByRedstone,
                 grabDistance, cooldownBetweenActions, preferredItemCountPerAction,
                 filterable,
