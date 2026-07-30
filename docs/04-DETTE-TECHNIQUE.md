@@ -321,24 +321,31 @@ Barème Factorio de référence (à 60 UPS, converti en ticks Minecraft à 20 tp
 
 ---
 
-## DT-11 — Aucun test, aucune mesure
+## DT-11 — Tests partiels, aucune mesure
 
 **Impact : élevé · Effort : M · Quand : Phase 1 puis continu**
 
-`build.gradle` configure `forge.enabledGameTestNamespaces = 'factory_io'` sur les
-trois run configs, mais il n'existe **aucun test**.
+**Partiellement traité.** Six GameTests existent
+([`FactoryIOGameTests`](../src/main/java/com/drimoz/factoryio/gametest/FactoryIOGameTests.java),
+`./gradlew runGameTestServer`) et couvrent les invariants de monde : conservation des
+items, ravitaillement, redstone, persistance du filtre, synchronisation de l'item
+transporté.
 
-Les invariants du mod sont pourtant parfaitement testables :
+Reste à faire : le **socle JUnit** pour le calcul pur — `src/test/` est un dossier vide,
+`build.gradle` ne déclare ni `sourceSet` de test ni dépendance
+([BUG-040](03-BUGS.md), FIO-055) — et le **benchmark** de charge, toujours absent
+(FIO-073). Le tableau ci-dessous liste les tests visés ; ceux marqués ✅ existent.
 
-| Test | Type |
-|---|---|
-| « un transfert ne crée ni ne détruit d'item » | GameTest |
-| « un burner à sec se réalimente depuis un coffre » | GameTest |
-| « les filtres survivent à un rechargement de monde » | GameTest |
-| « un signal redstone désactive l'inserter » | GameTest |
-| `InserterDefinition` : parsing JSON valide / invalide | JUnit |
-| `InserterSlotLayout` : cohérence pour les 4 combinaisons | JUnit |
-| 1 000 inserters actifs < 2 ms/tick | benchmark |
+| Test | Type | |
+|---|---|---|
+| « un transfert ne crée ni ne détruit d'item » | GameTest | ✅ |
+| « un burner à sec se réalimente depuis un coffre » | GameTest | ✅ |
+| « les filtres survivent à un rechargement de monde » | GameTest | ✅ |
+| « un signal redstone désactive l'inserter » | GameTest | ✅ |
+| « l'item transporté part vers les clients » | GameTest | ✅ |
+| `InserterDefinition` : parsing JSON valide / invalide | JUnit | |
+| `InserterSlotLayout` : cohérence pour les 4 combinaisons | JUnit | |
+| 1 000 inserters actifs < 2 ms/tick | benchmark | |
 
 ---
 

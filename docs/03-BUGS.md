@@ -1,15 +1,14 @@
 # 03 — Catalogue des bugs
 
-> **État : 32 bugs sur 34 corrigés**, plus 1 partiellement.
+> **État : 33 bugs sur 40 corrigés**, plus 1 partiellement (BUG-020).
 >
-> Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Le
-> **comportement** de ces correctifs n'a en revanche jamais été observé en jeu :
-> aucun inserter n'a été posé, aucun transfert testé, et il n'existe toujours
-> aucun test automatisé (voir [DT-11](04-DETTE-TECHNIQUE.md)). Considérer ces ✅
-> comme « écrit et compilé », pas comme « vérifié ».
+> Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Six GameTests
+> couvrent désormais les invariants (`./gradlew runGameTestServer`), mais le **rendu**
+> n'est validé par aucun test : ce qui touche à l'affichage reste « écrit et compilé »,
+> pas « vu à l'écran » (cf. FIO-054).
 >
-> Reste : BUG-016 — le bone fantôme est corrigé, mais la géométrie doit être
-> redécoupée dans Blockbench avant de pouvoir animer le bras seul (FIO-066).
+> Restent à traiter : BUG-016 (géométrie du bras à redécouper, FIO-066 abandonné) et
+> BUG-036 à BUG-040, tous S3, relevés lors de l'audit du 30/07/2026.
 
 Sévérités :
 **S0** bloquant (crash / mod inutilisable) ·
@@ -55,6 +54,12 @@ Sévérités :
 | [BUG-032](#bug-032) | ✅ S3 | Namespace forcé lors de l'enregistrement | `…InserterRegistry.java` |
 | [BUG-033](#bug-033) | ✅ S3 | Textures d'items orphelines | `assets/…/textures/item/` |
 | [BUG-034](#bug-034) | ✅ S3 | `checkContainerSize` mal employé | `…InserterContainer.java` |
+| [BUG-035](#bug-035) | ✅ S3 | Mémorisation du slot cible inopérante | `…InserterBlockEntity.java` |
+| [BUG-036](#bug-036) | S3 | `quickMoveStack` ignore `Slot#mayPickup` | `…InserterContainer.java` |
+| [BUG-037](#bug-037) | S3 | L'arrivée d'énergie ne réveille pas un inserter endormi | `…InserterBlockEntity.java` |
+| [BUG-038](#bug-038) | S3 | Débit réel moitié du débit documenté | `…InserterBlockEntity.java` |
+| [BUG-039](#bug-039) | ✅ S3 | `README` : nom de jar et mappings faux | `README.md` |
+| [BUG-040](#bug-040) | S3 | Aucun test JUnit alors que FIO-035 l'exigeait | `src/test/` |
 
 ---
 
@@ -767,3 +772,105 @@ checkContainerSize(pPlayerInv, this.TE_INVENTORY_SLOT_COUNT);
 `AbstractContainerMenu#checkContainerSize(Container, int)` sert à valider que **le
 conteneur ouvert** a la taille attendue. Ici on valide l'inventaire du **joueur**
 (36 slots) contre 1 à 6 : l'assertion passe toujours. Sans effet, mais trompeur.
+
+---
+
+## BUG-035 — Mémorisation du slot cible inopérante (S3) ✅
+
+**Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java) — `expelItems`
+
+```java
+int startSlot = Math.floorMod(pEntity.lastTargetSlot, Math.max(1, target.getSlots()));
+...
+pEntity.lastTargetSlot = startSlot;   // réécrit la variable avec elle-même
+```
+
+`startSlot` est **dérivé** de `lastTargetSlot` : le réaffecter ne mémorise rien. Le
+côté source, lui, mémorisait bien le slot réellement utilisé
+(`pEntity.lastSourceSlot = slot`). L'optimisation [FIO-063](06-BACKLOG.md) ne
+s'appliquait donc qu'à la moitié du chemin chaud : sur un coffre de 54 slots dont
+seuls les derniers acceptent l'item, chaque dépose repartait du même slot et
+rebalayait tout.
+
+**Correctif** : mémoriser le premier slot qui accepte réellement quelque chose
+(`firstAcceptingSlot`), calculé **avant** l'insertion.
+
+---
+
+## BUG-036 — `quickMoveStack` ignore `Slot#mayPickup` (S3)
+
+**Fichier** : [`FactoryIOInserterContainer.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterContainer.java) — `quickMoveStack`
+
+`SlotInserterBuffer` déclare `mayPickup() == false` : le joueur ne doit pas pouvoir
+retirer l'item en transit à la main. Mais `quickMoveStack` ne teste que
+`sourceSlot.hasItem()` avant d'appeler `moveItemStackTo` : un **shift-clic**
+contourne la garde et vide le buffer.
+
+Sans conséquence sur la conservation des items (ils vont dans l'inventaire du
+joueur), mais l'intention du slot n'est pas respectée, et l'incohérence
+« clic interdit / shift-clic autorisé » est visible en jeu.
+
+**Correctif** : tester `sourceSlot.mayPickup(playerIn)` dans `quickMoveStack`. À
+traiter avec la réécriture prévue en [FIO-045](06-BACKLOG.md).
+
+---
+
+## BUG-037 — L'arrivée d'énergie ne réveille pas un inserter endormi (S3)
+
+**Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java)
+
+La mise en sommeil ([FIO-064](06-BACKLOG.md)) compte tout tick sans action comme un
+échec — y compris un échec par **manque d'énergie**. Un inserter électrique à plat
+s'endort donc jusqu'à `MAX_SLEEP_TICKS` (20 ticks), et rien ne le réveille quand le
+courant revient : `wakeUp()` n'est appelé que par `onNeighbourChanged` et par
+`onContentsChanged` du stockage d'items, pas par `onEnergyChanged`.
+
+Conséquence : jusqu'à une seconde de latence au retour du courant. Gênant surtout
+sur un réseau électrique qui oscille autour du seuil.
+
+**Correctif** : appeler `wakeUp()` depuis `onEnergyChanged`, à côté du `setChanged()`
+déjà présent.
+
+---
+
+## BUG-038 — Débit réel moitié du débit documenté (S3)
+
+**Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java) — `tick`
+
+Un item consomme **deux** actions : une prise (buffer vide → aspiration) puis une
+dépose (buffer plein → éjection). Chacune attend un cooldown complet. Avec
+`cooldownBetweenActions = 400` et `MAX_ACTIONS_PER_TICK = 10`, cela fait 40 ticks
+par action, donc **80 ticks par item** : 0,25 item/s, et non les 0,5 item/s annoncés
+dans [`02-ETAT-DES-LIEUX.md`](02-ETAT-DES-LIEUX.md) et
+[`07-DESIGN-INSERTERS.md`](07-DESIGN-INSERTERS.md) §1.
+
+Ce n'est pas un défaut du code mais une erreur dans le barème : le rééquilibrage de
+[FIO-065](06-BACKLOG.md) doit raisonner en **ticks par item** (2 × `ticksPerSwing`),
+sans quoi tous les inserters seront deux fois trop lents.
+
+---
+
+## BUG-039 — `README` : nom de jar et mappings faux (S3) ✅
+
+**Fichier** : [`README.md`](../README.md)
+
+- « Le jar se trouve dans `build/libs/factory_io-1.18.2-0.0.3.jar` » : depuis le port,
+  `version = "${mc_version}-${mod_version}"` produit `factory_io-1.20.1-0.0.3.jar`.
+- Le tableau « Stack technique » annonce des mappings `official`, alors que
+  `build.gradle` utilise Parchment — et [FIO-051](06-BACKLOG.md) documente
+  précisément le retour à Parchment. `02-ETAT-DES-LIEUX.md` §1 se contredit
+  d'ailleurs sur deux lignes consécutives.
+
+---
+
+## BUG-040 — Aucun test JUnit alors que FIO-035 l'exigeait (S3)
+
+Le critère d'acceptation de [FIO-035](06-BACKLOG.md) est « JUnit sur les 4
+combinaisons énergie×filtre », et [DT-11](04-DETTE-TECHNIQUE.md) prévoit des tests
+JUnit pour `InserterSlotLayout` et le parsing des définitions. Le ticket est marqué
+livré, mais `src/test/` est un dossier **vide** : `build.gradle` ne déclare aucun
+`sourceSet` de test, aucune dépendance JUnit, et `./gradlew test` ne fait rien.
+
+Les GameTests ([FIO-041/042](06-BACKLOG.md)) couvrent les invariants de monde, pas le
+calcul pur. Ajouter le socle JUnit reste à faire — c'est le préalable naturel de
+[FIO-034](06-BACKLOG.md) (Codec) et [FIO-091](06-BACKLOG.md) (modèle `TransportLine`).

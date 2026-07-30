@@ -53,7 +53,7 @@ Prérequis : **JDK 17**, ~8 Go de RAM libre pour la décompilation ForgeGradle.
 ./gradlew build
 ```
 
-Le jar se trouve dans `build/libs/factory_io-1.18.2-0.0.3.jar`.
+Le jar se trouve dans `build/libs/factory_io-1.20.1-0.0.3.jar`.
 
 Les mods tiers de test (JEI, Mekanism, Thermal, The One Probe…) sont désactivés
 par défaut. Pour les activer :
@@ -68,7 +68,7 @@ par défaut. Pour les activer :
 |---|---|
 | Minecraft | 1.20.1 |
 | Loader | Forge 47.3.6 |
-| Mappings | `official` 1.20.1 (Mojang) |
+| Mappings | Parchment `2023.09.03-1.20.1` (Mojang + noms de paramètres) |
 | Gradle / ForgeGradle | 8.8 / 6.x |
 | Java | 17 |
 | Rendu animé | GeckoLib 4.4.9 |

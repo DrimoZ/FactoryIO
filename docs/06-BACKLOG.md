@@ -53,8 +53,11 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-042~~ | ✅ | M | 4 GameTests d'invariants : conservation, ravitaillement, redstone, persistance du filtre | 4/4 verts |
 | ~~FIO-043~~ | ✅ | XL | **Port de version** vers Forge 1.20.1 | compile ; **reste à valider en jeu** |
 | ~~FIO-044~~ | ✅ | S | Corriger l'exposition de la capability énergie (toutes faces + `side == null`) ([BUG-021](03-BUGS.md)) | The One Probe affiche l'énergie |
-| 🟡 FIO-045 | P3 | S | `checkContainerSize` correct + `quickMoveStack` réécrit selon le patron vanilla (DT-08) | — |
+| 🟡 FIO-045 | P3 | S | `checkContainerSize` correct + `quickMoveStack` réécrit selon le patron vanilla (DT-08), en respectant `Slot#mayPickup` ([BUG-036](03-BUGS.md)) | shift-clic du buffer sans effet |
 | FIO-046 | P3 | M | Renommage des packages (`registery`→`registry`, `ressourcepack`→`resourcepack`, suppression du préfixe `FactoryIO`) (DT-12) | à faire en **un seul** commit |
+| FIO-055 | P1 | S | **Socle JUnit** : `sourceSet` de test, dépendance, premiers tests sur `InserterSlotLayout` et `InserterCarryPath` ([BUG-040](03-BUGS.md), DT-11) | `./gradlew test` exécute des tests |
+| FIO-056 | P2 | XS | `wakeUp()` sur `onEnergyChanged` ([BUG-037](03-BUGS.md)) | le courant qui revient relance l'inserter dans le tick |
+| ~~FIO-057~~ | ✅ | XS | Corriger le `README` : nom de jar et mappings ([BUG-039](03-BUGS.md)) | — |
 
 ## Épic C — Inserters (Phase 2)
 
@@ -65,9 +68,9 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-062~~ | ✅ | M | Cache de capability voisine (invalidation par listener) (DT-07) | profilage : plus de `getBlockEntity` dans le chemin chaud |
 | ~~FIO-063~~ | ✅ | S | Mémorisation du dernier slot fructueux (DT-07) | coffre 54 slots : coût constant |
 | ~~FIO-064~~ | ✅ | M | Mise en sommeil après N échecs, réveil sur `neighborChanged` (DT-07) | 1 000 inserters bloqués ≈ coût nul |
-| FIO-065 | P1 | S | Rééquilibrage temporel sur le barème Factorio (DT-10) | `fast_inserter` ≈ 2,3 items/s |
-| FIO-066 | P1 | M | **Découper la géométrie dans Blockbench** puis animer le bras. Les 4 bones sont des frères sans hiérarchie, et `inserter` désigne tout l'assemblage vertical (y=0 à 16), pas le bras : le faire pivoter bascule le bloc entier. La progression de swing est déjà synchronisée et disponible côté client. | le bras seul suit le swing |
-| FIO-067 | P1 | M | **Rendu de l'item tenu** dans la main de l'inserter | on voit l'item traverser |
+| FIO-065 | P1 | S | Rééquilibrage temporel sur le barème Factorio (DT-10). **Raisonner en ticks par item = 2 × `ticksPerSwing`** : un item coûte une prise *et* une dépose ([BUG-038](03-BUGS.md)). | `fast_inserter` ≈ 2,3 items/s |
+| ⏸ FIO-066 | P2 | M | **Découper la géométrie dans Blockbench** puis animer le bras. Bloqué par la géométrie, pas par le code : le bone `inserter` porte tout l'assemblage, socle 16×16 compris (y=0 à 16), et `bearing`/`base`/`base_top` en sont des enfants — le faire pivoter bascule le bloc entier. La progression de swing est synchronisée et disponible côté client, elle pilote déjà FIO-067. | le bras seul suit le swing |
+| ~~FIO-067~~ | ✅ | M | **Rendu de l'item transporté** : trajectoire en arc source → main → cible, pilotée par la progression de swing déjà synchronisée. L'item tenu en permanence par un inserter *bloqué* relève de la machine à états (FIO-060). | l'item traverse ; 2 GameTests |
 | FIO-068 | P2 | M | Ramassage et dépôt d'items au sol (parité Factorio) | inserter → sol → inserter |
 | 🟡 FIO-069 | P2 | S | Filtres par type d'item faits ; reste le support des tags ([DT-02](04-DETTE-TECHNIQUE.md)) | filtrer `forge:plates` |
 | FIO-070 | P2 | M | Mode circuit : condition sur signal redstone analogique | « n'agir que si signal ≥ 5 » |

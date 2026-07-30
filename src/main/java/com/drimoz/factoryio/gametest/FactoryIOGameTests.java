@@ -3,13 +3,17 @@ package com.drimoz.factoryio.gametest;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
+import com.drimoz.factoryio.core.inserters.InserterCarryPath;
+import com.drimoz.factoryio.core.inserters.InserterSwingPhase;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.registery.FactoryIOInserterRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -111,6 +115,58 @@ public class FactoryIOGameTests {
         helper.succeedIf(() -> helper.assertTrue(
                 !((FactoryIOInserterBlockEntity) reloaded).isWhitelist(),
                 "Le mode blacklist n'a pas survécu à la sérialisation"));
+    }
+
+    /**
+     * L'item transporté doit partir vers les clients, sinon rien n'est affiché (FIO-067).
+     *
+     * <p>Le rendu lui-même n'est pas testable sans client ; ce qui l'est, et ce qui casse
+     * en silence, c'est le contenu du tag de synchronisation.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void carriedItemIsSentToClients(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+
+        helper.succeedWhen(() -> {
+            FactoryIOInserterBlockEntity blockEntity = inserter(helper);
+            CompoundTag tag = blockEntity.getUpdateTag();
+
+            helper.assertTrue(tag.contains("inserterSwingStack"),
+                    "L'item transporté n'est pas dans le tag de synchronisation");
+
+            ItemStack synced = ItemStack.of(tag.getCompound("inserterSwingStack"));
+            helper.assertTrue(synced.is(Items.COBBLESTONE),
+                    "L'item synchronisé n'est pas celui déplacé : " + synced);
+
+            helper.assertTrue(blockEntity.getSwingPhase() != InserterSwingPhase.NONE,
+                    "Aucun sens de mouvement n'est renseigné");
+        });
+    }
+
+    /**
+     * La trajectoire affichée doit aller de la source vers la cible, pas l'inverse.
+     *
+     * <p>Un signe inversé sur {@code facing} est l'erreur la plus facile à commettre ici,
+     * et la seule que le calcul de trajectoire peut contenir (FIO-067).
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 20)
+    public static void carryPathRunsFromSourceToTarget(GameTestHelper helper) {
+        // Inserter tourné vers l'est : il aspire à l'ouest (x < 0.5) et dépose à l'est.
+        Vec3 pickup = InserterCarryPath.positionOf(Direction.EAST, 1, InserterSwingPhase.INBOUND, 0f);
+        Vec3 dropoff = InserterCarryPath.positionOf(Direction.EAST, 1, InserterSwingPhase.OUTBOUND, 1f);
+
+        helper.assertTrue(pickup.x < 0.5, "La prise ne part pas du côté source : " + pickup);
+        helper.assertTrue(dropoff.x > 0.5, "La dépose n'arrive pas du côté cible : " + dropoff);
+
+        // Portée 2 : le point de prise s'éloigne d'autant (long_handed_inserter).
+        Vec3 farPickup = InserterCarryPath.positionOf(Direction.EAST, 2, InserterSwingPhase.INBOUND, 0f);
+        helper.assertTrue(farPickup.x < pickup.x,
+                "La portée n'est pas prise en compte : " + farPickup);
+
+        helper.succeed();
     }
 
     // Inner work

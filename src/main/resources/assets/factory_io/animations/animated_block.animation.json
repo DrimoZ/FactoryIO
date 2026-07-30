@@ -1,8 +1,9 @@
 {
   "_comment": [
-    "L'animation « idle » est volontairement vide : le mouvement du bras est piloté",
-    "par le code, dans FactoryIOInserterBlockEntityModel#handleAnimations, à partir de",
-    "la progression réelle du swing.",
+    "L'animation « idle » est volontairement vide : le bras n'est pas animé (FIO-066,",
+    "abandonné faute d'une géométrie découpée). GeckoLib exige néanmoins un contrôleur",
+    "et donc une animation à jouer. Le retour visuel du transfert est assuré par le rendu",
+    "de l'item transporté, dans FactoryIOInserterBlockEntityRenderer (FIO-067).",
     "",
     "La version précédente animait un bone nommé « bone2 », absent des trois",
     "géométries (qui déclarent inserter, bearing, base et base_top). GeckoLib ignore",

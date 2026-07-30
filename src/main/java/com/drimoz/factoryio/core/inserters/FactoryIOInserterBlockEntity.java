@@ -97,6 +97,17 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
      */
     private long swingEndTick = 0L;
 
+    /**
+     * Sens du mouvement en cours et item qu'il transporte.
+     *
+     * <p>Purement présentationnels : la vérité sur l'item reste le slot buffer (pendant
+     * une prise) ou l'inventaire cible (après une dépose). {@code swingStack} n'en est
+     * qu'une copie, le temps du mouvement — d'où l'absence de persistance NBT : un
+     * mouvement interrompu par un rechargement de monde n'a rien à reprendre.
+     */
+    private InserterSwingPhase swingPhase = InserterSwingPhase.NONE;
+    private ItemStack swingStack = ItemStack.EMPTY;
+
     // Optimisations du tick (DT-07) — jamais persistées, purement locales.
 
     /** Inventaires voisins mémorisés ; {@code null} = à résoudre. */
@@ -337,6 +348,14 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         CompoundTag tag = new CompoundTag();
         tag.putBoolean("inserterWhitelist", this.isWhitelist);
         tag.putLong("inserterSwingEnd", this.swingEndTick);
+        tag.putByte("inserterSwingPhase", (byte) this.swingPhase.ordinal());
+
+        // Un slot vide n'écrit rien : le tag part à chaque sendBlockUpdated, autant ne
+        // pas y traîner un ItemStack.EMPTY sérialisé.
+        if (!this.swingStack.isEmpty()) {
+            tag.put("inserterSwingStack", this.swingStack.save(new CompoundTag()));
+        }
+
         return tag;
     }
 
@@ -346,6 +365,10 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             this.isWhitelist = tag.getBoolean("inserterWhitelist");
         }
         this.swingEndTick = tag.getLong("inserterSwingEnd");
+        this.swingPhase = InserterSwingPhase.byOrdinal(tag.getByte("inserterSwingPhase"));
+        this.swingStack = tag.contains("inserterSwingStack")
+                ? ItemStack.of(tag.getCompound("inserterSwingStack"))
+                : ItemStack.EMPTY;
     }
 
     @Nullable
@@ -411,21 +434,33 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         // Le ravitaillement en carburant est gratuit et prioritaire : le conditionner
         // à la réserve courante enfermerait tout burner à sec dans un blocage
         // définitif (cf. BUG-012).
-        if (pEntity.needsFuel() && refuel(pEntity, pLevel, pEntity.getGrabDistance())) {
-            pEntity.current_cooldown = 0;
-            acted = true;
+        if (pEntity.needsFuel()) {
+            ItemStack fetched = refuel(pEntity, pEntity.getGrabDistance());
+
+            if (!fetched.isEmpty()) {
+                pEntity.current_cooldown = 0;
+                pEntity.startSwing(InserterSwingPhase.INBOUND, fetched);
+                acted = true;
+            }
         }
-        else if (pEntity.hasPowerForAction()) {
+
+        if (!acted && pEntity.hasPowerForAction()) {
             // TODO : Multiply item/energy count instead of for loop
             for (int i = 0; i < pEntity.getActionMultiplier(); i++) {
-                boolean moved = pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()
-                        ? suckItems(pEntity, pLevel, pEntity.getGrabDistance(), pEntity.isWhitelist())
-                        : expelItems(pEntity, pLevel, pEntity.getGrabDistance());
+                // Buffer vide = le bras part chercher ; buffer plein = il livre. C'est
+                // aussi ce qui détermine le sens du trajet affiché (cf. FIO-067).
+                boolean fetching = pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty();
 
-                if (moved) {
+                ItemStack moved = fetching
+                        ? suckItems(pEntity, pEntity.getGrabDistance(), pEntity.isWhitelist())
+                        : expelItems(pEntity, pEntity.getGrabDistance());
+
+                if (!moved.isEmpty()) {
                     pEntity.current_cooldown = 0;
                     pEntity.useFuelOrEnergy();
-                    pEntity.startSwing();
+                    pEntity.startSwing(
+                            fetching ? InserterSwingPhase.INBOUND : InserterSwingPhase.OUTBOUND,
+                            moved);
                     acted = true;
                 }
             }
@@ -470,29 +505,57 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         return Math.max(1, getDurationBetweenActions() / MAX_ACTIONS_PER_TICK);
     }
 
-    /** Démarre un mouvement de bras et le fait connaître aux clients qui suivent le chunk. */
-    private void startSwing() {
+    /** Valeur renvoyée par {@link #getSwingProgress(float)} quand le bras est au repos. */
+    public static final float NO_SWING = -1f;
+
+    /**
+     * Démarre un mouvement de bras et le fait connaître aux clients qui suivent le chunk.
+     *
+     * @param carried item transporté, dont une copie sera affichée pendant le mouvement
+     */
+    private void startSwing(InserterSwingPhase phase, ItemStack carried) {
         if (this.level == null) return;
 
+        this.swingPhase = phase;
+        this.swingStack = carried.copy();
         this.swingEndTick = this.level.getGameTime() + getTicksPerSwing();
+
         syncToClients();
     }
 
     /**
-     * @return progression du mouvement en cours, de 0 (au repos) à 1 (fin de course)
+     * @return progression du mouvement en cours, de 0 à 1, ou {@link #NO_SWING} si aucun
+     *         mouvement n'est en cours
      *
      * <p>Calculée côté client à partir de l'échéance synchronisée : aucun trafic réseau
      * pendant le mouvement.
      */
     public float getSwingProgress(float partialTick) {
-        if (this.level == null || this.swingEndTick <= 0L) return 0f;
+        if (this.level == null || this.swingEndTick <= 0L) return NO_SWING;
 
         int duration = getTicksPerSwing();
         double remaining = this.swingEndTick - (this.level.getGameTime() + partialTick);
 
-        if (remaining <= 0 || remaining >= duration) return 0f;
+        // > et non >= : au tick de départ il reste exactement `duration`, ce qui est une
+        // progression nulle et non une absence de mouvement.
+        if (remaining <= 0 || remaining > duration) return NO_SWING;
 
         return (float) (1.0 - remaining / duration);
+    }
+
+    /** Sens du mouvement en cours. */
+    public InserterSwingPhase getSwingPhase() {
+        return this.swingPhase;
+    }
+
+    /**
+     * @return copie de l'item transporté par le mouvement en cours, pour le rendu
+     *
+     * <p>Non vide ne signifie pas qu'un mouvement est en cours : croiser avec
+     * {@link #getSwingProgress(float)}.
+     */
+    public ItemStack getSwingStack() {
+        return this.swingStack;
     }
 
     /** @return {@code true} si la réserve permet de payer une action */
@@ -509,12 +572,17 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         return this.itemStorage.getStackInSlot(LAYOUT.fuel()).getCount() < this.getPreferredFuelItemBufferCount();
     }
 
-    /** Aspire du carburant depuis l'inventaire situé à l'arrière. */
-    private static boolean refuel(FactoryIOInserterBlockEntity pEntity, Level pLevel, int pDistance) {
+    /**
+     * Aspire du carburant depuis l'inventaire situé à l'arrière.
+     *
+     * @return la pile prélevée, vide si rien n'a bougé
+     */
+    @Nonnull
+    private static ItemStack refuel(FactoryIOInserterBlockEntity pEntity, int pDistance) {
         Direction facing = getFacing(pEntity);
 
         IItemHandler source = pEntity.neighbourHandler(true, facing.getOpposite(), pDistance, facing);
-        if (source == null) return false;
+        if (source == null) return ItemStack.EMPTY;
 
         return grabInto(pEntity, source, pEntity.LAYOUT.fuel(), stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL));
     }
@@ -866,8 +934,11 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
      *
      * <p>Ordre impératif : simuler l'extraction, calculer ce que la destination accepte
      * réellement, puis extraire exactement cette quantité. L'inverse détruit des items.
+     *
+     * @return la pile prélevée, vide si rien n'a bougé
      */
-    private static boolean grabInto(FactoryIOInserterBlockEntity pEntity, IItemHandler source, int targetSlot, Predicate<ItemStack> accept) {
+    @Nonnull
+    private static ItemStack grabInto(FactoryIOInserterBlockEntity pEntity, IItemHandler source, int targetSlot, Predicate<ItemStack> accept) {
         int wanted = pEntity.getMaximumItemCountPerAction();
         int slots = source.getSlots();
 
@@ -890,65 +961,90 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             pEntity.rescueLeftover(
                     pEntity.insertItemInternal(targetSlot, taken, false),
                     rest -> ItemHandlerHelper.insertItem(source, rest, false));
-            return true;
+            return taken;
         }
 
-        return false;
+        return ItemStack.EMPTY;
     }
 
-    private static boolean suckItems(FactoryIOInserterBlockEntity pEntity, Level pLevel, int pDistance, boolean isWhitelist) {
+    /** @return la pile prélevée depuis l'inventaire arrière, vide si rien n'a bougé */
+    @Nonnull
+    private static ItemStack suckItems(FactoryIOInserterBlockEntity pEntity, int pDistance, boolean isWhitelist) {
         Direction facing = getFacing(pEntity);
 
         // La face du coffre en contact avec l'inserter, vue depuis le coffre, est `facing`.
         IItemHandler source = pEntity.neighbourHandler(true, facing.getOpposite(), pDistance, facing);
-        if (source == null) return false;
+        if (source == null) return ItemStack.EMPTY;
 
         // 1. Ravitaillement en carburant tant que le buffer interne n'est pas rempli.
         //    La condition portait auparavant sur un slot NON vide, ce qui empêchait tout
         //    redémarrage après panne sèche (cf. BUG-012).
-        if (pEntity.needsFuel()
-                && grabInto(pEntity, source, pEntity.LAYOUT.fuel(), stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL))) {
-            return true;
+        if (pEntity.needsFuel()) {
+            ItemStack fetched = grabInto(
+                    pEntity, source, pEntity.LAYOUT.fuel(), stack -> stack.is(FactoryIOTags.Items.INSERTER_FUEL));
+
+            if (!fetched.isEmpty()) return fetched;
         }
 
         // 2. Buffer de transport, uniquement s'il est libre.
-        if (pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()
-                && grabInto(pEntity, source, BUFFER_SLOT, stack -> matchesFilters(pEntity, stack, isWhitelist))) {
-            return true;
+        if (pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()) {
+            return grabInto(pEntity, source, BUFFER_SLOT, stack -> matchesFilters(pEntity, stack, isWhitelist));
         }
 
-        return false;
+        return ItemStack.EMPTY;
     }
 
-    private static boolean expelItems(FactoryIOInserterBlockEntity pEntity, Level pLevel, int pDistance) {
+    /** @return la pile déposée dans l'inventaire avant, vide si rien n'a bougé */
+    @Nonnull
+    private static ItemStack expelItems(FactoryIOInserterBlockEntity pEntity, int pDistance) {
         ItemStack buffer = pEntity.itemStorage.getStackInSlot(BUFFER_SLOT);
-        if (buffer.isEmpty()) return false;
+        if (buffer.isEmpty()) return ItemStack.EMPTY;
 
         Direction facing = getFacing(pEntity);
 
         // La face de la cible en contact avec l'inserter, vue depuis la cible, est l'opposé
         // de `facing` (cf. BUG-023).
         IItemHandler target = pEntity.neighbourHandler(false, facing, pDistance, facing.getOpposite());
-        if (target == null) return false;
+        if (target == null) return ItemStack.EMPTY;
 
         int wanted = Math.min(buffer.getCount(), pEntity.getMaximumItemCountPerAction());
 
         ItemStack probe = pEntity.extractItemInternal(BUFFER_SLOT, wanted, true);
-        if (probe.isEmpty()) return false;
+        if (probe.isEmpty()) return ItemStack.EMPTY;
 
         int startSlot = Math.floorMod(pEntity.lastTargetSlot, Math.max(1, target.getSlots()));
 
         int movable = simulateInsert(target, probe, startSlot);
-        if (movable <= 0) return false;
+        if (movable <= 0) return ItemStack.EMPTY;
 
         ItemStack taken = pEntity.extractItemInternal(BUFFER_SLOT, movable, false);
-        if (taken.isEmpty()) return false;
+        if (taken.isEmpty()) return ItemStack.EMPTY;
 
-        pEntity.lastTargetSlot = startSlot;
+        pEntity.lastTargetSlot = firstAcceptingSlot(target, taken, startSlot);
         pEntity.rescueLeftover(
                 insertDistributed(target, taken, startSlot),
                 rest -> pEntity.insertItemInternal(BUFFER_SLOT, rest, false));
-        return true;
+        return taken;
+    }
+
+    /**
+     * Premier slot de {@code handler}, à partir de {@code startSlot}, qui accepte quelque
+     * chose de {@code stack}.
+     *
+     * <p>C'est lui qu'il faut mémoriser, et non {@code startSlot} : réécrire le point de
+     * départ avec lui-même rendait la mémorisation du dernier slot fructueux inopérante
+     * du côté cible, alors que le côté source en bénéficiait bien (cf. DT-07, BUG-036).
+     */
+    private static int firstAcceptingSlot(IItemHandler handler, @Nonnull ItemStack stack, int startSlot) {
+        int slots = handler.getSlots();
+
+        for (int offset = 0; offset < slots; offset++) {
+            int slot = Math.floorMod(startSlot + offset, slots);
+
+            if (handler.insertItem(slot, stack, true).getCount() < stack.getCount()) return slot;
+        }
+
+        return startSlot;
     }
 
     private int getActionMultiplier() {

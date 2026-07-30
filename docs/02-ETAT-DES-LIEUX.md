@@ -20,8 +20,8 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 
 | Élément | État | Commentaire |
 |---|---|---|
-| Build ForgeGradle 6 / Forge 1.20.1 / Java 17 | ✅ | Gradle 8.8, mappings `official` |
-| Mappings Parchment | ✅ | |
+| Build ForgeGradle 6 / Forge 1.20.1 / Java 17 | ✅ | Gradle 8.8 |
+| Mappings Parchment | ✅ | `official` faisait échouer le chargement, cf. FIO-051 |
 | Registre data-driven d'inserters | ✅ | migré sur `DeferredRegister` lors du port |
 | Chargement de JSON utilisateur | 🟡 | lu depuis `config/`, pas depuis un datapack ; pas de rechargement à chaud ; pas de validation |
 | Config Forge (`ForgeConfigSpec`) | 🟡 | lue en amont via `FactoryIOEarlyConfig` ; **prend effet au lancement suivant** (contrainte Forge, cf. BUG-001) |
@@ -29,7 +29,8 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Pack de ressources/data généré au runtime | 🟡 | ne dépend plus du code client (BUG-005) ; toujours pas de régénération à chaud ni de nettoyage |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 4 invariants, `./gradlew runGameTestServer` |
+| Tests (GameTest) | ✅ | 6 tests, `./gradlew runGameTestServer` |
+| Tests (JUnit) | ⬜ | `src/test/` est vide, aucun `sourceSet` déclaré (BUG-040, FIO-055) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
 
 ## 2. Inserters
@@ -53,8 +54,8 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Tooltips d'item (Shift) | ✅ | valeurs par action, unités correctes (BUG-029) |
 | Noms traduits des blocs et items | ✅ | `en_us` et `fr_fr` complets ; le générateur runtime n'agit plus qu'en surcharge (BUG-011) |
 | Modèle / texture | ✅ | GeckoLib, 3 géométries, textures normale + `_disabled` |
-| Animation du bras | 🟡 | progression synchronisée et disponible ; la géométrie doit être redécoupée dans Blockbench (BUG-016, FIO-066) |
-| Rendu de l'item transporté | ⬜ | l'item se téléporte, rien n'est affiché dans la main |
+| Animation du bras | 🔴 | abandonnée : le bone `inserter` porte tout l'assemblage, socle compris (BUG-016, FIO-066) |
+| Rendu de l'item transporté | 🟡 | trajectoire en arc source → main → cible pendant le swing (FIO-067) ; **non validé à l'écran**. Un inserter bloqué n'affiche encore rien (FIO-060) |
 | Boîte de collision | ✅ | socle + palier calqués sur le modèle (BUG-017) |
 | Recettes | 🟡 | **1 seule** (`burner_inserter`) ; les 6 autres sont créatif-only |
 | Loot tables | ✅ | générées par `runData` et versionnées |

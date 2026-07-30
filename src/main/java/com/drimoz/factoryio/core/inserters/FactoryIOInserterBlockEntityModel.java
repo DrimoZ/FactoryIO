@@ -41,19 +41,18 @@ public class FactoryIOInserterBlockEntityModel extends GeoModel<FactoryIOInserte
         return FactoryIOInserterGeo.ANIMATIONS;
     }
 
-    // Le mouvement de bras n'est volontairement pas rendu pour l'instant.
+    // Le mouvement de bras n'est volontairement pas rendu (FIO-066, abandonné).
     //
     // La plomberie existe et fonctionne : FactoryIOInserterBlockEntity expose une
-    // progression de swing, synchronisée au déclenchement de l'action et interpolée
-    // côté client sans trafic réseau. Elle servira aussi au rendu de l'item tenu.
+    // progression de swing, synchronisée au déclenchement de l'action et interpolée côté
+    // client sans trafic réseau. Elle pilote aujourd'hui le rendu de l'item transporté
+    // (FIO-067, dans FactoryIOInserterBlockEntityRenderer).
     //
-    // Ce qui manque est la géométrie. Les quatre bones des trois modèles (inserter,
-    // bearing, base, base_top) sont des FRÈRES, sans hiérarchie parent/enfant, et
-    // « inserter » ne désigne pas le bras : c'est tout l'assemblage vertical, du socle
-    // (y=0) au sommet (y≈16). Le faire pivoter bascule le bloc entier au lieu d'animer
-    // le seul bras.
+    // Ce qui manque est la géométrie. Le bone « inserter » des trois modèles ne désigne
+    // pas le bras : il porte tout l'assemblage, socle 16×16 compris (y=0 à y≈16), et les
+    // trois autres bones (bearing, base, base_top) en sont des enfants. Le faire pivoter
+    // bascule donc le bloc entier au lieu d'animer le seul bras.
     //
-    // Un vrai mouvement suppose de redécouper la géométrie dans Blockbench : un bone
-    // pour le mât, un bone enfant pour le bras, un bone petit-fils pour la main.
-    // Voir FIO-066.
+    // Un vrai mouvement suppose de redécouper la géométrie dans Blockbench : un bone pour
+    // le mât, un bone enfant pour le bras, un bone petit-fils pour la main.
 }
