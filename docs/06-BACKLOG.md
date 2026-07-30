@@ -53,7 +53,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-042~~ | ✅ | M | 4 GameTests d'invariants : conservation, ravitaillement, redstone, persistance du filtre | 4/4 verts |
 | ~~FIO-043~~ | ✅ | XL | **Port de version** vers Forge 1.20.1 | compile ; **reste à valider en jeu** |
 | ~~FIO-044~~ | ✅ | S | Corriger l'exposition de la capability énergie (toutes faces + `side == null`) ([BUG-021](03-BUGS.md)) | The One Probe affiche l'énergie |
-| 🟡 FIO-045 | P3 | S | `checkContainerSize` correct + `quickMoveStack` réécrit selon le patron vanilla (DT-08), en respectant `Slot#mayPickup` ([BUG-036](03-BUGS.md)) | shift-clic du buffer sans effet |
+| ~~FIO-045~~ | ✅ | S | `quickMoveStack` réécrit selon le patron vanilla (DT-08), respectant `Slot#mayPickup` ([BUG-036](03-BUGS.md)) | shift-clic du buffer sans effet ; 2 GameTests |
 | FIO-046 | P3 | M | Renommage des packages (`registery`→`registry`, `ressourcepack`→`resourcepack`, suppression du préfixe `FactoryIO`) (DT-12) | à faire en **un seul** commit |
 | ~~FIO-055~~ | ✅ | S | **Socle JUnit** : dépendance + `useJUnitPlatform()`, 31 tests sur `InserterSlotLayout` et `InserterCarryPath` ([BUG-040](03-BUGS.md), DT-11) | `./gradlew test` vert, inclus dans `build` |
 | ~~FIO-056~~ | ✅ | XS | `wakeUp()` sur `onEnergyChanged` ([BUG-037](03-BUGS.md)) | le courant qui revient relance l'inserter dans le tick |
@@ -72,10 +72,10 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-065~~ | ✅ | S | Rééquilibrage temporel sur le barème Factorio (DT-10) : champ unique `ticksPerSwing`, 2 mouvements par item ([BUG-038](03-BUGS.md)), barème extrait dans `InserterDefaults` et verrouillé par 24 tests | `fast_inserter` à 2,5 items/s, écart ≤ 10 % sur les 7 |
 | ⏸ FIO-066 | P2 | M | **Découper la géométrie dans Blockbench** puis animer le bras. Bloqué par la géométrie, pas par le code : le bone `inserter` porte tout l'assemblage, socle 16×16 compris (y=0 à 16), et `bearing`/`base`/`base_top` en sont des enfants — le faire pivoter bascule le bloc entier. La progression de swing est synchronisée et disponible côté client, elle pilote déjà FIO-067. | le bras seul suit le swing |
 | ~~FIO-067~~ | ✅ | M | **Rendu de l'item transporté** : arc source → cible pilotée par la progression du bras. Le découpage en deux demi-arcs de la première version a été remplacé par un arc unique avec FIO-060 — un item traverse en un mouvement, le suivant ramène le bras à vide. | l'item traverse ; item immobile si la cible est pleine |
-| FIO-068 | P2 | M | Ramassage et dépôt d'items au sol (parité Factorio) | inserter → sol → inserter |
+| ❌ FIO-068 | — | M | ~~Ramassage et dépôt d'items au sol (parité Factorio)~~ — **écarté le 30/07/2026 par le mainteneur.** Décision de périmètre, pas de faisabilité : le mod ne fera pas transiter d'items par le sol. Ne pas le rouvrir au motif que Factorio le fait. | — |
 | ~~FIO-069~~ | ✅ | S | Filtres par tag : clic droit sur un filtre posé bascule entre l'item exact et ses tags ([DT-02](04-DETTE-TECHNIQUE.md)) | une plaque de fer en mode tag laisse passer le cuivre, pas la cobblestone |
 | FIO-070 | P2 | M | Mode circuit : condition sur signal redstone analogique | « n'agir que si signal ≥ 5 » |
-| FIO-071 | P2 | S | `GhostSlot` réutilisable, suppression de la surcharge de `clicked()` (DT-08) | — |
+| ~~FIO-071~~ | ✅ | S | `GhostSlot` réutilisable, qui décide seul de ce qu'un clic veut dire (DT-08). La surcharge de `clicked()` **reste** : vanilla court-circuite sur `mayPickup` et ne transmet pas le bouton au slot — raison consignée dans `GhostSlot`. | un seul mécanisme fantôme, réutilisable pour les séparateurs |
 | ~~FIO-072~~ | ✅ | S | Tooltips avec les bonnes unités ([BUG-029](03-BUGS.md)) | items/s et FE/s corrects |
 | ~~FIO-073~~ | ✅ | M | Benchmark des deux régimes, endormi et actif (DT-07) | 0,13 à 0,21 ms/tick pour 1 000 actifs, budget 2,0 ; [`10`](10-BENCHMARKS.md) |
 | FIO-076 | P3 | M | Retirer les inserters endormis de la liste des tickers plutôt que de les ticker pour décrémenter un compteur. Le benchmark montre que le plancher du coût est désormais le **préambule** du tick (`isEnabled`, `burnFuel`), sous lequel la mise en sommeil ne peut pas descendre puisqu'elle s'exécute après lui ([`10`](10-BENCHMARKS.md)). Non justifié tant que 1 000 endormis coûtent 0,6 % d'un tick. | 1 000 endormis < 0,2 ms/tick de façon stable |

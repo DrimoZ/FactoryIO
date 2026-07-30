@@ -14,8 +14,8 @@ diverge sur presque tous les points.
 |---|---|---|
 | Mouvement | bras continu, angle interpolé | 🟡 item interpolé, bras figé (FIO-060, FIO-066) |
 | Main | contient N items **visibles** | ✅ item visible en main (FIO-067) |
-| Source | inventaire, **bande transporteuse**, sol | inventaire uniquement |
-| Cible | inventaire, **bande transporteuse**, sol | inventaire uniquement |
+| Source | inventaire, **bande transporteuse**, sol | inventaire ; convoyeur en Phase 3. **Le sol est écarté** (FIO-068) |
+| Cible | inventaire, **bande transporteuse**, sol | inventaire ; convoyeur en Phase 3. **Le sol est écarté** (FIO-068) |
 | Blocage | l'inserter garde l'item en main et attend | ✅ état `BLOCKED` (FIO-060) |
 | Filtre | par type d'item, whitelist/blacklist | ✅ par type ou par tag, au choix par slot (FIO-069) |
 | Taille de main | dépend du type + bonus de recherche | constante 1 ou 3 |
@@ -161,8 +161,8 @@ Trois garanties :
 2. tout reliquat imprévu est **réinjecté**, jamais jeté ;
 3. un reliquat est un bug — il est journalisé, pas silencieux.
 
-`ItemSink` abstrait la destination : `IItemHandler`, une voie de convoyeur
-(Phase 3), ou le sol.
+`ItemSink` abstrait la destination : `IItemHandler` ou, en Phase 3, une voie de
+convoyeur. Pas le sol : voir §7.
 
 ### Insertion multi-slot
 
@@ -369,7 +369,7 @@ Par ordre de valeur ajoutée :
 | Capacité | Pourquoi | Coût |
 |---|---|---|
 | **Prise/dépose sur convoyeur** | sans elle, les convoyeurs de la Phase 3 sont inutilisables | M (dépend de la Phase 3) |
-| **Prise/dépose au sol** | parité Factorio, débloque des designs simples | M |
+| ~~**Prise/dépose au sol**~~ | ❌ **écartée** par le mainteneur le 30/07/2026 : décision de périmètre. Le mod ne fera pas transiter d’items par le sol, même si Factorio le permet. | — |
 | ~~**Filtre par tag**~~ | ✅ **fait (FIO-069)** — clic droit sur un filtre posé bascule entre l'item exact et ses tags. Volontairement large : « partage un tag » plutôt qu'un tag désigné, tant que le GUI ne permet pas d'en choisir un (FIO-071) | S |
 | **Condition redstone analogique** | « n'agir que si signal ≥ N » — équivalent minimal du réseau de circuits | M |
 | **Bonus de taille de main** | permet une progression sans nouveaux blocs | S |

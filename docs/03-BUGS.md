@@ -1,15 +1,15 @@
 # 03 — Catalogue des bugs
 
-> **État : 38 bugs sur 41 corrigés**, plus 1 partiellement (BUG-020).
+> **État : 39 bugs sur 41 corrigés**, plus 1 partiellement (BUG-020).
 >
 > Le mod est porté sur Forge 1.20.1 et **validé en jeu** par le mainteneur le 30/07/2026
-> (FIO-054). Douze GameTests couvrent les invariants de monde
+> (FIO-054). Quatorze GameTests couvrent les invariants de monde
 > (`./gradlew runGameTestServer`) et 67 tests JUnit le calcul pur (`./gradlew test`).
 > Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil, pas
 > par une assertion.
 >
-> Restent à traiter : BUG-016 (géométrie du bras à redécouper, FIO-066 en pause)
-> et BUG-036 — S3, relevé lors de l'audit du 30/07/2026.
+> Reste à traiter : BUG-016, la géométrie du bras à redécouper dans Blockbench
+> (FIO-066, en pause).
 
 Sévérités :
 **S0** bloquant (crash / mod inutilisable) ·
@@ -56,7 +56,7 @@ Sévérités :
 | [BUG-033](#bug-033) | ✅ S3 | Textures d'items orphelines | `assets/…/textures/item/` |
 | [BUG-034](#bug-034) | ✅ S3 | `checkContainerSize` mal employé | `…InserterContainer.java` |
 | [BUG-035](#bug-035) | ✅ S3 | Mémorisation du slot cible inopérante | `…InserterBlockEntity.java` |
-| [BUG-036](#bug-036) | S3 | `quickMoveStack` ignore `Slot#mayPickup` | `…InserterContainer.java` |
+| [BUG-036](#bug-036) | ✅ S3 | `quickMoveStack` ignore `Slot#mayPickup` | `…InserterContainer.java` |
 | [BUG-037](#bug-037) | ✅ S3 | L'arrivée d'énergie ne réveille pas un inserter endormi | `…InserterBlockEntity.java` |
 | [BUG-038](#bug-038) | ✅ S3 | Débit réel moitié du débit documenté | `…InserterBlockEntity.java` |
 | [BUG-041](#bug-041) | ✅ S3 | Un carburant trop riche est refusé sans un mot et bloque le slot | `…InserterBlockEntity.java` |
@@ -799,7 +799,7 @@ rebalayait tout.
 
 ---
 
-## BUG-036 — `quickMoveStack` ignore `Slot#mayPickup` (S3)
+## BUG-036 — `quickMoveStack` ignore `Slot#mayPickup` (S3) ✅
 
 **Fichier** : [`FactoryIOInserterContainer.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterContainer.java) — `quickMoveStack`
 

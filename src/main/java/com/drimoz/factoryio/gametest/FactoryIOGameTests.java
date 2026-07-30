@@ -13,6 +13,9 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -22,6 +25,7 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.SlotItemHandler;
 
 /**
  * Tests d'invariants de l'inserter (FIO-042).
@@ -163,6 +167,79 @@ public class FactoryIOGameTests {
             helper.assertTrue(countOf(target, Items.COBBLESTONE) == 0,
                     "La cobblestone est passée alors qu'elle ne partage aucun tag");
         });
+    }
+
+    /**
+     * Le shift-clic doit respecter les slots qui refusent d'être vidés (BUG-036).
+     *
+     * <p>Le buffer déclare {@code mayPickup() == false} — l'item est en transit, il
+     * n'appartient pas au joueur. Mais {@code quickMoveStack} ne testait que la présence
+     * d'un item : un shift-clic contournait la garde. Les filtres, eux, sont des items
+     * fantômes et doivent s'effacer sans rien remettre au joueur.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void shiftClickRespectsProtectedSlots(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+
+        // Cible saturée : l'inserter se bloque avec un item en main, ce qui est justement
+        // l'état où un joueur serait tenté de le lui prendre.
+        fillWithStone(container(helper, TARGET));
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(
+                        inserter(helper).getState() == InserterState.BLOCKED,
+                        "L'inserter ne s'est pas bloqué"))
+                .thenExecute(() -> {
+                    FactoryIOInserterBlockEntity blockEntity = inserter(helper);
+                    IItemHandler handler = inserterHandler(helper);
+                    int buffer = FactoryIOInserterBlockEntity.BUFFER_SLOT;
+
+                    Player player = helper.makeMockPlayer();
+                    AbstractContainerMenu menu =
+                            blockEntity.createMenu(1, player.getInventory(), player);
+
+                    int held = handler.getStackInSlot(buffer).getCount();
+                    helper.assertTrue(held > 0, "Le buffer devrait contenir l'item bloqué");
+
+                    menu.quickMoveStack(player, menuSlotOf(menu, buffer));
+
+                    helper.assertTrue(handler.getStackInSlot(buffer).getCount() == held,
+                            "Le shift-clic a vidé le buffer, que mayPickup interdit de prendre");
+                    helper.assertTrue(player.getInventory().isEmpty(),
+                            "Le shift-clic a donné au joueur un item en transit");
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Shift-cliquer un filtre l'efface sans rien matérialiser (DT-08).
+     *
+     * <p>Un filtre est la description d'un item, pas un item : le sortir vers l'inventaire
+     * en créerait un.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void shiftClickClearsGhostFilter(GameTestHelper helper) {
+        setupChain(helper, "filter_inserter");
+
+        FactoryIOInserterBlockEntity blockEntity = inserter(helper);
+        int filterSlot = blockEntity.LAYOUT.filter(0);
+
+        blockEntity.setFilter(0, new ItemStack(FactoryIOItems.IRON_PLATE.get()));
+
+        Player player = helper.makeMockPlayer();
+        AbstractContainerMenu menu = blockEntity.createMenu(1, player.getInventory(), player);
+
+        menu.quickMoveStack(player, menuSlotOf(menu, filterSlot));
+
+        helper.assertTrue(inserterHandler(helper).getStackInSlot(filterSlot).isEmpty(),
+                "Le shift-clic n'a pas effacé le filtre fantôme");
+        helper.assertTrue(player.getInventory().isEmpty(),
+                "Le shift-clic a matérialisé un filtre fantôme dans l'inventaire");
+
+        helper.succeed();
     }
 
     /** Le mode blacklist doit survivre à un déchargement du block entity (BUG-008). */
@@ -345,6 +422,20 @@ public class FactoryIOGameTests {
         FactoryIOInserterBlockEntity blockEntity = inserter(helper);
 
         blockEntity.setFilter(filterIndex, new ItemStack(item));
+    }
+
+    /**
+     * @param machineSlot index dans l'inventaire de la machine
+     * @return l'index du même slot dans le menu
+     */
+    private static int menuSlotOf(AbstractContainerMenu menu, int machineSlot) {
+        for (Slot slot : menu.slots) {
+            if (slot instanceof SlotItemHandler handlerSlot && handlerSlot.getSlotIndex() == machineSlot) {
+                return slot.index;
+            }
+        }
+
+        throw new IllegalStateException("Slot machine " + machineSlot + " absent du menu");
     }
 
     private static int countOf(Container container, Item item) {

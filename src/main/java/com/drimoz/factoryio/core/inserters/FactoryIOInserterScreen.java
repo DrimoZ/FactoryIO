@@ -72,14 +72,9 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
 
     /** Teinte les slots de filtre dont la correspondance porte sur le tag. */
     private void renderTagFilterHighlights(GuiGraphics graphics) {
-        if (!getMenu().getBlockEntity().IS_FILTER) return;
+        for (Slot slot : getMenu().slots) {
+            if (!(slot instanceof InserterFilterSlot filter) || !filter.isTagFilter()) continue;
 
-        for (int menuSlotId = 0; menuSlotId < getMenu().slots.size(); menuSlotId++) {
-            int filterIndex = getMenu().filterIndexOf(menuSlotId);
-            if (filterIndex < 0) continue;
-            if (!getMenu().getBlockEntity().isTagFilter(filterIndex)) continue;
-
-            Slot slot = getMenu().slots.get(menuSlotId);
             int x = this.getGuiLeft() + slot.x;
             int y = this.getGuiTop() + slot.y;
 
@@ -143,12 +138,9 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
     protected List<Component> getTooltipFromContainerItem(ItemStack stack) {
         List<Component> lines = new ArrayList<>(super.getTooltipFromContainerItem(stack));
 
-        if (this.hoveredSlot == null) return lines;
+        if (!(this.hoveredSlot instanceof InserterFilterSlot filter) || stack.isEmpty()) return lines;
 
-        int filterIndex = getMenu().filterIndexOf(this.hoveredSlot.index);
-        if (filterIndex < 0 || stack.isEmpty()) return lines;
-
-        boolean byTag = getMenu().getBlockEntity().isTagFilter(filterIndex);
+        boolean byTag = filter.isTagFilter();
 
         lines.add(FactoryIOUtils.tooltipComponent(byTag ? "filter_tag" : "filter_exact")
                 .withStyle(byTag ? ChatFormatting.AQUA : ChatFormatting.GRAY));

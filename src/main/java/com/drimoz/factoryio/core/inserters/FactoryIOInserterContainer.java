@@ -1,9 +1,8 @@
 package com.drimoz.factoryio.core.inserters;
 
-import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.container.FactoryIOContainer;
+import com.drimoz.factoryio.core.generic.container.slots.GhostSlot;
 import com.drimoz.factoryio.core.generic.container.slots.SlotInserterBuffer;
-import com.drimoz.factoryio.core.generic.container.slots.SlotInserterFilter;
 import com.drimoz.factoryio.core.generic.container.slots.SlotInserterFuel;
 import com.drimoz.factoryio.core.model.Inserter;
 import net.minecraft.core.BlockPos;
@@ -118,7 +117,7 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
             // Les index viennent du layout : plus de « FILTER_SLOTS[i] - 1 » à corriger
             // à la main selon le type d'inserter (cf. DT-03).
             for (int i = 0; i < LAYOUT.filterCount(); i++) {
-                this.addSlot(new SlotInserterFilter(handler, LAYOUT.filter(i), 8 + i * 18, 49));
+                this.addSlot(new InserterFilterSlot(this.BLOCK_ENTITY, handler, i, 8 + i * 18, 49));
             }
         });
 
@@ -193,99 +192,84 @@ public class FactoryIOInserterContainer extends FactoryIOContainer {
 
     // Interface (Inventory Interaction)
 
+    /**
+     * Shift-clic, écrit une fois selon le patron vanilla (cf. DT-08).
+     *
+     * <p>Trois gardes que la version précédente n'avait pas : un slot fantôme s'efface au
+     * lieu de se déplacer, un slot qui refuse d'être vidé est respecté ([BUG-036](../../../../../../../../docs/03-BUGS.md)),
+     * et le transfert vers l'inventaire du joueur remplit à l'envers, comme partout dans
+     * vanilla.
+     *
+     * <p>Le contrat de retour est subtil et vaut d'être rappelé : {@code doClick} rappelle
+     * cette méthode tant qu'elle renvoie une pile non vide. Renvoyer la copie alors que
+     * rien n'a bougé boucle donc à l'infini — d'où le retour vide dès que
+     * {@code moveItemStackTo} échoue.
+     */
     @Override
     public ItemStack quickMoveStack(Player playerIn, int index) {
         Slot sourceSlot = slots.get(index);
-        if (sourceSlot == null || !sourceSlot.hasItem()) return ItemStack.EMPTY;  //EMPTY_ITEM
+        if (!sourceSlot.hasItem()) return ItemStack.EMPTY;
+
+        // Un filtre ne contient pas d'item mais sa description : le shift-clic l'efface.
+        if (sourceSlot instanceof GhostSlot ghost) {
+            ghost.clearGhost();
+            return ItemStack.EMPTY;
+        }
+
+        // Le buffer de transport interdit qu'on lui prenne son item ; le shift-clic
+        // contournait cette garde (cf. BUG-036).
+        if (!sourceSlot.mayPickup(playerIn)) return ItemStack.EMPTY;
+
         ItemStack sourceStack = sourceSlot.getItem();
         ItemStack copyOfSourceStack = sourceStack.copy();
 
-        // Check if the slot clicked is one of the vanilla container slots
-        if (index < VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT) {
-            // Only goes to inventory
-            // Les bornes étaient inversées (36 -> 35) : la boucle de moveItemStackTo ne
-            // s'exécutait jamais et le shift-clic depuis l'inventaire joueur ne faisait
-            // rien du tout (cf. BUG-009).
-            if (!moveItemStackTo(sourceStack, TE_INVENTORY_FIRST_SLOT_INDEX, TE_INVENTORY_FIRST_SLOT_INDEX + TE_INVENTORY_SLOT_COUNT, false)) {
-                return ItemStack.EMPTY;  // EMPTY_ITEM
-            }
-        } else if (index < TE_INVENTORY_FIRST_SLOT_INDEX + TE_INVENTORY_SLOT_COUNT) {
-            // Slot de filtre : c'est un item fantôme, shift-cliquer l'efface au lieu de
-            // le déplacer.
-            if (isFilterMenuSlot(index)) {
-                sourceSlot.set(ItemStack.EMPTY);
-                return copyOfSourceStack;
-            }
-
-            if (!moveItemStackTo(sourceStack, VANILLA_FIRST_SLOT_INDEX, VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT, false)) {
+        if (index < TE_INVENTORY_FIRST_SLOT_INDEX) {
+            // Inventaire du joueur vers la machine. Les bornes étaient inversées
+            // (36 -> 35) : la boucle ne s'exécutait jamais (cf. BUG-009).
+            if (!moveItemStackTo(sourceStack,
+                    TE_INVENTORY_FIRST_SLOT_INDEX, TE_INVENTORY_FIRST_SLOT_INDEX + TE_INVENTORY_SLOT_COUNT, false)) {
                 return ItemStack.EMPTY;
             }
-            return ItemStack.EMPTY;
         } else {
-            FactoryIO.LOGGER.warn("Index de slot invalide : {}", index);
-            return ItemStack.EMPTY;
+            if (!moveItemStackTo(sourceStack,
+                    VANILLA_FIRST_SLOT_INDEX, VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT, true)) {
+                return ItemStack.EMPTY;
+            }
         }
-        // If stack size == 0 (the entire stack was moved) set slot contents to null
-        if (sourceStack.getCount() == 0) {
+
+        if (sourceStack.isEmpty()) {
             sourceSlot.set(ItemStack.EMPTY);
         } else {
             sourceSlot.setChanged();
         }
+
         sourceSlot.onTake(playerIn, sourceStack);
         return copyOfSourceStack;
     }
 
     /**
-     * Comportement « fantôme » des slots de filtre : cliquer y dépose une copie d'un
-     * seul item sans consommer ce que le joueur tient, et cliquer à vide efface.
+     * Passe la main aux slots fantômes, qui décident seuls de ce qu'un clic veut dire.
      *
-     * <p>Le <b>clic droit</b> sur un filtre posé bascule sa correspondance entre l'item
-     * exact et son tag (cf. FIO-069). Aucun paquet custom n'est nécessaire : vanilla
-     * achemine déjà ce clic jusqu'au serveur, qui a vérifié que ce joueur a bien ce menu
-     * ouvert. Ajouter un bouton aurait demandé une case libre dans une texture de GUI
-     * figée — ce que la refonte du GUI règlera (FIO-071).
+     * <p>Le menu ne connaît plus ni les filtres ni les tags : il route, et
+     * {@link GhostSlot} tranche. C'est ce qui rend le mécanisme réutilisable pour les
+     * filtres de séparateur de la Phase 3.
+     *
+     * <p>Cette surcharge ne peut pas disparaître, contrairement à ce que visait DT-08 :
+     * vanilla court-circuite sur {@code mayPickup} avant d'appeler la moindre méthode du
+     * slot, et ne lui transmet jamais le numéro du bouton. Le détail est dans
+     * {@link GhostSlot}.
      */
     @Override
     public void clicked(int pSlotId, int pButton, ClickType pClickType, Player pPlayer) {
-        boolean ghostClick = isFilterMenuSlot(pSlotId)
-                && (pClickType == ClickType.PICKUP || pClickType == ClickType.QUICK_MOVE);
+        boolean clickable = pClickType == ClickType.PICKUP || pClickType == ClickType.QUICK_MOVE;
 
-        if (ghostClick && !slots.get(pSlotId).getItem().isEmpty()) {
-            if (pButton == RIGHT_CLICK && pClickType == ClickType.PICKUP) {
-                BLOCK_ENTITY.toggleTagFilter(pSlotId - TE_INVENTORY_FIRST_SLOT_INDEX - LAYOUT.firstFilter());
-                return;
-            }
-
-            if (this.getCarried().isEmpty()) {
-                slots.get(pSlotId).set(ItemStack.EMPTY);
-            } else {
-                ItemStack ghost = this.getCarried().copy();
-                ghost.setCount(1);
-                slots.get(pSlotId).set(ghost);
-            }
+        if (clickable && pSlotId >= 0 && pSlotId < slots.size()
+                && slots.get(pSlotId) instanceof GhostSlot ghost
+                && ghost.onGhostClick(pButton, this.getCarried())) {
             return;
         }
 
         super.clicked(pSlotId, pButton, pClickType, pPlayer);
     }
 
-    /** Bouton droit, tel que vanilla le transmet dans {@code clicked}. */
-    private static final int RIGHT_CLICK = 1;
-
-    /** @return le rang du slot de filtre affiché à {@code menuSlotId}, ou -1 */
-    public int filterIndexOf(int menuSlotId) {
-        if (!isFilterMenuSlot(menuSlotId)) return -1;
-
-        return menuSlotId - TE_INVENTORY_FIRST_SLOT_INDEX - LAYOUT.firstFilter();
-    }
-
-    // Inner work (Slots)
-
-    /** @param menuSlotId index dans le menu, pas dans l'inventaire de la machine */
-    private boolean isFilterMenuSlot(int menuSlotId) {
-        if (menuSlotId < TE_INVENTORY_FIRST_SLOT_INDEX) return false;
-        if (menuSlotId >= TE_INVENTORY_FIRST_SLOT_INDEX + TE_INVENTORY_SLOT_COUNT) return false;
-
-        return LAYOUT.isFilter(menuSlotId - TE_INVENTORY_FIRST_SLOT_INDEX);
-    }
 }

@@ -268,7 +268,27 @@ endormis, c'est 0,6 % d'un tick serveur.
 
 ---
 
-## DT-08 — `AbstractContainerMenu` : logique de slots non standard
+## DT-08 — `AbstractContainerMenu` : logique de slots non standard — ✅ **traité**
+
+**Traité par FIO-045 et FIO-071.** `quickMoveStack` est écrit une fois selon le patron
+vanilla et respecte `mayPickup` ([BUG-036](03-BUGS.md)) ; le comportement fantôme est
+réuni dans un [`GhostSlot`](../src/main/java/com/drimoz/factoryio/core/generic/container/slots/GhostSlot.java)
+réutilisable, au lieu de coexister entre le menu et `SlotInserterFilter` ; et
+`checkContainerSize` a disparu.
+
+**Un point du plan initial ne tient pas et ne doit pas être retenté** : supprimer la
+surcharge de `clicked()`. `AbstractContainerMenu#doClick` court-circuite sur `mayPickup`
+avant d’appeler la moindre méthode du slot quand celui-ci est plein — un slot fantôme ne
+peut donc pas se laisser vider — et le numéro du bouton n’est transmis à aucune méthode de
+`Slot`, ce qui interdit d’y distinguer un clic droit. Le menu route, `GhostSlot` décide.
+C’est cette classe qui est réutilisable, pas la surcharge.
+
+**Reste** : l’ordre d’ajout des slots, toujours inversé par rapport à la convention
+vanilla (joueur d’abord, machine ensuite). Décalage cosmétique, non traité — le corriger
+déplace tous les index pour aucun gain fonctionnel.
+
+<details>
+<summary>Rédaction initiale</summary>
 
 **Impact : moyen · Effort : S · Quand : Phase 2**
 
@@ -288,6 +308,8 @@ endormis, c'est 0,6 % d'un tick serveur.
 **Refonte cible** : un `GhostSlot` réutilisable qui encapsule tout le
 comportement fantôme, un `quickMoveStack` écrit une fois selon le patron vanilla,
 et zéro surcharge de `clicked()`.
+
+</details>
 
 ---
 

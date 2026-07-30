@@ -10,7 +10,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > (`Loaded 7 inserters`, aucune erreur fatale).
 >
 > Le comportement est désormais largement vérifié. **Le mod est validé en jeu** par le
-> mainteneur (FIO-054, 30/07/2026), et 10 GameTests couvrent les invariants de monde —
+> mainteneur (FIO-054, 30/07/2026), et 12 GameTests couvrent les invariants de monde —
 > conservation, ravitaillement, redstone, persistance, synchro de l'item en main, blocage
 > sur cible pleine, filtres par tag — doublés de 67 tests JUnit sur le calcul pur.
 >
@@ -32,7 +32,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Pack de ressources/data généré au runtime | 🟡 | ne dépend plus du code client (BUG-005) ; toujours pas de régénération à chaud ni de nettoyage |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 10 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
+| Tests (GameTest) | ✅ | 12 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
 | Tests (JUnit) | ✅ | 67 tests de calcul pur, `./gradlew test`, exécutés par `build` |
 | Benchmark de charge | ✅ | consigné ; budget actif tenu, budget endormi à la limite ([`10`](10-BENCHMARKS.md), FIO-073, FIO-076) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
@@ -56,7 +56,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Cible pleine | ✅ | l'item reste en main, bras tendu, jusqu'à libération (FIO-060) |
 | Auto-alimentation en carburant | ✅ | se réapprovisionne sous le seuil `FUEL_BUFFER_TARGET`, hors de la garde de réserve (BUG-012) |
 | Réaction au redstone | ✅ | garde serveur, `affectedByRedstone` respecté, couvert par un GameTest (BUG-015) |
-| Shift-clic dans le GUI | ✅ | bornes corrigées (BUG-009) |
+| Shift-clic dans le GUI | ✅ | patron vanilla, respecte `mayPickup` et efface les filtres fantômes (BUG-009, BUG-036) |
 | Barre d'énergie / de carburant | ✅ | `ContainerData`, synchronisée aux seuls joueurs ayant le GUI ouvert (BUG-004) |
 | Tooltips d'item (Shift) | ✅ | débit en items/s, taille de main, unités correctes (BUG-029, FIO-065) |
 | Noms traduits des blocs et items | ✅ | `en_us` et `fr_fr` complets ; le générateur runtime n'agit plus qu'en surcharge (BUG-011) |
