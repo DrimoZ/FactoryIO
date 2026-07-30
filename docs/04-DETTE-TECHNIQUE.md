@@ -247,6 +247,25 @@ mur exécute la boucle complète 20 fois par seconde indéfiniment.
 Un budget cible raisonnable : **1 000 inserters actifs < 2 ms/tick**. À mesurer
 avec Spark, et à verrouiller par un benchmark en GameTest.
 
+### ✅ Mesuré (FIO-073)
+
+Les cinq optimisations sont en place et **le budget des inserters actifs est tenu dix
+fois** : 0,13 à 0,21 ms/tick pour 1 000. Méthode, chiffres et limites dans
+[`10-BENCHMARKS.md`](10-BENCHMARKS.md).
+
+En revanche, **le budget du régime endormi n'est pas tenu de façon fiable** — 0,11 à
+0,31 ms/tick pour un plafond de 0,2 — et il n'y a pas de raison qu'il le devienne. Ce n'est
+pas une régression : c'est une erreur dans l'hypothèse posée plus haut. Le régime endormi ne
+coûte pas moins cher que le régime actif, parce que les deux sont dominés par le même retour
+anticipé, et que ce qui reste est le **préambule commun à tout tick** — `isEnabled()`, qui
+lit une propriété de blockstate, et l'appel à `burnFuel()`.
+
+Le plancher du coût d'un inserter n'est donc plus dans sa logique mais dans le fait d'être
+tické, et la mise en sommeil ne peut pas passer sous ce plancher puisqu'elle s'exécute
+*après* lui. Descendre plus bas suppose de **retirer les inserters endormis de la liste des
+tickers** (FIO-076). Ce n'est pas justifié aujourd'hui : 0,3 ms/tick pour 1 000 inserters
+endormis, c'est 0,6 % d'un tick serveur.
+
 ---
 
 ## DT-08 — `AbstractContainerMenu` : logique de slots non standard
@@ -354,10 +373,17 @@ sub-tick, le traiter explicitement avec un accumulateur en millièmes de tick.
 | `InserterState` : décodage réseau, prédicats dérivés | JUnit | ✅ |
 | `InserterDefaults` : barème contre la référence Factorio | JUnit | ✅ |
 | `InserterDefinition` : parsing JSON valide / invalide | JUnit | avec FIO-034 |
-| 1 000 inserters actifs < 2 ms/tick | benchmark | FIO-073 |
+| 1 000 inserters actifs < 2 ms/tick | benchmark | ✅ |
 
-Reste donc la **mesure** : aucun benchmark n'existe, et le budget de DT-07 n'est pour
-l'instant qu'une intention (FIO-073).
+Le **benchmark** existe désormais aussi
+([`FactoryIOBenchmarks`](../src/main/java/com/drimoz/factoryio/gametest/FactoryIOBenchmarks.java),
+résultats dans [`10-BENCHMARKS.md`](10-BENCHMARKS.md)) : il mesure les deux régimes, endormi
+et actif, et échoue si le budget de DT-07 est dépassé d'un ordre de grandeur. Le seuil est
+volontairement large — une assertion temporelle serrée échouerait sur le bruit de la
+machine, pas sur une régression.
+
+Reste, à terme : la mesure du **coût réseau** et celle du **rendu**, qui demandent un
+client et ne se chronomètrent pas de la même façon.
 
 ---
 

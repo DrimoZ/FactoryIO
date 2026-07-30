@@ -30,6 +30,7 @@ Mod Minecraft **Forge 1.20.1** qui porte les mécaniques d'automatisation de *Fa
 | [`docs/07-DESIGN-INSERTERS.md`](docs/07-DESIGN-INSERTERS.md) | Spécification de la refonte de l'algorithme inserter |
 | [`docs/08-DESIGN-BELTS.md`](docs/08-DESIGN-BELTS.md) | Spécification du système de convoyeurs (à écrire from scratch) |
 | [`docs/09-CONVENTIONS.md`](docs/09-CONVENTIONS.md) | Conventions de code, nommage, structure, checklist de PR |
+| [`docs/10-BENCHMARKS.md`](docs/10-BENCHMARKS.md) | Mesures de performance du tick, budget et méthode |
 
 ---
 

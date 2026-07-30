@@ -58,7 +58,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-055~~ | ✅ | S | **Socle JUnit** : dépendance + `useJUnitPlatform()`, 31 tests sur `InserterSlotLayout` et `InserterCarryPath` ([BUG-040](03-BUGS.md), DT-11) | `./gradlew test` vert, inclus dans `build` |
 | ~~FIO-056~~ | ✅ | XS | `wakeUp()` sur `onEnergyChanged` ([BUG-037](03-BUGS.md)) | le courant qui revient relance l'inserter dans le tick |
 | ~~FIO-057~~ | ✅ | XS | Corriger le `README` : nom de jar et mappings ([BUG-039](03-BUGS.md)) | — |
-| FIO-058 | P2 | XS | Carburant plus riche que la capacité : écrêter au lieu de refuser ([BUG-041](03-BUGS.md)) | un seau de lave dans le tag ne bloque plus le slot |
+| ~~FIO-058~~ | ✅ | XS | Carburant : consommer tardivement, et écrêter au lieu de refuser ([BUG-041](03-BUGS.md)) | un carburant trop riche ne bloque plus le slot |
 
 ## Épic C — Inserters (Phase 2)
 
@@ -77,7 +77,8 @@ Colonne « ✓ » = critère d'acceptation.
 | FIO-070 | P2 | M | Mode circuit : condition sur signal redstone analogique | « n'agir que si signal ≥ 5 » |
 | FIO-071 | P2 | S | `GhostSlot` réutilisable, suppression de la surcharge de `clicked()` (DT-08) | — |
 | ~~FIO-072~~ | ✅ | S | Tooltips avec les bonnes unités ([BUG-029](03-BUGS.md)) | items/s et FE/s corrects |
-| FIO-073 | P2 | M | Benchmark : 1 000 inserters actifs < 2 ms/tick (DT-07) | résultat consigné dans le dépôt |
+| ~~FIO-073~~ | ✅ | M | Benchmark des deux régimes, endormi et actif (DT-07) | 0,13 à 0,21 ms/tick pour 1 000 actifs, budget 2,0 ; [`10`](10-BENCHMARKS.md) |
+| FIO-076 | P3 | M | Retirer les inserters endormis de la liste des tickers plutôt que de les ticker pour décrémenter un compteur. Le benchmark montre que le plancher du coût est désormais le **préambule** du tick (`isEnabled`, `burnFuel`), sous lequel la mise en sommeil ne peut pas descendre puisqu'elle s'exécute après lui ([`10`](10-BENCHMARKS.md)). Non justifié tant que 1 000 endormis coûtent 0,6 % d'un tick. | 1 000 endormis < 0,2 ms/tick de façon stable |
 | ~~FIO-074~~ | ✅ | S | Face correcte passée à la capability en éjection ([BUG-023](03-BUGS.md)) | — |
 | ~~FIO-075~~ | ✅ | S | Carburant : `shrink(1)`, `getCraftingRemainingItem`, comparaison `<=` ([BUG-024](03-BUGS.md)) | un seau de lave rend un seau |
 

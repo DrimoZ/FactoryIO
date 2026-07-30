@@ -1,14 +1,14 @@
 # 03 — Catalogue des bugs
 
-> **État : 37 bugs sur 41 corrigés**, plus 1 partiellement (BUG-020).
+> **État : 38 bugs sur 41 corrigés**, plus 1 partiellement (BUG-020).
 >
-> Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Six GameTests
+> Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Onze GameTests
 > couvrent les invariants de monde (`./gradlew runGameTestServer`) et 67 tests JUnit le
 > calcul pur (`./gradlew test`). Le **rendu**, lui, n'est validé par aucun test : ce qui
 > touche à l'affichage reste « écrit et compilé », pas « vu à l'écran » (cf. FIO-054).
 >
-> Restent à traiter : BUG-016 (géométrie du bras à redécouper, FIO-066 en pause),
-> BUG-036 et BUG-041 — tous S3, relevés lors de l'audit du 30/07/2026.
+> Restent à traiter : BUG-016 (géométrie du bras à redécouper, FIO-066 en pause)
+> et BUG-036 — S3, relevé lors de l'audit du 30/07/2026.
 
 Sévérités :
 **S0** bloquant (crash / mod inutilisable) ·
@@ -58,7 +58,7 @@ Sévérités :
 | [BUG-036](#bug-036) | S3 | `quickMoveStack` ignore `Slot#mayPickup` | `…InserterContainer.java` |
 | [BUG-037](#bug-037) | ✅ S3 | L'arrivée d'énergie ne réveille pas un inserter endormi | `…InserterBlockEntity.java` |
 | [BUG-038](#bug-038) | ✅ S3 | Débit réel moitié du débit documenté | `…InserterBlockEntity.java` |
-| [BUG-041](#bug-041) | S3 | Un carburant trop riche est refusé sans un mot et bloque le slot | `…InserterBlockEntity.java` |
+| [BUG-041](#bug-041) | ✅ S3 | Un carburant trop riche est refusé sans un mot et bloque le slot | `…InserterBlockEntity.java` |
 | [BUG-039](#bug-039) | ✅ S3 | `README` : nom de jar et mappings faux | `README.md` |
 | [BUG-040](#bug-040) | ✅ S3 | Aucun test JUnit alors que FIO-035 l'exigeait | `src/test/` |
 
@@ -878,7 +878,7 @@ calcul pur. Ajouter le socle JUnit reste à faire — c'est le préalable nature
 
 ---
 
-## BUG-041 — Un carburant trop riche est refusé sans un mot et bloque le slot (S3)
+## BUG-041 — Un carburant trop riche est refusé sans un mot et bloque le slot (S3) ✅
 
 **Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java) — `burnFuel`
 

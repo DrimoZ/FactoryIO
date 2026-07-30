@@ -9,7 +9,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > appliqués (voir [`03-BUGS.md`](03-BUGS.md)), le mod compile et **le client démarre**
 > (`Loaded 7 inserters`, aucune erreur fatale).
 >
-> Le comportement est désormais partiellement vérifié : 8 GameTests couvrent les
+> Le comportement est désormais partiellement vérifié : 9 GameTests couvrent les
 > invariants de monde (conservation, ravitaillement, redstone, persistance, synchro de
 > l'item transporté, blocage, persistance de l'état du bras) et 67 tests JUnit le calcul
 > pur. Le transfert
@@ -31,9 +31,9 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Pack de ressources/data généré au runtime | 🟡 | ne dépend plus du code client (BUG-005) ; toujours pas de régénération à chaud ni de nettoyage |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 8 tests d'invariants de monde, `./gradlew runGameTestServer` |
+| Tests (GameTest) | ✅ | 9 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
 | Tests (JUnit) | ✅ | 67 tests de calcul pur, `./gradlew test`, exécutés par `build` |
-| Benchmark de charge | ⬜ | budget DT-07 non mesuré (FIO-073) |
+| Benchmark de charge | ✅ | consigné ; budget actif tenu, budget endormi à la limite ([`10`](10-BENCHMARKS.md), FIO-073, FIO-076) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
 
 ## 2. Inserters
@@ -49,7 +49,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Bascule whitelist/blacklist | ✅ | paquet C→S validé : expéditeur, chunk, distance, menu ouvert, type de bloc (BUG-007) |
 | Consommation d'énergie (FE) | ✅ | `consumeInternal()` distinct du contrat externe (BUG-003) |
 | Réception d'énergie | ✅ | toutes faces + `side == null` (BUG-021) |
-| Consommation de carburant | 🟡 | bornée (BUG-013) ; un carburant plus riche que la capacité bloque le slot (BUG-041) |
+| Consommation de carburant | ✅ | bornée (BUG-013), consommée au dernier moment et écrêtée (BUG-041) |
 | Vitesse et débit | ✅ | barème Factorio, 0,59 à 7,5 items/s selon le modèle (FIO-065) |
 | Machine à états du bras | ✅ | `WAITING` / `SWINGING` / `BLOCKED` / `RETURNING`, persistée et synchronisée (FIO-060) |
 | Cible pleine | ✅ | l'item reste en main, bras tendu, jusqu'à libération (FIO-060) |
