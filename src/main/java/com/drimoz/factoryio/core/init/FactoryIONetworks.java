@@ -1,7 +1,7 @@
 package com.drimoz.factoryio.core.init;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncC2SWhitelistButton;
+import com.drimoz.factoryio.core.network.packet.FactoryIOSyncC2SInserterSetting;
 import com.drimoz.factoryio.core.network.packet.FactoryIOSyncS2CInserterTunings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,7 +13,8 @@ import net.minecraftforge.network.simple.SimpleChannel;
 /**
  * Canal réseau du mod.
  *
- * <p>Deux paquets seulement. Un montant, pour les réglages du GUI ; un descendant, émis
+ * <p>Deux paquets seulement. Un montant, pour les réglages du GUI (filtrage et
+ * condition redstone) ; un descendant, émis
  * à la connexion et après chaque {@code /reload} pour transmettre les réglages
  * d'inserter qu'un datapack a pu changer (FIO-037). Le reste de la
  * synchronisation descendante passe par les mécanismes standards :
@@ -42,10 +43,10 @@ public class FactoryIONetworks {
 
         INSTANCE = net;
 
-        net.messageBuilder(FactoryIOSyncC2SWhitelistButton.class, id(), NetworkDirection.PLAY_TO_SERVER)
-                .decoder(FactoryIOSyncC2SWhitelistButton::new)
-                .encoder(FactoryIOSyncC2SWhitelistButton::toBytes)
-                .consumerMainThread(FactoryIOSyncC2SWhitelistButton::handle)
+        net.messageBuilder(FactoryIOSyncC2SInserterSetting.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(FactoryIOSyncC2SInserterSetting::new)
+                .encoder(FactoryIOSyncC2SInserterSetting::toBytes)
+                .consumerMainThread(FactoryIOSyncC2SInserterSetting::handle)
                 .add();
 
         net.messageBuilder(FactoryIOSyncS2CInserterTunings.class, id(), NetworkDirection.PLAY_TO_CLIENT)

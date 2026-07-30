@@ -19,7 +19,7 @@ diverge sur presque tous les points.
 | Blocage | l'inserter garde l'item en main et attend | ✅ état `BLOCKED` (FIO-060) |
 | Filtre | par type d'item, whitelist/blacklist | ✅ par type ou par tag, au choix par slot (FIO-069) |
 | Taille de main | dépend du type + bonus de recherche | constante 1 ou 3 |
-| Condition circuit | signal/condition réseau | signal redstone binaire |
+| Condition circuit | signal/condition réseau | ✅ condition redstone **analogique** : < N ou ≥ N (FIO-070) |
 | Vitesse | 0,60 à 2,31 items/s | ✅ 0,59 à 2,50 items/s (FIO-065) — auparavant 0,25 pour tous |
 
 ---
@@ -371,7 +371,7 @@ Par ordre de valeur ajoutée :
 | **Prise/dépose sur convoyeur** | sans elle, les convoyeurs de la Phase 3 sont inutilisables | M (dépend de la Phase 3) |
 | ~~**Prise/dépose au sol**~~ | ❌ **écartée** par le mainteneur le 30/07/2026 : décision de périmètre. Le mod ne fera pas transiter d’items par le sol, même si Factorio le permet. | — |
 | ~~**Filtre par tag**~~ | ✅ **fait (FIO-069)** — clic droit sur un filtre posé bascule entre l'item exact et ses tags. Volontairement large : « partage un tag » plutôt qu'un tag désigné, tant que le GUI ne permet pas d'en choisir un (FIO-071) | S |
-| **Condition redstone analogique** | « n'agir que si signal ≥ N » — équivalent minimal du réseau de circuits | M |
+| ~~**Condition redstone analogique**~~ | ✅ **fait (FIO-070)** — mode et seuil réglables par inserter. Le réseau de circuits complet reste hors périmètre. | M |
 | **Bonus de taille de main** | permet une progression sans nouveaux blocs | S |
 | **Insertion « ne dépasse pas N »** | limite de remplissage, très demandé en Factorio | S |
 

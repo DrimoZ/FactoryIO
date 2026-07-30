@@ -4,6 +4,7 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
 import com.drimoz.factoryio.core.init.FactoryIOItems;
+import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
 import com.drimoz.factoryio.core.inserters.InserterState;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.model.InserterTuning;
@@ -135,6 +136,39 @@ public class FactoryIOGameTests {
 
         helper.succeedWhen(() -> helper.assertBlockProperty(
                 INSERTER, FactoryIOInserterEntityBlock.ENABLED, false));
+    }
+
+    /**
+     * La condition redstone doit inverser la réaction au signal (FIO-070).
+     *
+     * <p>Un même bloc de redstone, deux résultats opposés selon la condition : c'est ce qui
+     * distingue une condition analogique d'un interrupteur. Le test le vérifie dans le
+     * monde, et non sur le prédicat seul — les tests JUnit couvrent déjà la comparaison,
+     * ce qui reste à prouver ici est que le bloc la <b>consulte</b>.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void redstoneConditionInvertsBehaviour(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        // Signal maximal : 15.
+        helper.setBlock(INSERTER.above(), Blocks.REDSTONE_BLOCK);
+
+        helper.startSequence()
+                // Par défaut — « actif tant que le signal est sous 1 » — le bloc désactive.
+                .thenWaitUntil(() -> helper.assertBlockProperty(
+                        INSERTER, FactoryIOInserterEntityBlock.ENABLED, false))
+                .thenExecute(() -> inserter(helper).setRedstoneCondition(
+                        new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 5)))
+                // Avec « signal ≥ 5 », le même bloc l'active : 15 ≥ 5.
+                .thenWaitUntil(() -> helper.assertBlockProperty(
+                        INSERTER, FactoryIOInserterEntityBlock.ENABLED, true))
+                .thenExecute(() -> inserter(helper).setRedstoneCondition(
+                        new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 16)))
+                // Un seuil ramené à 15 reste satisfait ; au-delà, plus rien ne l'atteindrait.
+                .thenWaitUntil(() -> helper.assertBlockProperty(
+                        INSERTER, FactoryIOInserterEntityBlock.ENABLED, true))
+                .thenSucceed();
     }
 
     /**

@@ -59,6 +59,22 @@ public class FactoryIOInserterEntityBlock extends FactoryIOEntityBlockWaterLogge
         return inserter.isAffectedByRedstone();
     }
 
+    /**
+     * Applique la condition réglée sur l'inserter, en lisant le signal <b>analogique</b>.
+     *
+     * <p>{@code getBestNeighborSignal} et non {@code hasNeighborSignal} : c'est toute la
+     * différence entre « il y a du courant » et « il y en a au moins tant », donc entre un
+     * interrupteur et une condition de circuit.
+     */
+    @Override
+    protected boolean shouldBeEnabled(Level pLevel, BlockPos pPos) {
+        if (!(pLevel.getBlockEntity(pPos) instanceof FactoryIOInserterBlockEntity blockEntity)) {
+            return super.shouldBeEnabled(pLevel, pPos);
+        }
+
+        return blockEntity.getRedstoneCondition().allows(pLevel.getBestNeighborSignal(pPos));
+    }
+
     // Interface (Shape)
 
 

@@ -64,5 +64,9 @@
   "tooltip.factory_io.filter_exact": "Matches this item",
   "tooltip.factory_io.filter_tag": "Matches this item's tags",
   "tooltip.factory_io.filter_tag_none": "This item has no tag",
-  "tooltip.factory_io.filter_tag_switch": "Right-click to switch"
+  "tooltip.factory_io.filter_tag_switch": "Right-click to switch",
+  "tooltip.factory_io.redstone_always": "Always on",
+  "tooltip.factory_io.redstone_below": "If signal <",
+  "tooltip.factory_io.redstone_at_least": "If signal ≥",
+  "tooltip.factory_io.redstone_help": "When the inserter runs, based on the strongest redstone signal reaching it (0-15). Click the number to change the threshold."
 }

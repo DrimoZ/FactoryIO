@@ -50,6 +50,18 @@ addDataSlots(new SimpleContainerData(2));   // ou un ContainerData branché sur 
 Les 6 paquets custom peuvent alors tous disparaître, sauf un
 `C2SInserterSettings` (whitelist, mode, futurs réglages) — correctement validé.
 
+### ✅ Traité
+
+Les six paquets ont disparu. Il en reste deux, et la cible est atteinte à une nuance près :
+
+- **C→S** : [`FactoryIOSyncC2SInserterSetting`](../src/main/java/com/drimoz/factoryio/core/network/packet/FactoryIOSyncC2SInserterSetting.java),
+  exactement le `C2SInserterSettings` prévu. Il porte le mode de filtrage et les deux
+  moitiés de la condition redstone (FIO-070), avec la validation de BUG-007.
+- **S→C** : [`FactoryIOSyncS2CInserterTunings`](../src/main/java/com/drimoz/factoryio/core/network/packet/FactoryIOSyncS2CInserterTunings.java),
+  qui n'était pas prévu. Il est apparu avec les réglages par datapack (FIO-037) : le client
+  a besoin du barème pour ses tooltips et la trajectoire de l'item. Émis à la connexion et
+  après `/reload`, jamais périodiquement — ce que la refonte proscrivait, et qui reste vrai.
+
 ---
 
 ## DT-02 — Algorithme de transfert d'items : à réécrire

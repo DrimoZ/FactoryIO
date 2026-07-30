@@ -3,7 +3,10 @@ package com.drimoz.factoryio.core.inserters;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.shared.FactoryIOUtils;
 import com.drimoz.factoryio.shared.gui.FactoryIOGuiButton;
+import com.drimoz.factoryio.core.init.FactoryIONetworks;
+import com.drimoz.factoryio.core.network.packet.FactoryIOSyncC2SInserterSetting;
 import com.drimoz.factoryio.shared.gui.FactoryIOGuiEnergy;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -27,10 +30,23 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
     /** Identifiant du bouton whitelist, partagé avec le paquet C→S. */
     private static final int WHITELIST_BUTTON = 6;
 
+    /**
+     * Bandeau libre de la texture, entre le titre et la rangée de slots.
+     *
+     * <p>Les deux commandes de la condition redstone y sont posées avec des widgets
+     * <b>vanilla</b>, qui apportent leur propre habillage : la texture du GUI n'a aucune
+     * case libre pour de nouvelles icônes, et en ajouter demanderait de la redessiner
+     * (cf. FIO-069, FIO-070).
+     */
+    private static final int CONTROLS_Y = 18;
+
     // Private properties
 
     private FactoryIOGuiEnergy energyBar;
     private FactoryIOGuiButton whitelistButton;
+
+    private Button redstoneModeButton;
+    private Button redstoneThresholdButton;
 
     // Life cycle
 
@@ -51,6 +67,67 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
         if (getMenu().getBlockEntity().IS_FILTER) {
             whitelistButton = new FactoryIOGuiButton(left, top, 7, 30, 16, 16, 194, 0);
         }
+
+        addRedstoneControls(left, top);
+    }
+
+    /**
+     * Ajoute les deux commandes de la condition redstone.
+     *
+     * <p>Un inserter qui ne réagit pas au redstone n'en reçoit aucune : lui proposer un
+     * réglage sans effet serait pire que de ne rien proposer.
+     */
+    private void addRedstoneControls(int left, int top) {
+        if (!getMenu().getBlockEntity().isAffectedByRedstone()) return;
+
+        this.redstoneModeButton = addRenderableWidget(Button
+                .builder(Component.empty(), button -> cycleRedstoneMode())
+                .bounds(left + 28, top + CONTROLS_Y, 76, 16)
+                .build());
+
+        this.redstoneThresholdButton = addRenderableWidget(Button
+                .builder(Component.empty(), button -> cycleRedstoneThreshold())
+                .bounds(left + 108, top + CONTROLS_Y, 34, 16)
+                .build());
+
+        refreshRedstoneControls();
+    }
+
+    /** Aligne les libellés des boutons sur l'état réel de l'inserter. */
+    private void refreshRedstoneControls() {
+        if (this.redstoneModeButton == null) return;
+
+        InserterRedstoneCondition condition = getMenu().getBlockEntity().getRedstoneCondition();
+
+        this.redstoneModeButton.setMessage(
+                FactoryIOUtils.tooltipComponent(condition.mode().translationKey()));
+
+        this.redstoneThresholdButton.setMessage(Component.literal(String.valueOf(condition.threshold())));
+        this.redstoneThresholdButton.active = condition.usesThreshold();
+    }
+
+    private void cycleRedstoneMode() {
+        InserterRedstoneCondition condition = getMenu().getBlockEntity().getRedstoneCondition();
+
+        send(FactoryIOSyncC2SInserterSetting.Setting.REDSTONE_MODE, condition.mode().next().ordinal());
+    }
+
+    private void cycleRedstoneThreshold() {
+        InserterRedstoneCondition condition = getMenu().getBlockEntity().getRedstoneCondition();
+
+        send(FactoryIOSyncC2SInserterSetting.Setting.REDSTONE_THRESHOLD, condition.nextThreshold().threshold());
+    }
+
+    /**
+     * Envoie le réglage au serveur, sans l'appliquer localement.
+     *
+     * <p>C'est le serveur qui fait autorité et renvoie l'état par {@code getUpdateTag} ;
+     * une prédiction locale n'avancerait à rien sinon à afficher brièvement un réglage que
+     * le serveur pourrait refuser.
+     */
+    private void send(FactoryIOSyncC2SInserterSetting.Setting setting, int value) {
+        FactoryIONetworks.sendToServer(new FactoryIOSyncC2SInserterSetting(
+                getMenu().getBlockEntity().getBlockPos(), setting, value));
     }
 
     // Interface (Rendu)
@@ -58,6 +135,7 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         this.renderBackground(graphics);
+        this.refreshRedstoneControls();
         super.render(graphics, mouseX, mouseY, partialTicks);
 
         // Les slots en mode tag sont teintés par-dessus leur contenu : la texture de GUI
@@ -177,6 +255,12 @@ public class FactoryIOInserterScreen<T extends FactoryIOInserterContainer> exten
             // en continu, c'est le ContainerData qui fait foi (cf. BUG-004).
             energyBar.renderTooltip(graphics, this.font, mouseX, mouseY,
                     getMenu().getPowerStored(), getMenu().getPowerCapacity(), true);
+        }
+
+        if (this.redstoneModeButton != null && this.redstoneModeButton.isHovered()) {
+            graphics.renderTooltip(this.font,
+                    this.font.split(FactoryIOUtils.tooltipComponent("redstone_help"), 180),
+                    mouseX, mouseY);
         }
 
         if (blockEntity.IS_FILTER) {

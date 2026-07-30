@@ -3,8 +3,8 @@
 > **État : 39 bugs sur 41 corrigés**, plus 1 partiellement (BUG-020).
 >
 > Le mod est porté sur Forge 1.20.1 et **validé en jeu** par le mainteneur le 30/07/2026
-> (FIO-054). Quinze GameTests couvrent les invariants de monde
-> (`./gradlew runGameTestServer`) et 82 tests JUnit le calcul pur (`./gradlew test`).
+> (FIO-054). Seize GameTests couvrent les invariants de monde
+> (`./gradlew runGameTestServer`) et 94 tests JUnit le calcul pur (`./gradlew test`).
 > Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil, pas
 > par une assertion.
 >

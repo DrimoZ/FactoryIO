@@ -1,7 +1,7 @@
 package com.drimoz.factoryio.shared.gui;
 
 import com.drimoz.factoryio.core.init.FactoryIONetworks;
-import com.drimoz.factoryio.core.network.packet.FactoryIOSyncC2SWhitelistButton;
+import com.drimoz.factoryio.core.network.packet.FactoryIOSyncC2SInserterSetting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -74,7 +74,8 @@ public class FactoryIOGuiButton {
         if (!condition) return;
         if (!hovering(mouseX, mouseY)) return;
 
-        FactoryIONetworks.sendToServer(new FactoryIOSyncC2SWhitelistButton(pos, index, set));
+        FactoryIONetworks.sendToServer(new FactoryIOSyncC2SInserterSetting(
+                pos, FactoryIOSyncC2SInserterSetting.Setting.FILTER_MODE, set));
         Minecraft.getInstance().getSoundManager()
                 .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 0.6F, 0.3F));
     }

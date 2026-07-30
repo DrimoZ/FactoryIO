@@ -64,5 +64,9 @@
   "tooltip.factory_io.filter_exact": "Correspond à cet item",
   "tooltip.factory_io.filter_tag": "Correspond aux tags de cet item",
   "tooltip.factory_io.filter_tag_none": "Cet item n'a aucun tag",
-  "tooltip.factory_io.filter_tag_switch": "Clic droit pour changer"
+  "tooltip.factory_io.filter_tag_switch": "Clic droit pour changer",
+  "tooltip.factory_io.redstone_always": "Toujours actif",
+  "tooltip.factory_io.redstone_below": "Si signal <",
+  "tooltip.factory_io.redstone_at_least": "Si signal ≥",
+  "tooltip.factory_io.redstone_help": "Quand l’inserter travaille, selon le plus fort signal redstone qui l’atteint (0-15). Cliquez le nombre pour changer le seuil."
 }

@@ -12,7 +12,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > Le comportement est désormais largement vérifié. **Le mod est validé en jeu** par le
 > mainteneur (FIO-054, 30/07/2026), et 12 GameTests couvrent les invariants de monde —
 > conservation, ravitaillement, redstone, persistance, synchro de l'item en main, blocage
-> sur cible pleine, filtres par tag — doublés de 82 tests JUnit sur le calcul pur.
+> sur cible pleine, filtres par tag — doublés de 94 tests JUnit sur le calcul pur.
 >
 > Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil, pas
 > par une assertion. C'est la limite à garder en tête à chaque changement d'affichage.
@@ -28,12 +28,12 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Registre data-driven d'inserters | ✅ | migré sur `DeferredRegister` lors du port |
 | Chargement de JSON utilisateur | ✅ | validé par `Codec`, erreurs nommées (FIO-034) ; la **liste** vient de `config/`, les **réglages** d'un datapack rechargeable à chaud (FIO-037) |
 | Config Forge (`ForgeConfigSpec`) | 🟡 | lue en amont via `FactoryIOEarlyConfig` ; **prend effet au lancement suivant** (contrainte Forge, cf. BUG-001) |
-| Réseau (`SimpleChannel`) | ✅ | 2 paquets : réglages du GUI (C→S) et réglages d'inserter à la connexion / `/reload` (S→C) |
+| Réseau (`SimpleChannel`) | ✅ | 2 paquets : réglages d'inserter (C→S, filtrage et redstone) et barème à la connexion / `/reload` (S→C) |
 | Pack de ressources/data généré au runtime | ✅ | en mémoire, refait à chaque rechargement, limité aux inserters utilisateur (FIO-039) |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 13 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
-| Tests (JUnit) | ✅ | 82 tests de calcul pur, `./gradlew test`, exécutés par `build` |
+| Tests (GameTest) | ✅ | 14 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
+| Tests (JUnit) | ✅ | 94 tests de calcul pur, `./gradlew test`, exécutés par `build` |
 | Benchmark de charge | ✅ | consigné ; budget actif tenu, budget endormi à la limite ([`10`](10-BENCHMARKS.md), FIO-073, FIO-076) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
 
@@ -55,7 +55,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Machine à états du bras | ✅ | `WAITING` / `SWINGING` / `BLOCKED` / `RETURNING`, persistée et synchronisée (FIO-060) |
 | Cible pleine | ✅ | l'item reste en main, bras tendu, jusqu'à libération (FIO-060) |
 | Auto-alimentation en carburant | ✅ | se réapprovisionne sous le seuil `FUEL_BUFFER_TARGET`, hors de la garde de réserve (BUG-012) |
-| Réaction au redstone | ✅ | garde serveur, `affectedByRedstone` respecté, couvert par un GameTest (BUG-015) |
+| Réaction au redstone | ✅ | condition **analogique** réglable : toujours / signal < N / signal ≥ N (FIO-070, BUG-015) |
 | Shift-clic dans le GUI | ✅ | patron vanilla, respecte `mayPickup` et efface les filtres fantômes (BUG-009, BUG-036) |
 | Barre d'énergie / de carburant | ✅ | `ContainerData`, synchronisée aux seuls joueurs ayant le GUI ouvert (BUG-004) |
 | Tooltips d'item (Shift) | ✅ | débit en items/s, taille de main, unités correctes (BUG-029, FIO-065) |

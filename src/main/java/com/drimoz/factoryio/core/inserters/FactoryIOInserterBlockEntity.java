@@ -103,6 +103,14 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     private int tagFilterMask = 0;
 
     /**
+     * Condition d'activation liée au signal redstone (cf. FIO-070).
+     *
+     * <p>Par défaut « actif tant que le signal est sous 1 », c'est-à-dire le comportement
+     * historique : un monde existant se recharge inchangé.
+     */
+    private InserterRedstoneCondition redstoneCondition = InserterRedstoneCondition.DEFAULT;
+
+    /**
      * Tick de jeu auquel le mouvement de bras en cours se termine.
      *
      * <p>Une échéance absolue, et non un compteur : elle est envoyée une fois, au
@@ -331,6 +339,8 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         // whitelist et repartait d'un compteur nul (cf. BUG-008).
         tag.putBoolean("inserterWhitelist", this.isWhitelist);
         tag.putInt("inserterTagFilters", this.tagFilterMask);
+        tag.putByte("inserterRedstoneMode", (byte) this.redstoneCondition.mode().ordinal());
+        tag.putByte("inserterRedstoneThreshold", (byte) this.redstoneCondition.threshold());
 
         // L'état du bras est persisté : un inserter bloqué doit se retrouver bloqué au
         // rechargement, pas remis au repos avec un item fantôme en main.
@@ -357,6 +367,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         // getBoolean() renverrait false — soit l'inverse du défaut attendu.
         this.isWhitelist = !tag.contains("inserterWhitelist") || tag.getBoolean("inserterWhitelist");
         this.tagFilterMask = tag.getInt("inserterTagFilters");
+        this.redstoneCondition = readCondition(tag);
 
         this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
         this.carryingFuel = tag.getBoolean("inserterCarryingFuel");
@@ -387,6 +398,8 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         CompoundTag tag = new CompoundTag();
         tag.putBoolean("inserterWhitelist", this.isWhitelist);
         tag.putInt("inserterTagFilters", this.tagFilterMask);
+        tag.putByte("inserterRedstoneMode", (byte) this.redstoneCondition.mode().ordinal());
+        tag.putByte("inserterRedstoneThreshold", (byte) this.redstoneCondition.threshold());
         tag.putByte("inserterState", (byte) this.state.ordinal());
         tag.putBoolean("inserterCarryingFuel", this.carryingFuel);
         tag.putLong("inserterSwingEnd", this.swingEndTick);
@@ -406,6 +419,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             this.isWhitelist = tag.getBoolean("inserterWhitelist");
         }
         this.tagFilterMask = tag.getInt("inserterTagFilters");
+        this.redstoneCondition = readCondition(tag);
         this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
         this.carryingFuel = tag.getBoolean("inserterCarryingFuel");
         this.swingEndTick = tag.getLong("inserterSwingEnd");
@@ -825,6 +839,52 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
         this.isWhitelist = whitelist;
         syncToClients();
+    }
+
+    // Interface (Condition redstone)
+
+    /** @return {@code true} si la définition déclare cet inserter sensible au redstone */
+    public boolean isAffectedByRedstone() {
+        return inserter.isAffectedByRedstone();
+    }
+
+    public InserterRedstoneCondition getRedstoneCondition() {
+        return this.redstoneCondition;
+    }
+
+    /**
+     * Change la condition et réévalue immédiatement l'état du bloc.
+     *
+     * <p>Sans cette réévaluation, un inserter resterait dans l'état décidé par l'ancienne
+     * condition jusqu'au prochain changement de voisinage — c'est-à-dire, pour un signal
+     * stable, indéfiniment.
+     */
+    public void setRedstoneCondition(InserterRedstoneCondition condition) {
+        if (this.redstoneCondition.equals(condition)) return;
+
+        this.redstoneCondition = condition;
+        wakeUp();
+        syncToClients();
+
+        if (this.level != null && !this.level.isClientSide) {
+            getBlockState().getBlock().neighborChanged(
+                    getBlockState(), this.level, this.worldPosition, this.level.getBlockState(this.worldPosition).getBlock(), this.worldPosition, false);
+        }
+    }
+
+    /**
+     * Lit la condition, en gardant le défaut historique pour un monde antérieur.
+     *
+     * <p>{@code contains} et non {@code getByte} : sans la clé, {@code getByte} rendrait 0,
+     * soit {@code ALWAYS}, et tous les inserters d'un monde existant cesseraient de
+     * répondre à la redstone.
+     */
+    private static InserterRedstoneCondition readCondition(CompoundTag tag) {
+        if (!tag.contains("inserterRedstoneMode")) return InserterRedstoneCondition.DEFAULT;
+
+        return new InserterRedstoneCondition(
+                InserterRedstoneCondition.Mode.byOrdinal(tag.getByte("inserterRedstoneMode")),
+                tag.getByte("inserterRedstoneThreshold"));
     }
 
     // Interface (Enabled)

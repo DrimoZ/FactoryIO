@@ -92,7 +92,7 @@ public abstract class FactoryIOEntityBlock extends BaseEntityBlock {
         if (pLevel.isClientSide) return;
         if (!isAffectedByRedstone()) return;
 
-        boolean enabled = !pLevel.hasNeighborSignal(pPos);
+        boolean enabled = shouldBeEnabled(pLevel, pPos);
         if (enabled != pState.getValue(ENABLED)) {
             pLevel.setBlock(pPos, pState.setValue(ENABLED, enabled), Block.UPDATE_ALL);
         }
@@ -101,6 +101,16 @@ public abstract class FactoryIOEntityBlock extends BaseEntityBlock {
     /** Un bloc qui ne réagit pas au redstone reste toujours actif. */
     protected boolean isAffectedByRedstone() {
         return true;
+    }
+
+    /**
+     * Décide de l'état d'activation pour le signal courant.
+     *
+     * <p>Par défaut, la règle vanilla : actif tant qu'aucun signal n'arrive. Les inserters
+     * la remplacent par une condition analogique réglable (cf. FIO-070).
+     */
+    protected boolean shouldBeEnabled(Level pLevel, BlockPos pPos) {
+        return !pLevel.hasNeighborSignal(pPos);
     }
 
 
