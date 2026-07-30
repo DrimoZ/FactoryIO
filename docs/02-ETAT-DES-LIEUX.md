@@ -29,7 +29,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Chargement de JSON utilisateur | ✅ | validé par `Codec`, erreurs nommées (FIO-034) ; la **liste** vient de `config/`, les **réglages** d'un datapack rechargeable à chaud (FIO-037) |
 | Config Forge (`ForgeConfigSpec`) | 🟡 | lue en amont via `FactoryIOEarlyConfig` ; **prend effet au lancement suivant** (contrainte Forge, cf. BUG-001) |
 | Réseau (`SimpleChannel`) | ✅ | 2 paquets : réglages du GUI (C→S) et réglages d'inserter à la connexion / `/reload` (S→C) |
-| Pack de ressources/data généré au runtime | 🟡 | ne dépend plus du code client (BUG-005) ; toujours pas de régénération à chaud ni de nettoyage |
+| Pack de ressources/data généré au runtime | ✅ | en mémoire, refait à chaque rechargement, limité aux inserters utilisateur (FIO-039) |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
 | Tests (GameTest) | ✅ | 13 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |

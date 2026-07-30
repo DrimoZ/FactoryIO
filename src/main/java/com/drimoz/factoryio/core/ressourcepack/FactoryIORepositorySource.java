@@ -5,16 +5,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.repository.RepositorySource;
-import net.minecraftforge.fml.loading.FMLPaths;
-
-import java.nio.file.Path;
 import java.util.function.Consumer;
 
 public class FactoryIORepositorySource implements RepositorySource {
-
-    // Public properties
-
-    public static final Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve("factory_io/generated");
 
     // Private properties
 
@@ -45,7 +38,7 @@ public class FactoryIORepositorySource implements RepositorySource {
                 PackSource.BUILT_IN);
 
         if (pack == null) {
-            FactoryIO.LOGGER.error("Création du pack généré impossible depuis {}", CONFIG_DIR);
+            FactoryIO.LOGGER.error("Création du pack généré impossible");
             return;
         }
 
@@ -54,9 +47,15 @@ public class FactoryIORepositorySource implements RepositorySource {
 
     // Inner work
 
-    private FactoryIOPackResources createResources(String id) {
-        FactoryIOPackGeneratorManager.generate();
-
-        return new FactoryIOPackResources(id, CONFIG_DIR);
+    /**
+     * Fabrique le contenu du pack, à chaque ouverture.
+     *
+     * <p>Aucune mémoïsation : c'est ce qui rend le pack sensible à {@code F3+T}. La
+     * génération ne concerne que les inserters définis par l'utilisateur et coûte donc
+     * zéro dès qu'il n'y en a pas — le cas de la très grande majorité des parties
+     * (cf. FIO-039).
+     */
+    private InMemoryPackResources createResources(String id) {
+        return new InMemoryPackResources(id, packType.getVanillaType(), FactoryIOPackGeneratorManager.generate());
     }
 }

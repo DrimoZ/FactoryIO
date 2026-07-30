@@ -175,7 +175,30 @@ tests qui l'ont révélé, pas la relecture.
 
 ---
 
-## DT-05 — Pipeline d'assets : datagen au runtime dans le dossier `config`
+## DT-05 — Pipeline d'assets : datagen au runtime dans le dossier `config` — ✅ **traité**
+
+**Traité par FIO-038, FIO-039 et FIO-037.** Les sept inserters livrés ont leurs assets
+versionnés (`runData`, FIO-038) ; ceux de l'utilisateur sont fabriqués **en mémoire** à
+chaque ouverture du pack (FIO-039) ; et les définitions se règlent par datapack (FIO-037,
+avec la limite décrite plus bas).
+
+Le tableau des problèmes ci-dessous se lit désormais ainsi :
+
+| Problème d'origine | État |
+|---|---|
+| `static boolean hasGenerated` → redémarrage pour tester un JSON | ✅ plus de garde : `F3+T` suffit |
+| Aucun nettoyage du dossier | ✅ sans objet : plus de dossier |
+| `Minecraft.getInstance()` dans `PackResources` | ✅ corrigé (BUG-005) |
+| Providers de langue conditionnels | ✅ corrigé (BUG-011) |
+| `PACK_FORMAT` unique pour data + resource | ✅ les deux formats Forge cohabitent (BUG-031) |
+| Écriture disque pendant `AddPackFindersEvent` | ✅ plus aucune écriture |
+| Double branchement runtime **et** `GatherDataEvent` | ✅ mêmes producteurs, seule la sortie diffère |
+
+L'ancien dossier `config/factory_io/generated` n'est **pas** supprimé automatiquement :
+c'est un dossier de l'utilisateur. Sa présence est signalée une fois au démarrage.
+
+<details>
+<summary>Rédaction initiale</summary>
 
 **Impact : élevé · Effort : L · Quand : Phase 1**
 
@@ -207,6 +230,8 @@ problèmes tiennent à l'implémentation :
 3. Pour les modèles : un `IModelLoader` / `BakedModel` paramétré serait encore
    plus propre que la génération de fichiers, puisque tous les inserters
    partagent la même géométrie et ne diffèrent que par la texture.
+
+</details>
 
 Pour les **définitions** elles-mêmes, la bonne primitive Minecraft est un
 `SimpleJsonResourceReloadListener` sur un datapack (`data/<ns>/factory_io/inserters/*.json`),

@@ -7,6 +7,7 @@ import com.drimoz.factoryio.core.inserters.FactoryIOInserterContainer;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterEntityBlock;
 import com.drimoz.factoryio.core.inserters.FactoryIOInserterItem;
 import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.model.InserterDefaults;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Blocks;
@@ -16,6 +17,7 @@ import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.registries.RegistryObject;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class FactoryIOInserterRegistry {
 
@@ -67,6 +69,24 @@ public class FactoryIOInserterRegistry {
 
     public Inserter getInserterById(ResourceLocation id) {
         return this.inserters.get(id);
+    }
+
+    /**
+     * Les inserters qui ne viennent pas du barème livré, c'est-à-dire ceux qu'un JSON
+     * utilisateur a ajoutés.
+     *
+     * <p>Eux seuls ont besoin d'assets générés à chaud : les sept inserters du barème ont
+     * les leurs versionnés dans {@code src/generated/resources} depuis FIO-038
+     * (cf. FIO-039).
+     */
+    public List<Inserter> getUserDefinedInserters() {
+        Set<ResourceLocation> shipped = InserterDefaults.all().stream()
+                .map(Inserter::getId)
+                .collect(Collectors.toSet());
+
+        return this.inserters.values().stream()
+                .filter(inserter -> !shipped.contains(inserter.getId()))
+                .toList();
     }
 
     public Inserter getInserterByName(String name) {

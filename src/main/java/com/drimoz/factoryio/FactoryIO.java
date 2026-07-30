@@ -28,8 +28,6 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 import software.bernie.geckolib.GeckoLib;
 
-import java.io.IOException;
-import java.nio.file.Files;
 
 @Mod(FactoryIO.MOD_ID)
 public class FactoryIO
@@ -72,15 +70,11 @@ public class FactoryIO
         MinecraftForge.EVENT_BUS.register(this);
     }
 
+    /**
+     * Le pack généré ne touche plus au disque : il n'y a plus de dossier à créer, ni à
+     * nettoyer (cf. FIO-039).
+     */
     private void onRegisterResourcePacks(AddPackFindersEvent e) {
-        if (!Files.exists(FactoryIORepositorySource.CONFIG_DIR)) {
-            try {
-                Files.createDirectories(FactoryIORepositorySource.CONFIG_DIR);
-            } catch (IOException ex) {
-                FactoryIO.LOGGER.error("Création du dépôt \"generated\" impossible", ex);
-            }
-        }
-
         if (e.getPackType() == PackType.SERVER_DATA) {
             e.addRepositorySource(new FactoryIORepositorySource(EPackType.DATA));
         }

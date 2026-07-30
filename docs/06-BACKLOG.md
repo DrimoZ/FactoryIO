@@ -47,7 +47,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-036~~ | ✅ | M | Rendre `filterable` indépendant de `useEnergy` ([BUG-014](03-BUGS.md)) | un `burner_filter_inserter` fonctionne |
 | ~~FIO-037~~ | ✅ | L | **Réglages** par datapack (`SimpleJsonResourceReloadListener`) + synchro client sur `OnDatapackSyncEvent` (DT-05). Un datapack règle les inserters existants ; il n'en **crée** pas — voir la note sous le tableau. | `/reload` applique un changement de vitesse ; vérifié de bout en bout |
 | ~~FIO-038~~ | ✅ | M | Générer les assets par défaut via `runData` et les committer (DT-05) | `src/generated/resources` versionné |
-| FIO-039 | P1 | M | Génération runtime confinée au client, en mémoire, invalidée au reload (DT-05) | ajouter un JSON puis F3+T suffit |
+| ~~FIO-039~~ | ✅ | M | Génération runtime **en mémoire**, refaite à chaque ouverture du pack, limitée aux inserters de l'utilisateur (DT-05) | plus de dossier `generated/`, plus de redémarrage ; vérifié par sonde |
 | ~~FIO-040~~ | ✅ | L | Migration vers `DeferredRegister` (DT-06) — **fait pendant le port** | plus aucun `setRegistryName` |
 | ~~FIO-041~~ | ✅ | M | Socle GameTest, structure SNBT versionnée + tâche Gradle de copie (DT-11) | `runGameTestServer` vert |
 | ~~FIO-042~~ | ✅ | M | 4 GameTests d'invariants : conservation, ravitaillement, redstone, persistance du filtre | 4/4 verts |
