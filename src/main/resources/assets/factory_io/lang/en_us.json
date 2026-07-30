@@ -51,6 +51,7 @@
 
   "tooltip.factory_io.energy_name": "FE",
   "tooltip.factory_io.tick": "Tick",
+  "tooltip.factory_io.second": "s",
 
   "tooltip.factory_io.blacklist": "Blacklist",
   "tooltip.factory_io.whitelist": "Whitelist",
@@ -63,6 +64,7 @@
   "tooltip.factory_io.consumption": "Consumption :",
   "tooltip.factory_io.fuel_consumption": "Fuel Consumption :",
   "tooltip.factory_io.speed": "Speed : ",
+  "tooltip.factory_io.hand_size": "Hand :",
   "tooltip.factory_io.grab": "Grab Items from",
 
   "tooltip.factory_io.gui_close": "Close",

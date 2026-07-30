@@ -64,9 +64,6 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     /** Source unique de vérité pour les index de slots (cf. DT-03). */
     public final InserterSlotLayout LAYOUT;
 
-    // Duration : 0 = 10a / tick || 10 = 1a / tick || 200 = 1a / 20tick (1sec) ||
-    public static final int MAX_ACTIONS_PER_TICK = 10;
-
     /** Nombre d'items de carburant que l'inserter garde en réserve dans son slot. */
     public static final int FUEL_BUFFER_TARGET = 5;
 
@@ -84,7 +81,15 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     // private properties
 
-    private int current_cooldown = 0;
+    /**
+     * Ticks écoulés depuis le dernier mouvement.
+     *
+     * <p>Un compteur de ticks, tout simplement. La version précédente accumulait dix par
+     * tick pour les comparer à un {@code cooldownBetweenActions} dix fois plus grand que
+     * la durée qu'il décrivait (cf. DT-10, FIO-065).
+     */
+    private int ticksSinceSwing = 0;
+
     private boolean isWhitelist = true;
     private int current_fuel_value = 0;
 
@@ -215,8 +220,9 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         return inserter.getGrabDistance();
     }
 
-    public int getDurationBetweenActions(){
-        return inserter.getCooldownBetweenActions();
+    /** Durée d'un mouvement de bras, en ticks. Un item en coûte deux. */
+    public int getTicksPerSwing(){
+        return inserter.getTicksPerSwing();
     }
 
     public int getFuelCapacity(){
@@ -314,9 +320,9 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         }
 
         // Sans ces deux lignes, chaque rechargement de monde remettait tous les filtres
-        // en whitelist et repartait d'un cooldown nul (cf. BUG-008).
+        // en whitelist et repartait d'un compteur nul (cf. BUG-008).
         tag.putBoolean("inserterWhitelist", this.isWhitelist);
-        tag.putInt("inserterCooldown", this.current_cooldown);
+        tag.putInt("inserterTicksSinceSwing", this.ticksSinceSwing);
 
         super.saveAdditional(tag);
     }
@@ -336,7 +342,13 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         // contains() : un monde sauvegardé avant ce correctif n'a pas ces clés, et
         // getBoolean() renverrait false — soit l'inverse du défaut attendu.
         this.isWhitelist = !tag.contains("inserterWhitelist") || tag.getBoolean("inserterWhitelist");
-        this.current_cooldown = tag.getInt("inserterCooldown");
+
+        // Borné, et pas seulement par prudence : un monde sauvegardé avant FIO-065 porte
+        // un « inserterCooldown » exprimé dans l'ancienne unité — dix fois trop grand, et
+        // sans rapport avec le nouveau barème. Le clamp le ramène à « mouvement terminé »,
+        // ce qui laisse l'inserter agir au tick suivant plutôt que de l'immobiliser.
+        this.ticksSinceSwing = Mth.clamp(
+                tag.getInt("inserterTicksSinceSwing"), 0, getTicksPerSwing());
     }
 
     // Interface (Synchronisation client)
@@ -428,11 +440,11 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             return;
         }
 
-        if (pEntity.current_cooldown < pEntity.getDurationBetweenActions()) {
-            pEntity.current_cooldown += MAX_ACTIONS_PER_TICK;
+        // Le bras est encore en mouvement : rien de neuf avant la fin de sa course.
+        if (pEntity.ticksSinceSwing < pEntity.getTicksPerSwing()) {
+            pEntity.ticksSinceSwing++;
+            return;
         }
-
-        if (pEntity.current_cooldown < pEntity.getDurationBetweenActions()) return;
 
         boolean acted = false;
 
@@ -443,31 +455,26 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
             ItemStack fetched = refuel(pEntity, pEntity.getGrabDistance());
 
             if (!fetched.isEmpty()) {
-                pEntity.current_cooldown = 0;
                 pEntity.startSwing(InserterSwingPhase.INBOUND, fetched);
                 acted = true;
             }
         }
 
         if (!acted && pEntity.hasPowerForAction()) {
-            // TODO : Multiply item/energy count instead of for loop
-            for (int i = 0; i < pEntity.getActionMultiplier(); i++) {
-                // Buffer vide = le bras part chercher ; buffer plein = il livre. C'est
-                // aussi ce qui détermine le sens du trajet affiché (cf. FIO-067).
-                boolean fetching = pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty();
+            // Buffer vide = le bras part chercher ; buffer plein = il livre. C'est aussi
+            // ce qui détermine le sens du trajet affiché (cf. FIO-067).
+            boolean fetching = pEntity.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty();
 
-                ItemStack moved = fetching
-                        ? suckItems(pEntity, pEntity.getGrabDistance(), pEntity.isWhitelist())
-                        : expelItems(pEntity, pEntity.getGrabDistance());
+            ItemStack moved = fetching
+                    ? suckItems(pEntity, pEntity.getGrabDistance(), pEntity.isWhitelist())
+                    : expelItems(pEntity, pEntity.getGrabDistance());
 
-                if (!moved.isEmpty()) {
-                    pEntity.current_cooldown = 0;
-                    pEntity.useFuelOrEnergy();
-                    pEntity.startSwing(
-                            fetching ? InserterSwingPhase.INBOUND : InserterSwingPhase.OUTBOUND,
-                            moved);
-                    acted = true;
-                }
+            if (!moved.isEmpty()) {
+                pEntity.useFuelOrEnergy();
+                pEntity.startSwing(
+                        fetching ? InserterSwingPhase.INBOUND : InserterSwingPhase.OUTBOUND,
+                        moved);
+                acted = true;
             }
         }
 
@@ -505,11 +512,6 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
 
     // Interface (Animation)
 
-    /** Durée d'un mouvement de bras, en ticks. */
-    public int getTicksPerSwing() {
-        return Math.max(1, getDurationBetweenActions() / MAX_ACTIONS_PER_TICK);
-    }
-
     /** Valeur renvoyée par {@link #getSwingProgress(float)} quand le bras est au repos. */
     public static final float NO_SWING = -1f;
 
@@ -521,6 +523,7 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
     private void startSwing(InserterSwingPhase phase, ItemStack carried) {
         if (this.level == null) return;
 
+        this.ticksSinceSwing = 0;
         this.swingPhase = phase;
         this.swingStack = carried.copy();
         this.swingEndTick = this.level.getGameTime() + getTicksPerSwing();
@@ -1050,17 +1053,6 @@ public class FactoryIOInserterBlockEntity extends FactoryIOBlockEntityMenuProvid
         }
 
         return startSlot;
-    }
-
-    private int getActionMultiplier() {
-        int actionMultiplier = 1;
-        int duration = this.getDurationBetweenActions();
-
-        if (duration < MAX_ACTIONS_PER_TICK) {
-            actionMultiplier += MAX_ACTIONS_PER_TICK - duration;
-        }
-
-        return actionMultiplier;
     }
 
     private void useFuelOrEnergy() {

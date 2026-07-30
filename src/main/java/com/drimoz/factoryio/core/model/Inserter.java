@@ -44,7 +44,7 @@ public class Inserter {
     private final int fuelConsumption;
 
     private final int grabDistance;
-    private final int cooldownBetweenActions;
+    private final int ticksPerSwing;
     private final int preferredItemCountPerAction;
 
     private ResourceLocation texture;
@@ -61,13 +61,13 @@ public class Inserter {
     /** Inserter à carburant. */
     public static Inserter burner(
             ResourceLocation id, boolean affectedByRedstone,
-            int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
+            int grabDistance, int ticksPerSwing, int preferredItemCountPerAction,
             boolean filterable,
             int fuelCapacity, int fuelConsumption
     ) {
         return new Inserter(
                 id, affectedByRedstone,
-                grabDistance, cooldownBetweenActions, preferredItemCountPerAction,
+                grabDistance, ticksPerSwing, preferredItemCountPerAction,
                 filterable, false,
                 fuelCapacity, fuelConsumption,
                 0, 0, 0);
@@ -76,13 +76,13 @@ public class Inserter {
     /** Inserter électrique. */
     public static Inserter electric(
             ResourceLocation id, boolean affectedByRedstone,
-            int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
+            int grabDistance, int ticksPerSwing, int preferredItemCountPerAction,
             boolean filterable,
             int energyCapacity, int energyTransferRate, int energyConsumption
     ) {
         return new Inserter(
                 id, affectedByRedstone,
-                grabDistance, cooldownBetweenActions, preferredItemCountPerAction,
+                grabDistance, ticksPerSwing, preferredItemCountPerAction,
                 filterable, true,
                 0, 0,
                 energyCapacity, energyTransferRate, energyConsumption);
@@ -90,7 +90,7 @@ public class Inserter {
 
     public Inserter(
             ResourceLocation id, boolean affectedByRedstone,
-            int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
+            int grabDistance, int ticksPerSwing, int preferredItemCountPerAction,
             boolean filterable, boolean useEnergy,
             int fuelCapacity, int fuelConsumption,
             int energyCapacity, int energyTransferRate, int energyConsumption
@@ -105,7 +105,7 @@ public class Inserter {
         this.affectedByRedstone = affectedByRedstone;
 
         this.grabDistance = atLeastOne(id, "grabDistance", grabDistance);
-        this.cooldownBetweenActions = atLeastOne(id, "cooldownBetweenActions", cooldownBetweenActions);
+        this.ticksPerSwing = atLeastOne(id, "ticksPerSwing", ticksPerSwing);
         this.preferredItemCountPerAction = atLeastOne(id, "preferredItemCountPerAction", preferredItemCountPerAction);
 
         this.energyCapacity = useEnergy ? atLeastOne(id, "energyCapacity", energyCapacity) : UNUSED;
@@ -171,10 +171,28 @@ public class Inserter {
         return grabDistance;
     }
 
-    public int getCooldownBetweenActions() {
-        return cooldownBetweenActions;
+    /** Durée d'un mouvement de bras, en ticks. */
+    public int getTicksPerSwing() {
+        return ticksPerSwing;
     }
 
+    /**
+     * Nombre de ticks pour déplacer une main d'items.
+     *
+     * <p>Deux mouvements : aller chercher, puis livrer. C'est le cycle de Factorio, et
+     * c'est déjà ce que fait la logique de transfert — une aspiration puis une éjection.
+     * L'oublier fait annoncer le double du débit réel (cf. BUG-038).
+     */
+    public int getTicksPerItem() {
+        return 2 * ticksPerSwing;
+    }
+
+    /** Débit théorique en items par seconde, à 20 ticks par seconde. */
+    public double getItemsPerSecond() {
+        return 20.0 * preferredItemCountPerAction / getTicksPerItem();
+    }
+
+    /** Taille de la main : nombre d'items déplacés par cycle. */
     public int getPreferredItemCountPerAction() {
         return preferredItemCountPerAction;
     }
@@ -253,7 +271,7 @@ public class Inserter {
                 ", fuelCapacity=" + fuelCapacity +
                 ", fuelConsumption=" + fuelConsumption +
                 ", grabDistance=" + grabDistance +
-                ", cooldownBetweenActions=" + cooldownBetweenActions +
+                ", ticksPerSwing=" + ticksPerSwing +
                 ", preferredItemCountPerAction=" + preferredItemCountPerAction +
                 ", texture=" + texture +
                 '}';

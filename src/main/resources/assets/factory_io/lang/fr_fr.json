@@ -51,6 +51,7 @@
 
   "tooltip.factory_io.energy_name": "FE",
   "tooltip.factory_io.tick": "Tick",
+  "tooltip.factory_io.second": "s",
 
   "tooltip.factory_io.blacklist": "Liste noire",
   "tooltip.factory_io.whitelist": "Liste blanche",
@@ -63,6 +64,7 @@
   "tooltip.factory_io.consumption": "Consommation :",
   "tooltip.factory_io.fuel_consumption": "Consommation de carburant :",
   "tooltip.factory_io.speed": "Vitesse : ",
+  "tooltip.factory_io.hand_size": "Main :",
   "tooltip.factory_io.grab": "Récupère de",
 
   "tooltip.factory_io.gui_close": "Fermer",

@@ -291,9 +291,23 @@ et zéro surcharge de `clicked()`.
 
 ---
 
-## DT-10 — Modèle temporel non interprétable
+## DT-10 — Modèle temporel non interprétable — ✅ **résolu**
 
-**Impact : moyen · Effort : S · Quand : Phase 2**
+**Résolu par FIO-065.** Un seul champ décrit la vitesse : `ticksPerSwing`, une durée en
+ticks Minecraft. `MAX_ACTIONS_PER_TICK`, `getActionMultiplier()` et son
+`// TODO : Multiply item/energy count instead of for loop` ont disparu, et
+`current_cooldown` est devenu `ticksSinceSwing`, un compteur de ticks.
+
+Le point que la rédaction initiale manquait : **un item coûte deux mouvements**, une
+prise et une dépose. C'est le cycle de Factorio, et c'est déjà ce que fait la logique de
+transfert — d'où un barème deux fois trop lent si on l'ignore ([BUG-038](03-BUGS.md)).
+Le barème vit désormais dans
+[`InserterDefaults`](../src/main/java/com/drimoz/factoryio/core/model/InserterDefaults.java),
+hors du chargeur, et vingt-quatre tests JUnit le comparent à la référence Factorio avec une
+tolérance de 10 % — la granularité du tick interdisant la parité exacte à 20 tps.
+
+<details>
+<summary>Rédaction initiale</summary>
 
 `MAX_ACTIONS_PER_TICK = 10` n'est pas un nombre d'actions : c'est le **pas
 d'incrément** d'un compteur comparé à `cooldownBetweenActions`. Le commentaire
@@ -307,17 +321,7 @@ jamais, et porte un `// TODO : Multiply item/energy count instead of for loop`.
 supprimer `MAX_ACTIONS_PER_TICK` et `getActionMultiplier`, et si l'on veut du
 sub-tick, le traiter explicitement avec un accumulateur en millièmes de tick.
 
-Barème Factorio de référence (à 60 UPS, converti en ticks Minecraft à 20 tps) :
-
-| Inserter Factorio | items/s Factorio | ticks/swing MC équivalent |
-|---|---|---|
-| Burner | 0,60 | ~33 |
-| Basique | 0,83 | ~24 |
-| Long | 1,20 | ~17 |
-| Rapide | 2,31 | ~9 |
-| Stack (×3-12) | 2,31 (×taille de main) | ~9 |
-
-À comparer aux 40 ticks/swing actuels pour tous les modèles.
+</details>
 
 ---
 

@@ -58,6 +58,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-055~~ | ✅ | S | **Socle JUnit** : dépendance + `useJUnitPlatform()`, 31 tests sur `InserterSlotLayout` et `InserterCarryPath` ([BUG-040](03-BUGS.md), DT-11) | `./gradlew test` vert, inclus dans `build` |
 | ~~FIO-056~~ | ✅ | XS | `wakeUp()` sur `onEnergyChanged` ([BUG-037](03-BUGS.md)) | le courant qui revient relance l'inserter dans le tick |
 | ~~FIO-057~~ | ✅ | XS | Corriger le `README` : nom de jar et mappings ([BUG-039](03-BUGS.md)) | — |
+| FIO-058 | P2 | XS | Carburant plus riche que la capacité : écrêter au lieu de refuser ([BUG-041](03-BUGS.md)) | un seau de lave dans le tag ne bloque plus le slot |
 
 ## Épic C — Inserters (Phase 2)
 
@@ -68,7 +69,7 @@ Colonne « ✓ » = critère d'acceptation.
 | ~~FIO-062~~ | ✅ | M | Cache de capability voisine (invalidation par listener) (DT-07) | profilage : plus de `getBlockEntity` dans le chemin chaud |
 | ~~FIO-063~~ | ✅ | S | Mémorisation du dernier slot fructueux (DT-07) | coffre 54 slots : coût constant |
 | ~~FIO-064~~ | ✅ | M | Mise en sommeil après N échecs, réveil sur `neighborChanged` (DT-07) | 1 000 inserters bloqués ≈ coût nul |
-| FIO-065 | P1 | S | Rééquilibrage temporel sur le barème Factorio (DT-10). **Raisonner en ticks par item = 2 × `ticksPerSwing`** : un item coûte une prise *et* une dépose ([BUG-038](03-BUGS.md)). | `fast_inserter` ≈ 2,3 items/s |
+| ~~FIO-065~~ | ✅ | S | Rééquilibrage temporel sur le barème Factorio (DT-10) : champ unique `ticksPerSwing`, 2 mouvements par item ([BUG-038](03-BUGS.md)), barème extrait dans `InserterDefaults` et verrouillé par 24 tests | `fast_inserter` à 2,5 items/s, écart ≤ 10 % sur les 7 |
 | ⏸ FIO-066 | P2 | M | **Découper la géométrie dans Blockbench** puis animer le bras. Bloqué par la géométrie, pas par le code : le bone `inserter` porte tout l'assemblage, socle 16×16 compris (y=0 à 16), et `bearing`/`base`/`base_top` en sont des enfants — le faire pivoter bascule le bloc entier. La progression de swing est synchronisée et disponible côté client, elle pilote déjà FIO-067. | le bras seul suit le swing |
 | ~~FIO-067~~ | ✅ | M | **Rendu de l'item transporté** : trajectoire en arc source → main → cible, pilotée par la progression de swing déjà synchronisée. L'item tenu en permanence par un inserter *bloqué* relève de la machine à états (FIO-060). | l'item traverse ; 2 GameTests |
 | FIO-068 | P2 | M | Ramassage et dépôt d'items au sol (parité Factorio) | inserter → sol → inserter |

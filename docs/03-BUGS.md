@@ -1,14 +1,14 @@
 # 03 — Catalogue des bugs
 
-> **État : 36 bugs sur 40 corrigés**, plus 1 partiellement (BUG-020).
+> **État : 37 bugs sur 41 corrigés**, plus 1 partiellement (BUG-020).
 >
 > Le mod est porté sur Forge 1.20.1, compile, et `runClient` démarre. Six GameTests
-> couvrent les invariants de monde (`./gradlew runGameTestServer`) et 31 tests JUnit le
+> couvrent les invariants de monde (`./gradlew runGameTestServer`) et 55 tests JUnit le
 > calcul pur (`./gradlew test`). Le **rendu**, lui, n'est validé par aucun test : ce qui
 > touche à l'affichage reste « écrit et compilé », pas « vu à l'écran » (cf. FIO-054).
 >
 > Restent à traiter : BUG-016 (géométrie du bras à redécouper, FIO-066 en pause),
-> BUG-036 et BUG-038 — tous S3, relevés lors de l'audit du 30/07/2026.
+> BUG-036 et BUG-041 — tous S3, relevés lors de l'audit du 30/07/2026.
 
 Sévérités :
 **S0** bloquant (crash / mod inutilisable) ·
@@ -57,7 +57,8 @@ Sévérités :
 | [BUG-035](#bug-035) | ✅ S3 | Mémorisation du slot cible inopérante | `…InserterBlockEntity.java` |
 | [BUG-036](#bug-036) | S3 | `quickMoveStack` ignore `Slot#mayPickup` | `…InserterContainer.java` |
 | [BUG-037](#bug-037) | ✅ S3 | L'arrivée d'énergie ne réveille pas un inserter endormi | `…InserterBlockEntity.java` |
-| [BUG-038](#bug-038) | S3 | Débit réel moitié du débit documenté | `…InserterBlockEntity.java` |
+| [BUG-038](#bug-038) | ✅ S3 | Débit réel moitié du débit documenté | `…InserterBlockEntity.java` |
+| [BUG-041](#bug-041) | S3 | Un carburant trop riche est refusé sans un mot et bloque le slot | `…InserterBlockEntity.java` |
 | [BUG-039](#bug-039) | ✅ S3 | `README` : nom de jar et mappings faux | `README.md` |
 | [BUG-040](#bug-040) | ✅ S3 | Aucun test JUnit alors que FIO-035 l'exigeait | `src/test/` |
 
@@ -833,7 +834,7 @@ déjà présent.
 
 ---
 
-## BUG-038 — Débit réel moitié du débit documenté (S3)
+## BUG-038 — Débit réel moitié du débit documenté (S3) ✅
 
 **Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java) — `tick`
 
@@ -874,3 +875,35 @@ livré, mais `src/test/` est un dossier **vide** : `build.gradle` ne déclare au
 Les GameTests ([FIO-041/042](06-BACKLOG.md)) couvrent les invariants de monde, pas le
 calcul pur. Ajouter le socle JUnit reste à faire — c'est le préalable naturel de
 [FIO-034](06-BACKLOG.md) (Codec) et [FIO-091](06-BACKLOG.md) (modèle `TransportLine`).
+
+---
+
+## BUG-041 — Un carburant trop riche est refusé sans un mot et bloque le slot (S3)
+
+**Fichier** : [`FactoryIOInserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/FactoryIOInserterBlockEntity.java) — `burnFuel`
+
+```java
+if (burnTime > this.getFuelCapacity() - this.current_fuel_value) return;
+```
+
+La conversion exige que le `burnTime` **entier** tienne dans la place restante. Un
+carburant dont le `burnTime` dépasse à lui seul la capacité ne sera donc *jamais*
+converti, à aucun niveau de réserve.
+
+Conséquences :
+
+- l'aspiration, elle, ne vérifie rien d'autre que le tag `factory_io:inserter_fuel` :
+  l'inserter ramène l'item, le pose dans son slot de carburant… et n'en fait rien.
+  **Le slot est bouché** et l'inserter s'arrête, sans message ;
+- avec l'ancienne capacité de 15 000, le seau de lave (20 000) était dans ce cas —
+  ce qui rendait le critère d'acceptation de [FIO-075](06-BACKLOG.md) (« un seau de
+  lave rend un seau ») inatteignable, alors que le ticket est marqué livré ;
+- après [FIO-065](06-BACKLOG.md) la capacité vaut 3 200, donc tout carburant au-delà
+  est concerné. Le tag par défaut ne contient que charbon et charbon de bois
+  (1 600), mais un datapack qui l'étend tombe droit dans le piège.
+
+**Correctif** : n'exiger que de la place pour un mouvement, et laisser
+`addToCurrentFuelValue` écrêter le surplus — c'est déjà ce qu'il fait, via le
+`Mth.clamp` de `overrideCurrentFuelValue`. Un four vanilla perd de la même façon le
+reliquat de combustion de son dernier item. Refuser l'item serait le second choix
+acceptable, à condition de refuser aussi de l'aspirer.

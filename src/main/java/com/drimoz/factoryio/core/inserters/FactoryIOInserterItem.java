@@ -83,14 +83,22 @@ public class FactoryIOInserterItem extends FactoryIOItemBlock implements GeoItem
 
         tooltip.add(labelled("grab", inserter.getGrabDistance() + " " + FactoryIOUtils.tooltipString("blocks")));
 
-        tooltip.add(labelled("speed",
-                inserter.getPreferredItemCountPerAction() + " " + FactoryIOUtils.tooltipString("items")
-                        + " / " + (inserter.getCooldownBetweenActions() / FactoryIOInserterBlockEntity.MAX_ACTIONS_PER_TICK)
-                        + " " + FactoryIOUtils.tooltipString("tick")));
+        // Débit effectif, en items par seconde : c'est la grandeur avec laquelle on
+        // dimensionne une usine. Le compte d'items par mouvement n'en disait rien, et
+        // omettait qu'un item coûte deux mouvements (cf. BUG-038).
+        tooltip.add(labelled("speed", String.format("%.2f %s / %s",
+                inserter.getItemsPerSecond(),
+                FactoryIOUtils.tooltipString("items"),
+                FactoryIOUtils.tooltipString("second"))));
+
+        if (inserter.getPreferredItemCountPerAction() > 1) {
+            tooltip.add(labelled("hand_size",
+                    inserter.getPreferredItemCountPerAction() + " " + FactoryIOUtils.tooltipString("items")));
+        }
 
         if (inserter.useEnergy()) {
-            // Valeur PAR ACTION, pas par tick : l'ancien affichage divisait par
-            // MAX_ACTIONS_PER_TICK et annonçait une consommation 4x trop faible (BUG-029).
+            // Valeur PAR MOUVEMENT, pas par tick : l'ancien affichage divisait par le pas
+            // du compteur et annonçait une consommation 4x trop faible (BUG-029).
             tooltip.add(labelled("consumption",
                     inserter.getEnergyConsumption() + " " + FactoryIOUtils.tooltipString("energy_name")));
             tooltip.add(labelled("capacity",

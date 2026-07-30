@@ -9,10 +9,11 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > appliqués (voir [`03-BUGS.md`](03-BUGS.md)), le mod compile et **le client démarre**
 > (`Loaded 7 inserters`, aucune erreur fatale).
 >
-> Le comportement est désormais partiellement vérifié : 4 GameTests couvrent les
-> invariants (conservation, ravitaillement, redstone, persistance), et le transfert
-> ainsi que le ravitaillement du burner ont été confirmés en jeu. Le rendu animé,
-> lui, reste non fonctionnel.
+> Le comportement est désormais partiellement vérifié : 6 GameTests couvrent les
+> invariants de monde (conservation, ravitaillement, redstone, persistance, synchro de
+> l'item transporté) et 55 tests JUnit le calcul pur. Le transfert
+> ainsi que le ravitaillement du burner ont été confirmés en jeu. Le rendu, lui,
+> n'est validé par aucun test et n'a jamais été observé (FIO-054).
 
 ---
 
@@ -30,7 +31,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
 | Tests (GameTest) | ✅ | 6 tests d'invariants de monde, `./gradlew runGameTestServer` |
-| Tests (JUnit) | ✅ | 31 tests de calcul pur, `./gradlew test`, exécutés par `build` |
+| Tests (JUnit) | ✅ | 55 tests de calcul pur, `./gradlew test`, exécutés par `build` |
 | Benchmark de charge | ⬜ | budget DT-07 non mesuré (FIO-073) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
 
@@ -47,12 +48,13 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Bascule whitelist/blacklist | ✅ | paquet C→S validé : expéditeur, chunk, distance, menu ouvert, type de bloc (BUG-007) |
 | Consommation d'énergie (FE) | ✅ | `consumeInternal()` distinct du contrat externe (BUG-003) |
 | Réception d'énergie | ✅ | toutes faces + `side == null` (BUG-021) |
-| Consommation de carburant | ✅ | valeur bornée par `Mth.clamp` (BUG-013) |
+| Consommation de carburant | 🟡 | bornée (BUG-013) ; un carburant plus riche que la capacité bloque le slot (BUG-041) |
+| Vitesse et débit | ✅ | barème Factorio, 0,59 à 7,5 items/s selon le modèle (FIO-065) |
 | Auto-alimentation en carburant | ✅ | se réapprovisionne sous le seuil `FUEL_BUFFER_TARGET`, hors de la garde de réserve (BUG-012) |
 | Réaction au redstone | ✅ | garde serveur, `affectedByRedstone` respecté, couvert par un GameTest (BUG-015) |
 | Shift-clic dans le GUI | ✅ | bornes corrigées (BUG-009) |
 | Barre d'énergie / de carburant | ✅ | `ContainerData`, synchronisée aux seuls joueurs ayant le GUI ouvert (BUG-004) |
-| Tooltips d'item (Shift) | ✅ | valeurs par action, unités correctes (BUG-029) |
+| Tooltips d'item (Shift) | ✅ | débit en items/s, taille de main, unités correctes (BUG-029, FIO-065) |
 | Noms traduits des blocs et items | ✅ | `en_us` et `fr_fr` complets ; le générateur runtime n'agit plus qu'en surcharge (BUG-011) |
 | Modèle / texture | ✅ | GeckoLib, 3 géométries, textures normale + `_disabled` |
 | Animation du bras | 🔴 | abandonnée : le bone `inserter` porte tout l'assemblage, socle compris (BUG-016, FIO-066) |
@@ -140,7 +142,7 @@ Reste volontairement en place :
 | Élément | Raison |
 |---|---|
 | `Inserter.texture` (assigné, jamais lu) | à raccorder au rendu en Phase 2 |
-| `getActionMultiplier()` | atteignable via un JSON avec `cooldownBetweenActions < 10` ; sera supprimé avec la refonte temporelle (DT-10) |
+| ~~`getActionMultiplier()`~~ | supprimé par FIO-065 avec le reste du modèle temporel |
 | `*_BELT_COOLDOWN` | réservé pour la Phase 3 |
 | `FactoryIOTags.Items.INSERTERS`, `FactoryIOTags.Blocks.TOOL_*` | consommés par les générateurs de tags |
 | `FactoryIOGuiButton.onRightClick()`, `hasUV()`, `hasUVHover()` | API du widget, utile à la refonte GUI (FIO-071) |

@@ -3,6 +3,7 @@ package com.drimoz.factoryio.core.registery;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.configs.FactoryIOEarlyConfig;
 import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.model.InserterDefaults;
 import com.google.gson.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.loading.FMLPaths;
@@ -73,92 +74,15 @@ public class FactoryIOInserterLoader {
         }
     }
 
+    /**
+     * Enregistre les inserters du barème, sauf ceux que la configuration écarte.
+     *
+     * <p>Les valeurs elles-mêmes vivent dans {@link InserterDefaults} : sans dépendance à
+     * la configuration ni au registre, elles sont directement testables (FIO-065).
+     */
     private static void createDefaultInserters() {
-        registerBurnerInserter(
-                "burner_inserter", true,
-                1, 400, 1,
-                false,
-                15000, 300
-        );
-
-        registerEnergyInserter(
-                "inserter", true,
-                1, 400, 1,
-                false,
-                25000, 5000, 300
-        );
-
-        registerEnergyInserter(
-                "long_handed_inserter", true,
-                2, 400, 1,
-                false,
-                25000, 5000, 400
-        );
-
-        registerEnergyInserter(
-                "filter_inserter", true,
-                1, 400, 1,
-                true,
-                25000, 5000, 400
-        );
-
-        registerEnergyInserter(
-                "fast_inserter", true,
-                1, 250, 1,
-                false,
-                25000, 5000, 400
-        );
-
-        registerEnergyInserter(
-                "stack_inserter", true,
-                1, 400, 3,
-                false,
-                25000, 5000, 500
-        );
-
-        registerEnergyInserter(
-                "stack_filter_inserter", true,
-                1, 400, 3,
-                true,
-                25000, 5000, 600
-        );
-    }
-
-    private static void registerBurnerInserter(
-            String name, boolean affectedByRedstone,
-            int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
-            boolean filterable,
-            int fuelCapacity, int fuelConsumption
-    ) {
-        if (!FactoryIOEarlyConfig.shouldGenerateInserter(name)) return;
-
-        registerInserter(Inserter.burner(
-                new ResourceLocation(FactoryIO.MOD_ID, name), affectedByRedstone,
-                grabDistance, cooldownBetweenActions, preferredItemCountPerAction,
-                filterable,
-                fuelCapacity, fuelConsumption
-        ));
-    }
-
-    private static void registerEnergyInserter(
-            String name, boolean affectedByRedstone,
-            int grabDistance, int cooldownBetweenActions, int preferredItemCountPerAction,
-            boolean filterable,
-            int energyCapacity, int energyTransferRate, int energyConsumption
-    ) {
-        if (!FactoryIOEarlyConfig.shouldGenerateInserter(name)) return;
-
-        registerInserter(Inserter.electric(
-                new ResourceLocation(FactoryIO.MOD_ID, name), affectedByRedstone,
-                grabDistance, cooldownBetweenActions, preferredItemCountPerAction,
-                filterable,
-                energyCapacity, energyTransferRate, energyConsumption
-        ));
-    }
-
-    private static void registerInserter(Inserter inserter) {
-        FactoryIOInserterRegistry.getInstance().registerInserter(
-                inserter
-        );
+        InserterDefaults.all().stream()
+                .filter(inserter -> FactoryIOEarlyConfig.shouldGenerateInserter(inserter.getName()))
+                .forEach(FactoryIOInserterRegistry.getInstance()::registerInserter);
     }
 }

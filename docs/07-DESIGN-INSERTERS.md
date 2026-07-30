@@ -20,7 +20,7 @@ diverge sur presque tous les points.
 | Filtre | par type d'item, whitelist/blacklist | par item **+ NBT** |
 | Taille de main | dépend du type + bonus de recherche | constante 1 ou 3 |
 | Condition circuit | signal/condition réseau | signal redstone binaire |
-| Vitesse | 0,60 à 2,31 items/s | 0,5 items/s (tous) |
+| Vitesse | 0,60 à 2,31 items/s | ✅ 0,59 à 2,50 items/s (FIO-065) — auparavant 0,25 pour tous |
 
 ---
 
@@ -190,34 +190,60 @@ Un inserter face à un mur passe de 20 évaluations/s à 0,5.
 
 ---
 
-## 5. Rééquilibrage
+## 5. Rééquilibrage — ✅ **appliqué (FIO-065)**
 
-Supprimer `MAX_ACTIONS_PER_TICK` et `cooldownBetweenActions`. Un seul champ :
+`MAX_ACTIONS_PER_TICK` et `cooldownBetweenActions` sont supprimés. Un seul champ :
 `ticksPerSwing` (entier, en ticks Minecraft).
 
-| Inserter | `ticksPerSwing` | `handSize` | items/s | Réf. Factorio |
-|---|---|---|---|---|
-| `burner_inserter` | 33 | 1 | 0,61 | 0,60 |
-| `inserter` | 24 | 1 | 0,83 | 0,83 |
-| `long_handed_inserter` | 17 | 1 | 1,18 | 1,20 |
-| `filter_inserter` | 24 | 1 | 0,83 | 0,83 |
-| `fast_inserter` | 9 | 1 | 2,22 | 2,31 |
-| `stack_inserter` | 9 | 3 | 6,67 | 6,93 |
-| `stack_filter_inserter` | 9 | 3 | 6,67 | 6,93 |
+**Correction par rapport à la première rédaction de cette section** : un item coûte
+**deux** mouvements — le bras va chercher, puis il livre. Le tableau ci-dessous donnait
+`ticksPerSwing` là où il fallait lire *ticks par item*, ce qui aurait produit des
+inserters deux fois trop lents ([BUG-038](03-BUGS.md)).
 
-Consommation d'énergie : passer d'un coût **par action** à un coût **par tick
-actif**, ce qui est à la fois plus proche de Factorio et plus lisible dans les
-tooltips.
+Le barème appliqué vit dans
+[`InserterDefaults`](../src/main/java/com/drimoz/factoryio/core/model/InserterDefaults.java),
+avec sa dérivation, et vingt-quatre tests JUnit le comparent à la référence :
 
-| Inserter | FE/tick actif | FE/swing |
-|---|---|---|
-| `inserter` | 8 | 192 |
-| `long_handed_inserter` | 10 | 170 |
-| `fast_inserter` | 25 | 225 |
-| `stack_inserter` | 35 | 315 |
+| Inserter | `ticksPerSwing` | ticks/item | `handSize` | items/s | Réf. Factorio | Écart |
+|---|---|---|---|---|---|---|
+| `burner_inserter` | 17 | 34 | 1 | 0,59 | 0,60 | −2 % |
+| `inserter` | 12 | 24 | 1 | 0,83 | 0,83 | 0 % |
+| `long_handed_inserter` | 8 | 16 | 1 | 1,25 | 1,20 | +4 % |
+| `filter_inserter` | 12 | 24 | 1 | 0,83 | 0,83 | 0 % |
+| `fast_inserter` | 4 | 8 | 1 | 2,50 | 2,31 | +8 % |
+| `stack_inserter` | 4 | 8 | 3 | 7,50 | 6,93 | +8 % |
+| `stack_filter_inserter` | 4 | 8 | 3 | 7,50 | 6,93 | +8 % |
 
-Le burner conserve un budget en **ticks de combustion** (`burnTime`), consommé au
-prorata des ticks actifs.
+Le tick est indivisible et Factorio tourne à 60 UPS : la parité exacte est hors
+d'atteinte. L'écart est donc assumé, mais borné — `InserterDefaults.MAX_RELATIVE_ERROR`
+vaut 10 %, et un test échoue si un ajustement futur le dépasse.
+
+Le coût énergétique reste facturé **par mouvement** — c'est ce que la logique de
+transfert sait faire — mais il est *dérivé* d'une cible en FE par tick actif, de sorte
+que la consommation par seconde soit celle voulue quelle que soit la vitesse :
+
+| Inserter | FE/tick actif | FE/swing | FE/item |
+|---|---|---|---|
+| `inserter` | 8 | 96 | 192 |
+| `long_handed_inserter` | 10 | 80 | 160 |
+| `filter_inserter` | 10 | 120 | 240 |
+| `fast_inserter` | 25 | 100 | 200 |
+| `stack_inserter` | 35 | 140 | 47 / item |
+| `stack_filter_inserter` | 40 | 160 | 53 / item |
+
+Les capacités valent cent fois le coût d'un mouvement (≈ 50 items d'autonomie), et le
+débit de transfert descend de 5 000 à 500 FE/tick : à 5 000 la réserve se remplissait en
+deux ticks, ce qui la rendait inobservable.
+
+Le burner conserve un budget en **ticks de combustion** (`burnTime`), facturé à raison de
+4 unités par tick actif — le `burnTime` de Minecraft *étant* une durée en ticks, cela
+place l'inserter à environ quatre fois la voracité d'un four et reproduit le rapport
+Factorio entre inserter à carburant et inserter électrique. Un charbon vaut une douzaine
+d'items déplacés.
+
+Reste ouvert : le passage à une facturation **par tick actif** plutôt que par mouvement,
+qui suppose la machine à états (FIO-060), et l'écrêtage des carburants trop riches
+([BUG-041](03-BUGS.md), FIO-058).
 
 ---
 
