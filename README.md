@@ -7,13 +7,14 @@ Mod Minecraft **Forge 1.20.1** qui porte les mécaniques d'automatisation de *Fa
 > Seuls les **inserters** sont implémentés. Les convoyeurs (« transport belts »)
 > n'existent qu'à l'état d'assets.
 >
-> La **Phase 0** de la [roadmap](docs/05-ROADMAP.md) est appliquée, et le mod a été
-> **porté de 1.18.2 vers Forge 1.20.1**. `./gradlew build` passe et `runClient`
-> démarre (`Loaded 7 inserters`).
+> Les **phases 0, 1 et 2** de la [roadmap](docs/05-ROADMAP.md) sont appliquées, et le mod a
+> été **porté de 1.18.2 vers Forge 1.20.1**. Le mod est validé en jeu par le mainteneur, et
+> couvert par **21 GameTests**, **2 benchmarks** et une centaine de cas JUnit.
 >
-> Le **comportement** en jeu reste à valider : poser un inserter, vérifier le rendu,
-> l'onglet créatif et le pack généré au runtime. Il n'existe aucun test automatisé —
-> c'est le premier chantier de la Phase 1.
+> Ce qui manque pour être jouable en survie : une seule recette sur sept blocs, et rien à
+> alimenter tant que les convoyeurs n'existent pas.
+>
+> Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil.
 
 ---
 
@@ -56,8 +57,19 @@ Prérequis : **JDK 17**, ~8 Go de RAM libre pour la décompilation ForgeGradle.
 
 Le jar se trouve dans `build/libs/factory_io-1.20.1-0.0.3.jar`.
 
-Les mods tiers de test (JEI, Mekanism, Thermal, The One Probe…) sont désactivés
-par défaut. Pour les activer :
+Les tests JUnit sont inclus dans `build` ; les tests de monde se lancent à part :
+
+```bash
+./gradlew runGameTestServer
+```
+
+Régénérer les assets versionnés après avoir touché à un générateur :
+
+```bash
+./gradlew runData
+```
+
+JEI, utilisé pour les tests manuels d'interopérabilité, est désactivé par défaut :
 
 ```bash
 ./gradlew runClient -PwithTestMods
@@ -82,16 +94,42 @@ Le renommage `net.neoforged` n'intervient qu'à partir de 1.20.2.
 
 ## Concept
 
-Chaque **inserter** est décrit par des données (pas par une classe Java) : un objet
-`Inserter` porte vitesse, portée, filtrage, énergie/carburant. Le registre instancie
-dynamiquement bloc + item + block entity + menu + écran pour chaque définition.
-Des inserters supplémentaires peuvent être ajoutés en déposant un JSON dans
-`config/factory_io/inserters/`. Les modèles, langues, loot tables et tags sont
-générés **au runtime** dans `config/factory_io/generated/` et exposés comme
-resource pack / data pack virtuel.
+Chaque **inserter** est décrit par des données, pas par une classe Java : un objet
+`Inserter` porte vitesse, portée, filtrage, énergie ou carburant. Le registre instancie
+dynamiquement bloc + item + block entity + menu + écran pour chaque définition. Ajouter un
+inserter, c'est déposer un JSON dans `config/factory_io/inserters/` ; ses modèles, langues,
+loot tables et tags sont fabriqués **en mémoire** au chargement des ressources.
 
-Cette approche « data-driven » est le bon pari — mais son implémentation actuelle
-est fragile (voir [`docs/04-DETTE-TECHNIQUE.md`](docs/04-DETTE-TECHNIQUE.md) § Pipeline d'assets).
+Un **datapack** peut régler à chaud les inserters existants — vitesse, portée, taille de
+main, coûts — via `data/<namespace>/factory_io/inserters/<nom>.json` et un `/reload`.
+Ce qu'il ne peut pas faire, et pourquoi, est expliqué dans
+[`docs/06-BACKLOG.md`](docs/06-BACKLOG.md).
+
+## En jeu
+
+| Geste | Effet |
+|---|---|
+| Clic droit | ouvre le menu : filtres, condition redstone, jauge |
+| Clic droit avec une clé à molette, ou shift + clic droit à main nue | tourne l'inserter |
+| Clic droit avec un **configurateur** | applique les réglages mémorisés |
+| Shift + clic droit avec un **configurateur** | mémorise les réglages de cet inserter |
+| Clic droit avec un **module** | installe une amélioration, et rend celle qu'elle remplace |
+
+Les **améliorations** utilisent les modules du mod, sur trois axes indépendants, trois
+paliers chacun :
+
+| Module | Axe | Effet par palier | Contrepartie |
+|---|---|---|---|
+| Speed Module 1-3 | vitesse | −25 % sur la durée d'un mouvement | coût par mouvement inchangé, donc plus d'énergie par seconde |
+| Productivity Module 1-3 | capacité | +1 item par mouvement | aucune |
+| Efficiency Module 1-3 | efficacité | −25 % sur le coût d'un mouvement | aucune |
+
+Casser le bloc rend les modules posés.
+
+**Tout cela passe par des tags d'items**, jamais par une liste d'items en dur :
+`factory_io:configurators` et `factory_io:upgrades/<axe>/<palier>`. Un pack ou un autre mod
+rend son propre outil ou composant utilisable en l'ajoutant au tag voulu — sans une ligne de
+Java, et sans que les deux mods aient à se connaître.
 
 ## Licence
 

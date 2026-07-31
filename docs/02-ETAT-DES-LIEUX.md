@@ -10,9 +10,14 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > (`Loaded 7 inserters`, aucune erreur fatale).
 >
 > Le comportement est désormais largement vérifié. **Le mod est validé en jeu** par le
-> mainteneur (FIO-054, 30/07/2026), et 12 GameTests couvrent les invariants de monde —
+> mainteneur (FIO-054, 30/07/2026), et **21 GameTests** couvrent les invariants de monde —
 > conservation, ravitaillement, redstone, persistance, synchro de l'item en main, blocage
-> sur cible pleine, filtres par tag — doublés de 94 tests JUnit sur le calcul pur.
+> sur cible pleine, filtres par tag, rotation, améliorations, configurateur — doublés d'une
+> centaine de cas JUnit sur le calcul pur.
+>
+> **Audit complet du 31/07/2026** : relecture à froid de tout le code, des assets et de la
+> documentation. Sept anomalies trouvées et corrigées (BUG-042 à BUG-048), le préambule du
+> tick allégé, et deux fonctionnalités ajoutées — configurateur et améliorations.
 >
 > Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil, pas
 > par une assertion. C'est la limite à garder en tête à chaque changement d'affichage.
@@ -32,9 +37,9 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Pack de ressources/data généré au runtime | ✅ | en mémoire, refait à chaque rechargement, limité aux inserters utilisateur (FIO-039) |
 | Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 14 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
-| Tests (JUnit) | ✅ | 94 tests de calcul pur, `./gradlew test`, exécutés par `build` |
-| Benchmark de charge | ✅ | consigné ; budget actif tenu, budget endormi à la limite ([`10`](10-BENCHMARKS.md), FIO-073, FIO-076) |
+| Tests (GameTest) | ✅ | 21 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
+| Tests (JUnit) | ✅ | ~100 cas de calcul pur, `./gradlew test`, exécutés par `build` |
+| Benchmark de charge | ✅ | consigné ; **les deux budgets tenus** depuis l'allègement du préambule ([`10`](10-BENCHMARKS.md), FIO-073) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
 
 ## 2. Inserters
@@ -65,6 +70,9 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Rendu de l'item transporté | ✅ | arc source → cible pendant le mouvement, item immobile en bout de course si la cible est pleine (FIO-067, FIO-060) ; validé en jeu (FIO-054) |
 | Boîte de collision | ✅ | socle + palier calqués sur le modèle (BUG-017) |
 | Recettes | 🟡 | **1 seule** (`burner_inserter`) ; les 6 autres sont créatif-only |
+| Copier / coller de réglages | ✅ | item `configurator`, ouvert par le tag `factory_io:configurators` |
+| Améliorations posables | ✅ | vitesse / capacité / efficacité, 3 paliers, tags `factory_io:upgrades/<axe>/<palier>` ; rendues quand le bloc tombe |
+| Rotation et cible visée | ✅ | tourner un inserter change enfin ce qu'il vise (BUG-042) |
 | Loot tables | ✅ | générées par `runData` et versionnées |
 
 ## 3. Convoyeurs (« transport belts »)
@@ -87,17 +95,20 @@ Spécification proposée : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).
 
 ## 4. Items et progression
 
-33 items enregistrés dans [`ModItems`](../src/main/java/com/drimoz/factoryio/core/init/ModItems.java) :
+35 items enregistrés dans [`ModItems`](../src/main/java/com/drimoz/factoryio/core/init/ModItems.java) :
 
 - plaques : `iron_plate`, `copper_plate`, `steel_plate`
 - circuits : `electronic_circuit`, `advanced_circuit`, `processing_unit`
-- 7 science packs + `trouvernom_science_pack.png` / `logic_science_pack.png`
-  (textures **orphelines**, sans item correspondant)
-- modules ×9 (efficiency / productivity / speed, T1-T3)
+- 7 science packs
+- modules ×9 (efficiency / productivity / speed, T1-T3) — **utilisés** comme améliorations
+  d'inserter
+- `configurator` — copie et repose les réglages d'une machine
 - divers : `explosives`, `flying_robot_frame`, `low_density_structure`,
   `nuclear_fuel`, `rocket_*`, `solid_fuel`, `stone`, `stone_brick`,
-  `uranium_235/238`, `used_up_uranium_fuel_cell`
-- `uranium_fuel_cell.png` : texture **orpheline**
+  `uranium_fuel_cell`, `used_up_uranium_fuel_cell`, `uranium_235/238`
+
+Les trois textures orphelines de BUG-033 sont traitées : les deux provisoires supprimées,
+`uranium_fuel_cell` enregistré.
 
 | Aspect | État |
 |---|---|
@@ -105,8 +116,8 @@ Spécification proposée : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).
 | Modèles d'item | ✅ générés et versionnés |
 | Noms traduits | ✅ `en_us` et `fr_fr` |
 | Recettes | ⬜ aucune |
-| Usage en jeu | ⬜ aucun |
-| Tags (`forge:plates/*`) | ✅ générés et versionnés |
+| Usage en jeu | 🟡 les 9 modules et le configurateur servent ; le reste, non |
+| Tags (`forge:plates/*`, `factory_io:upgrades/*`, `factory_io:configurators`) | ✅ générés et versionnés |
 
 `stone` et `stone_brick` **dupliquent** des items vanilla — à supprimer ou à
 remplacer par les tags vanilla.

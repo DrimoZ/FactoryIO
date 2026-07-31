@@ -1,15 +1,20 @@
 # 03 — Catalogue des bugs
 
-> **État : 39 bugs sur 41 corrigés**, plus 1 partiellement (BUG-020).
+> **État : 47 bugs sur 48 corrigés.**
 >
 > Le mod est porté sur Forge 1.20.1 et **validé en jeu** par le mainteneur le 30/07/2026
-> (FIO-054). Seize GameTests couvrent les invariants de monde
-> (`./gradlew runGameTestServer`) et 94 tests JUnit le calcul pur (`./gradlew test`).
-> Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil, pas
-> par une assertion.
+> (FIO-054). Vingt et un GameTests couvrent les invariants de monde
+> (`./gradlew runGameTestServer`) et une centaine de cas JUnit le calcul pur
+> (`./gradlew test`). Le **rendu** reste hors de portée des tests automatisés : il est
+> vérifié à l'œil, pas par une assertion.
 >
 > Reste à traiter : BUG-016, la géométrie du bras à redécouper dans Blockbench
 > (FIO-066, en pause).
+>
+> **BUG-042 à BUG-048 viennent d'un audit complet du 31/07/2026**, relecture de tout le code
+> à froid après la Phase 2. Ils sont tous corrigés. Le plus grave, BUG-042, était visible en
+> jeu et invisible à la relecture : il fallait croiser la sémantique de `setBlock` avec la
+> durée de vie d'un block entity.
 
 Sévérités :
 **S0** bloquant (crash / mod inutilisable) ·
@@ -40,7 +45,7 @@ Sévérités :
 | [BUG-017](#bug-017) | ✅ S2 | Boîte de collision = cube plein | `…InserterEntityBlock.java` |
 | [BUG-018](#bug-018) | ✅ S2 | `setEnabled()` sans effet | `…InserterBlockEntity.java` |
 | [BUG-019](#bug-019) | ✅ S2 | `getInnerFuelCapacity()` récursion infinie | `…InserterBlockEntity.java` |
-| [BUG-020](#bug-020) | 🟡 S2 | NPE potentiel à l'ouverture du menu | `…InserterContainer.java` |
+| [BUG-020](#bug-020) | ✅ S2 | NPE potentiel à l'ouverture du menu | `…InserterContainer.java` |
 | [BUG-021](#bug-021) | ✅ S2 | Énergie exposée uniquement sur la face `DOWN` | `…InserterBlockEntity.java` |
 | [BUG-022](#bug-022) | ✅ S3 | Éjection tout-ou-rien dans un seul slot | `…InserterBlockEntity.java` |
 | [BUG-023](#bug-023) | ✅ S3 | Mauvaise face passée à la capability en éjection | `…InserterBlockEntity.java` |
@@ -62,6 +67,13 @@ Sévérités :
 | [BUG-041](#bug-041) | ✅ S3 | Un carburant trop riche est refusé sans un mot et bloque le slot | `…InserterBlockEntity.java` |
 | [BUG-039](#bug-039) | ✅ S3 | `README` : nom de jar et mappings faux | `README.md` |
 | [BUG-040](#bug-040) | ✅ S3 | Aucun test JUnit alors que FIO-035 l'exigeait | `src/test/` |
+| [BUG-042](#bug-042) | ✅ S2 | Le cache d'inventaires voisins survit à une rotation | `…InserterBlockEntity.java` |
+| [BUG-043](#bug-043) | ✅ S3 | `receiveEnergy` ne déclenche aucun hook : BUG-037 sans effet | `EnergyContainer.java` |
+| [BUG-044](#bug-044) | ✅ S3 | Le carburant peut être siphonné par un hopper | `…InserterBlockEntity.java` |
+| [BUG-045](#bug-045) | ✅ S3 | L'item en main disparaît au rechargement pendant un ravitaillement | `…InserterBlockEntity.java` |
+| [BUG-046](#bug-046) | ✅ S3 | Le bouton whitelist réagit à n'importe quel bouton de souris | `…InserterScreen.java` |
+| [BUG-047](#bug-047) | ✅ S3 | Un `/reload` désaccorde la jauge d'énergie de sa capacité réelle | `…InserterBlockEntity.java` |
+| [BUG-048](#bug-048) | ✅ S3 | Un carburant plus riche que la réserve est écrêté sans un mot | `inserter_fuel.json` |
 
 ---
 
@@ -565,13 +577,22 @@ la position. Côté client, le menu est construit depuis un paquet réseau : si 
 chunk n'est pas encore peuplé, ou si le bloc a été cassé entre-temps, on obtient
 un **NPE à l'ouverture du GUI**.
 
-**Correctif appliqué (partiel)** : la nullité est désormais détectée et lève une
-`IllegalStateException` explicite au lieu d'un NPE opaque. Côté serveur le cas est
-déjà couvert, `use()` vérifiant le `instanceof` avant `openGui`.
+**Premier correctif (partiel)** : la nullité était détectée et levait une
+`IllegalStateException` explicite au lieu d'un NPE opaque. C'était une amélioration de
+diagnostic, pas de comportement : une exception levée dans le constructeur d'un menu remonte
+dans le pipeline réseau du client et le **déconnecte**, là où il n'y avait qu'un écran à ne
+pas ouvrir.
 
-**Reste à faire (FIO-045, Phase 1)** : côté client, refuser proprement l'ouverture
-plutôt que de lever. Cela suppose de sortir `BLOCK_ENTITY` du champ `final` ou
-d'introduire une fabrique de menu capable d'échouer — hors périmètre de la Phase 0.
+**Correctif complet (31/07/2026)** : le menu se construit avec le seul inventaire du joueur
+quand le block entity manque, et `stillValid` le fait fermer au tick suivant. L'écran s'y
+adapte en une garde.
+
+Ce qui a rendu la chose simple est une correction de dépendance plus qu'une garde : l'écran
+demandait au **block entity** des valeurs qui n'en dépendent pas — mode d'alimentation,
+présence de filtres, sensibilité au redstone sont des traits du *type*. Elles sont désormais
+exposées par le menu, qui les lit sur la définition. L'écran n'a plus besoin d'un block
+entity pour se dessiner, et le cas dégradé devient trivial au lieu d'être un chemin
+d'exception à part.
 
 ---
 
@@ -761,6 +782,11 @@ sous `factory_io:`. Utiliser `setRegistryName(i.getId())`.
 Inversement, `used_up_uranium_fuel_cell` est enregistré sans que
 `uranium_fuel_cell` ne le soit.
 
+**Correctif (31/07/2026)** — ce bug était marqué corrigé sans l'être ; les trois fichiers
+étaient toujours là. Les deux textures provisoires sont **supprimées**, et
+`uranium_fuel_cell` est **enregistré** : sa version usée existait déjà, l'asymétrie n'avait
+pas de sens. Modèle et traductions générés en conséquence.
+
 ---
 
 ## BUG-034 — `checkContainerSize` mal employé (S3)
@@ -832,6 +858,9 @@ sur un réseau électrique qui oscille autour du seuil.
 
 **Correctif** : appeler `wakeUp()` depuis `onEnergyChanged`, à côté du `setChanged()`
 déjà présent.
+
+> ⚠ **Ce correctif était inopérant jusqu'au 31/07/2026** : `onEnergyChanged` n'était jamais
+> déclenché par une *réception* d'énergie. Voir [BUG-043](#bug-043).
 
 ---
 
@@ -908,3 +937,135 @@ Conséquences :
 `Mth.clamp` de `overrideCurrentFuelValue`. Un four vanilla perd de la même façon le
 reliquat de combustion de son dernier item. Refuser l'item serait le second choix
 acceptable, à condition de refuser aussi de l'aspirer.
+
+---
+
+## BUG-042 — Le cache d'inventaires voisins survit à une rotation (S2) ✅
+
+**Fichier** : [`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java) — `neighbourHandler`
+
+Les deux `LazyOptional<IItemHandler>` mémorisés par DT-07 n'étaient indexés que par leur
+rôle, source ou cible. Or trois faits se combinent :
+
+1. `Level#setBlock` notifie les **voisins** de la position modifiée, jamais la position
+   elle-même : `neighborChanged` n'est pas appelé sur l'inserter qu'on tourne ;
+2. un changement d'état sur le **même** bloc conserve le block entity, donc son cache ;
+3. l'invalidation n'était confiée qu'au listener du `LazyOptional`, qui ne se déclenche que
+   si le voisin disparaît.
+
+**Impact** : tourner un inserter à la clé ne changeait pas ce qu'il visait. Il continuait
+d'aspirer dans l'ancien coffre et de déposer dans l'ancienne cible, jusqu'au prochain
+changement de voisinage ou rechargement de chunk. Un `grabDistance` changé à chaud par
+datapack produisait le même décalage.
+
+C'est le bug le plus visible en jeu de cet audit, et l'un des moins visibles à la relecture :
+chaque morceau, pris isolément, est correct.
+
+**Correctif** : la position résolue fait partie de la clé du cache, et la rotation appelle
+`onNeighbourChanged()`. Deux gardes plutôt qu'une : la seconde relance immédiatement
+l'inserter, la première le protège de tous les autres chemins.
+
+**Test** : GameTest `rotatingRetargetsTheInserter` — un demi-tour, et la chaîne doit
+repartir dans l'autre sens.
+
+---
+
+## BUG-043 — `receiveEnergy` ne déclenche aucun hook (S3) ✅
+
+**Fichier** : [`EnergyContainer.java`](../src/main/java/com/drimoz/factoryio/core/generic/container/energy/EnergyContainer.java)
+
+`EnergyStorage#receiveEnergy` de Forge incrémente son champ directement et n'offre aucun
+point d'accroche. `onEnergyChanged()` n'était donc appelé que par `consumeInternal` et les
+setters — c'est-à-dire quand la machine *dépense*, jamais quand on l'alimente.
+
+**Impact** : le `wakeUp()` posé pour BUG-037 ne se déclenchait pas sur le cas qu'il visait.
+Le correctif était réel mais branché sur le mauvais évènement, et la documentation affirmait
+« le courant qui revient relance l'inserter dans le tick » — ce qui était faux. En pratique
+le réveil arrivait au bout du `sleepTicks` en cours, soit jusqu'à une seconde. Accessoirement,
+l'énergie reçue ne marquait pas le block entity comme modifié.
+
+**Correctif** : surcharger `receiveEnergy` pour appeler `onEnergyChanged()` quand le retour
+est non nul et que ce n'est pas une simulation.
+
+**Leçon** : un correctif branché sur un hook doit être vérifié *depuis le chemin réel*, pas
+depuis le hook.
+
+---
+
+## BUG-044 — Le carburant peut être siphonné (S3) ✅
+
+**Fichier** : [`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java) — surcharge de `extractItem`
+
+L'`IItemHandler` exposé refusait l'extraction partout **sauf** sur le slot de carburant. La
+symétrie avec `insertItem` semble intentionnelle, mais l'effet en jeu ne l'est pas : un
+hopper posé sous un burner inserter lui reprenait son charbon en boucle, le laissant à sec
+sans que rien ne l'explique.
+
+**Correctif** : la règle du four vanilla — seuls les **résidus** ressortent, c'est-à-dire ce
+qui n'a pas de temps de combustion, typiquement le seau vide d'un seau de lave.
+
+**Test** : GameTest `fuelCannotBeSiphoned`.
+
+---
+
+## BUG-045 — L'item en main disparaît au rechargement pendant un ravitaillement (S3) ✅
+
+**Fichier** : [`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java) — `load`
+
+`heldStack` était reconstruit depuis le slot buffer. C'est juste pour un item en cours de
+livraison, mais pas pour un trajet de **carburant** : celui-ci a déjà rejoint son slot au
+moment de la saisie, le buffer est vide, et l'item affiché disparaissait donc si le monde
+était rechargé en plein mouvement.
+
+**Correctif** : persister la main pour elle-même, en gardant le buffer comme solution de
+repli pour les mondes sauvegardés avant ce changement.
+
+---
+
+## BUG-046 — Le bouton whitelist réagit à n'importe quel bouton de souris (S3) ✅
+
+**Fichier** : [`InserterScreen.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterScreen.java) — `mouseClicked`
+
+Le numéro du bouton n'était pas consulté : un clic droit, ou même un clic molette, sur la
+zone du bouton basculait le mode de filtrage.
+
+**Correctif** : n'agir que sur le bouton gauche.
+
+**Reste ouvert** : ce bouton est dessiné à la main et n'est pas un `GuiEventListener`. Il n'a
+donc ni navigation clavier ni narrateur, contrairement aux deux boutons redstone qui sont des
+widgets vanilla. Le GUI fait cohabiter deux modèles de widgets — c'est le sujet de la refonte
+(FIO-071).
+
+---
+
+## BUG-047 — Un `/reload` désaccorde la jauge d'énergie (S3) ✅
+
+**Fichier** : [`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java)
+
+Un datapack peut changer capacité et débit de transfert à chaud (FIO-037), mais
+l'`EnergyContainer` d'un inserter **déjà posé** avait été construit avec les anciennes
+valeurs. Le menu, lui, lisait la capacité sur la définition, donc la nouvelle : la jauge se
+retrouvait graduée sur une capacité que la machine n'avait pas.
+
+**Correctif** : réaligner les limites du stockage sur la définition à l'ouverture du menu et
+au chargement du block entity. Pas à chaque tick — c'est un chemin chaud, et l'écart n'est
+observable qu'à l'écran.
+
+---
+
+## BUG-048 — Un carburant trop riche est écrêté sans un mot (S3) ✅
+
+**Fichier** : `data/factory_io/tags/items/inserter_fuel.json` et
+[`InserterDefaults.java`](../src/main/java/com/drimoz/factoryio/core/model/InserterDefaults.java)
+
+BUG-041 a choisi d'**écrêter** plutôt que de refuser un carburant plus riche que la réserve.
+C'était le bon choix — refuser bloquait le slot — mais il ouvre une autre porte : le joueur
+perd la différence sans en être averti autrement que par une ligne de journal en `debug`.
+
+Avec une réserve de 3 200, tout ajout au tag d'un carburant plus riche devenait un piège.
+
+**Correctif** : traiter la cause plutôt que le symptôme. La réserve du burner passe à 4 000,
+soit exactement le plus riche des carburants du tag (le bloc d'algues séchées), et le tag
+n'accueille que des carburants qui y tiennent entièrement. Le cas « écrêtage » ne se présente
+donc plus pour la configuration livrée, et le filet de BUG-041 reste en place pour les packs
+qui élargiraient le tag.

@@ -18,7 +18,8 @@ diverge sur presque tous les points.
 | Cible | inventaire, **bande transporteuse**, sol | inventaire ; convoyeur en Phase 3. **Le sol est écarté** (FIO-068) |
 | Blocage | l'inserter garde l'item en main et attend | ✅ état `BLOCKED` (FIO-060) |
 | Filtre | par type d'item, whitelist/blacklist | ✅ par type ou par tag, au choix par slot (FIO-069) |
-| Taille de main | dépend du type + bonus de recherche | constante 1 ou 3 |
+| Taille de main | dépend du type + bonus de recherche | ✅ 1 ou 3, **+1 par palier de capacité** (FIO-080) |
+| Copier / coller de configuration | `shift + clic droit` / `clic droit` | ✅ configurateur, ouvert par tag (FIO-079) |
 | Condition circuit | signal/condition réseau | ✅ condition redstone **analogique** : < N ou ≥ N (FIO-070) |
 | Vitesse | 0,60 à 2,31 items/s | ✅ 0,59 à 2,50 items/s (FIO-065) — auparavant 0,25 pour tous |
 
@@ -372,8 +373,10 @@ Par ordre de valeur ajoutée :
 | ~~**Prise/dépose au sol**~~ | ❌ **écartée** par le mainteneur le 30/07/2026 : décision de périmètre. Le mod ne fera pas transiter d’items par le sol, même si Factorio le permet. | — |
 | ~~**Filtre par tag**~~ | ✅ **fait (FIO-069)** — clic droit sur un filtre posé bascule entre l'item exact et ses tags. Volontairement large : « partage un tag » plutôt qu'un tag désigné, tant que le GUI ne permet pas d'en choisir un (FIO-071) | S |
 | ~~**Condition redstone analogique**~~ | ✅ **fait (FIO-070)** — mode et seuil réglables par inserter. Le réseau de circuits complet reste hors périmètre. | M |
-| **Bonus de taille de main** | permet une progression sans nouveaux blocs | S |
-| **Insertion « ne dépasse pas N »** | limite de remplissage, très demandé en Factorio | S |
+| ~~**Bonus de taille de main**~~ | ✅ **fait (FIO-080)** — devenu un système d'améliorations à trois axes, porté par les 9 modules qui existaient sans usage. Voir §10. | S |
+| ~~**Copier / coller de réglages**~~ | ✅ **fait (FIO-079)** — sans lui, filtres et condition redstone restaient des fonctionnalités qu'on essaie sur trois blocs et qu'on n'utilise jamais à l'échelle d'une usine. Voir §10. | S |
+| **Insertion « ne dépasse pas N »** | limite de remplissage, très demandé en Factorio ; règle la régulation d'une machine **sans** câbler un comparateur sur chacune | S |
+| **Chargement des wagons-coffres** | `neighbourHandler` ne regarde que `getBlockEntity` ; l'étendre aux entités ouvre le minecart à coffre, rôle emblématique du stack inserter. Ne contredit pas FIO-068 : une entité n'est pas le sol. | M |
 
 À **ne pas** faire en Phase 2 : le réseau de circuits complet (fils rouge/vert,
 combinateurs). C'est un mod à lui seul.
@@ -416,3 +419,86 @@ Cible :
 
 Les étapes 2 à 5 forment un bloc : ne pas livrer l'une sans les autres, sous
 peine d'avoir un inserter à la fois nouveau **et** lent.
+
+---
+
+## 10. Configurateur et améliorations — ✅ **appliqués (FIO-079, FIO-080)**
+
+### 10.1 Pourquoi ces deux-là avant le reste
+
+Le filtrage par tag (FIO-069) et la condition redstone analogique (FIO-070) sont livrés, et
+tous deux se règlent **par inserter**. Cinq filtres, un mode de liste, un mode redstone et un
+seuil : une quinzaine de secondes par bloc. Une usine en compte des dizaines.
+
+Sans moyen de recopier un réglage, ces deux fonctionnalités restent des choses qu'on essaie
+sur trois blocs et qu'on n'utilise jamais à l'échelle. Le geste existe dans Factorio et y est
+l'un des plus utilisés du jeu. C'est du rattrapage de valeur sur du travail **déjà payé** —
+le meilleur rapport du moment.
+
+Les améliorations, elles, répondent à un autre manque : sept blocs figés, c'est une
+progression plate. Une dimension d'amélioration en crée une sans ajouter un seul bloc, et
+les neuf modules existaient déjà comme items sans le moindre usage.
+
+### 10.2 Tout passe par des tags
+
+| Geste | Tag consulté |
+|---|---|
+| accroupi + clic droit → mémoriser | `factory_io:configurators` |
+| clic droit → appliquer | `factory_io:configurators` |
+| clic droit avec un module | `factory_io:upgrades/<axe>/<palier>` |
+
+Le mod ne teste **jamais un item précis**. Un pack, ou un autre mod, rend son propre outil ou
+composant utilisable en l'ajoutant au tag voulu — sans une ligne de Java de part et d'autre.
+C'est la mécanique déjà employée par `factory_io:inserter_fuel`, et la raison est la même :
+la liste des items qui conviennent est une donnée, pas du code.
+
+Neuf tags de paliers plutôt qu'un tag par axe : le palier doit être une donnée lui aussi,
+sans quoi un item étranger ajouté au tag n'aurait aucun niveau connu.
+
+**Conséquence d'implémentation** : les deux gestes passent par un écouteur de
+`PlayerInteractEvent.RightClickBlock`, et non par `Item#useOn`. Un `useOn` ne s'exécute que
+pour l'item qui le déclare — il ne pourrait couvrir que le configurateur livré avec le mod,
+et le tag ne servirait à rien.
+
+### 10.3 Les trois axes, et pourquoi la vitesse coûte
+
+| Module | Axe | Effet par palier | Contrepartie |
+|---|---|---|---|
+| Speed Module 1-3 | vitesse | ×0,75 sur la durée d'un mouvement | **coût par mouvement inchangé**, donc plus d'énergie par seconde |
+| Productivity Module 1-3 | capacité | +1 item par mouvement | aucune |
+| Efficiency Module 1-3 | efficacité | ×0,75 sur le coût d'un mouvement | aucune |
+
+La contrepartie de la vitesse n'est pas un détail d'équilibrage : sans elle, la vitesse
+domine et les deux autres axes ne sont jamais posés. C'est aussi le comportement de Factorio,
+où un module de vitesse augmente la consommation.
+
+Le plafond assumé : vitesse 3 + capacité 3 sur un `inserter` donne 8 items/s, contre 0,83 nu
+— un facteur dix. Un test le verrouille pour qu'un ajustement futur ne le dépasse pas sans
+qu'on s'en aperçoive.
+
+### 10.4 Où vivent les réglages
+
+Trois niveaux se composent, et la frontière entre eux est la même que celle de FIO-037 :
+
+```
+InserterDefaults / JSON de config  →  le type
+                       datapack    →  le type, à chaud
+                       modules     →  l'exemplaire
+```
+
+Les améliorations produisent un `InserterTuning`, **le même type** que celui qu'un datapack
+remplace. Les deux mécanismes décrivent la même chose — des réglages — et se composent sans
+se connaître. Le block entity met le résultat en cache et le revalide par identité de
+référence de la base : un datapack remplace le tuning d'un bloc, jamais champ par champ, donc
+un `!=` suffit à détecter un `/reload` — pour le prix d'un test dans une méthode appelée à
+chaque image côté client.
+
+### 10.5 Ce qui n'est pas copié, et pourquoi
+
+Le configurateur relève filtres, mode de liste et condition redstone. Il ne relève **ni
+l'état de fonctionnement ni les améliorations** : celles-ci sont des items posés, pas une
+configuration, et les dupliquer fabriquerait de la matière.
+
+Symétriquement, un module remplacé par un meilleur **revient au joueur**, et casser le bloc
+rend tout ce qui y était posé. Un palier inférieur ou égal est refusé plutôt qu'accepté :
+l'accepter consommerait le module posé *et* perdrait le meilleur déjà en place.

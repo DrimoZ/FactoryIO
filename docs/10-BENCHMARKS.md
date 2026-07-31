@@ -44,41 +44,53 @@ inserters, et c'est ce que le budget de DT-07 vise.
 Mesures ramenées à 1 000 inserters. L'extrapolation est linéaire : les populations réelles
 sont de 196 (endormis) et 140 (actifs), limitées par la taille de la structure de test.
 
+### Après l'allègement du préambule (31/07/2026)
+
 Trois lancements consécutifs, **sans aucune modification de code entre les trois** :
 
 | Régime | Budget DT-07 | n° 1 | n° 2 | n° 3 | Verdict |
 |---|---|---|---|---|---|
-| 1 000 actifs | < 2,0 ms/tick | 0,125 ms | 0,211 ms | 0,177 ms | ✅ **tenu**, dix fois sous le plafond |
-| 1 000 endormis | < 0,2 ms/tick | 0,114 ms | 0,199 ms | 0,310 ms | 🟡 **à la limite**, dépassé une fois sur trois |
+| 1 000 actifs | < 2,0 ms/tick | 0,048 ms | 0,036 ms | 0,053 ms | ✅ **tenu**, quarante fois sous le plafond |
+| 1 000 endormis | < 0,2 ms/tick | 0,033 ms | 0,035 ms | 0,036 ms | ✅ **tenu**, avec six fois de marge |
 
-Relevé le 30/07/2026, JDK 26 (Oracle), Windows 11, machine de développement avec le jeu et
-Gradle en cours d'exécution.
+### Avant, pour comparaison (30/07/2026)
 
-### Trois choses que ces chiffres disent
+| Régime | n° 1 | n° 2 | n° 3 | Verdict d'alors |
+|---|---|---|---|---|
+| 1 000 actifs | 0,125 ms | 0,211 ms | 0,177 ms | ✅ tenu |
+| 1 000 endormis | 0,114 ms | 0,199 ms | 0,310 ms | 🟡 dépassé une fois sur trois |
 
-**Le budget des inserters actifs est tenu, largement.** Le travail de DT-07 — cache de
-capability (FIO-062), mémorisation du dernier slot (FIO-063), mise en sommeil (FIO-064) — a
-produit ce qu'il promettait.
+Relevés sur la même machine : JDK 26 (Oracle) puis JDK 21, Windows 11, machine de
+développement avec Gradle en cours d'exécution.
 
-**La variance entre deux exécutions atteint 2,7×.** C'est le JIT, l'ordonnanceur de l'OS et
-ce que la machine fait à côté. Aucune conclusion ne peut être tirée d'un écart inférieur à
-un facteur 3 entre deux relevés — d'où des seuils larges, et d'où ce tableau à trois
-colonnes plutôt qu'un chiffre unique qui aurait été trompeur quelle que soit la colonne
-choisie.
+### Ce que ces chiffres disent
 
-**Le budget du régime endormi n'est pas tenu de façon fiable**, et il n'y a pas de raison
-qu'il le devienne : le régime endormi ne coûte pas moins cher que le régime actif, alors que
-le budget le supposait dix fois moins cher. Ce n'est pas une régression, c'est une erreur
-dans l'hypothèse d'origine. Les deux régimes sont dominés par le même retour anticipé, et ce
-qui reste est le **préambule commun à tout tick** : `isEnabled()`, qui lit une propriété de
-blockstate, et l'appel à `burnFuel()`.
+**Le préambule était bien le plancher, et il était réductible.** Le relevé du 30/07
+concluait que le coût d'un inserter endormi ne pouvait plus descendre sans le retirer de la
+liste des tickers (FIO-076), parce que le plancher était le préambule commun à tout tick :
+`isEnabled()` — une lecture de propriété de blockstate — et un appel à `burnFuel()` qui
+repartait aussitôt. Deux changements l'ont vidé :
 
-Autrement dit, le plancher du coût d'un inserter n'est plus dans sa logique mais dans le
-fait d'être tické. La mise en sommeil ne peut pas descendre sous ce plancher, parce qu'elle
-s'exécute *après* lui. Descendre plus bas suppose de **retirer les inserters endormis de la
-liste des tickers** au lieu de les ticker pour qu'ils décrémentent un compteur — un vrai
-changement, suivi par FIO-076. Il n'est pas justifié aujourd'hui : 0,3 ms/tick pour 1 000
-inserters endormis reste 0,6 % d'un tick serveur.
+- `isEnabled()` lit désormais un champ, tenu à jour par `setBlockState` — que le chunk
+  appelle à chaque changement d'état, y compris au chargement ;
+- `burnFuel()` est descendu dans `tickWaiting`, le seul état qui engage une dépense. Les
+  trois autres ne l'appellent plus du tout.
+
+**Le facteur observé est de 3 à 8×, et le budget endormi est maintenant tenu.** C'est
+au-dessus du seuil de bruit rappelé plus bas — un facteur 3 —, donc l'écart est réel et non
+un artefact de mesure. La variance entre exécutions, elle, est retombée à 1,5× : quand le
+travail mesuré devient petit, il reste surtout du bruit… mais ce bruit est lui-même petit.
+
+**FIO-076 perd sa justification.** Retirer les inserters endormis de la liste des tickers
+était le seul moyen de descendre sous le plancher d'alors. Le plancher a baissé de lui-même,
+et 0,035 ms/tick pour 1 000 inserters endormis représente 0,07 % d'un tick serveur. Le
+ticket reste ouvert par honnêteté — la piste est toujours valable — mais il n'est plus
+justifié par aucune mesure.
+
+**La variance reste la limite de l'exercice.** Aucune conclusion ne peut être tirée d'un
+écart inférieur à un facteur 3 entre deux relevés — d'où des seuils larges, et d'où ces
+tableaux à trois colonnes plutôt qu'un chiffre unique qui aurait été trompeur quelle que
+soit la colonne choisie.
 
 ---
 
