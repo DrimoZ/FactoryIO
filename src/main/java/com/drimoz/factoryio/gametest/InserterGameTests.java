@@ -5,7 +5,9 @@ import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
+import com.drimoz.factoryio.core.inserters.InserterSettings;
 import com.drimoz.factoryio.core.inserters.InserterState;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.model.InserterTuning;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
@@ -539,6 +541,114 @@ public class InserterGameTests {
 
         helper.assertTrue(stolen.isEmpty(), "Le carburant a pu être extrait de l'extérieur");
         helper.assertTrue(handler.getStackInSlot(fuelSlot).getCount() > 0, "Le slot de carburant a été vidé");
+
+        helper.succeed();
+    }
+
+    // Tests (Améliorations)
+
+    /**
+     * Poser un module accélère l'inserter, et un module inférieur ne l'écrase pas.
+     *
+     * <p>Le second point est le seul qui puisse détruire quelque chose : accepter un palier
+     * plus faible reviendrait à consommer le module posé <i>et</i> à perdre le meilleur
+     * déjà en place.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void upgradeChangesTheEffectiveTuning(GameTestHelper helper) {
+        setupChain(helper, "inserter");
+
+        InserterBlockEntity blockEntity = inserter(helper);
+        int baseTicks = blockEntity.getTicksPerSwing();
+
+        ItemStack replaced = blockEntity.installUpgrade(
+                InserterUpgradeType.SPEED, new ItemStack(ModItems.SPEED_MODULE_2.get()));
+
+        helper.assertTrue(replaced != null && replaced.isEmpty(), "L'axe était censé être libre");
+        helper.assertTrue(blockEntity.getTicksPerSwing() < baseTicks,
+                "Le module de vitesse n'a pas raccourci le mouvement");
+
+        // Un palier inférieur doit être refusé, pas posé.
+        helper.assertTrue(
+                blockEntity.installUpgrade(
+                        InserterUpgradeType.SPEED, new ItemStack(ModItems.SPEED_MODULE_1.get())) == null,
+                "Un module plus faible a été accepté");
+
+        // Un palier supérieur rend le précédent.
+        ItemStack returned = blockEntity.installUpgrade(
+                InserterUpgradeType.SPEED, new ItemStack(ModItems.SPEED_MODULE_3.get()));
+
+        helper.assertTrue(returned != null && returned.is(ModItems.SPEED_MODULE_2.get()),
+                "Le module remplacé n'a pas été rendu");
+
+        helper.succeed();
+    }
+
+    /** Les modules posés survivent à une sauvegarde, et retombent quand le bloc est cassé. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void upgradesPersistAndDrop(GameTestHelper helper) {
+        setupChain(helper, "inserter");
+
+        InserterBlockEntity blockEntity = inserter(helper);
+        blockEntity.installUpgrade(
+                InserterUpgradeType.CAPACITY, new ItemStack(ModItems.PRODUCTIVITY_MODULE_3.get()));
+
+        CompoundTag saved = blockEntity.saveWithoutMetadata();
+        blockEntity.load(saved);
+
+        helper.assertTrue(
+                blockEntity.getUpgrades().level(InserterUpgradeType.CAPACITY) == 3,
+                "Le palier n'a pas survécu à la sauvegarde");
+
+        helper.assertTrue(
+                blockEntity.getUpgrades().installed(InserterUpgradeType.CAPACITY)
+                        .is(ModItems.PRODUCTIVITY_MODULE_3.get()),
+                "Le module posé n'a pas survécu à la sauvegarde");
+
+        helper.assertTrue(
+                blockEntity.getUpgrades().allInstalled().size() == 1,
+                "Le module ne fait pas partie de ce qui tombe au sol");
+
+        helper.succeed();
+    }
+
+    // Tests (Configurateur)
+
+    /**
+     * Les réglages relevés sur un inserter doivent se reposer à l'identique sur un autre.
+     *
+     * <p>C'est la garantie qui rend le filtrage utilisable à l'échelle d'une usine : sans
+     * elle, chaque inserter se configure à la main.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void settingsTravelBetweenInserters(GameTestHelper helper) {
+        setupChain(helper, "filter_inserter");
+
+        InserterBlockEntity source = inserter(helper);
+        setFilter(helper, 0, Items.COBBLESTONE);
+        source.toggleTagFilter(0);
+        source.setWhitelist(false);
+        source.setRedstoneCondition(
+                new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 7));
+
+        InserterSettings settings = InserterSettings.load(source.captureSettings().save());
+
+        // Un second inserter du même type, encore vierge.
+        helper.setBlock(TARGET, definitionOf("filter_inserter").getBlock().get().defaultBlockState()
+                .setValue(InserterBlock.FACING, Direction.EAST));
+
+        InserterBlockEntity copy = (InserterBlockEntity) helper.getBlockEntity(TARGET);
+
+        helper.assertTrue(copy.applySettings(settings), "Aucun réglage n'a été appliqué");
+
+        helper.assertFalse(copy.isWhitelist(), "Le mode de liste n'a pas été copié");
+        helper.assertTrue(copy.isTagFilter(0), "La correspondance par tag n'a pas été copiée");
+        helper.assertTrue(copy.getRedstoneCondition().threshold() == 7,
+                "Le seuil redstone n'a pas été copié");
+
+        // Rejouer les mêmes réglages ne doit plus rien changer : c'est ce qui distingue
+        // « appliqué » de « déjà comme ça » dans le retour au joueur.
+        helper.assertFalse(copy.applySettings(settings), "Une application sans effet s'est déclarée effective");
 
         helper.succeed();
     }

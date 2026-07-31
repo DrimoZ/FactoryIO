@@ -108,6 +108,10 @@ public class InserterItem extends ModBlockItem implements GeoItem {
             tooltip.add(labelled("fuel_consumption", String.valueOf(inserter.getFuelConsumption())));
             tooltip.add(labelled("capacity", String.valueOf(inserter.getFuelCapacity())));
         }
+
+        // Les valeurs ci-dessus sont celles du type ; un exemplaire posé peut faire mieux.
+        // Sans cette ligne, rien n'indique que les modules servent à quelque chose.
+        tooltip.add(ModUtils.tooltipComponent("upgrade_help").withStyle(ChatFormatting.DARK_GRAY));
     }
 
     // Inner work

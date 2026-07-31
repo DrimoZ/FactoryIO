@@ -17,6 +17,14 @@ public class ModTags {
         public static final TagKey<Item> INSERTER_FUEL = tag("inserter_fuel");
         public static final TagKey<Item> WRENCH_ITEM = forgeTag("tools/wrench");
 
+        /**
+         * Items qui copient et reposent les réglages d'une machine.
+         *
+         * <p>Un tag et non une classe : le configurateur d'un autre mod devient utilisable
+         * en l'y ajoutant, sans une ligne de Java de part et d'autre.
+         */
+        public static final TagKey<Item> CONFIGURATOR = tag("configurators");
+
         public static final TagKey<Item> PLATES = forgeTag("plates");
         public static final TagKey<Item> PLATES_IRON = forgeTag("plates/iron");
         public static final TagKey<Item> PLATES_COPPER = forgeTag("plates/copper");

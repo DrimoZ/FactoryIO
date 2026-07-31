@@ -2,6 +2,8 @@ package com.drimoz.factoryio.core.inserters;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.container.slots.GhostSlot;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
+import com.drimoz.factoryio.core.upgrade.InserterUpgrades;
 import com.drimoz.factoryio.shared.ModUtils;
 import com.drimoz.factoryio.shared.gui.GuiButton;
 import com.drimoz.factoryio.core.init.ModNetworks;
@@ -173,6 +175,87 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
     /** Teinte des slots en mode tag : ARGB, assez transparente pour laisser voir l'item. */
     private static final int TAG_FILTER_TINT = 0x6033B5E5;
 
+    // Inner work (Améliorations)
+
+    /** Zone occupée par le résumé des améliorations, pour savoir quand le survol y tombe. */
+    private int upgradeSummaryX = -1;
+    private int upgradeSummaryWidth;
+
+    /**
+     * Résumé des modules posés, aligné à droite sur la ligne du titre.
+     *
+     * <p>La texture de GUI est figée et n'a aucune case libre (cf. FIO-071) : un résumé
+     * textuel sur une ligne déjà occupée par du texte est le seul emplacement qui ne
+     * demande pas de la redessiner. Le détail — et surtout le débit qui en résulte — est
+     * dans l'infobulle : c'est la grandeur avec laquelle on dimensionne une usine, et la
+     * seule façon de vérifier qu'un module sert à quelque chose.
+     */
+    @Override
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        super.renderLabels(graphics, mouseX, mouseY);
+
+        this.upgradeSummaryX = -1;
+
+        InserterBlockEntity blockEntity = getMenu().getBlockEntity();
+        if (blockEntity == null || blockEntity.getUpgrades().isEmpty()) return;
+
+        String summary = upgradeSummary(blockEntity.getUpgrades());
+
+        this.upgradeSummaryWidth = this.font.width(summary);
+        this.upgradeSummaryX = this.imageWidth - 8 - this.upgradeSummaryWidth;
+
+        graphics.drawString(this.font, summary, this.upgradeSummaryX, this.titleLabelY, 0x1D7C9E, false);
+    }
+
+    /** Une initiale et un palier par axe posé, par exemple {@code S2 C1}. */
+    private static String upgradeSummary(InserterUpgrades upgrades) {
+        StringBuilder summary = new StringBuilder();
+
+        for (InserterUpgradeType type : InserterUpgradeType.all()) {
+            int level = upgrades.level(type);
+            if (level <= 0) continue;
+
+            if (!summary.isEmpty()) summary.append(' ');
+            summary.append(Character.toUpperCase(type.id().charAt(0))).append(level);
+        }
+
+        return summary.toString();
+    }
+
+    /** Détail des améliorations et débit qui en résulte. */
+    private void renderUpgradeTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (this.upgradeSummaryX < 0) return;
+
+        int x = mouseX - this.getGuiLeft();
+        int y = mouseY - this.getGuiTop();
+
+        boolean hovered = x >= this.upgradeSummaryX && x <= this.upgradeSummaryX + this.upgradeSummaryWidth
+                && y >= this.titleLabelY && y <= this.titleLabelY + this.font.lineHeight;
+        if (!hovered) return;
+
+        InserterBlockEntity blockEntity = getMenu().getBlockEntity();
+        if (blockEntity == null) return;
+
+        List<Component> lines = new ArrayList<>();
+        lines.add(ModUtils.tooltipComponent("upgrades").withStyle(ChatFormatting.WHITE));
+
+        for (InserterUpgradeType type : InserterUpgradeType.all()) {
+            int level = blockEntity.getUpgrades().level(type);
+            if (level <= 0) continue;
+
+            lines.add(ModUtils.tooltipComponent(type.translationKey()).withStyle(ChatFormatting.GRAY)
+                    .append(Component.literal(" " + level).withStyle(ChatFormatting.AQUA)));
+        }
+
+        lines.add(ModUtils.tooltipComponent("effective_speed").withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(String.format(" %.2f %s / %s",
+                        blockEntity.getItemsPerSecond(),
+                        ModUtils.tooltipString("items"),
+                        ModUtils.tooltipString("second"))).withStyle(ChatFormatting.AQUA)));
+
+        graphics.renderComponentTooltip(this.font, lines, mouseX, mouseY);
+    }
+
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         ResourceLocation texture = backgroundTexture();
@@ -263,6 +346,7 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
         InserterBlockEntity blockEntity = getMenu().getBlockEntity();
         if (blockEntity == null) return;
 
+        renderUpgradeTooltip(graphics, mouseX, mouseY);
 
         if (getMenu().usesEnergy()) {
             // Valeurs lues sur le menu : côté client le block entity n'est plus synchronisé

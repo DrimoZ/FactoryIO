@@ -4,7 +4,10 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.block_entity.MenuBlockEntity;
 import com.drimoz.factoryio.core.generic.container.energy.EnergyContainer;
 import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.model.InserterTuning;
 import com.drimoz.factoryio.core.init.ModTags;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
+import com.drimoz.factoryio.core.upgrade.InserterUpgrades;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -50,6 +53,8 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
@@ -113,6 +118,21 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
     /** Copie de la propriété {@code ENABLED}, cf. {@link #setBlockState}. */
     private boolean enabled;
+
+    /** Modules posés sur cet exemplaire. */
+    private InserterUpgrades upgrades = InserterUpgrades.NONE;
+
+    /**
+     * Réglages effectifs, améliorations comprises, et la base dont ils sont dérivés.
+     *
+     * <p>Le cache est validé par <b>identité</b> de la base : un datapack remplace le
+     * {@link InserterTuning} d'un type d'un seul bloc (FIO-037), jamais champ par champ.
+     * Une comparaison de référence suffit donc à détecter un {@code /reload}, pour le prix
+     * d'un test par appel — et {@code getTicksPerSwing} est appelé à chaque image côté
+     * client, pour interpoler le bras.
+     */
+    private InserterTuning effectiveTuning;
+    private InserterTuning effectiveBase;
 
     /**
      * Tick de jeu auquel le mouvement de bras en cours se termine.
@@ -256,25 +276,51 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
     // Interface (DataFromData)
 
+    /**
+     * Réglages de cet exemplaire : ceux de son type, modifiés par les modules posés.
+     *
+     * <p>Tout ce qui dépend de la vitesse, de la portée, de la taille de main ou des coûts
+     * passe par ici — et par ici seulement. C'est ce qui permet aux améliorations d'agir
+     * partout, y compris sur la trajectoire affichée et sur les jauges, sans un seul
+     * {@code if} ailleurs dans la classe.
+     */
+    public InserterTuning getEffectiveTuning() {
+        InserterTuning base = inserter.getTuning();
+
+        if (this.effectiveBase != base) {
+            this.effectiveBase = base;
+            this.effectiveTuning = this.upgrades.applyTo(base);
+        }
+
+        return this.effectiveTuning;
+    }
+
     public int getMaximumItemCountPerAction(){
-        return inserter.getPreferredItemCountPerAction();
+        return getEffectiveTuning().handSize();
     }
 
     public int getGrabDistance(){
-        return inserter.getGrabDistance();
+        return getEffectiveTuning().grabDistance();
     }
 
     /** Durée d'un mouvement de bras, en ticks. Un item en coûte deux. */
     public int getTicksPerSwing(){
-        return inserter.getTicksPerSwing();
+        return getEffectiveTuning().ticksPerSwing();
     }
 
     public int getFuelCapacity(){
-        return IS_ENERGY ? inserter.getEnergyCapacity() : inserter.getFuelCapacity();
+        return IS_ENERGY ? getEffectiveTuning().energyCapacity() : getEffectiveTuning().fuelCapacity();
     }
 
     public int getFuelConsumptionPerAction() {
-        return IS_ENERGY ? inserter.getEnergyConsumption() : inserter.getFuelConsumption();
+        return IS_ENERGY ? getEffectiveTuning().energyConsumption() : getEffectiveTuning().fuelConsumption();
+    }
+
+    /** Débit effectif en items par seconde, améliorations comprises. */
+    public double getItemsPerSecond() {
+        InserterTuning tuning = getEffectiveTuning();
+
+        return 20.0D * tuning.handSize() / (2.0D * tuning.ticksPerSwing());
     }
 
     /** Nombre d'items de carburant que l'inserter cherche à conserver en réserve. */
@@ -293,31 +339,124 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
     /** Lâche le contenu réel au sol. Les filtres sont des items fantômes : ils ne tombent pas. */
     public void drops() {
-        SimpleContainer inventory = new SimpleContainer(itemStorage.getSlots());
+        List<ItemStack> dropped = new ArrayList<>();
 
         for (int slot = 0; slot < itemStorage.getSlots(); slot++) {
             if (!LAYOUT.isDroppable(slot)) continue;
 
-            inventory.setItem(slot, itemStorage.getStackInSlot(slot));
+            dropped.add(itemStorage.getStackInSlot(slot));
+        }
+
+        // Les modules posés tombent avec le reste : ce sont des items que le joueur a
+        // fabriqués, pas un réglage.
+        dropped.addAll(this.upgrades.allInstalled());
+
+        SimpleContainer inventory = new SimpleContainer(dropped.size());
+        for (int i = 0; i < dropped.size(); i++) {
+            inventory.setItem(i, dropped.get(i));
         }
 
         Containers.dropContents(this.level, this.worldPosition, inventory);
     }
 
-    public boolean isEmpty() {
-        for(int i = 0; i < this.itemStorage.getSlots(); i++) {
-            if (!this.itemStorage.getStackInSlot(i).isEmpty()) {
-                return false;
+    // Interface (Améliorations)
+
+    public InserterUpgrades getUpgrades() {
+        return this.upgrades;
+    }
+
+    /**
+     * Pose un module et rend celui qu'il remplace.
+     *
+     * <p>Un palier inférieur ou égal est refusé plutôt que posé : accepter un module moins
+     * bon détruirait silencieusement le meilleur déjà en place.
+     *
+     * @return le module remplacé, vide si l'axe était libre ; {@code null} si le module
+     *         n'apporte rien
+     */
+    @Nullable
+    public ItemStack installUpgrade(InserterUpgradeType type, @Nonnull ItemStack module) {
+        int level = type.levelOf(module);
+        if (level <= 0 || level <= this.upgrades.level(type)) return null;
+
+        ItemStack replaced = this.upgrades.installed(type);
+
+        this.upgrades = this.upgrades.with(type, module, level);
+        invalidateEffectiveTuning();
+
+        wakeUp();
+        syncToClients();
+
+        return replaced;
+    }
+
+    /** Force le recalcul des réglages effectifs au prochain accès. */
+    private void invalidateEffectiveTuning() {
+        this.effectiveBase = null;
+        this.effectiveTuning = null;
+    }
+
+    // Interface (Réglages transportables)
+
+    /** Photographie des réglages, pour un configurateur. */
+    public InserterSettings captureSettings() {
+        List<ItemStack> filters = new ArrayList<>(LAYOUT.filterCount());
+
+        for (int i = 0; i < LAYOUT.filterCount(); i++) {
+            filters.add(this.itemStorage.getStackInSlot(LAYOUT.filter(i)).copy());
+        }
+
+        return new InserterSettings(this.isWhitelist, this.tagFilterMask, this.redstoneCondition, filters);
+    }
+
+    /**
+     * Applique des réglages venus d'ailleurs.
+     *
+     * <p>Chaque partie n'est appliquée que si elle a un sens ici : les filtres d'un inserter
+     * filtrant vers un inserter qui ne l'est pas n'iraient nulle part, et une condition
+     * redstone sur un inserter insensible au redstone serait un réglage sans effet. Le
+     * reste passe quand même — copier un réglage entre deux modèles différents est un
+     * usage normal, pas une erreur.
+     *
+     * @return {@code true} si quelque chose a effectivement changé
+     */
+    public boolean applySettings(InserterSettings settings) {
+        boolean changed = false;
+
+        if (this.isWhitelist != settings.whitelist()) {
+            this.isWhitelist = settings.whitelist();
+            changed = true;
+        }
+
+        if (LAYOUT.hasFilters()) {
+            int mask = settings.tagFilterMask() & ((1 << LAYOUT.filterCount()) - 1);
+            if (this.tagFilterMask != mask) {
+                this.tagFilterMask = mask;
+                changed = true;
+            }
+
+            List<ItemStack> filters = settings.filters();
+            for (int i = 0; i < LAYOUT.filterCount(); i++) {
+                ItemStack filter = i < filters.size() ? filters.get(i) : ItemStack.EMPTY;
+
+                if (ItemStack.isSameItemSameTags(this.itemStorage.getStackInSlot(LAYOUT.filter(i)), filter)) continue;
+
+                this.itemStorage.setStackInSlot(LAYOUT.filter(i), filter.copy());
+                changed = true;
             }
         }
 
-        return true;
-    }
-
-    public void clearContent() {
-        for(int i = 0; i < this.itemStorage.getSlots(); i++) {
-            this.itemStorage.setStackInSlot(i, ItemStack.EMPTY);
+        if (isAffectedByRedstone() && !this.redstoneCondition.equals(settings.redstone())) {
+            setRedstoneCondition(settings.redstone());
+            changed = true;
         }
+
+        if (changed) {
+            wakeUp();
+            syncToClients();
+        }
+
+        return changed;
     }
 
     // Interface (Capabilities)
@@ -384,6 +523,10 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
             tag.put("inserterHeldStack", this.heldStack.save(new CompoundTag()));
         }
 
+        if (!this.upgrades.isEmpty()) {
+            tag.put("inserterUpgrades", this.upgrades.save(true));
+        }
+
         super.saveAdditional(tag);
     }
 
@@ -404,6 +547,9 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.isWhitelist = !tag.contains("inserterWhitelist") || tag.getBoolean("inserterWhitelist");
         this.tagFilterMask = tag.getInt("inserterTagFilters");
         this.redstoneCondition = readCondition(tag);
+
+        this.upgrades = InserterUpgrades.load(tag.getCompound("inserterUpgrades"));
+        invalidateEffectiveTuning();
 
         this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
         this.carryingFuel = tag.getBoolean("inserterCarryingFuel");
@@ -451,6 +597,12 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
             tag.put("inserterHeldStack", this.heldStack.save(new CompoundTag()));
         }
 
+        // Les paliers seulement : ils changent la durée d'un mouvement et la taille de la
+        // main, donc ce que le client affiche. Les modules posés ne servent qu'au serveur.
+        if (!this.upgrades.isEmpty()) {
+            tag.put("inserterUpgrades", this.upgrades.save(false));
+        }
+
         return tag;
     }
 
@@ -467,6 +619,9 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.heldStack = tag.contains("inserterHeldStack")
                 ? ItemStack.of(tag.getCompound("inserterHeldStack"))
                 : ItemStack.EMPTY;
+
+        this.upgrades = InserterUpgrades.load(tag.getCompound("inserterUpgrades"));
+        invalidateEffectiveTuning();
     }
 
     @Nullable

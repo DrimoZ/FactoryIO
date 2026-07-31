@@ -1,8 +1,9 @@
-// 1.20.1	2026-07-30T00:01:16.9853132	Item Models: factory_io
+// 1.20.1	2026-07-31T17:31:41.2334059	Item Models: factory_io
 05cb64ebc2a56ea846d9e101bbdee797b1e5cedc assets/factory_io/models/item/advanced_circuit.json
 a169d09669dabd9767608f3558f89e0200b42141 assets/factory_io/models/item/automation_science_pack.json
 a5e3d85efe8fc32e3b9c72a98f408dd97091afb7 assets/factory_io/models/item/burner_inserter.json
 23c71eca6730ea0f363c8c7b6dcc37ec8c551697 assets/factory_io/models/item/chemical_science_pack.json
+d41c1dd9d6180775aa3cf0a9b22adbd50c0b9a78 assets/factory_io/models/item/configurator.json
 b69f3d85ae7415949a71a5517ddf6d3f52b52951 assets/factory_io/models/item/copper_plate.json
 ec65b60e516d0244350d277fc15ffcb87205fd6f assets/factory_io/models/item/efficiency_module.json
 000c095c36619b8412e2a1ce8452c80a5271732b assets/factory_io/models/item/efficiency_module_2.json
@@ -39,5 +40,6 @@ b0332d1de607ea42be5241359ffaa7f445ecddf1 assets/factory_io/models/item/stone.jso
 6b103651d66032a094258872d8971558bd044df9 assets/factory_io/models/item/stone_brick.json
 a2a3820df838a9abe8e3b3e0630f40f7985adbeb assets/factory_io/models/item/uranium_235.json
 1c116d11defbc11b922213a96d8262d09e2060c3 assets/factory_io/models/item/uranium_238.json
+00e243e274bcf136177a4b001347799607ee9051 assets/factory_io/models/item/uranium_fuel_cell.json
 becff90b6cd7ea5cda7939c8a8c9983b96e62e42 assets/factory_io/models/item/used_up_uranium_fuel_cell.json
 df662125ccf3c1807de51d1ddf5a3a617950fddd assets/factory_io/models/item/utility_science_pack.json

@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.core.init;
 
 import com.drimoz.factoryio.core.generic.item.ColoredItem;
+import com.drimoz.factoryio.core.item.ConfiguratorItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.RegistryObject;
 
@@ -60,6 +61,9 @@ public class ModItems {
 
     public static final RegistryObject<Item> URANIUM_235 = register("uranium_235");
     public static final RegistryObject<Item> URANIUM_238 = register("uranium_238");
+
+    // Outil de configuration : copie et applique les réglages d'une machine.
+    public static final RegistryObject<Item> CONFIGURATOR = register("configurator", ConfiguratorItem::new);
 
     // Life cycle
 
