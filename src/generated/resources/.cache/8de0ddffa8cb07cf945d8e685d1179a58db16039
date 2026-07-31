@@ -1,10 +1,11 @@
-// 1.20.1	2026-07-31T17:31:41.2334059	Item Models: factory_io
+// 1.20.1	2026-07-31T18:25:53.0071839	Item Models: factory_io
 05cb64ebc2a56ea846d9e101bbdee797b1e5cedc assets/factory_io/models/item/advanced_circuit.json
 a169d09669dabd9767608f3558f89e0200b42141 assets/factory_io/models/item/automation_science_pack.json
 a5e3d85efe8fc32e3b9c72a98f408dd97091afb7 assets/factory_io/models/item/burner_inserter.json
 23c71eca6730ea0f363c8c7b6dcc37ec8c551697 assets/factory_io/models/item/chemical_science_pack.json
 d41c1dd9d6180775aa3cf0a9b22adbd50c0b9a78 assets/factory_io/models/item/configurator.json
 b69f3d85ae7415949a71a5517ddf6d3f52b52951 assets/factory_io/models/item/copper_plate.json
+9622e6681b1311db146b8e668fb8f95213ed5bab assets/factory_io/models/item/creative_energy_source.json
 ec65b60e516d0244350d277fc15ffcb87205fd6f assets/factory_io/models/item/efficiency_module.json
 000c095c36619b8412e2a1ce8452c80a5271732b assets/factory_io/models/item/efficiency_module_2.json
 08033a09d25e02ed589f371f01098f1a411b4950 assets/factory_io/models/item/efficiency_module_3.json

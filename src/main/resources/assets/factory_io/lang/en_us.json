@@ -86,5 +86,7 @@
   "message.factory_io.settings_unchanged": "Already configured this way",
   "message.factory_io.settings_empty": "This configurator is empty",
   "message.factory_io.upgrade_installed": "Upgrade installed",
-  "message.factory_io.upgrade_not_better": "Already equipped as well or better"
+  "message.factory_io.upgrade_not_better": "Already equipped as well or better",
+  "block.factory_io.creative_energy_source": "Creative Energy Source",
+  "tooltip.factory_io.creative_energy_source": "Feeds every adjacent machine, forever. Creative only."
 }

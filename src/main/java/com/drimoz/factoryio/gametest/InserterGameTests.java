@@ -3,6 +3,7 @@ package com.drimoz.factoryio.gametest;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
+import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
 import com.drimoz.factoryio.core.inserters.InserterSettings;
@@ -610,6 +611,33 @@ public class InserterGameTests {
                 "Le module ne fait pas partie de ce qui tombe au sol");
 
         helper.succeed();
+    }
+
+    // Tests (Source d'énergie)
+
+    /**
+     * Un inserter électrique doit tourner du seul fait qu'une source le touche.
+     *
+     * <p>Aucune énergie n'est injectée à la main, contrairement aux autres tests d'inserter
+     * électrique : c'est précisément ce que ce test vérifie. Les machines du mod
+     * <b>reçoivent</b> de l'énergie sans jamais en réclamer, si bien qu'une source qui se
+     * contenterait d'exposer sa capability ne les alimenterait jamais.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void creativeSourceFeedsAnInserter(GameTestHelper helper) {
+        setupChain(helper, "inserter");
+
+        helper.setBlock(INSERTER.above(), ModBlocks.CREATIVE_ENERGY_SOURCE.get());
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+
+        helper.succeedWhen(() -> {
+            helper.assertTrue(inserter(helper).getCurrentEnergy() > 0,
+                    "La source n'a pas alimenté l'inserter");
+
+            helper.assertTrue(countIn(container(helper, TARGET)) > 0,
+                    "L'inserter alimenté par la source n'a rien déplacé");
+        });
     }
 
     // Tests (Configurateur)

@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
+import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
 import net.minecraft.data.PackOutput;
@@ -16,6 +17,12 @@ public class ModItemModelGenerator extends ItemModelProvider {
     protected void registerModels() {
         InserterRegistry.getInstance().getInserters().forEach((inserter) ->
                 withExistingParent("item/" + inserter.getName(), modLoc("block/" + inserter.getName())));
+
+        // L'item d'un bloc reprend le modèle du bloc, il n'a pas de texture propre.
+        ModBlocks.ENTRIES.forEach(block -> {
+            String name = block.getId().getPath();
+            withExistingParent("item/" + name, modLoc("block/" + name));
+        });
 
         ModItems.ENTRIES.forEach((registryObject) -> {
             String itemName = registryObject.getId().getPath();

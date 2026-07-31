@@ -1,5 +1,6 @@
-// 1.20.1	2026-07-30T00:01:16.9833097	Loot Tables
+// 1.20.1	2026-07-31T18:25:53.005183	Loot Tables
 445c54e11f933ec9100dac33e74d4bb62152fbfd data/factory_io/loot_tables/blocks/burner_inserter.json
+3658d3eec098bf127193484e6dd0676a6d2eec0a data/factory_io/loot_tables/blocks/creative_energy_source.json
 272aa583bc3e497178177ea44c085b8ff56cf42c data/factory_io/loot_tables/blocks/fast_inserter.json
 d4cbde7faa4e82659716ce36151ffea07697c296 data/factory_io/loot_tables/blocks/filter_inserter.json
 ba4abc053886226a2dd40e35c7c0900606c75858 data/factory_io/loot_tables/blocks/inserter.json

@@ -86,5 +86,7 @@
   "message.factory_io.settings_unchanged": "Déjà réglé ainsi",
   "message.factory_io.settings_empty": "Ce configurateur est vide",
   "message.factory_io.upgrade_installed": "Amélioration installée",
-  "message.factory_io.upgrade_not_better": "Déjà équipé aussi bien ou mieux"
+  "message.factory_io.upgrade_not_better": "Déjà équipé aussi bien ou mieux",
+  "block.factory_io.creative_energy_source": "Source d’énergie créative",
+  "tooltip.factory_io.creative_energy_source": "Alimente sans fin toutes les machines adjacentes. Réservé au créatif."
 }

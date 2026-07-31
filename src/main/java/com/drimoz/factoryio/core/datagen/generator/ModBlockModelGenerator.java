@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
+import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
 import net.minecraft.core.Direction;
@@ -17,6 +18,9 @@ public class ModBlockModelGenerator extends BlockStateProvider {
 
     @Override
     protected void registerStatesAndModels() {
+        // Un cube ordinaire : la source n'a ni orientation ni état.
+        ModBlocks.ENTRIES.forEach(block -> simpleBlock(block.get()));
+
         InserterRegistry.getInstance().getInserters().forEach((inserter) -> {
             InserterBlock block = inserter.getBlock().get();
 

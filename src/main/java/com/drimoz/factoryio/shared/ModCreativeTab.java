@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.shared;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.init.ModRegistries;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
@@ -26,6 +27,7 @@ public class ModCreativeTab {
                         InserterRegistry.getInstance().getInserters()
                                 .forEach(inserter -> output.accept(inserter.getItem().get()));
 
+                        ModBlocks.ENTRIES.forEach(block -> output.accept(block.get()));
                         ModItems.ENTRIES.forEach(item -> output.accept(item.get()));
                     })
                     .build());

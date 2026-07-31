@@ -2,6 +2,7 @@ package com.drimoz.factoryio;
 
 import com.drimoz.factoryio.core.configs.CommonConfig;
 import com.drimoz.factoryio.core.datagen.ModDataGenerators;
+import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.init.ModNetworks;
 import com.drimoz.factoryio.core.init.ModRegistries;
@@ -45,6 +46,7 @@ public class FactoryIO
 
         // Déclenche l'initialisation statique des deux classes, donc leurs register().
         ModItems.init();
+        ModBlocks.init();
         ModCreativeTab.MOD_TAB.getId();
 
         // Le générateur du pack runtime est construit paresseusement, à l'ouverture du
