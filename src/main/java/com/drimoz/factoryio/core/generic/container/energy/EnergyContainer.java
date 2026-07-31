@@ -26,6 +26,27 @@ public class EnergyContainer extends EnergyStorage {
 
     protected void onEnergyChanged() {}
 
+    /**
+     * Réception d'énergie depuis un bloc voisin.
+     *
+     * <p>Surchargée pour la seule raison de déclencher {@link #onEnergyChanged()} :
+     * {@code EnergyStorage#receiveEnergy} incrémente le champ directement et n'offre aucun
+     * point d'accroche. Sans cette surcharge, la machine n'était prévenue que lorsqu'elle
+     * <i>consommait</i>, jamais lorsqu'on l'alimentait — de sorte que le réveil sur retour
+     * de courant (BUG-037) ne se déclenchait pas sur le cas qu'il visait, et que l'énergie
+     * reçue ne marquait pas le block entity comme modifié.
+     */
+    @Override
+    public int receiveEnergy(int maxReceive, boolean simulate) {
+        int received = super.receiveEnergy(maxReceive, simulate);
+
+        if (received > 0 && !simulate) {
+            this.onEnergyChanged();
+        }
+
+        return received;
+    }
+
     // Interface (Consommation interne)
 
     /**
@@ -50,11 +71,6 @@ public class EnergyContainer extends EnergyStorage {
         return consumed;
     }
 
-    /** @return {@code true} si la machine dispose d'au moins {@code amount} FE. */
-    public boolean hasEnergy(int amount) {
-        return this.energy >= amount;
-    }
-
     // Getters
 
     public int getCurrentEnergy() {
@@ -63,14 +79,6 @@ public class EnergyContainer extends EnergyStorage {
 
     public int getEnergyCapacity() {
         return this.getMaxEnergyStored();
-    }
-
-    public int getMaxReceive() {
-        return this.maxReceive;
-    }
-
-    public int getMaxExtract() {
-        return this.maxExtract;
     }
 
     // Setters
@@ -87,29 +95,19 @@ public class EnergyContainer extends EnergyStorage {
         this.onEnergyChanged();
     }
 
-    public EnergyStorage overrideEnergyCapacity(int capacity) {
+    public void overrideEnergyCapacity(int capacity) {
+        if (this.capacity == capacity) return;
+
         this.capacity = capacity;
         if (this.energy > capacity) {
             this.energy = capacity;
         }
 
         this.onEnergyChanged();
-        return this;
     }
 
-    public EnergyStorage overrideMaxTransfer(int maxTransfer) {
-        this.overrideMaxReceive(maxTransfer);
-        this.overrideMaxExtract(maxTransfer);
-        return this;
-    }
-
-    public EnergyStorage overrideMaxReceive(int maxReceive) {
-        this.maxReceive = maxReceive;
-        return this;
-    }
-
-    public EnergyStorage overrideMaxExtract(int maxExtract) {
-        this.maxExtract = maxExtract;
-        return this;
+    public void overrideMaxTransfer(int maxTransfer) {
+        this.maxReceive = maxTransfer;
+        this.maxExtract = maxTransfer;
     }
 }

@@ -2,6 +2,8 @@
   "replace": false,
   "values": [
     "minecraft:coal",
-    "minecraft:charcoal"
+    "minecraft:charcoal",
+    "minecraft:blaze_rod",
+    "minecraft:dried_kelp_block"
   ]
 }

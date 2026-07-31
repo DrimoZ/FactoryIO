@@ -123,6 +123,11 @@ public class InserterBlock extends WaterloggedEntityBlock {
 
         if (isRotationTool(pPlayer, pHand)) {
             pLevel.setBlock(pPos, pState.rotate(pLevel, pPos, Rotation.CLOCKWISE_90), Block.UPDATE_ALL);
+
+            // setBlock prévient les voisins, pas la position elle-même : sans cet appel
+            // l'inserter garderait les inventaires mémorisés d'avant la rotation, et
+            // continuerait de travailler du mauvais côté.
+            blockEntity.onNeighbourChanged();
             return InteractionResult.CONSUME;
         }
 

@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.inserters;
 
+import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.container.BaseMenu;
 import com.drimoz.factoryio.core.generic.container.slots.GhostSlot;
 import com.drimoz.factoryio.core.generic.container.slots.InserterBufferSlot;
@@ -91,14 +92,16 @@ public class InserterContainer extends BaseMenu {
         inserter = inserterData;
 
         // getBlockEntity renvoie null si le bloc a disparu entre l'ouverture demandée et
-        // la construction du menu — fréquent côté client, où le menu naît d'un paquet
-        // réseau (cf. BUG-020).
+        // la construction du menu (cf. BUG-020). Le cas est rare — le serveur n'ouvre le
+        // menu que depuis un block entity existant, et le client a forcément le chunk —
+        // mais il n'est pas impossible, et une exception levée ici remonterait dans le
+        // pipeline réseau du client : elle le déconnecterait au lieu de fermer un écran.
+        //
+        // Le menu se construit donc quand même, avec le seul inventaire du joueur, et
+        // stillValid le fait fermer au tick suivant.
         this.BLOCK_ENTITY = inserterData.getBlockEntityType().get().getBlockEntity(pLevel, pPos);
-        if (this.BLOCK_ENTITY == null) {
-            throw new IllegalStateException("Aucun inserter en " + pPos + " pour ouvrir le menu");
-        }
 
-        this.LAYOUT = BLOCK_ENTITY.LAYOUT;
+        this.LAYOUT = BLOCK_ENTITY != null ? BLOCK_ENTITY.LAYOUT : InserterSlotLayout.of(inserterData);
         this.TE_INVENTORY_SLOT_COUNT = LAYOUT.size();
 
         // checkContainerSize validait l'inventaire du JOUEUR contre le nombre de slots de
@@ -106,6 +109,11 @@ public class InserterContainer extends BaseMenu {
 
         addPlayerInventory(pPlayerInv);
         addPlayerHotbar(pPlayerInv);
+
+        if (this.BLOCK_ENTITY == null) {
+            FactoryIO.LOGGER.warn("Aucun inserter en {} : le menu s'ouvre vide et se referme", pPos);
+            return;
+        }
 
         this.BLOCK_ENTITY.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(handler -> {
             this.addSlot(new InserterBufferSlot(handler, InserterBlockEntity.BUFFER_SLOT, 124, 45));
@@ -126,12 +134,19 @@ public class InserterContainer extends BaseMenu {
 
     // Interface BlockEntity
 
+    @Nullable
     public InserterBlockEntity getBlockEntity() {
         return BLOCK_ENTITY;
     }
 
+    /** @return {@code true} si le menu est adossé à un inserter bien réel */
+    public boolean isBacked() {
+        return BLOCK_ENTITY != null;
+    }
+
+    @Override
     public boolean stillValid(Player player) {
-        return this.BLOCK_ENTITY.stillValid(player);
+        return BLOCK_ENTITY != null && BLOCK_ENTITY.stillValid(player);
     }
 
     /**
@@ -147,39 +162,60 @@ public class InserterContainer extends BaseMenu {
         return (syncedPower[0] & 0xFFFF) | ((syncedPower[1] & 0xFFFF) << 16);
     }
 
+    // Interface (Traits, lus sur la définition)
+    //
+    // L'écran interrogeait le block entity pour des valeurs qui n'en dépendent pas : le
+    // mode d'alimentation, la présence de filtres et la sensibilité au redstone sont des
+    // traits du *type* d'inserter. Les lire ici évite d'avoir à disposer d'un block entity
+    // pour dessiner, et rend l'écran insensible au cas où le bloc vient de disparaître.
+
+    public boolean usesEnergy() {
+        return inserter.useEnergy();
+    }
+
+    public boolean isFilterable() {
+        return inserter.isFilterable();
+    }
+
+    public boolean isAffectedByRedstone() {
+        return inserter.isAffectedByRedstone();
+    }
+
     /** Capacité maximale, connue des deux côtés : elle vient de la définition. */
     public int getPowerCapacity() {
-        return BLOCK_ENTITY.IS_ENERGY ? inserter.getEnergyCapacity() : inserter.getFuelCapacity();
+        return usesEnergy() ? inserter.getEnergyCapacity() : inserter.getFuelCapacity();
     }
 
     public int getEnergyScaled(int pixels) {
-        if (!this.BLOCK_ENTITY.IS_ENERGY) return -1;
+        if (!usesEnergy()) return -1;
 
         return scaled(pixels);
     }
 
     public int getFuelScaled(int pixels) {
-        if (this.BLOCK_ENTITY.IS_ENERGY) return -1;
+        if (usesEnergy()) return -1;
 
         return scaled(pixels);
     }
 
     public boolean hasEnergy() {
-        return this.BLOCK_ENTITY.IS_ENERGY && getPowerStored() > 0;
+        return usesEnergy() && getPowerStored() > 0;
     }
 
     public boolean hasFuel() {
-        return !this.BLOCK_ENTITY.IS_ENERGY && getPowerStored() > 0;
+        return !usesEnergy() && getPowerStored() > 0;
     }
 
     // Inner work (Synchronisation)
 
     private boolean isServerSide() {
-        return BLOCK_ENTITY.getLevel() != null && !BLOCK_ENTITY.getLevel().isClientSide;
+        return BLOCK_ENTITY != null
+                && BLOCK_ENTITY.getLevel() != null
+                && !BLOCK_ENTITY.getLevel().isClientSide;
     }
 
     private int currentPowerOnServer() {
-        return BLOCK_ENTITY.IS_ENERGY ? BLOCK_ENTITY.getCurrentEnergy() : BLOCK_ENTITY.getCurrentFuelValue();
+        return usesEnergy() ? BLOCK_ENTITY.getCurrentEnergy() : BLOCK_ENTITY.getCurrentFuelValue();
     }
 
     private int scaled(int pixels) {

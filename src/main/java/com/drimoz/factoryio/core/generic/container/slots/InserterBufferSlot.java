@@ -5,11 +5,16 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
 
+/**
+ * La « main » de l'inserter, affichée mais intouchable.
+ *
+ * <p>Ni dépôt ni retrait : son contenu appartient au mouvement en cours. Le laisser
+ * manipuler ferait disparaître un item que la machine à états croit tenir.
+ */
 public class InserterBufferSlot extends SlotItemHandler {
-    IItemHandler ih;
+
     public InserterBufferSlot(IItemHandler itemHandler, int index, int x, int y) {
         super(itemHandler, index, x, y);
-        this.ih = itemHandler;
     }
 
     @Override
@@ -25,10 +30,5 @@ public class InserterBufferSlot extends SlotItemHandler {
     @Override
     public boolean mayPickup(Player playerIn) {
         return false;
-    }
-
-    public IItemHandler getIh() {
-        return ih;
-
     }
 }

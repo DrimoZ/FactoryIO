@@ -481,6 +481,68 @@ public class InserterGameTests {
         return definition;
     }
 
+    // Tests (Correctifs de l'audit)
+
+    /**
+     * Tourner un inserter doit changer ce qu'il vise.
+     *
+     * <p>Les inventaires voisins sont mémorisés pour ne pas les rechercher à chaque action
+     * (DT-07). {@code setBlock} notifie les voisins d'une position, jamais la position
+     * elle-même, et le block entity survit à un simple changement d'état : rien
+     * n'invalidait donc le cache, et l'inserter continuait à travailler du côté d'avant la
+     * rotation.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 800)
+    public static void rotatingRetargetsTheInserter(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+
+        // Un premier cycle établit le cache dans son orientation d'origine.
+        helper.startSequence()
+                .thenExecuteAfter(60, () -> helper.assertTrue(
+                        countIn(container(helper, TARGET)) > 0,
+                        "L'inserter n'a rien déposé avant la rotation"))
+                .thenExecute(() -> {
+                    // Demi-tour : la source et la cible échangent leurs rôles.
+                    helper.setBlock(INSERTER, helper.getBlockState(INSERTER)
+                            .setValue(InserterBlock.FACING, Direction.WEST));
+                    inserter(helper).onNeighbourChanged();
+
+                    container(helper, TARGET).clearContent();
+                    container(helper, SOURCE).clearContent();
+                    container(helper, TARGET).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+                })
+                .thenExecuteAfter(200, () -> helper.assertTrue(
+                        countIn(container(helper, SOURCE)) > 0,
+                        "Après rotation, l'inserter travaille toujours dans l'ancien sens"))
+                .thenSucceed();
+    }
+
+    /**
+     * Le carburant ne doit pas pouvoir être aspiré de l'extérieur.
+     *
+     * <p>Un hopper posé sous un burner inserter le vidait en boucle, sans que rien ne
+     * l'explique au joueur. Seuls les résidus — le seau vide d'un seau de lave — ressortent,
+     * comme sur un four vanilla.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void fuelCannotBeSiphoned(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        IItemHandler handler = inserterHandler(helper);
+        int fuelSlot = inserter(helper).LAYOUT.fuel();
+
+        ItemStack stolen = handler.extractItem(fuelSlot, 64, false);
+
+        helper.assertTrue(stolen.isEmpty(), "Le carburant a pu être extrait de l'extérieur");
+        helper.assertTrue(handler.getStackInSlot(fuelSlot).getCount() > 0, "Le slot de carburant a été vidé");
+
+        helper.succeed();
+    }
+
     private static void setupChain(GameTestHelper helper, String inserterName) {
         helper.setBlock(SOURCE, Blocks.CHEST);
         helper.setBlock(TARGET, Blocks.CHEST);

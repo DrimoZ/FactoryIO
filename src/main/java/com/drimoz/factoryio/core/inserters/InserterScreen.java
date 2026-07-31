@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.core.inserters;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.generic.container.slots.GhostSlot;
 import com.drimoz.factoryio.shared.ModUtils;
 import com.drimoz.factoryio.shared.gui.GuiButton;
 import com.drimoz.factoryio.core.init.ModNetworks;
@@ -61,10 +62,10 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
         int left = this.getGuiLeft();
         int top = this.getGuiTop();
 
-        if (getMenu().getBlockEntity().IS_ENERGY) {
+        if (getMenu().usesEnergy()) {
             energyBar = new GuiEnergyBar(left, top, 153, 11, 12, 51, 179, 54);
         }
-        if (getMenu().getBlockEntity().IS_FILTER) {
+        if (getMenu().isFilterable()) {
             whitelistButton = new GuiButton(left, top, 7, 30, 16, 16, 194, 0);
         }
 
@@ -78,7 +79,7 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
      * réglage sans effet serait pire que de ne rien proposer.
      */
     private void addRedstoneControls(int left, int top) {
-        if (!getMenu().getBlockEntity().isAffectedByRedstone()) return;
+        if (!getMenu().isAffectedByRedstone() || !getMenu().isBacked()) return;
 
         this.redstoneModeButton = addRenderableWidget(Button
                 .builder(Component.empty(), button -> cycleRedstoneMode())
@@ -95,7 +96,7 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
 
     /** Aligne les libellés des boutons sur l'état réel de l'inserter. */
     private void refreshRedstoneControls() {
-        if (this.redstoneModeButton == null) return;
+        if (this.redstoneModeButton == null || !getMenu().isBacked()) return;
 
         InserterRedstoneCondition condition = getMenu().getBlockEntity().getRedstoneCondition();
 
@@ -126,6 +127,8 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
      * le serveur pourrait refuser.
      */
     private void send(C2SInserterSetting.Setting setting, int value) {
+        if (!getMenu().isBacked()) return;
+
         ModNetworks.sendToServer(new C2SInserterSetting(
                 getMenu().getBlockEntity().getBlockPos(), setting, value));
     }
@@ -134,6 +137,13 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        // Le bloc a disparu sous l'écran : rien à dessiner, et le menu se ferme de
+        // lui-même au prochain stillValid (cf. BUG-020).
+        if (!getMenu().isBacked()) {
+            this.onClose();
+            return;
+        }
+
         this.renderBackground(graphics);
         this.refreshRedstoneControls();
         super.render(graphics, mouseX, mouseY, partialTicks);
@@ -174,16 +184,16 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
         // RenderSystem.setShader / setShaderTexture.
         graphics.blit(texture, relX, relY, 0, 0, this.getXSize(), this.getYSize());
 
-        if (getMenu().getBlockEntity().IS_ENERGY && getMenu().hasEnergy()) {
+        if (getMenu().usesEnergy() && getMenu().hasEnergy()) {
             energyBar.render(graphics, texture, getMenu().getEnergyScaled(51));
         }
 
-        if (!getMenu().getBlockEntity().IS_ENERGY && getMenu().hasFuel()) {
+        if (!getMenu().usesEnergy() && getMenu().hasFuel()) {
             int k = getMenu().getFuelScaled(13);
             graphics.blit(texture, relX + 80, relY + 32 + 12 - k, 176, 12 - k, 14, k + 1);
         }
 
-        if (getMenu().getBlockEntity().IS_FILTER) {
+        if (getMenu().isFilterable()) {
             whitelistButton.render(graphics, texture, getMenu().getBlockEntity().isWhitelist());
         }
     }
@@ -192,7 +202,9 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (getMenu().getBlockEntity().IS_FILTER) {
+        // Bouton gauche seulement : la bascule répondait à n'importe quel bouton, molette
+        // comprise.
+        if (button == GhostSlot.LEFT_CLICK && getMenu().isFilterable() && getMenu().isBacked()) {
             double relativeX = mouseX - this.getGuiLeft();
             double relativeY = mouseY - this.getGuiTop();
 
@@ -242,15 +254,17 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
     // Inner work
 
     private ResourceLocation backgroundTexture() {
-        if (!getMenu().getBlockEntity().IS_ENERGY) return GUI_BURNER_INSERTER;
-        if (getMenu().getBlockEntity().IS_FILTER) return GUI_FILTER_INSERTER;
+        if (!getMenu().usesEnergy()) return GUI_BURNER_INSERTER;
+        if (getMenu().isFilterable()) return GUI_FILTER_INSERTER;
         return GUI_INSERTER;
     }
 
     private void renderCustomTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
         InserterBlockEntity blockEntity = getMenu().getBlockEntity();
+        if (blockEntity == null) return;
 
-        if (blockEntity.IS_ENERGY) {
+
+        if (getMenu().usesEnergy()) {
             // Valeurs lues sur le menu : côté client le block entity n'est plus synchronisé
             // en continu, c'est le ContainerData qui fait foi (cf. BUG-004).
             energyBar.renderTooltip(graphics, this.font, mouseX, mouseY,
@@ -263,7 +277,7 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
                     mouseX, mouseY);
         }
 
-        if (blockEntity.IS_FILTER) {
+        if (getMenu().isFilterable()) {
             boolean whitelist = blockEntity.isWhitelist();
 
             List<Component> lines = new ArrayList<>();

@@ -28,6 +28,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
@@ -135,6 +136,20 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     private LazyOptional<IItemHandler> cachedSource;
     private LazyOptional<IItemHandler> cachedTarget;
 
+    /**
+     * Positions auxquelles les inventaires mémorisés ont été résolus.
+     *
+     * <p>Le cache est indexé par position et non par rôle seul. Sans cela, tourner un
+     * inserter à la clé conservait les deux inventaires d'avant la rotation : le bloc
+     * n'est pas notifié de son propre changement d'état — {@code setBlock} prévient les
+     * voisins, pas la position elle-même — et le block entity survit puisque le bloc, lui,
+     * ne change pas. L'inserter continuait donc d'aspirer et de déposer du mauvais côté
+     * jusqu'au prochain rechargement de chunk. Un datapack qui change {@code grabDistance}
+     * à chaud produisait le même décalage.
+     */
+    private BlockPos cachedSourcePos;
+    private BlockPos cachedTargetPos;
+
     /** Dernier slot ayant abouti, pour repartir de là plutôt que du slot 0. */
     private int lastSourceSlot = 0;
     private int lastTargetSlot = 0;
@@ -214,10 +229,19 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
                 return super.insertItem(slot, stack, simulate);
             }
 
+            /**
+             * Depuis l'extérieur, seuls les <b>résidus</b> ressortent du slot de carburant.
+             *
+             * <p>C'est la règle du four vanilla : un hopper récupère le seau vide, pas le
+             * charbon. Autoriser l'extraction du carburant lui-même transformait tout
+             * hopper placé sous un burner inserter en siphon, qui le laissait à sec en
+             * boucle sans que rien ne l'explique au joueur.
+             */
             @NotNull
             @Override
             public ItemStack extractItem(int slot, int amount, boolean simulate) {
                 if (slot != LAYOUT.fuel()) return ItemStack.EMPTY;
+                if (ForgeHooks.getBurnTime(getStackInSlot(slot), null) > 0) return ItemStack.EMPTY;
 
                 return super.extractItem(slot, amount, simulate);
             }
@@ -311,6 +335,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.lazyItem = LazyOptional.of(() -> itemStorage);
         if(IS_ENERGY) {
             this.lazyEnergy = LazyOptional.of(() -> energyStorage);
+            syncEnergyLimitsFromDefinition();
         }
     }
 
@@ -348,6 +373,13 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         tag.putBoolean("inserterCarryingFuel", this.carryingFuel);
         tag.putLong("inserterSwingEnd", this.swingEndTick);
 
+        // Le buffer suffit à retrouver un item en cours de livraison, mais pas un trajet
+        // de ravitaillement : le carburant a déjà rejoint son slot, le buffer est vide, et
+        // l'item affiché disparaissait au rechargement en plein mouvement.
+        if (!this.heldStack.isEmpty()) {
+            tag.put("inserterHeldStack", this.heldStack.save(new CompoundTag()));
+        }
+
         super.saveAdditional(tag);
     }
 
@@ -372,7 +404,12 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
         this.carryingFuel = tag.getBoolean("inserterCarryingFuel");
         this.swingEndTick = tag.getLong("inserterSwingEnd");
-        this.heldStack = this.itemStorage.getStackInSlot(InserterSlotLayout.BUFFER).copy();
+
+        // Le buffer reste la solution de repli pour un monde sauvegardé avant que la main
+        // ne soit persistée pour elle-même.
+        this.heldStack = tag.contains("inserterHeldStack")
+                ? ItemStack.of(tag.getCompound("inserterHeldStack"))
+                : this.itemStorage.getStackInSlot(InserterSlotLayout.BUFFER).copy();
 
         // Un monde sauvegardé avant FIO-060 n'a pas d'état : « inserterState » vaut alors 0,
         // soit WAITING, ce qui est le bon défaut. Mais son buffer peut contenir un item —
@@ -450,12 +487,13 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     }
 
     public boolean stillValid(Player playerEntity) {
-        if (this.level.getBlockEntity(this.worldPosition) != this) {
-            return false;
-        } else {
-            return !(playerEntity.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) > 64.0);
-        }
+        if (this.level == null || this.level.getBlockEntity(this.worldPosition) != this) return false;
+
+        return playerEntity.distanceToSqr(Vec3.atCenterOf(this.worldPosition)) <= MAX_INTERACTION_DISTANCE_SQR;
     }
+
+    /** Portée d'interaction maximale, au carré. Aligné sur le contrôle des paquets C→S. */
+    public static final double MAX_INTERACTION_DISTANCE_SQR = 64.0D;
 
     // Interface (Ticking)
 
@@ -779,10 +817,19 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.energyStorage.overrideCurrentEnergy(energy);
     }
 
-    public void overrideEnergyCapacity(int energy) {
+    /**
+     * Aligne la réserve sur la définition courante.
+     *
+     * <p>Un datapack peut changer capacité et débit à chaud (FIO-037), mais le
+     * {@code EnergyContainer} d'un inserter déjà posé a été construit avec les anciennes
+     * valeurs. Le menu, lui, affichait déjà la nouvelle capacité : la jauge se retrouvait
+     * graduée sur une capacité que la machine n'avait pas.
+     */
+    private void syncEnergyLimitsFromDefinition() {
         if (!IS_ENERGY) return;
 
-        this.energyStorage.overrideEnergyCapacity(energy);
+        this.energyStorage.overrideEnergyCapacity(inserter.getEnergyCapacity());
+        this.energyStorage.overrideMaxTransfer(inserter.getEnergyTransferRate());
     }
 
     /**
@@ -1074,12 +1121,18 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      */
     @Nullable
     private IItemHandler neighbourHandler(boolean source, Direction offset, int pDistance, Direction side) {
-        LazyOptional<IItemHandler> cached = source ? cachedSource : cachedTarget;
-        if (cached != null && cached.isPresent()) return cached.orElse(null);
-
         if (this.level == null) return null;
 
-        BlockEntity neighbour = this.level.getBlockEntity(this.worldPosition.relative(offset, pDistance));
+        BlockPos pos = this.worldPosition.relative(offset, pDistance);
+
+        LazyOptional<IItemHandler> cached = source ? cachedSource : cachedTarget;
+        BlockPos cachedPos = source ? cachedSourcePos : cachedTargetPos;
+
+        // Un cache résolu ailleurs ne vaut rien : l'inserter a tourné, ou sa portée a
+        // changé. La position fait donc partie de la clé.
+        if (cached != null && cached.isPresent() && pos.equals(cachedPos)) return cached.orElse(null);
+
+        BlockEntity neighbour = this.level.getBlockEntity(pos);
         if (neighbour == null) return null;
 
         LazyOptional<IItemHandler> capability = neighbour.getCapability(ForgeCapabilities.ITEM_HANDLER, side);
@@ -1087,9 +1140,11 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
         if (source) {
             cachedSource = capability;
+            cachedSourcePos = pos;
             capability.addListener(ignored -> cachedSource = null);
         } else {
             cachedTarget = capability;
+            cachedTargetPos = pos;
             capability.addListener(ignored -> cachedTarget = null);
         }
 
@@ -1100,6 +1155,8 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     public void onNeighbourChanged() {
         this.cachedSource = null;
         this.cachedTarget = null;
+        this.cachedSourcePos = null;
+        this.cachedTargetPos = null;
         wakeUp();
     }
 
@@ -1317,6 +1374,10 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
     @Override
     public AbstractContainerMenu createMenu(int pContainerId, Inventory pPlayerInventory, Player pPlayer) {
+        // À l'ouverture, et non à chaque tick : c'est le seul moment où l'écart de
+        // capacité laissé par un /reload devient visible.
+        syncEnergyLimitsFromDefinition();
+
         return new InserterContainer(pContainerId, inserter, pPlayerInventory, level, getBlockPos());
     }
 }

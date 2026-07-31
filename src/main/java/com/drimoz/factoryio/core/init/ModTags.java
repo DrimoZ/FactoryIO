@@ -32,10 +32,6 @@ public class ModTags {
         private static TagKey<Item> forgeTag(String name) {
             return ItemTags.create(new ResourceLocation("forge", name));
         }
-
-        private static TagKey<Item> minecraftTag(String name) {
-            return ItemTags.create(new ResourceLocation("minecraft", name));
-        }
     }
 
     public static class Blocks {

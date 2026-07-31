@@ -105,6 +105,17 @@ public final class InserterDefaults {
 
     // Inner work
 
+    /**
+     * Réserve de combustion du burner, en ticks.
+     *
+     * <p>Dimensionnée pour que <b>tout</b> carburant du tag {@code inserter_fuel} tienne
+     * entièrement dans la réserve : le plus riche, le bloc d'algues séchées, vaut 4 000.
+     * Un carburant plus riche que la réserve n'est pas refusé mais écrêté (BUG-041) —
+     * autrement dit le joueur en perd la différence sans qu'on le lui dise. La seule
+     * manière honnête de s'en prémunir est que le cas ne se présente pas.
+     */
+    private static final int BURNER_FUEL_CAPACITY = 4000;
+
     private static Inserter burner(
             String name, int ticksPerSwing, int handSize, int grabDistance, boolean filterable) {
 
@@ -114,7 +125,7 @@ public final class InserterDefaults {
                 id(name), true,
                 grabDistance, ticksPerSwing, handSize,
                 filterable,
-                /* fuelCapacity */ 3200, fuelPerSwing);
+                BURNER_FUEL_CAPACITY, fuelPerSwing);
     }
 
     private static Inserter electric(

@@ -53,6 +53,9 @@ public class ModItems {
     public static final RegistryObject<Item> SOLID_FUEL = register("solid_fuel");
     public static final RegistryObject<Item> STONE = register("stone");
     public static final RegistryObject<Item> STONE_BRICK = register("stone_brick");
+    // La cellule neuve manquait alors que sa texture et sa version usée existaient
+    // toutes deux (cf. BUG-033).
+    public static final RegistryObject<Item> URANIUM_FUEL_CELL = register("uranium_fuel_cell");
     public static final RegistryObject<Item> USED_UP_URANIUM_FUEL_CELL = register("used_up_uranium_fuel_cell");
 
     public static final RegistryObject<Item> URANIUM_235 = register("uranium_235");
