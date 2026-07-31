@@ -248,6 +248,11 @@ Sans cette phase, le mod reste une boîte à outils sans jeu.
 | Recettes de tous les inserters | 1 sur 7 aujourd'hui |
 | Générateur d'énergie | le mod consomme du FE sans en produire → dépendance dure à un mod tiers |
 
+> **État au 31/07/2026** : une source d'énergie **créative** existe désormais
+> (`creative_energy_source`, sans recette, cf. FIO-124). Elle permet de tester et de jouer
+> en créatif sans mod tiers, et **ne préjuge pas** de la décision ci-dessous : c'est
+> précisément pour ne pas la trancher par accident qu'elle n'a pas de recette.
+
 **Décision de périmètre à prendre ici** : Factory'I/O produit-il sa propre
 énergie, ou se repose-t-il sur Mekanism/Thermal ? La deuxième option réduit
 fortement le périmètre mais crée une dépendance. Recommandation : fournir un

@@ -133,8 +133,8 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | FIO-121 | P1 | L | Four (pierre / électrique) : minerai → plaque |
 | FIO-122 | P1 | XL | Assembleur T1-T3 : recettes multi-entrées, sélection de recette dans le GUI |
 | FIO-123 | P1 | L | Foreuse (burner / électrique) |
-| FIO-124 | P1 | M | Générateur d'énergie minimal (vapeur) pour être jouable en standalone |
-| FIO-125 | P1 | M | Recettes des 7 inserters (1 seule existe aujourd'hui) |
+| 🟡 FIO-124 | P1 | M | Générateur d'énergie minimal (vapeur) pour être jouable en standalone. **Partiellement adressé** : une source d'énergie *créative* existe (`creative_energy_source`, sans recette) et lève la dépendance à un mod tiers pour tester et jouer en créatif. Elle ne tranche pas la question du générateur de survie, qui reste ouverte. |
+| ~~FIO-125~~ | ✅ | M | Recettes des 7 inserters. Chaîne de progression : chaque modèle se construit à partir du précédent, le comparateur porte le filtrage et la redstone concentrée paie la vitesse. Vanilla et tags `forge:` uniquement — les plaques et circuits du mod restent à FIO-126, qui décidera de la chaîne complète. |
 | FIO-126 | P1 | M | Chaîne complète des circuits (plaques → électronique → avancé → processeur) |
 | FIO-127 | P2 | L | Effet réel des 9 modules (vitesse / conso / productivité) |
 | FIO-128 | P2 | L | Arbre de recherche + usage des 7 science packs (ou suppression) |

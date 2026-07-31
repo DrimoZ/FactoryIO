@@ -10,7 +10,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > (`Loaded 7 inserters`, aucune erreur fatale).
 >
 > Le comportement est désormais largement vérifié. **Le mod est validé en jeu** par le
-> mainteneur (FIO-054, 30/07/2026), et **21 GameTests** couvrent les invariants de monde —
+> mainteneur (FIO-054, 30/07/2026), et **22 GameTests** couvrent les invariants de monde —
 > conservation, ravitaillement, redstone, persistance, synchro de l'item en main, blocage
 > sur cible pleine, filtres par tag, rotation, améliorations, configurateur — doublés d'une
 > centaine de cas JUnit sur le calcul pur.
@@ -35,9 +35,9 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Config Forge (`ForgeConfigSpec`) | 🟡 | lue en amont via `EarlyConfig` ; **prend effet au lancement suivant** (contrainte Forge, cf. BUG-001) |
 | Réseau (`SimpleChannel`) | ✅ | 2 paquets : réglages d'inserter (C→S, filtrage et redstone) et barème à la connexion / `/reload` (S→C) |
 | Pack de ressources/data généré au runtime | ✅ | en mémoire, refait à chaque rechargement, limité aux inserters utilisateur (FIO-039) |
-| Data generation Gradle (`runData`) | ✅ | 82 fichiers générés et versionnés |
+| Data generation Gradle (`runData`) | ✅ | 93 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 21 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
+| Tests (GameTest) | ✅ | 22 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
 | Tests (JUnit) | ✅ | ~100 cas de calcul pur, `./gradlew test`, exécutés par `build` |
 | Benchmark de charge | ✅ | consigné ; **les deux budgets tenus** depuis l'allègement du préambule ([`10`](10-BENCHMARKS.md), FIO-073) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
@@ -69,11 +69,24 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Animation du bras | 🔴 | abandonnée : le bone `inserter` porte tout l'assemblage, socle compris (BUG-016, FIO-066) |
 | Rendu de l'item transporté | ✅ | arc source → cible pendant le mouvement, item immobile en bout de course si la cible est pleine (FIO-067, FIO-060) ; validé en jeu (FIO-054) |
 | Boîte de collision | ✅ | socle + palier calqués sur le modèle (BUG-017) |
-| Recettes | 🟡 | **1 seule** (`burner_inserter`) ; les 6 autres sont créatif-only |
+| Recettes | ✅ | **les 7**, en chaîne : burner → inserter → {long handed, fast, filter} → stack → stack filter (FIO-125) |
 | Copier / coller de réglages | ✅ | item `configurator`, ouvert par le tag `factory_io:configurators` |
 | Améliorations posables | ✅ | vitesse / capacité / efficacité, 3 paliers, tags `factory_io:upgrades/<axe>/<palier>` ; rendues quand le bloc tombe |
 | Rotation et cible visée | ✅ | tourner un inserter change enfin ce qu'il vise (BUG-042) |
 | Loot tables | ✅ | générées par `runData` et versionnées |
+
+## 2 bis. Énergie
+
+| Élément | État | Commentaire |
+|---|---|---|
+| Réception de FE par les inserters | ✅ | toutes faces, `side == null` compris |
+| Source d'énergie créative | ✅ | `creative_energy_source` : pousse vers ses 6 faces, **sans recette**, créatif seulement (FIO-124) |
+| Générateur jouable en survie | ⬜ | **décision de périmètre non tranchée** : le mod produit-il son énergie ou dépend-il de Mekanism / Thermal ? Voir [`05`](05-ROADMAP.md) §Phase 4 |
+
+La source créative lève la dépendance à un mod tiers **pour tester et pour jouer en
+créatif**. Elle ne tranche pas la question du générateur : lui donner une recette
+supprimerait toute progression énergétique, et c'est précisément le choix que la Phase 4
+doit faire en connaissance de cause.
 
 ## 3. Convoyeurs (« transport belts »)
 
@@ -116,7 +129,7 @@ Les trois textures orphelines de BUG-033 sont traitées : les deux provisoires s
 | Modèles d'item | ✅ générés et versionnés |
 | Noms traduits | ✅ `en_us` et `fr_fr` |
 | Recettes | ⬜ aucune |
-| Usage en jeu | 🟡 les 9 modules et le configurateur servent ; le reste, non |
+| Usage en jeu | 🟡 les 9 modules et le configurateur servent ; les plaques, circuits et science packs, non |
 | Tags (`forge:plates/*`, `factory_io:upgrades/*`, `factory_io:configurators`) | ✅ générés et versionnés |
 
 `stone` et `stone_brick` **dupliquent** des items vanilla — à supprimer ou à

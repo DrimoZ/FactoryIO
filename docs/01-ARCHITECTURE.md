@@ -25,15 +25,16 @@ com.drimoz.factoryio
 │   │   ├── block_entity/           ← BaseBlockEntity (+MenuBlockEntity)
 │   │   ├── container/              ← BaseMenu, slots, EnergyContainer
 │   │   └── item/                   ← ModItem / ModBlockItem / ColoredItem
-│   ├── init/                       ← DeferredRegister, tags, réseau
+│   ├── init/                       ← DeferredRegister, tags, réseau, ModBlocks
 │   ├── inserters/                  ← la feature du mod
 │   ├── item/                       ← ConfiguratorItem
 │   ├── model/                      ← Inserter, InserterTuning, InserterCodec, barème
 │   ├── network/packet/             ← 2 paquets
+│   ├── power/                      ← source d'énergie créative
 │   ├── registry/                   ← registre, chargeur, listener de datapack
 │   ├── resourcepack/               ← pack virtuel généré en mémoire
 │   └── upgrade/                    ← axes d'amélioration et leur effet
-├── gametest/                       ← 21 GameTests + 2 benchmarks
+├── gametest/                       ← 22 GameTests + 2 benchmarks
 └── shared/                         ← utilitaires, creative tab, widgets GUI
 ```
 
@@ -53,7 +54,7 @@ Constructeur @Mod FactoryIO()
       ├── config/factory_io/inserters/*.json → InserterCodec
       └── InserterDefaults.all()        ← le barème des 7 inserters livrés
  2. InserterRegistry.registerAll()      ← DeferredRegister : bloc, item, BE, menu
- 3. ModItems.init() + ModCreativeTab
+ 3. ModItems.init() + ModBlocks.init() + ModCreativeTab
  4. ModRegistries.register(eventBus)
  5. ModNetworks.init()                  ← une seule fois, cf. BUG-002
  6. registerConfig(COMMON, SPEC)        ← écrit le TOML ; sa lecture a déjà eu lieu
@@ -250,6 +251,25 @@ non, item du mod ou item étranger.
 
 ---
 
+## 9 bis. Blocs hors inserter
+
+Les inserters sont fabriqués à partir de données, et leur nombre n'est pas connu à
+l'écriture : d'où `InserterRegistry`. Tout le reste se déclare normalement, dans
+[`ModBlocks`](../src/main/java/com/drimoz/factoryio/core/init/ModBlocks.java), qui tient
+aussi la liste servant à l'onglet créatif et aux quatre générateurs de données.
+
+Un seul bloc y figure aujourd'hui : la **source d'énergie créative**. Le point à retenir de
+sa conception est qu'elle **pousse** l'énergie vers ses six faces à chaque tick au lieu
+d'attendre qu'on l'aspire. Ce n'est pas un choix esthétique : les machines du mod
+`receiveEnergy`, elles ne réclament jamais rien — c'est le contrat habituel sous Forge
+Energy, où ce sont les générateurs et les câbles qui distribuent. Une source purement
+passive n'alimenterait donc aucun inserter. Elle expose malgré tout sa capability en
+lecture, pour rester utilisable par un câble d'un autre mod.
+
+Ses six voisins sont mémorisés comme le fait l'inserter (§6.1), pour la même raison.
+
+---
+
 ## 10. Pipeline d'assets
 
 ```
@@ -285,7 +305,7 @@ suffit à voir l'effet d'un JSON modifié.
 | Niveau | Où | Quoi |
 |---|---|---|
 | JUnit | `src/test` | calcul pur : plan des slots, trajectoire, barème, codec, condition redstone, effet des améliorations |
-| GameTest | `gametest/InserterGameTests` | 21 invariants de monde : conservation, ravitaillement, redstone, persistance, rotation, améliorations, configurateur |
+| GameTest | `gametest/InserterGameTests` | 22 invariants de monde : conservation, ravitaillement, redstone, persistance, rotation, améliorations, configurateur, alimentation |
 | Benchmark | `gametest/InserterBenchmarks` | coût du tick, deux régimes ([`10`](10-BENCHMARKS.md)) |
 
 **La règle de partage est stricte et vaut d'être respectée** : tout ce qui touche aux

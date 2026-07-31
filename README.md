@@ -9,10 +9,12 @@ Mod Minecraft **Forge 1.20.1** qui porte les mécaniques d'automatisation de *Fa
 >
 > Les **phases 0, 1 et 2** de la [roadmap](docs/05-ROADMAP.md) sont appliquées, et le mod a
 > été **porté de 1.18.2 vers Forge 1.20.1**. Le mod est validé en jeu par le mainteneur, et
-> couvert par **21 GameTests**, **2 benchmarks** et une centaine de cas JUnit.
+> couvert par **22 GameTests**, **2 benchmarks** et une centaine de cas JUnit.
 >
-> Ce qui manque pour être jouable en survie : une seule recette sur sept blocs, et rien à
-> alimenter tant que les convoyeurs n'existent pas.
+> Les **sept inserters se fabriquent** (FIO-125) et une **source d'énergie créative**
+> lève la dépendance à un mod d'énergie tiers pour les tests (FIO-124). Ce qui manque
+> encore : un générateur jouable en survie, et surtout des convoyeurs — sans eux les
+> inserters n'ont rien à alimenter.
 >
 > Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil.
 
@@ -125,6 +127,28 @@ paliers chacun :
 | Efficiency Module 1-3 | efficacité | −25 % sur le coût d'un mouvement | aucune |
 
 Casser le bloc rend les modules posés.
+
+### Fabrication
+
+Les sept inserters forment une chaîne, chacun construit à partir du précédent :
+
+```
+burner_inserter ──▶ inserter ──┬──▶ long_handed_inserter
+                               ├──▶ fast_inserter ──▶ stack_inserter ──▶ stack_filter_inserter
+                               └──▶ filter_inserter
+```
+
+Le comparateur sert de brique aux modèles filtrants — c'est la pièce vanilla qui lit et
+compare — et la redstone concentrée paie la vitesse.
+
+### Énergie
+
+Le mod consomme du Forge Energy et n'en produit pas encore. La **Source d'énergie
+créative** (`creative_energy_source`) alimente sans fin tout ce qui la touche, sur ses six
+faces. Elle est **volontairement sans recette** et réservée au créatif : lui en donner une
+supprimerait toute progression énergétique, or le mod n'a pas encore décidé s'il produit sa
+propre énergie ou s'il s'appuie sur Mekanism / Thermal. C'est la décision de périmètre de
+la Phase 4.
 
 **Tout cela passe par des tags d'items**, jamais par une liste d'items en dur :
 `factory_io:configurators` et `factory_io:upgrades/<axe>/<palier>`. Un pack ou un autre mod
