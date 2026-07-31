@@ -111,6 +111,9 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      */
     private InserterRedstoneCondition redstoneCondition = InserterRedstoneCondition.DEFAULT;
 
+    /** Copie de la propriété {@code ENABLED}, cf. {@link #setBlockState}. */
+    private boolean enabled;
+
     /**
      * Tick de jeu auquel le mouvement de bras en cours se termine.
      *
@@ -179,6 +182,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.IS_ENERGY = inserter.useEnergy();
         this.IS_FILTER = inserter.isFilterable();
         this.LAYOUT = InserterSlotLayout.of(inserter);
+        this.enabled = readEnabled(blockState);
 
         if (IS_ENERGY) {
             this.energyStorage = new EnergyContainer(inserter.getEnergyCapacity(), inserter.getEnergyTransferRate()) {
@@ -505,12 +509,16 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      * uniquement vers les joueurs qui regardent l'écran. La version d'origine envoyait
      * 3 à 4 paquets par tick et par inserter <i>à tous les joueurs du serveur</i>
      * (cf. BUG-004).
+     *
+     * <p>Le préambule est réduit au strict minimum : le benchmark montre qu'il domine les
+     * deux régimes, endormi comme actif, puisque le reste du tick se résume la plupart du
+     * temps à comparer l'horloge à une échéance. {@code isEnabled()} lit un champ tenu à
+     * jour par {@code setBlockState}, et la conversion du carburant est descendue dans le
+     * seul état qui en a besoin.
      */
     public static void tick(Level pLevel, BlockPos pPos, BlockState pState, final InserterBlockEntity pEntity) {
 
-        if (!pEntity.isEnabled()) return;
-
-        pEntity.burnFuel();
+        if (!pEntity.enabled) return;
 
         switch (pEntity.state) {
             case WAITING -> pEntity.tickWaiting();
@@ -541,6 +549,11 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
                 return;
             }
         }
+
+        // Convertir un item en réserve n'a de sens qu'ici : c'est le seul état qui engage
+        // une dépense. Les trois autres se contentaient de rappeler une méthode qui
+        // repartait aussitôt.
+        burnFuel();
 
         if (!hasPowerForAction()) {
             registerFailedAttempt();
@@ -937,7 +950,27 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     // Interface (Enabled)
 
     public boolean isEnabled() {
-        return this.getBlockState().getValue(BlockStateProperties.ENABLED);
+        return this.enabled;
+    }
+
+    /**
+     * Tenu à jour plutôt que relu à chaque tick.
+     *
+     * <p>{@code setBlockState} est appelé par le chunk chaque fois que l'état du bloc
+     * change, y compris au chargement : c'est le point d'accroche exact, et il évite une
+     * lecture de propriété dans un préambule qui s'exécute pour chaque inserter du monde,
+     * vingt fois par seconde.
+     */
+    @Override
+    public void setBlockState(@NotNull BlockState state) {
+        super.setBlockState(state);
+
+        this.enabled = readEnabled(state);
+    }
+
+    private static boolean readEnabled(BlockState state) {
+        return !state.hasProperty(BlockStateProperties.ENABLED)
+                || state.getValue(BlockStateProperties.ENABLED);
     }
 
     public void setEnabled(boolean enabled) {
@@ -1174,21 +1207,41 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     }
 
     /**
-     * Nombre d'items de {@code stack} que {@code handler} accepte, tous slots confondus.
+     * Ce qu'un inventaire accepterait d'une pile, et par quel slot il commencerait.
+     *
+     * @param movable    nombre d'items réellement acceptés, tous slots confondus
+     * @param firstSlot  premier slot ayant accepté quelque chose, à mémoriser pour le
+     *                   prochain cycle
+     */
+    private record InsertPlan(int movable, int firstSlot) {}
+
+    /**
+     * Simule l'insertion et relève au passage le premier slot preneur.
      *
      * <p>Balaye dans le même ordre que {@link #insertDistributed}, sans quoi la quantité
      * simulée ne correspondrait pas à ce qui sera réellement inséré.
+     *
+     * <p>Le premier slot preneur sort d'ici plutôt que d'un troisième balayage : l'éjection
+     * parcourait l'inventaire cible trois fois — simulation, insertion, puis recherche du
+     * slot à mémoriser — pour une information que la première passe connaissait déjà.
      */
-    private static int simulateInsert(IItemHandler handler, @Nonnull ItemStack stack, int startSlot) {
+    private static InsertPlan planInsert(IItemHandler handler, @Nonnull ItemStack stack, int startSlot) {
         int remaining = stack.getCount();
         int slots = handler.getSlots();
+        int firstSlot = -1;
 
         for (int offset = 0; offset < slots && remaining > 0; offset++) {
             int slot = Math.floorMod(startSlot + offset, slots);
+            int before = remaining;
+
             remaining = handler.insertItem(slot, ItemHandlerHelper.copyStackWithSize(stack, remaining), true).getCount();
+
+            if (remaining < before && firstSlot < 0) {
+                firstSlot = slot;
+            }
         }
 
-        return stack.getCount() - remaining;
+        return new InsertPlan(stack.getCount() - remaining, firstSlot < 0 ? startSlot : firstSlot);
     }
 
     /** Insère en répartissant sur plusieurs slots. @return ce qui n'a pas pu être placé */
@@ -1308,37 +1361,20 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
         int startSlot = Math.floorMod(pEntity.lastTargetSlot, Math.max(1, target.getSlots()));
 
-        int movable = simulateInsert(target, probe, startSlot);
-        if (movable <= 0) return ItemStack.EMPTY;
+        // Le premier slot preneur est mémorisé, et non startSlot : réécrire le point de
+        // départ avec lui-même rendait la mémorisation inopérante du côté cible, alors que
+        // le côté source en bénéficiait bien (cf. DT-07, BUG-036).
+        InsertPlan plan = planInsert(target, probe, startSlot);
+        if (plan.movable() <= 0) return ItemStack.EMPTY;
 
-        ItemStack taken = pEntity.extractItemInternal(BUFFER_SLOT, movable, false);
+        ItemStack taken = pEntity.extractItemInternal(BUFFER_SLOT, plan.movable(), false);
         if (taken.isEmpty()) return ItemStack.EMPTY;
 
-        pEntity.lastTargetSlot = firstAcceptingSlot(target, taken, startSlot);
+        pEntity.lastTargetSlot = plan.firstSlot();
         pEntity.rescueLeftover(
                 insertDistributed(target, taken, startSlot),
                 rest -> pEntity.insertItemInternal(BUFFER_SLOT, rest, false));
         return taken;
-    }
-
-    /**
-     * Premier slot de {@code handler}, à partir de {@code startSlot}, qui accepte quelque
-     * chose de {@code stack}.
-     *
-     * <p>C'est lui qu'il faut mémoriser, et non {@code startSlot} : réécrire le point de
-     * départ avec lui-même rendait la mémorisation du dernier slot fructueux inopérante
-     * du côté cible, alors que le côté source en bénéficiait bien (cf. DT-07, BUG-036).
-     */
-    private static int firstAcceptingSlot(IItemHandler handler, @Nonnull ItemStack stack, int startSlot) {
-        int slots = handler.getSlots();
-
-        for (int offset = 0; offset < slots; offset++) {
-            int slot = Math.floorMod(startSlot + offset, slots);
-
-            if (handler.insertItem(slot, stack, true).getCount() < stack.getCount()) return slot;
-        }
-
-        return startSlot;
     }
 
     private void useFuelOrEnergy() {
