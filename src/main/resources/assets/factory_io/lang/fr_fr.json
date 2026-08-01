@@ -88,5 +88,6 @@
   "message.factory_io.upgrade_installed": "Amélioration installée",
   "message.factory_io.upgrade_not_better": "Déjà équipé aussi bien ou mieux",
   "block.factory_io.creative_energy_source": "Source d’énergie créative",
-  "tooltip.factory_io.creative_energy_source": "Alimente sans fin toutes les machines adjacentes. Réservé au créatif."
+  "tooltip.factory_io.creative_energy_source": "Alimente sans fin toutes les machines adjacentes. Réservé au créatif.",
+  "tooltip.factory_io.animation_help": "Mouvement fluide de la tourelle. À couper sur un inserter rapide : le bras continue d’indiquer de quel côté il est, il cesse seulement de balayer."
 }

@@ -88,5 +88,6 @@
   "message.factory_io.upgrade_installed": "Upgrade installed",
   "message.factory_io.upgrade_not_better": "Already equipped as well or better",
   "block.factory_io.creative_energy_source": "Creative Energy Source",
-  "tooltip.factory_io.creative_energy_source": "Feeds every adjacent machine, forever. Creative only."
+  "tooltip.factory_io.creative_energy_source": "Feeds every adjacent machine, forever. Creative only.",
+  "tooltip.factory_io.animation_help": "Smooth turret movement. Turn it off for a fast inserter: the arm still shows which side it is on, it just stops sweeping."
 }

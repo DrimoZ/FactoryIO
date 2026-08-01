@@ -5,80 +5,90 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Trajet de l'item transporté par un inserter, en coordonnées <b>locales au bloc</b>
- * (0,0,0 = coin inférieur nord-ouest de l'inserter, une unité = un bloc).
+ * Position de l'item transporté, en coordonnées <b>locales au bloc</b> (0,0,0 = coin
+ * inférieur nord-ouest de l'inserter, une unité = un bloc).
  *
- * <p>Un seul arc, parcouru pendant l'état {@code SWINGING} : de l'inventaire arrière au
- * sommet de l'inserter, puis à l'inventaire avant. Le retour du bras se fait à vide, donc
- * sans rien à afficher.
+ * <p>L'item est <b>dans la pince</b> : sa position se déduit de l'angle de la tourelle
+ * ({@link InserterTurretPose}) et de la géométrie du bras, qui est rigide. Il décrit donc un
+ * demi-cercle <b>horizontal</b> autour du centre du bloc — le mouvement de Factorio.
  *
- * <p>La première version (FIO-067) découpait le trajet en deux demi-arcs, un par action de
- * transfert. La machine à états (FIO-060) a rendu ce découpage inutile <i>et</i> faux : un
- * item traverse en un seul mouvement, et c'est le mouvement suivant — à vide — qui ramène
- * le bras. C'est aussi le cycle de Factorio.
+ * <h2>Ce que cette classe remplace</h2>
  *
- * <p>La géométrie GeckoLib du bras étant figée (cf. FIO-066, en pause), la « main » est
- * ici une position tenue pour telle : le sommet du mât. Les trois constantes ci-dessous
- * sont les seules à ajuster si la géométrie est un jour redécoupée.
+ * <p>La version précédente interpolait une courbe de Bézier dont le point de contrôle était
+ * une « main » <b>fictive</b>, une constante posée au sommet du mât faute de connaître la
+ * vraie. Deux mouvements coexistaient donc, celui du bras et celui de l'item, sans rapport
+ * l'un avec l'autre. Il n'y en a plus qu'un.
  *
- * <p>Classe volontairement dépourvue de dépendance client : elle est du calcul pur, donc
- * testable côté serveur.
+ * <h2>Ce que la géométrie impose</h2>
+ *
+ * <p>Le bras ne s'allonge pas : la pince est toujours à {@link #HAND_RADIUS} du centre. Pour
+ * les six inserters de portée 1, l'écart au centre du coffre vaut 0,137 bloc — deux pixels,
+ * invisibles. Pour le {@code long_handed_inserter}, seul modèle de portée 2, il vaut 1,137 et
+ * se voit : le corriger demande d'étirer le mât, ce qui touche à la forme du modèle et fait
+ * l'objet d'un ticket à part.
+ *
+ * <p>Classe de calcul pur, sans dépendance au client : testable en JUnit.
  */
 public final class InserterCarryPath {
 
-    /** Hauteur de l'item au-dessus du voisin, à la prise et à la dépose. */
-    private static final double NEIGHBOUR_Y = 1.0;
+    /**
+     * Distance de la pince au centre du bloc, en blocs.
+     *
+     * <p>Mesurée sur la géométrie, <b>rotations de cubes appliquées</b> : la pince est en
+     * z = −13,80 unités de modèle, soit 0,8625 bloc. La lire sur les coordonnées brutes
+     * donnerait 0,63 et sous-estimerait la portée d'un tiers.
+     */
+    public static final double HAND_RADIUS = 13.80D / 16.0D;
 
-    /** Hauteur de la main, au sommet de l'inserter. */
-    private static final double HAND_Y = 1.2;
+    /** Hauteur de la pince, en blocs. */
+    public static final double HAND_Y = 13.87D / 16.0D;
+
+    /** Hauteur à laquelle le carburant disparaît dans la machine. */
+    private static final double INTAKE_Y = 6.0D / 16.0D;
 
     private InserterCarryPath() {}
 
     /**
-     * Position de l'item porté par le bras.
-     *
-     * @param facing       orientation de l'inserter : il saisit derrière, dépose devant
-     * @param grabDistance portée en blocs, 2 pour un {@code long_handed_inserter}
-     * @param towardSelf   {@code true} pour du carburant, qui s'arrête à la main au lieu
-     *                     de continuer vers la cible
-     * @param progress     progression du mouvement, de 0 à 1
+     * @param facing        orientation de l'inserter : il saisit derrière, dépose devant
+     * @param turretDegrees angle de la tourelle, cf. {@link InserterTurretPose}
+     * @param towardSelf    {@code true} pour du carburant, qui rejoint la machine au lieu de
+     *                      suivre la pince jusqu'au bout
+     * @param progress      avancement du mouvement, de 0 à 1
      */
-    public static Vec3 positionOf(Direction facing, int grabDistance, boolean towardSelf, float progress) {
-        Vec3 source = neighbourCentre(facing.getOpposite(), grabDistance);
-        Vec3 hand = new Vec3(0.5, HAND_Y, 0.5);
-        Vec3 destination = towardSelf ? hand : neighbourCentre(facing, grabDistance);
+    public static Vec3 positionOf(Direction facing, float turretDegrees, boolean towardSelf, float progress) {
+        Vec3 hand = handPosition(facing, turretDegrees);
+        if (!towardSelf) return hand;
 
-        // Accélération puis décélération : un bras mécanique ne démarre pas à pleine
-        // vitesse.
-        float eased = smoothStep(Mth.clamp(progress, 0f, 1f));
-
-        // Interpolation quadratique de Bézier : la main sert de point de contrôle, ce qui
-        // donne l'arc au-dessus de l'inserter sans avoir à ajouter de terme de hauteur.
-        return quadratic(source, hand, destination, eased);
-    }
-
-    /** Centre du voisin visé, à hauteur de transport. */
-    private static Vec3 neighbourCentre(Direction offset, int distance) {
-        return new Vec3(
-                0.5 + offset.getStepX() * (double) distance,
-                NEIGHBOUR_Y,
-                0.5 + offset.getStepZ() * (double) distance);
-    }
-
-    /** Courbe de Bézier quadratique : passe par {@code from} et {@code to}, tirée vers {@code control}. */
-    private static Vec3 quadratic(Vec3 from, Vec3 control, Vec3 to, float t) {
-        double inverse = 1.0 - t;
-        double a = inverse * inverse;
-        double b = 2.0 * inverse * t;
-        double c = t * t;
+        // Le carburant glisse le long du bras vers la trémie pendant que la tourelle tourne :
+        // à l'arrivée il est dans la machine, pas au bout de la pince.
+        double t = Mth.clamp(progress, 0f, 1f);
 
         return new Vec3(
-                a * from.x + b * control.x + c * to.x,
-                a * from.y + b * control.y + c * to.y,
-                a * from.z + b * control.z + c * to.z);
+                Mth.lerp(t, hand.x, 0.5D),
+                Mth.lerp(t, hand.y, INTAKE_Y),
+                Mth.lerp(t, hand.z, 0.5D));
     }
 
-    private static float smoothStep(float t) {
-        return t * t * (3f - 2f * t);
+    /**
+     * Position de la pince pour un angle de tourelle donné.
+     *
+     * <p>Repère construit sur {@code facing} plutôt que sur des sinus et cosinus absolus : à
+     * 0° la pince est droit devant, à 180° droit derrière, à 90° sur la droite. Un signe
+     * inversé se verrait immédiatement au lieu de se cacher dans une table de rotation.
+     */
+    public static Vec3 handPosition(Direction facing, float turretDegrees) {
+        double angle = Math.toRadians(turretDegrees);
+
+        double along = HAND_RADIUS * Math.cos(angle);
+        double side = HAND_RADIUS * Math.sin(angle);
+
+        // Vecteur « à droite de facing », vu de dessus.
+        int rightX = -facing.getStepZ();
+        int rightZ = facing.getStepX();
+
+        return new Vec3(
+                0.5D + facing.getStepX() * along + rightX * side,
+                HAND_Y,
+                0.5D + facing.getStepZ() * along + rightZ * side);
     }
 }

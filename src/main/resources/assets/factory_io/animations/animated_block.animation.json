@@ -1,14 +1,18 @@
 {
   "_comment": [
-    "L'animation « idle » est volontairement vide : le bras n'est pas animé (FIO-066,",
-    "abandonné faute d'une géométrie découpée). GeckoLib exige néanmoins un contrôleur",
-    "et donc une animation à jouer. Le retour visuel du transfert est assuré par le rendu",
-    "de l'item transporté, dans FactoryIOInserterBlockEntityRenderer (FIO-067).",
+    "Aucune keyframe, et c'est délibéré. Le mouvement de tourelle est ASSERVI à un état",
+    "serveur : il est posé image par image depuis InserterGeoModel#handleAnimations, à",
+    "partir de l'échéance de mouvement déjà synchronisée. Des keyframes exigeraient de",
+    "synchroniser une progression à chaque tick, soit exactement le trafic périodique",
+    "supprimé par BUG-004.",
     "",
-    "La version précédente animait un bone nommé « bone2 », absent des trois",
-    "géométries (qui déclarent inserter, bearing, base et base_top). GeckoLib ignore",
-    "silencieusement les bones introuvables : l'animation ne faisait donc rien du tout",
-    "(cf. BUG-016)."
+    "Le fichier reste nécessaire : getAnimationResource doit désigner une ressource",
+    "existante, et GeckoLib veut un contrôleur.",
+    "",
+    "La version d'avant FIO-066 animait un bone « bone2 », absent des trois géométries.",
+    "GeckoLib ignore les bones introuvables en silence, l'animation ne faisait donc rien",
+    "(BUG-016). InserterGeoModel force désormais crashIfBoneMissing à true pour que ce",
+    "genre d'erreur ne puisse plus passer inaperçu."
   ],
   "format_version": "1.8.0",
   "animations": {

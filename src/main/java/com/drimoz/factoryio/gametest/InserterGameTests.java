@@ -613,6 +613,59 @@ public class InserterGameTests {
         helper.succeed();
     }
 
+    // Tests (Animation)
+
+    /**
+     * Couper l'animation ne doit rien changer au comportement (FIO-161).
+     *
+     * <p>C'est le seul invariant qui compte pour ce réglage : il est <b>visuel</b>. Le jour où
+     * quelqu'un branchera l'angle de tourelle sur une décision de gameplay — par commodité,
+     * parce que la valeur est là — ce test le dira.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void animationToggleChangesNoBehaviour(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        inserter(helper).setAnimated(false);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+
+        helper.succeedWhen(() -> {
+            int total = countCobblestone(helper);
+
+            helper.assertTrue(total == MOVED_ITEMS,
+                    "Animation coupée, les items ne sont plus conservés : " + total);
+
+            helper.assertTrue(countIn(container(helper, TARGET)) > 0,
+                    "Animation coupée, l'inserter ne transfère plus");
+
+            helper.assertFalse(inserter(helper).isAnimated(),
+                    "Le réglage s'est réinitialisé tout seul");
+        });
+    }
+
+    /** Le réglage d'animation survit à une sauvegarde, comme les autres. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void animationSettingPersists(GameTestHelper helper) {
+        setupChain(helper, "inserter");
+
+        InserterBlockEntity blockEntity = inserter(helper);
+        blockEntity.setAnimated(false);
+
+        blockEntity.load(blockEntity.saveWithoutMetadata());
+
+        helper.assertFalse(blockEntity.isAnimated(), "Le réglage n'a pas survécu à la sauvegarde");
+
+        // Un monde antérieur à FIO-161 n'a pas la clé : le défaut doit être « animé », sans
+        // quoi tous les inserters déjà posés se retrouveraient figés au premier chargement.
+        blockEntity.load(new CompoundTag());
+
+        helper.assertTrue(blockEntity.isAnimated(), "Le défaut d'un monde ancien doit être « animé »");
+
+        helper.succeed();
+    }
+
     // Tests (Source d'énergie)
 
     /**
@@ -658,6 +711,7 @@ public class InserterGameTests {
         source.setWhitelist(false);
         source.setRedstoneCondition(
                 new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 7));
+        source.setAnimated(false);
 
         InserterSettings settings = InserterSettings.load(source.captureSettings().save());
 
@@ -673,6 +727,7 @@ public class InserterGameTests {
         helper.assertTrue(copy.isTagFilter(0), "La correspondance par tag n'a pas été copiée");
         helper.assertTrue(copy.getRedstoneCondition().threshold() == 7,
                 "Le seuil redstone n'a pas été copié");
+        helper.assertFalse(copy.isAnimated(), "Le réglage d'animation n'a pas été copié");
 
         // Rejouer les mêmes réglages ne doit plus rien changer : c'est ce qui distingue
         // « appliqué » de « déjà comme ça » dans le retour au joueur.

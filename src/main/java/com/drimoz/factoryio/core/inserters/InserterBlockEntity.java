@@ -119,6 +119,20 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     /** Copie de la propriété {@code ENABLED}, cf. {@link #setBlockState}. */
     private boolean enabled;
 
+    /**
+     * Interpolation du mouvement de tourelle, réglable par machine (FIO-161).
+     *
+     * <p>Purement visuel : ce drapeau ne doit changer ni le débit, ni les coûts, ni le
+     * comportement de transfert. Il vit néanmoins ici, et non dans une configuration client,
+     * parce qu'il a été demandé <b>sur la machine</b> — ce qui permet de calmer un inserter
+     * précis sans désactiver les autres, là où un réglage global ne le permettrait pas.
+     *
+     * <p>Désactivé, la tourelle ne se fige pas : elle saute d'une pose à l'autre. Un bras
+     * immobile rendrait indiscernables un inserter bloqué, un inserter au repos et un
+     * inserter au travail.
+     */
+    private boolean animated = true;
+
     /** Modules posés sur cet exemplaire. */
     private InserterUpgrades upgrades = InserterUpgrades.NONE;
 
@@ -406,7 +420,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
             filters.add(this.itemStorage.getStackInSlot(LAYOUT.filter(i)).copy());
         }
 
-        return new InserterSettings(this.isWhitelist, this.tagFilterMask, this.redstoneCondition, filters);
+        return new InserterSettings(this.animated, this.isWhitelist, this.tagFilterMask, this.redstoneCondition, filters);
     }
 
     /**
@@ -422,6 +436,11 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      */
     public boolean applySettings(InserterSettings settings) {
         boolean changed = false;
+
+        if (this.animated != settings.animated()) {
+            this.animated = settings.animated();
+            changed = true;
+        }
 
         if (this.isWhitelist != settings.whitelist()) {
             this.isWhitelist = settings.whitelist();
@@ -509,6 +528,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         tag.putInt("inserterTagFilters", this.tagFilterMask);
         tag.putByte("inserterRedstoneMode", (byte) this.redstoneCondition.mode().ordinal());
         tag.putByte("inserterRedstoneThreshold", (byte) this.redstoneCondition.threshold());
+        tag.putBoolean("inserterAnimated", this.animated);
 
         // L'état du bras est persisté : un inserter bloqué doit se retrouver bloqué au
         // rechargement, pas remis au repos avec un item fantôme en main.
@@ -547,6 +567,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.isWhitelist = !tag.contains("inserterWhitelist") || tag.getBoolean("inserterWhitelist");
         this.tagFilterMask = tag.getInt("inserterTagFilters");
         this.redstoneCondition = readCondition(tag);
+        this.animated = !tag.contains("inserterAnimated") || tag.getBoolean("inserterAnimated");
 
         this.upgrades = InserterUpgrades.load(tag.getCompound("inserterUpgrades"));
         invalidateEffectiveTuning();
@@ -587,6 +608,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         tag.putInt("inserterTagFilters", this.tagFilterMask);
         tag.putByte("inserterRedstoneMode", (byte) this.redstoneCondition.mode().ordinal());
         tag.putByte("inserterRedstoneThreshold", (byte) this.redstoneCondition.threshold());
+        tag.putBoolean("inserterAnimated", this.animated);
         tag.putByte("inserterState", (byte) this.state.ordinal());
         tag.putBoolean("inserterCarryingFuel", this.carryingFuel);
         tag.putLong("inserterSwingEnd", this.swingEndTick);
@@ -613,6 +635,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         }
         this.tagFilterMask = tag.getInt("inserterTagFilters");
         this.redstoneCondition = readCondition(tag);
+        this.animated = !tag.contains("inserterAnimated") || tag.getBoolean("inserterAnimated");
         this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
         this.carryingFuel = tag.getBoolean("inserterCarryingFuel");
         this.swingEndTick = tag.getLong("inserterSwingEnd");
@@ -872,6 +895,29 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     /** État du bras. */
     public InserterState getState() {
         return this.state;
+    }
+
+    /**
+     * Angle de la tourelle à l'image courante, en degrés (FIO-066).
+     *
+     * <p>Point d'entrée unique du rendu : le modèle GeckoLib y lit la rotation du bone, et le
+     * renderer d'item la position de la pince. Une seule grandeur, donc aucun moyen que les
+     * deux se contredisent.
+     */
+    public float getTurretDegrees(float partialTick) {
+        return InserterTurretPose.angleDegrees(this.state, getArmProgress(partialTick), this.animated);
+    }
+
+    /** @return {@code true} si le mouvement de tourelle est interpolé sur cette machine */
+    public boolean isAnimated() {
+        return this.animated;
+    }
+
+    public void setAnimated(boolean animated) {
+        if (this.animated == animated) return;
+
+        this.animated = animated;
+        syncToClients();
     }
 
     /**

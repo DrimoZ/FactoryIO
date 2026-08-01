@@ -11,112 +11,119 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Trajectoire de l'item transporté (FIO-067, FIO-060).
+ * Position de l'item transporté (FIO-066, FIO-067).
  *
- * <p>Le rendu lui-même n'est pas testable hors client. Ce qui l'est, et ce qui compte,
- * c'est la géométrie : un signe inversé sur {@code facing} ferait voyager l'item à
- * l'envers, et une trajectoire qui ne passe pas au-dessus de l'inserter le ferait
- * traverser les blocs voisins.
+ * <p>Le rendu lui-même n'est pas testable hors client. Ce qui l'est, et ce qui compte, c'est
+ * la géométrie : un signe inversé sur {@code facing} ferait voyager l'item à l'envers.
+ *
+ * <p><b>Une intention a changé de sens avec la rotation de tourelle.</b> L'ancienne suite
+ * vérifiait que l'item <i>ne dérive pas latéralement</i> — c'était juste tant qu'il suivait
+ * un arc vertical dans le plan de l'inserter. La tourelle le fait décrire un demi-cercle
+ * horizontal : la dérive latérale n'est plus un défaut, c'est le mouvement. Ce cas est donc
+ * remplacé par son contraire, le rayon constant.
  */
 class InserterCarryPathTest {
 
-    /** Tolérance sur les comparaisons de coordonnées, en blocs. */
     private static final double EPSILON = 1.0e-6;
 
     /** Le trajet normal, vers la cible. */
     private static final boolean TO_TARGET = false;
 
-    /** Le trajet du carburant, qui s'arrête à la main. */
+    /** Le trajet du carburant, qui rejoint la machine. */
     private static final boolean TO_SELF = true;
+
+    private static final float AT_SOURCE = InserterTurretPose.SOURCE_DEGREES;
+    private static final float AT_TARGET = InserterTurretPose.TARGET_DEGREES;
+
+    // Le trajet
 
     @ParameterizedTest
     @EnumSource(value = Direction.class, names = {"NORTH", "SOUTH", "EAST", "WEST"})
-    @DisplayName("L'item part du voisin arrière et arrive au voisin avant")
+    @DisplayName("L'item part de derrière l'inserter et arrive devant")
     void pathRunsFromBehindToInFront(Direction facing) {
-        Vec3 pickup = InserterCarryPath.positionOf(facing, 1, TO_TARGET, 0f);
-        Vec3 dropoff = InserterCarryPath.positionOf(facing, 1, TO_TARGET, 1f);
+        Vec3 pickup = InserterCarryPath.positionOf(facing, AT_SOURCE, TO_TARGET, 0f);
+        Vec3 dropoff = InserterCarryPath.positionOf(facing, AT_TARGET, TO_TARGET, 1f);
 
-        // L'inserter saisit derrière lui et dépose devant : la prise doit tomber sur le
-        // centre du voisin opposé à `facing`, la dépose sur celui vers lequel il regarde.
-        assertEquals(0.5 - facing.getStepX(), pickup.x, EPSILON, "prise, x");
-        assertEquals(0.5 - facing.getStepZ(), pickup.z, EPSILON, "prise, z");
-        assertEquals(0.5 + facing.getStepX(), dropoff.x, EPSILON, "dépose, x");
-        assertEquals(0.5 + facing.getStepZ(), dropoff.z, EPSILON, "dépose, z");
+        double r = InserterCarryPath.HAND_RADIUS;
+
+        // L'inserter saisit derrière lui et dépose devant. La pince n'atteint pas tout à
+        // fait le centre du voisin — le bras ne s'allonge pas — mais elle est du bon côté.
+        assertEquals(0.5 - facing.getStepX() * r, pickup.x, EPSILON, "prise, x");
+        assertEquals(0.5 - facing.getStepZ() * r, pickup.z, EPSILON, "prise, z");
+        assertEquals(0.5 + facing.getStepX() * r, dropoff.x, EPSILON, "dépose, x");
+        assertEquals(0.5 + facing.getStepZ() * r, dropoff.z, EPSILON, "dépose, z");
     }
 
     /**
-     * Le carburant est rapporté à l'inserter lui-même : son trajet s'arrête à la main, et
+     * Le carburant est rapporté à l'inserter lui-même : son trajet s'arrête à la machine, et
      * ne doit surtout pas continuer jusqu'à la cible — l'item serait vu voyager vers un
      * endroit où il ne va pas.
      */
     @ParameterizedTest
     @EnumSource(value = Direction.class, names = {"NORTH", "SOUTH", "EAST", "WEST"})
-    @DisplayName("Le carburant s'arrête à la main, au centre de l'inserter")
-    void fuelStopsAtTheHand(Direction facing) {
-        Vec3 arrival = InserterCarryPath.positionOf(facing, 1, TO_SELF, 1f);
+    @DisplayName("Le carburant finit dans la machine, pas au bout de la pince")
+    void fuelEndsInsideTheMachine(Direction facing) {
+        Vec3 arrival = InserterCarryPath.positionOf(facing, AT_TARGET, TO_SELF, 1f);
 
         assertEquals(0.5, arrival.x, EPSILON, "x");
         assertEquals(0.5, arrival.z, EPSILON, "z");
-        assertTrue(arrival.y > 1.0, "la main est au-dessus du bloc : " + arrival.y);
+        assertTrue(arrival.y < InserterCarryPath.HAND_Y,
+                "le carburant doit descendre dans le bloc : " + arrival.y);
+    }
+
+    // Ce que la rotation de tourelle impose
+
+    @Test
+    @DisplayName("La pince reste à rayon constant : elle décrit un cercle, pas un axe")
+    void handStaysOnAConstantRadius() {
+        // Remplace l'ancien « pas de dérive latérale » : avec la tourelle, la dérive est le
+        // mouvement. Ce qui doit rester vrai, c'est que le bras ne s'allonge ni ne raccourcit.
+        for (int step = 0; step <= 12; step++) {
+            float degrees = step * 15f;
+            Vec3 hand = InserterCarryPath.handPosition(Direction.EAST, degrees);
+
+            double dx = hand.x - 0.5;
+            double dz = hand.z - 0.5;
+
+            assertEquals(InserterCarryPath.HAND_RADIUS, Math.sqrt(dx * dx + dz * dz), EPSILON,
+                    "rayon à " + degrees + "°");
+        }
     }
 
     @Test
-    @DisplayName("La portée éloigne le point de prise, sans dérive latérale")
-    void grabDistanceExtendsTheReach() {
-        Vec3 near = InserterCarryPath.positionOf(Direction.EAST, 1, TO_TARGET, 0f);
-        Vec3 far = InserterCarryPath.positionOf(Direction.EAST, 2, TO_TARGET, 0f);
-
-        assertEquals(-0.5, near.x, EPSILON, "portée 1");
-        assertEquals(-1.5, far.x, EPSILON, "portée 2");
-        assertEquals(near.z, far.z, EPSILON, "aucune dérive latérale");
+    @DisplayName("La pince garde une hauteur constante")
+    void handKeepsItsHeight() {
+        // Le bras est rigide et tourne autour d'un axe vertical : rien ne peut faire varier
+        // la hauteur. Un y qui bougerait signalerait une rotation parasite.
+        for (int step = 0; step <= 12; step++) {
+            assertEquals(InserterCarryPath.HAND_Y,
+                    InserterCarryPath.handPosition(Direction.NORTH, step * 15f).y, EPSILON,
+                    "hauteur à " + (step * 15f) + "°");
+        }
     }
 
-    /**
-     * L'item ne doit jamais dériver hors de l'axe de l'inserter : il resterait suspendu
-     * à côté du bras, visiblement décroché du bloc.
-     */
     @ParameterizedTest
     @EnumSource(value = Direction.class, names = {"NORTH", "SOUTH", "EAST", "WEST"})
-    @DisplayName("La trajectoire reste dans le plan de l'axe de l'inserter")
-    void pathStaysOnTheFacingAxis(Direction facing) {
-        boolean alongX = facing.getAxis() == Direction.Axis.X;
+    @DisplayName("À mi-course la pince est sur le côté, perpendiculaire à l'axe")
+    void midSwingIsSideways(Direction facing) {
+        Vec3 hand = InserterCarryPath.handPosition(facing, 90f);
 
-        for (int step = 0; step <= 10; step++) {
-            Vec3 position = InserterCarryPath.positionOf(facing, 1, TO_TARGET, step / 10f);
-            double lateral = alongX ? position.z : position.x;
+        // À 90° la pince ne doit plus rien avoir sur l'axe de l'inserter : c'est la
+        // signature d'un demi-tour et non d'un aller-retour sur place.
+        double along = (hand.x - 0.5) * facing.getStepX() + (hand.z - 0.5) * facing.getStepZ();
 
-            assertEquals(0.5, lateral, EPSILON, "dérive latérale à t=" + (step / 10f));
-        }
+        assertEquals(0.0, along, EPSILON, "composante sur l'axe");
     }
 
-    /**
-     * Le trajet doit passer <b>au-dessus</b> des deux voisins, pas à travers : c'est le
-     * rôle de la main comme point de contrôle de la courbe.
-     */
-    @Test
-    @DisplayName("Le trajet s'élève au-dessus des deux voisins")
-    void pathArcsAboveBothNeighbours() {
-        Vec3 start = InserterCarryPath.positionOf(Direction.EAST, 1, TO_TARGET, 0f);
-        Vec3 end = InserterCarryPath.positionOf(Direction.EAST, 1, TO_TARGET, 1f);
-
-        assertEquals(start.y, end.y, EPSILON, "les deux extrémités sont à la même hauteur");
-
-        for (int step = 1; step < 10; step++) {
-            Vec3 position = InserterCarryPath.positionOf(Direction.EAST, 1, TO_TARGET, step / 10f);
-
-            assertTrue(position.y > start.y,
-                    "à t=" + (step / 10f) + " l'item devrait être surélevé : " + position.y);
-        }
-    }
-
-    /** La trajectoire doit être monotone en x : un item qui revient en arrière saute. */
+    /** L'avancement le long de l'axe doit être monotone : un item qui revient en arrière saute. */
     @Test
     @DisplayName("L'avancement le long de l'axe est monotone")
     void progressAlongTheAxisIsMonotonic() {
         double previous = Double.NEGATIVE_INFINITY;
 
         for (int step = 0; step <= 20; step++) {
-            Vec3 position = InserterCarryPath.positionOf(Direction.EAST, 1, TO_TARGET, step / 20f);
+            float degrees = InserterTurretPose.angleDegrees(InserterState.SWINGING, step / 20f, true);
+            Vec3 position = InserterCarryPath.handPosition(Direction.EAST, degrees);
 
             assertTrue(position.x > previous,
                     "recul à t=" + (step / 20f) + " : " + position.x + " après " + previous);
@@ -125,21 +132,17 @@ class InserterCarryPathTest {
     }
 
     /**
-     * La progression vient d'un calcul client sur l'horloge du monde : un décalage d'un
-     * tick, un changement de dimension ou un rechargement peuvent la faire sortir de
-     * [0, 1]. Elle doit être bornée, pas extrapolée.
+     * La progression vient d'un calcul client sur l'horloge du monde : un décalage d'un tick,
+     * un changement de dimension ou un rechargement peuvent la faire sortir de [0, 1].
      */
     @Test
-    @DisplayName("Une progression hors bornes est ramenée aux extrémités du trajet")
-    void progressIsClamped() {
-        Vec3 start = InserterCarryPath.positionOf(Direction.EAST, 1, TO_TARGET, 0f);
-        Vec3 before = InserterCarryPath.positionOf(Direction.EAST, 1, TO_TARGET, -3f);
-        Vec3 end = InserterCarryPath.positionOf(Direction.EAST, 1, TO_TARGET, 1f);
-        Vec3 after = InserterCarryPath.positionOf(Direction.EAST, 1, TO_TARGET, 4f);
+    @DisplayName("Une progression hors bornes ne déplace pas le carburant au-delà de la machine")
+    void fuelProgressIsClamped() {
+        Vec3 end = InserterCarryPath.positionOf(Direction.EAST, AT_TARGET, TO_SELF, 1f);
+        Vec3 after = InserterCarryPath.positionOf(Direction.EAST, AT_TARGET, TO_SELF, 4f);
 
-        assertEquals(start.x, before.x, EPSILON, "avant le départ");
-        assertEquals(start.y, before.y, EPSILON, "avant le départ");
-        assertEquals(end.x, after.x, EPSILON, "après l'arrivée");
-        assertEquals(end.y, after.y, EPSILON, "après l'arrivée");
+        assertEquals(end.x, after.x, EPSILON, "x");
+        assertEquals(end.y, after.y, EPSILON, "y");
+        assertEquals(end.z, after.z, EPSILON, "z");
     }
 }

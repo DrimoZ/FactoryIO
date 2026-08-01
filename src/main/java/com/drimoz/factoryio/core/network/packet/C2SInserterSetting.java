@@ -38,7 +38,10 @@ public class C2SInserterSetting {
 		REDSTONE_MODE,
 
 		/** Seuil de la condition redstone. Valeur : 0 à 15. */
-		REDSTONE_THRESHOLD;
+		REDSTONE_THRESHOLD,
+
+		/** Interpolation du mouvement de tourelle. Valeur : 1 pour animé, 0 pour figé. */
+		ANIMATION;
 
 		private static final Setting[] VALUES = values();
 
@@ -122,6 +125,9 @@ public class C2SInserterSetting {
 			// [0, 15] est ramenée dans le domaine plutôt que rejetée.
 			case REDSTONE_THRESHOLD -> blockEntity.setRedstoneCondition(
 					blockEntity.getRedstoneCondition().withThreshold(value));
+
+			// Purement visuel : aucun effet sur le débit, les coûts ou les transferts.
+			case ANIMATION -> blockEntity.setAnimated(value == 1);
 		}
 	}
 }

@@ -10,6 +10,7 @@ import com.drimoz.factoryio.core.init.ModNetworks;
 import com.drimoz.factoryio.core.network.packet.C2SInserterSetting;
 import com.drimoz.factoryio.shared.gui.GuiEnergyBar;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -50,6 +51,7 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
 
     private Button redstoneModeButton;
     private Button redstoneThresholdButton;
+    private Button animationButton;
 
     // Life cycle
 
@@ -72,6 +74,43 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
         }
 
         addRedstoneControls(left, top);
+        addAnimationControl(left, top);
+    }
+
+    /**
+     * Bascule l'interpolation du mouvement de tourelle (FIO-161).
+     *
+     * <p>Proposée sur <b>tous</b> les inserters, contrairement aux commandes redstone : un
+     * modèle rapide sous module de vitesse tombe à deux ticks par mouvement, soit six images
+     * pour un demi-tour, quel que soit son type.
+     *
+     * <p>Troisième widget posé à la main sur une texture qui n'a pas de case pour lui — la
+     * refonte du GUI (FIO-071) devient difficile à repousser.
+     */
+    private void addAnimationControl(int left, int top) {
+        if (!getMenu().isBacked()) return;
+
+        this.animationButton = addRenderableWidget(Button
+                .builder(Component.empty(), button -> toggleAnimation())
+                .bounds(left + 142, top + CONTROLS_Y, 26, 16)
+                .build());
+
+        refreshAnimationControl();
+    }
+
+    private void refreshAnimationControl() {
+        if (this.animationButton == null || !getMenu().isBacked()) return;
+
+        this.animationButton.setMessage(getMenu().getBlockEntity().isAnimated()
+                ? CommonComponents.OPTION_ON
+                : CommonComponents.OPTION_OFF);
+    }
+
+    private void toggleAnimation() {
+        if (!getMenu().isBacked()) return;
+
+        send(C2SInserterSetting.Setting.ANIMATION,
+                getMenu().getBlockEntity().isAnimated() ? 0 : 1);
     }
 
     /**
@@ -148,6 +187,7 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
 
         this.renderBackground(graphics);
         this.refreshRedstoneControls();
+        this.refreshAnimationControl();
         super.render(graphics, mouseX, mouseY, partialTicks);
 
         // Les slots en mode tag sont teintés par-dessus leur contenu : la texture de GUI
@@ -358,6 +398,12 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
         if (this.redstoneModeButton != null && this.redstoneModeButton.isHovered()) {
             graphics.renderTooltip(this.font,
                     this.font.split(ModUtils.tooltipComponent("redstone_help"), 180),
+                    mouseX, mouseY);
+        }
+
+        if (this.animationButton != null && this.animationButton.isHovered()) {
+            graphics.renderTooltip(this.font,
+                    this.font.split(ModUtils.tooltipComponent("animation_help"), 180),
                     mouseX, mouseY);
         }
 

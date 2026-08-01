@@ -94,9 +94,12 @@ public class InserterBlockRenderer implements BlockEntityRenderer<InserterBlockE
         if (!state.hasProperty(InserterBlock.FACING)) return;
 
         Direction facing = state.getValue(InserterBlock.FACING);
+
+        // Même grandeur que celle qui oriente le bone : l'item est DANS la pince, il ne suit
+        // plus une trajectoire parallèle qui pourrait la contredire.
         Vec3 position = InserterCarryPath.positionOf(
                 facing,
-                inserter.getGrabDistance(),
+                inserter.getTurretDegrees(partialTick),
                 inserter.isCarryingFuel(),
                 inserter.getArmProgress(partialTick));
 

@@ -13,6 +13,9 @@ final class InserterGeo {
     static final ResourceLocation ANIMATIONS =
             new ResourceLocation(FactoryIO.MOD_ID, "animations/animated_block.animation.json");
 
+    /** Bone pivotant : tout ce qui surmonte les pieds, bagues supérieures comprises. */
+    static final String TURRET_BONE = "turret";
+
     private InserterGeo() {}
 
     static ResourceLocation modelFor(Inserter inserter) {
