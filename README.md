@@ -34,6 +34,7 @@ Mod Minecraft **Forge 1.20.1** qui porte les mécaniques d'automatisation de *Fa
 | [`docs/08-DESIGN-BELTS.md`](docs/08-DESIGN-BELTS.md) | Spécification du système de convoyeurs (à écrire from scratch) |
 | [`docs/09-CONVENTIONS.md`](docs/09-CONVENTIONS.md) | Conventions de code, nommage, structure, checklist de PR |
 | [`docs/10-BENCHMARKS.md`](docs/10-BENCHMARKS.md) | Mesures de performance du tick, budget et méthode |
+| [`docs/11-DESIGN-ANIMATION.md`](docs/11-DESIGN-ANIMATION.md) | Étude et plan de l’animation du bras d’inserter |
 
 ---
 
