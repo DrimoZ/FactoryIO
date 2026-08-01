@@ -689,3 +689,59 @@ l'œil, mais il n'est plus sur le chemin critique.
 - **Ne pas faire du bouton un état de gameplay.** Il ne doit rien changer au débit, au coût
   ni au comportement — seulement à l'image. Un GameTest doit le verrouiller : le même
   transfert, animation activée puis désactivée, donne le même résultat.
+
+---
+
+## 12. Le bras articulé — deux segments (31/07/2026)
+
+> Retour de jeu : *« l'animation du bras vers le coffre ne pourrait pas être plus fluide,
+> en prenant les deux axes du bras au lieu d'un ? »*
+
+### 12.1 Ce qu'un seul segment donnait
+
+Un bras rigide pivotant à l'épaule est un **balancier** : la pince s'abaisse en piquant du
+nez, puisque toute la pièce bascule d'un bloc. Le mouvement atteignait le coffre mais ne
+ressemblait pas à une machine.
+
+### 12.2 Le découpage, mesuré
+
+Les dix cubes du bras se répartissent naturellement, une fois leurs rotations appliquées :
+
+| Pièce | Position posée | Rôle |
+|---|---|---|
+| mât, 2×11,4×2 | épaule (0, 5, 0) → sommet (0, 12,28, −11,87) | **segment 1**, longueur 13,93 |
+| flèche, contrepoids, pince | autour du sommet | **segment 2**, la tête |
+
+Le coude est donc le **sommet du mât**, et il est calculé et non écrit en dur : le
+`fuel_inserter` est la même géométrie décalée d'une unité vers le bas, une constante serait
+fausse pour lui.
+
+### 12.3 La tête contre-tourne
+
+La tête reprend **exactement** l'inclinaison du mât, au signe près. La pince descend donc
+sans jamais basculer — le geste d'une pelleteuse qui garde son godet horizontal.
+
+Cela a une conséquence heureuse sur le calcul : le décalage coude → pince restant constant
+dans le repère du modèle, la position de la pince se calcule en **une rotation et une
+addition**, au lieu de deux rotations composées. Le facteur de contre-rotation est une
+constante (`HEAD_COUNTER_ROTATION`) : le descendre sous 1 rendrait à la pince un peu de
+basculement, si l'effet parfaitement horizontal paraissait trop rigide.
+
+### 12.4 Ce que ça donne
+
+| Pose | Portée | Hauteur |
+|---|---|---|
+| mât au repos | 0,8625 bloc | 0,867 |
+| mât à l'horizontale | **0,991 bloc** | **0,412** |
+
+La pose de repos est **inchangée au millième** : la restructuration n'a rien déplacé. Et
+plongée, la pince atteint le centre du voisin à un pixel près, à une hauteur qui la met dans
+le coffre et non au-dessus.
+
+### 12.5 Le doute de la §8.4 est levé
+
+Le pivot du coude a un **z non nul**, contrairement à celui de la tourelle : la convention de
+signe de GeckoLib comptait donc, cette fois. Le bytecode tranche —
+`BakedModelFactory` appelle `updatePivot(-pivot.x, pivot.y, pivot.z)` : **seul x est nié**.
+Le coude a x = 0, son pivot passe donc intact. Plus rien ne reste à confirmer à l'œil de ce
+côté.

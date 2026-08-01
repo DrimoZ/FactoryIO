@@ -89,5 +89,8 @@
   "message.factory_io.upgrade_not_better": "Already equipped as well or better",
   "block.factory_io.creative_energy_source": "Creative Energy Source",
   "tooltip.factory_io.creative_energy_source": "Feeds every adjacent machine, forever. Creative only.",
-  "tooltip.factory_io.animation_help": "Smooth turret movement. Turn it off for a fast inserter: the arm still shows which side it is on, it just stops sweeping."
+  "tooltip.factory_io.animation_help": "On: smooth movement. Fast: the arm jumps between poses — readable on a fast inserter, where a half turn takes 100 ms. Off: nothing moves at all.",
+  "tooltip.factory_io.animation_smooth": "Anim: On",
+  "tooltip.factory_io.animation_fast": "Anim: Fast",
+  "tooltip.factory_io.animation_off": "Anim: Off"
 }

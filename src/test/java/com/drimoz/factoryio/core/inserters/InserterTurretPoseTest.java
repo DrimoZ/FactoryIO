@@ -20,8 +20,9 @@ class InserterTurretPoseTest {
 
     private static final float EPSILON = 1.0e-4f;
 
-    private static final boolean ANIMATED = true;
-    private static final boolean STEPPED = false;
+    private static final InserterAnimationMode ANIMATED = InserterAnimationMode.SMOOTH;
+    private static final InserterAnimationMode STEPPED = InserterAnimationMode.SNAP;
+    private static final InserterAnimationMode FROZEN = InserterAnimationMode.OFF;
 
     // Les quatre états
 
@@ -44,7 +45,7 @@ class InserterTurretPoseTest {
     })
     @DisplayName("Chaque état place la tourelle du bon côté")
     void anglePerState(InserterState state, float progress, float expected) {
-        assertEquals(expected, InserterTurretPose.angleDegrees(state, progress, ANIMATED), EPSILON);
+        assertEquals(expected, InserterTurretPose.turretDegrees(state, progress, ANIMATED), EPSILON);
     }
 
     // Continuité aux transitions
@@ -55,20 +56,20 @@ class InserterTurretPoseTest {
         assertAll(
                 // WAITING → SWINGING : le mouvement démarre là où l'attente s'était figée.
                 () -> assertEquals(
-                        InserterTurretPose.angleDegrees(InserterState.WAITING, 1f, ANIMATED),
-                        InserterTurretPose.angleDegrees(InserterState.SWINGING, 0f, ANIMATED),
+                        InserterTurretPose.turretDegrees(InserterState.WAITING, 1f, ANIMATED),
+                        InserterTurretPose.turretDegrees(InserterState.SWINGING, 0f, ANIMATED),
                         EPSILON, "WAITING → SWINGING"),
 
                 // SWINGING → BLOCKED : la cible refuse, le bras reste où il vient d'arriver.
                 () -> assertEquals(
-                        InserterTurretPose.angleDegrees(InserterState.SWINGING, 1f, ANIMATED),
-                        InserterTurretPose.angleDegrees(InserterState.BLOCKED, 0f, ANIMATED),
+                        InserterTurretPose.turretDegrees(InserterState.SWINGING, 1f, ANIMATED),
+                        InserterTurretPose.turretDegrees(InserterState.BLOCKED, 0f, ANIMATED),
                         EPSILON, "SWINGING → BLOCKED"),
 
                 // BLOCKED → RETURNING : la place se libère, le retour part de la même pose.
                 () -> assertEquals(
-                        InserterTurretPose.angleDegrees(InserterState.BLOCKED, 0f, ANIMATED),
-                        InserterTurretPose.angleDegrees(InserterState.RETURNING, 0f, ANIMATED),
+                        InserterTurretPose.turretDegrees(InserterState.BLOCKED, 0f, ANIMATED),
+                        InserterTurretPose.turretDegrees(InserterState.RETURNING, 0f, ANIMATED),
                         EPSILON, "BLOCKED → RETURNING"),
 
                 // RETURNING → WAITING : c'est la transition volontairement NON synchronisée.
@@ -76,8 +77,8 @@ class InserterTurretPoseTest {
                 // exactement la pose de WAITING, sans quoi l'économie de paquet se paierait
                 // d'un sursaut à chaque cycle.
                 () -> assertEquals(
-                        InserterTurretPose.angleDegrees(InserterState.RETURNING, 1f, ANIMATED),
-                        InserterTurretPose.angleDegrees(InserterState.WAITING, 0f, ANIMATED),
+                        InserterTurretPose.turretDegrees(InserterState.RETURNING, 1f, ANIMATED),
+                        InserterTurretPose.turretDegrees(InserterState.WAITING, 0f, ANIMATED),
                         EPSILON, "RETURNING → WAITING"));
     }
 
@@ -89,10 +90,10 @@ class InserterTurretPoseTest {
     void steppedModeIgnoresProgress(float progress) {
         assertAll(
                 () -> assertEquals(InserterTurretPose.TARGET_DEGREES,
-                        InserterTurretPose.angleDegrees(InserterState.SWINGING, progress, STEPPED),
+                        InserterTurretPose.turretDegrees(InserterState.SWINGING, progress, STEPPED),
                         EPSILON, "SWINGING"),
                 () -> assertEquals(InserterTurretPose.SOURCE_DEGREES,
-                        InserterTurretPose.angleDegrees(InserterState.RETURNING, progress, STEPPED),
+                        InserterTurretPose.turretDegrees(InserterState.RETURNING, progress, STEPPED),
                         EPSILON, "RETURNING"));
     }
 
@@ -101,8 +102,8 @@ class InserterTurretPoseTest {
     void steppedModeKeepsStatesDistinguishable() {
         // C'est tout l'enjeu de la §10.1 : couper l'animation ne doit pas rendre
         // indiscernables un inserter au repos et un inserter qui vient de livrer.
-        float waiting = InserterTurretPose.angleDegrees(InserterState.WAITING, 0f, STEPPED);
-        float blocked = InserterTurretPose.angleDegrees(InserterState.BLOCKED, 0f, STEPPED);
+        float waiting = InserterTurretPose.turretDegrees(InserterState.WAITING, 0f, STEPPED);
+        float blocked = InserterTurretPose.turretDegrees(InserterState.BLOCKED, 0f, STEPPED);
 
         assertEquals(InserterTurretPose.SOURCE_DEGREES, waiting, EPSILON);
         assertEquals(InserterTurretPose.TARGET_DEGREES, blocked, EPSILON);
@@ -114,7 +115,7 @@ class InserterTurretPoseTest {
     @ValueSource(floats = {-5f, -0.01f, 1.01f, 12f})
     @DisplayName("Une progression hors bornes est ramenée aux extrémités, jamais extrapolée")
     void progressIsClamped(float progress) {
-        float angle = InserterTurretPose.angleDegrees(InserterState.SWINGING, progress, ANIMATED);
+        float angle = InserterTurretPose.turretDegrees(InserterState.SWINGING, progress, ANIMATED);
 
         // La progression vient d'un calcul client sur l'horloge du monde : un décalage d'un
         // tick ou un rechargement peuvent la faire sortir de [0, 1]. Extrapoler ferait

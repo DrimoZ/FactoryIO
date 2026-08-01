@@ -59,8 +59,16 @@ public class InserterGeoModel extends GeoModel<InserterBlockEntity> {
     public void handleAnimations(InserterBlockEntity inserter, long instanceId, AnimationState<InserterBlockEntity> state) {
         super.handleAnimations(inserter, instanceId, state);
 
+        float partialTick = state.getPartialTick();
+
         getBone(InserterGeo.TURRET_BONE).ifPresent(turret ->
-                turret.setRotY(inserter.getTurretDegrees(state.getPartialTick()) * Mth.DEG_TO_RAD));
+                turret.setRotY(inserter.getTurretDegrees(partialTick) * Mth.DEG_TO_RAD));
+
+        getBone(InserterGeo.ARM_BONE).ifPresent(arm ->
+                arm.setRotX(inserter.getArmPitchDegrees(partialTick) * Mth.DEG_TO_RAD));
+
+        getBone(InserterGeo.HEAD_BONE).ifPresent(head ->
+                head.setRotX(inserter.getHeadPitchDegrees(partialTick) * Mth.DEG_TO_RAD));
     }
 
     /**

@@ -101,16 +101,15 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
     private void refreshAnimationControl() {
         if (this.animationButton == null || !getMenu().isBacked()) return;
 
-        this.animationButton.setMessage(getMenu().getBlockEntity().isAnimated()
-                ? CommonComponents.OPTION_ON
-                : CommonComponents.OPTION_OFF);
+        this.animationButton.setMessage(ModUtils.tooltipComponent(
+                getMenu().getBlockEntity().getAnimationMode().translationKey()));
     }
 
     private void toggleAnimation() {
         if (!getMenu().isBacked()) return;
 
         send(C2SInserterSetting.Setting.ANIMATION,
-                getMenu().getBlockEntity().isAnimated() ? 0 : 1);
+                getMenu().getBlockEntity().getAnimationMode().next().ordinal());
     }
 
     /**

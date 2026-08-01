@@ -9,6 +9,18 @@ Colonne « ✓ » = critère d'acceptation.
 
 ---
 
+## ⛔ À faire avant tout le reste
+
+Décidé le 31/07/2026. Ces trois points passent **devant** les convoyeurs, les machines et la
+suite de la roadmap. Les deux premiers parce que l'interface a atteint sa limite ; le
+troisième parce qu'il est visible en jeu.
+
+| ID | P | Est. | Ticket | ✓ |
+|---|---|---|---|---|
+| FIO-071 | **P0** | L | **Refonte du GUI.** La texture est figée et n'a aucune case libre : commandes redstone, bouton d'animation et teinte des filtres par tag sont tous posés à la main sur un fond qui ne les prévoyait pas, à des positions en dur. Trois widgets ajoutés depuis, chacun un peu plus à l'étroit — et le prochain n'aura plus de place. Cible : un fond composable, une disposition dérivée de `InserterSlotLayout`, des widgets réutilisables, toutes les chaînes en clés de traduction ([`07`](07-DESIGN-INSERTERS.md) §8). | un `burner_filter_inserter` — 7 slots — s'affiche correctement sans retoucher la texture |
+| FIO-162 | **P0** | M | **Reprendre l'ergonomie des améliorations.** Un module se pose au clic droit et ne se retire **qu'en cassant le bloc** ; rien dans le menu ne montre ce qui est installé, hors un résumé de trois caractères sur la ligne du titre. Cible : de vrais slots d'amélioration, pose et retrait, effet de chaque module lisible. Dépend de FIO-071 — c'est de la place à trouver dans l'interface, pas de la mécanique à réécrire. | poser et retirer un module sans casser l'inserter ; voir ce qui est installé |
+| FIO-163 | **P1** | M | **Le déplacement des items n'est pas juste.** Constaté en jeu le 31/07/2026. La cinématique est pourtant celle du bras : reste à établir si l'écart vient du **repère** — l'item est placé dans celui, non tourné, du bloc, le bras dans celui que GeckoLib a déjà orienté — de l'échelle, ou du point de la pince retenu. À reproduire et mesurer avant de corriger. | l'item reste dans la pince sur tout le trajet, dans les quatre orientations |
+
 ## Épic A — Débloquer (Phase 0)
 
 | ID | P | Est. | Ticket | ✓ |
@@ -97,7 +109,7 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | ❌ FIO-068 | — | M | ~~Ramassage et dépôt d'items au sol (parité Factorio)~~ — **écarté le 30/07/2026 par le mainteneur.** Décision de périmètre, pas de faisabilité : le mod ne fera pas transiter d'items par le sol. Ne pas le rouvrir au motif que Factorio le fait. | — |
 | ~~FIO-069~~ | ✅ | S | Filtres par tag : clic droit sur un filtre posé bascule entre l'item exact et ses tags ([DT-02](04-DETTE-TECHNIQUE.md)) | une plaque de fer en mode tag laisse passer le cuivre, pas la cobblestone |
 | ~~FIO-070~~ | ✅ | M | Condition sur signal redstone **analogique** : mode (toujours / < N / ≥ N) et seuil 0-15, réglés dans le GUI par des widgets vanilla | « n'agir que si signal ≥ 5 » ; 1 GameTest, 7 tests JUnit |
-| ~~FIO-071~~ | ✅ | S | `GhostSlot` réutilisable, qui décide seul de ce qu'un clic veut dire (DT-08). La surcharge de `clicked()` **reste** : vanilla court-circuite sur `mayPickup` et ne transmet pas le bouton au slot — raison consignée dans `GhostSlot`. | un seul mécanisme fantôme, réutilisable pour les séparateurs |
+| ~~FIO-071a~~ | ✅ | S | `GhostSlot` réutilisable, qui décide seul de ce qu'un clic veut dire (DT-08). La surcharge de `clicked()` **reste** : vanilla court-circuite sur `mayPickup` et ne transmet pas le bouton au slot — raison consignée dans `GhostSlot`. La **refonte** du GUI elle-même reste à faire : voir FIO-071 en tête de document. | un seul mécanisme fantôme, réutilisable pour les séparateurs |
 | ~~FIO-072~~ | ✅ | S | Tooltips avec les bonnes unités ([BUG-029](03-BUGS.md)) | items/s et FE/s corrects |
 | ~~FIO-073~~ | ✅ | M | Benchmark des deux régimes, endormi et actif (DT-07) | 0,13 à 0,21 ms/tick pour 1 000 actifs, budget 2,0 ; [`10`](10-BENCHMARKS.md) |
 | FIO-076 | P3 | M | Retirer les inserters endormis de la liste des tickers. **Le critère d'acceptation est désormais atteint par un autre chemin** : FIO-077 a vidé le préambule qui faisait le plancher, et 1 000 endormis coûtent 0,035 ms/tick, soit 0,07 % d'un tick. Le ticket reste ouvert par honnêteté — la piste est toujours valable — mais plus aucune mesure ne le justifie. | ~~1 000 endormis < 0,2 ms/tick de façon stable~~ **atteint** |

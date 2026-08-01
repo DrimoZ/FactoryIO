@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.gametest;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
 import com.drimoz.factoryio.core.init.ModBlocks;
@@ -627,7 +628,7 @@ public class InserterGameTests {
         setupChain(helper, "burner_inserter");
         fuelInserter(helper);
 
-        inserter(helper).setAnimated(false);
+        inserter(helper).setAnimationMode(InserterAnimationMode.OFF);
 
         container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
 
@@ -640,7 +641,7 @@ public class InserterGameTests {
             helper.assertTrue(countIn(container(helper, TARGET)) > 0,
                     "Animation coupée, l'inserter ne transfère plus");
 
-            helper.assertFalse(inserter(helper).isAnimated(),
+            helper.assertTrue(inserter(helper).getAnimationMode() == InserterAnimationMode.OFF,
                     "Le réglage s'est réinitialisé tout seul");
         });
     }
@@ -651,17 +652,19 @@ public class InserterGameTests {
         setupChain(helper, "inserter");
 
         InserterBlockEntity blockEntity = inserter(helper);
-        blockEntity.setAnimated(false);
+        blockEntity.setAnimationMode(InserterAnimationMode.SNAP);
 
         blockEntity.load(blockEntity.saveWithoutMetadata());
 
-        helper.assertFalse(blockEntity.isAnimated(), "Le réglage n'a pas survécu à la sauvegarde");
+        helper.assertTrue(blockEntity.getAnimationMode() == InserterAnimationMode.SNAP,
+                "Le réglage n'a pas survécu à la sauvegarde");
 
         // Un monde antérieur à FIO-161 n'a pas la clé : le défaut doit être « animé », sans
         // quoi tous les inserters déjà posés se retrouveraient figés au premier chargement.
         blockEntity.load(new CompoundTag());
 
-        helper.assertTrue(blockEntity.isAnimated(), "Le défaut d'un monde ancien doit être « animé »");
+        helper.assertTrue(blockEntity.getAnimationMode() == InserterAnimationMode.SMOOTH,
+                "Le défaut d'un monde ancien doit être le mouvement continu");
 
         helper.succeed();
     }
@@ -711,7 +714,7 @@ public class InserterGameTests {
         source.setWhitelist(false);
         source.setRedstoneCondition(
                 new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 7));
-        source.setAnimated(false);
+        source.setAnimationMode(InserterAnimationMode.SNAP);
 
         InserterSettings settings = InserterSettings.load(source.captureSettings().save());
 
@@ -727,7 +730,8 @@ public class InserterGameTests {
         helper.assertTrue(copy.isTagFilter(0), "La correspondance par tag n'a pas été copiée");
         helper.assertTrue(copy.getRedstoneCondition().threshold() == 7,
                 "Le seuil redstone n'a pas été copié");
-        helper.assertFalse(copy.isAnimated(), "Le réglage d'animation n'a pas été copié");
+        helper.assertTrue(copy.getAnimationMode() == InserterAnimationMode.SNAP,
+                "Le réglage d'animation n'a pas été copié");
 
         // Rejouer les mêmes réglages ne doit plus rien changer : c'est ce qui distingue
         // « appliqué » de « déjà comme ça » dans le retour au joueur.

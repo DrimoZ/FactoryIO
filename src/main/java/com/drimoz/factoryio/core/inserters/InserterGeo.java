@@ -13,8 +13,14 @@ final class InserterGeo {
     static final ResourceLocation ANIMATIONS =
             new ResourceLocation(FactoryIO.MOD_ID, "animations/animated_block.animation.json");
 
-    /** Bone pivotant : tout ce qui surmonte les pieds, bagues supérieures comprises. */
+    /** Bone pivotant en Y : tout ce qui surmonte les pieds, bagues supérieures comprises. */
     static final String TURRET_BONE = "turret";
+
+    /** Bone pivotant en X, dans la tourelle : le bras qui plonge dans le conteneur. */
+    static final String ARM_BONE = "arm";
+
+    /** Bone du coude : la tête contre-tourne pour garder la pince à plat. */
+    static final String HEAD_BONE = "head";
 
     private InserterGeo() {}
 

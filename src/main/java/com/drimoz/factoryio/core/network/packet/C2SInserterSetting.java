@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.network.packet;
 
+import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterContainer;
 import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
@@ -40,7 +41,7 @@ public class C2SInserterSetting {
 		/** Seuil de la condition redstone. Valeur : 0 à 15. */
 		REDSTONE_THRESHOLD,
 
-		/** Interpolation du mouvement de tourelle. Valeur : 1 pour animé, 0 pour figé. */
+		/** Mode d'animation. Valeur : l'ordinal du mode. */
 		ANIMATION;
 
 		private static final Setting[] VALUES = values();
@@ -127,7 +128,7 @@ public class C2SInserterSetting {
 					blockEntity.getRedstoneCondition().withThreshold(value));
 
 			// Purement visuel : aucun effet sur le débit, les coûts ou les transferts.
-			case ANIMATION -> blockEntity.setAnimated(value == 1);
+			case ANIMATION -> blockEntity.setAnimationMode(InserterAnimationMode.byOrdinal(value));
 		}
 	}
 }

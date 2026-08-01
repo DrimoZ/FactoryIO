@@ -26,20 +26,20 @@ import java.util.List;
  * <p>Classe de données pure, sans dépendance au monde : elle se teste sans démarrer de
  * serveur.
  *
- * @param animated      interpolation du mouvement de tourelle (FIO-161)
+ * @param animation     mode d'animation de la machine (FIO-161)
  * @param whitelist     mode de la liste de filtrage
  * @param tagFilterMask slots dont la correspondance porte sur le tag, un bit par slot
  * @param redstone      condition d'activation
  * @param filters       items fantômes des slots de filtre, dans l'ordre
  */
 public record InserterSettings(
-        boolean animated,
+        InserterAnimationMode animation,
         boolean whitelist,
         int tagFilterMask,
         InserterRedstoneCondition redstone,
         List<ItemStack> filters) {
 
-    private static final String TAG_ANIMATED = "animated";
+    private static final String TAG_ANIMATION = "animation";
     private static final String TAG_WHITELIST = "whitelist";
     private static final String TAG_MASK = "tagFilters";
     private static final String TAG_MODE = "redstoneMode";
@@ -55,7 +55,7 @@ public record InserterSettings(
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
 
-        tag.putBoolean(TAG_ANIMATED, animated);
+        tag.putByte(TAG_ANIMATION, (byte) animation.ordinal());
         tag.putBoolean(TAG_WHITELIST, whitelist);
         tag.putInt(TAG_MASK, tagFilterMask);
         tag.putByte(TAG_MODE, (byte) redstone.mode().ordinal());
@@ -79,8 +79,9 @@ public record InserterSettings(
         }
 
         return new InserterSettings(
-                // Un configurateur rempli avant FIO-161 n'a pas la clé, et le défaut est « animé ».
-                !tag.contains(TAG_ANIMATED) || tag.getBoolean(TAG_ANIMATED),
+                // Un configurateur rempli avant ce réglage n'a pas la clé : l'octet vaut
+                // alors zéro, soit le mode continu, qui est le bon défaut.
+                InserterAnimationMode.byOrdinal(tag.getByte(TAG_ANIMATION)),
                 tag.getBoolean(TAG_WHITELIST),
                 tag.getInt(TAG_MASK),
                 new InserterRedstoneCondition(

@@ -100,6 +100,7 @@ public class InserterBlockRenderer implements BlockEntityRenderer<InserterBlockE
         Vec3 position = InserterCarryPath.positionOf(
                 facing,
                 inserter.getTurretDegrees(partialTick),
+                inserter.getArmPitchDegrees(partialTick),
                 inserter.isCarryingFuel(),
                 inserter.getArmProgress(partialTick));
 

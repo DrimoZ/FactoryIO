@@ -92,6 +92,13 @@ public class PackGenerator {
     public static Map<String, byte[]> generate() {
         Map<String, byte[]> files = new HashMap<>();
 
+        // Toujours écrit, même sur un pack vide : sans lui, Pack.readMetaAndCreate renvoie
+        // null et le pack ne peut pas être créé. Le cas se présentait pour *tout le monde*,
+        // puisqu'il suffit de n'avoir aucun inserter défini à la main — et journalisait une
+        // erreur à chaque rechargement de ressources alors qu'il n'y avait, précisément,
+        // rien à générer (cf. BUG-049).
+        files.put("pack.mcmeta", packMeta().getBytes(StandardCharsets.UTF_8));
+
         if (!ModLoader.isLoadingStateValid()) return files;
 
         reportLegacyDirectory();
@@ -105,8 +112,6 @@ public class PackGenerator {
             for (DataProvider provider : providers()) {
                 provider.run(output).join();
             }
-
-            files.put("pack.mcmeta", packMeta().getBytes(StandardCharsets.UTF_8));
 
             // En info et non en debug : c est le seul retour dont dispose quelqu un qui
             // vient d ajouter un JSON pour savoir si ses assets ont bien ete fabriques.
