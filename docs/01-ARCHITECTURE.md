@@ -34,7 +34,7 @@ com.drimoz.factoryio
 │   ├── registry/                   ← registre, chargeur, listener de datapack
 │   ├── resourcepack/               ← pack virtuel généré en mémoire
 │   └── upgrade/                    ← axes d'amélioration et leur effet
-├── gametest/                       ← 22 GameTests + 2 benchmarks
+├── gametest/                       ← 24 GameTests + 2 benchmarks
 └── shared/                         ← utilitaires, creative tab, widgets GUI
 ```
 
@@ -305,7 +305,7 @@ suffit à voir l'effet d'un JSON modifié.
 | Niveau | Où | Quoi |
 |---|---|---|
 | JUnit | `src/test` | calcul pur : plan des slots, trajectoire, barème, codec, condition redstone, effet des améliorations |
-| GameTest | `gametest/InserterGameTests` | 22 invariants de monde : conservation, ravitaillement, redstone, persistance, rotation, améliorations, configurateur, alimentation |
+| GameTest | `gametest/InserterGameTests` | 24 invariants de monde : conservation, ravitaillement, redstone, persistance, rotation, améliorations, configurateur, alimentation |
 | Benchmark | `gametest/InserterBenchmarks` | coût du tick, deux régimes ([`10`](10-BENCHMARKS.md)) |
 
 **La règle de partage est stricte et vaut d'être respectée** : tout ce qui touche aux

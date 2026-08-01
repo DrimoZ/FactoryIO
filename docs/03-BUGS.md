@@ -3,13 +3,15 @@
 > **État : 47 bugs sur 48 corrigés.**
 >
 > Le mod est porté sur Forge 1.20.1 et **validé en jeu** par le mainteneur le 30/07/2026
-> (FIO-054). Vingt-deux GameTests couvrent les invariants de monde
+> (FIO-054). Vingt-quatre GameTests couvrent les invariants de monde
 > (`./gradlew runGameTestServer`) et une centaine de cas JUnit le calcul pur
 > (`./gradlew test`). Le **rendu** reste hors de portée des tests automatisés : il est
 > vérifié à l'œil, pas par une assertion.
 >
-> Reste à traiter : BUG-016, la géométrie du bras à redécouper dans Blockbench
-> (FIO-066, en pause).
+> **Tous les bugs recensés sont corrigés.** BUG-016 l'a été par FIO-066 : le fichier
+> d'animation ne cible plus aucun bone — le mouvement est posé depuis le code — et
+> `crashIfBoneMissing` passe à `true`, de sorte qu'un bone introuvable ne puisse plus être
+> ignoré en silence. C'était la cause même de la longévité de ce bug.
 >
 > **BUG-042 à BUG-048 viennent d'un audit complet du 31/07/2026**, relecture de tout le code
 > à froid après la Phase 2. Ils sont tous corrigés. Le plus grave, BUG-042, était visible en
@@ -41,7 +43,7 @@ Sévérités :
 | [BUG-013](#bug-013) | ✅ S2 | Clamp du carburant sans effet → valeurs négatives | `…InserterBlockEntity.java` |
 | [BUG-014](#bug-014) | ✅ S2 | `filterable` force `useEnergy` | `Inserter.java` |
 | [BUG-015](#bug-015) | ✅ S2 | `affectedByRedstone` ignoré + update côté client | `ModEntityBlock.java` |
-| [BUG-016](#bug-016) | S2 | Animation ciblant un bone inexistant | `animated_block.animation.json` |
+| [BUG-016](#bug-016) | ✅ S2 | Animation ciblant un bone inexistant | `animated_block.animation.json` |
 | [BUG-017](#bug-017) | ✅ S2 | Boîte de collision = cube plein | `…InserterEntityBlock.java` |
 | [BUG-018](#bug-018) | ✅ S2 | `setEnabled()` sans effet | `…InserterBlockEntity.java` |
 | [BUG-019](#bug-019) | ✅ S2 | `getInnerFuelCapacity()` récursion infinie | `…InserterBlockEntity.java` |

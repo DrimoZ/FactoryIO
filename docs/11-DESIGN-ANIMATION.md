@@ -647,7 +647,23 @@ le besoin apparaît en multijoueur.
 
 ---
 
-## 11. Plan révisé
+## 11. Plan révisé — ✅ **appliqué le 31/07/2026**
+
+> Les six étapes sont livrées. Ce qui **n'est pas** vérifié, et ne peut pas l'être ici :
+> **l'image**. Aucun test n'affirme qu'un rendu est juste. Restent donc à contrôler à
+> l'œil, au premier lancement :
+>
+> 1. **le sens de rotation** — la pince doit passer par la droite de l'inserter, vu de
+>    dessus. Si elle passe par la gauche, inverser le signe de
+>    `InserterTurretPose.SOURCE_DEGREES` ; c'est la seule ligne à toucher ;
+> 2. **la restructuration des géométries** — le socle et les trois pieds doivent rester
+>    plantés au sol, seules la tourelle et les deux bagues supérieures tourner ;
+> 3. **la convention de pivot** (§8.4) — normalement sans effet ici, le pivot étant sur
+>    l'axe, mais c'est l'occasion de le confirmer.
+>
+> Un écart sur l'un de ces trois points se corrige par une constante, pas par une refonte.
+
+
 
 Les §9 et §10 remplacent les étapes 1 à 4 de la §6. Le chantier **rétrécit** : un seul bone
 à créer au lieu de trois, un seul degré de liberté, et le pivot n'est plus une inconnue.

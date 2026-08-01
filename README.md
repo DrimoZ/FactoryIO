@@ -9,7 +9,7 @@ Mod Minecraft **Forge 1.20.1** qui porte les mécaniques d'automatisation de *Fa
 >
 > Les **phases 0, 1 et 2** de la [roadmap](docs/05-ROADMAP.md) sont appliquées, et le mod a
 > été **porté de 1.18.2 vers Forge 1.20.1**. Le mod est validé en jeu par le mainteneur, et
-> couvert par **22 GameTests**, **2 benchmarks** et une centaine de cas JUnit.
+> couvert par **24 GameTests**, **2 benchmarks** et une centaine de cas JUnit.
 >
 > Les **sept inserters se fabriquent** (FIO-125) et une **source d'énergie créative**
 > lève la dépendance à un mod d'énergie tiers pour les tests (FIO-124). Ce qui manque
@@ -117,6 +117,11 @@ Ce qu'il ne peut pas faire, et pourquoi, est expliqué dans
 | Clic droit avec un **configurateur** | applique les réglages mémorisés |
 | Shift + clic droit avec un **configurateur** | mémorise les réglages de cet inserter |
 | Clic droit avec un **module** | installe une amélioration, et rend celle qu'elle remplace |
+
+Dans le menu, un bouton coupe l'**animation** de cette machine. « Désactivé » ne veut pas
+dire « immobile » : la tourelle saute d'une pose à l'autre au lieu de balayer, si bien qu'on
+continue de lire d'un coup d'œil de quel côté est le bras. Utile sur un inserter rapide
+sous module de vitesse, qui fait un demi-tour en cent millisecondes.
 
 Les **améliorations** utilisent les modules du mod, sur trois axes indépendants, trois
 paliers chacun :

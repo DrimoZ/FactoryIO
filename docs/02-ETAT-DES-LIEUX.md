@@ -10,7 +10,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 > (`Loaded 7 inserters`, aucune erreur fatale).
 >
 > Le comportement est désormais largement vérifié. **Le mod est validé en jeu** par le
-> mainteneur (FIO-054, 30/07/2026), et **22 GameTests** couvrent les invariants de monde —
+> mainteneur (FIO-054, 30/07/2026), et **24 GameTests** couvrent les invariants de monde —
 > conservation, ravitaillement, redstone, persistance, synchro de l'item en main, blocage
 > sur cible pleine, filtres par tag, rotation, améliorations, configurateur — doublés d'une
 > centaine de cas JUnit sur le calcul pur.
@@ -37,7 +37,7 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Pack de ressources/data généré au runtime | ✅ | en mémoire, refait à chaque rechargement, limité aux inserters utilisateur (FIO-039) |
 | Data generation Gradle (`runData`) | ✅ | 93 fichiers générés et versionnés |
 
-| Tests (GameTest) | ✅ | 22 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
+| Tests (GameTest) | ✅ | 24 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
 | Tests (JUnit) | ✅ | ~100 cas de calcul pur, `./gradlew test`, exécutés par `build` |
 | Benchmark de charge | ✅ | consigné ; **les deux budgets tenus** depuis l'allègement du préambule ([`10`](10-BENCHMARKS.md), FIO-073) |
 | `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
@@ -66,8 +66,9 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Tooltips d'item (Shift) | ✅ | débit en items/s, taille de main, unités correctes (BUG-029, FIO-065) |
 | Noms traduits des blocs et items | ✅ | `en_us` et `fr_fr` complets ; le générateur runtime n'agit plus qu'en surcharge (BUG-011) |
 | Modèle / texture | ✅ | GeckoLib, 3 géométries, textures normale + `_disabled` |
-| Animation du bras | 🔴 | abandonnée : le bone `inserter` porte tout l'assemblage, socle compris (BUG-016, FIO-066) |
-| Rendu de l'item transporté | ✅ | arc source → cible pendant le mouvement, item immobile en bout de course si la cible est pleine (FIO-067, FIO-060) ; validé en jeu (FIO-054) |
+| Animation de la tourelle | 🟡 | demi-tour autour de l'axe vertical, piloté par l'état ; tout est en place et testé, **le rendu reste à voir à l'œil** (FIO-066, [`11`](11-DESIGN-ANIMATION.md)) |
+| Réglage d'animation par machine | ✅ | bouton dans le GUI ; « désactivé » = sans interpolation, pas immobile (FIO-161) |
+| Rendu de l'item transporté | ✅ | l'item est **dans la pince** : une seule grandeur pilote le bras et l'item, ils ne peuvent plus se contredire (FIO-066, FIO-067) |
 | Boîte de collision | ✅ | socle + palier calqués sur le modèle (BUG-017) |
 | Recettes | ✅ | **les 7**, en chaîne : burner → inserter → {long handed, fast, filter} → stack → stack filter (FIO-125) |
 | Copier / coller de réglages | ✅ | item `configurator`, ouvert par le tag `factory_io:configurators` |
