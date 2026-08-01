@@ -6,6 +6,12 @@
 > Elle remplace le verdict de [`06`](06-BACKLOG.md) FIO-066 (« bloqué par la géométrie,
 > à redécouper dans Blockbench ») et la §6.1 de [`07`](07-DESIGN-INSERTERS.md), dont la
 > recommandation nomme une méthode GeckoLib 3 qui n'existe plus.
+>
+> ⚠ **Le plan courant est en §11.** Les §5, §6 et §7 décrivent une première conception,
+> fondée sur une rotation du seul bras autour de l'axe horizontal ; elle a été remplacée
+> par la rotation de tourelle de la §9, décidée le 31/07/2026. Elles sont conservées parce
+> que le raisonnement qui y mène reste utile — notamment §5.1, toujours valable — mais
+> **elles ne décrivent plus ce qui sera fait**.
 
 ---
 
@@ -45,14 +51,18 @@ change strictement rien au rendu tant que le nouveau bone est à rotation nulle.
 bone du bras est donc **une transformation de fichier**, pas un travail de modélisation.
 FIO-066 n'est pas bloqué par la géométrie ; il est bloqué par la croyance qu'il l'est.
 
-**Constat B — les bones existants animent la mauvaise chose.** `bearing`, `base` et
+**Constat B — les bones existants animent la mauvaise chose.** ❌ *Infirmé en §9.1 : le
+mouvement demandé est justement celui pour lequel ces bones ont été préparés.* Texte
+d'origine conservé ci-dessous. `bearing`, `base` et
 `base_top` ne contiennent que les trois anneaux octogonaux du plateau tournant, tous centrés
 sur x = z = 0. Ils sont préparés pour une **rotation en Y** — un inserter qui pivote sur
 lui-même. Or notre gameplay ne pivote jamais : l'orientation est figée par `FACING`, et la
 rotation à la clé repose le bloc. Le découpage existant est donc orthogonal au seul
 mouvement dont on ait besoin : la **rotation en X** du bras.
 
-**Constat C — le bras se sélectionne par une règle, pas à la main.** Toutes les pièces du
+**Constat C — le bras se sélectionne par une règle, pas à la main.** 🟡 *Affiné en §9.3 :
+la règle de hauteur suffit pour le bras seul, mais pas pour la tourelle entière — trois
+plaques du `filter_inserter` tomberaient du mauvais côté. Le critère retenu est structurel.* Toutes les pièces du
 bras ont un sommet au-dessus de `y = 6` ; aucune pièce statique n'y atteint (l'embase
 plafonne à 6, les pieds à 5). La règle **`y_max > 6`** isole exactement les dix cubes du
 bras, et elle vaut pour les trois fichiers — le `fuel_inserter` n'est que la variante
@@ -254,6 +264,9 @@ duplication reste une dette (elle appellera un quatrième fichier au moindre nou
 
 ## 5. Accrocher l'item à la pince
 
+> §5.1 reste **valable et central**. §5.2 est caduque : la rotation de tourelle (§9) fixe le
+> rayon de la pince une fois pour toutes, et l'étirement du mât sort du chemin critique.
+
 ### 5.1 Il n'y a pas de cinématique à écrire
 
 `GeoBone` expose `getModelPosition()`, `getWorldPosition()` et `getModelSpaceMatrix()` :
@@ -306,7 +319,7 @@ nom promet, ce qu'aucune version du mod n'a jamais eu.
 
 ---
 
-## 6. Plan
+## 6. Plan *(remplacé par la §11)*
 
 ### Étape 1 — restructurer les trois géométries (script, pas Blockbench)
 
@@ -382,7 +395,7 @@ un défaut d'interpolation se voit.
 
 ---
 
-## 7. Estimation
+## 7. Estimation *(remplacée par la §11)*
 
 | Étape | Coût | Risque |
 |---|---|---|
@@ -477,3 +490,186 @@ de 90° imposée en dur et un coup d'œil suffisent à trancher, à l'étape 3.
 - **Le rendu lui-même.** Aucune assertion ne peut dire qu'une image est juste. Ce que
   l'automatisation *peut* couvrir, ce sont l'angle et la position de pince, qui sont du
   calcul pur — d'où l'étape 2. Le reste est un contrôle à l'œil, listé à l'étape 5.
+
+---
+
+## 9. Rotation de la tourelle — la décision qui réécrit ce document
+
+> Demandé le 31/07/2026 : *« que l'animation soit aussi en partie une rotation complète de
+> l'inserter à part sa base et ses pieds — que le truc rond au centre soit aussi en partie
+> en rotation, comme dans Factorio »*.
+
+### 9.1 Le constat B de la §1.1 était faux
+
+La §1.1 affirmait que les bones existants « animent la mauvaise chose » : `bearing`, `base`
+et `base_top` ne portent que les anneaux du plateau tournant, préparés pour une **rotation
+en Y**, alors que notre gameplay ne fait jamais pivoter l'inserter.
+
+C'était juger le modèle à l'aune du mouvement que le code avait choisi, pas de celui que la
+machine devrait avoir. **Le modeleur avait raison** : il a découpé son modèle pour la
+rotation que Factorio utilise réellement, et c'est le plan d'animation qui était à côté. Les
+trois bones existants deviennent un acquis, pas une curiosité.
+
+### 9.2 Ce que ça simplifie
+
+Une rotation de 180° autour de l'axe vertical suffit **à elle seule** à décrire le cycle :
+
+| Pièce | Au repos (0°) | À 180° |
+|---|---|---|
+| pince | au-dessus de la cible (−z) | au-dessus de la source (+z) |
+| mât (penché de −32,5°) | penché vers la cible | penché vers la source |
+| contrepoids | côté source | côté cible |
+
+Le mât penché et le contrepoids opposé font que la pose retournée est **exactement** celle
+qu'on attend d'un bras revenu en arrière. Rien à corriger, rien à composer.
+
+Conséquence directe : **la rotation en X de la §5 devient inutile.** Le plan initial séparait
+le bras de la tourelle pour le faire basculer ; il n'y a plus qu'un seul degré de liberté, et
+donc **un seul bone à créer**.
+
+### 9.3 Le découpage
+
+La règle de hauteur de la §1.1 ne suffit plus : le `filter_inserter` porte trois plaques
+latérales qui appartiennent à la tourelle mais culminent **plus bas** que les patins des
+pieds (5,0 contre 5,2). Un seuil en y les rangerait du mauvais côté. Le critère est donc
+**structurel** :
+
+| Ensemble | Règle | energy | filter | fuel |
+|---|---|---|---|---|
+| plaque de sol | cube 16×16 | 1 | 1 | **0** |
+| pieds | triplet à 0° / ±135° | 9 | 9 | 9 |
+| patins | épaisseur 0,1 | 6 | 6 | 6 |
+| **tourelle** | tout le reste | **13** | **16** | **13** |
+
+*(Au passage : le `fuel_inserter` n'a **pas** de plaque de sol, contrairement aux deux
+autres. Incohérence d'art préexistante, sans effet sur ce chantier, mais elle est notée.)*
+
+Hiérarchie cible :
+
+```
+inserter (statique : plaque, 9 pieds, 6 patins)
+├── base                          ← anneau INFÉRIEUR, y ∈ [2,5 ; 4,5] : la bague fixe
+└── turret   pivot [0, 0, 0]   rotation Y  ← le mouvement
+    ├── bearing, base_top         ← anneaux SUPÉRIEURS, y ∈ [4,5 ; 5,5] : re-parentés
+    ├── hand                      ← les 5 cubes de pince, pour lire getModelPosition()
+    └── (carter, mât, flèche, contrepoids)
+```
+
+Le « en partie » de la demande tombe juste : la bague inférieure reste au sol, les deux
+supérieures tournent. C'est ce que fait un vrai palier — et c'est probablement pour cela
+qu'il y a trois bones et pas un.
+
+### 9.4 Deux propriétés qui rendent cette voie plus sûre que la précédente
+
+**Le pivot n'est plus une inconnue.** La §8.4 signalait la convention de pivot des bones
+comme le seul point à confirmer à l'œil, GeckoLib pouvant inverser le signe de x et z. Or le
+pivot d'une rotation en Y est `[0, y, 0]` : **x = z = 0, et l'opposé de 0 vaut 0**. La
+rotation de tourelle y est donc insensible. Le doute ne subsisterait que si l'on ajoutait un
+jour une rotation en X.
+
+**Les anneaux sont déjà centrés** — vérifié : `bearing` occupe x et z ∈ [−2 ; 2], `base` et
+`base_top` ∈ [−3 ; 3]. Ils se re-parentent tels quels, sans retoucher une coordonnée.
+
+### 9.5 Ce que ça coûte ailleurs
+
+**La trajectoire de l'item change de nature.** La pince décrit désormais un demi-cercle
+**horizontal** de rayon 0,863 bloc autour du centre du bloc, au lieu d'un arc vertical
+au-dessus. C'est le mouvement de Factorio, et c'est ce que la géométrie impose dès lors qu'on
+lit la position réelle du bone (§5.1).
+
+Conséquence à assumer : à mi-course, la pince et l'item survolent le **bloc latéral**, à
+0,86 bloc du centre. C'est normal pour un inserter — dans Factorio aussi le bras passe
+au-dessus des cases voisines — mais c'est un changement visible qu'il faut avoir décidé.
+
+**Une intention de test s'inverse.** Parmi les sept cas JUnit de `InserterCarryPath`, l'un
+vérifie que l'item **ne dérive pas latéralement**. Avec la rotation de tourelle, la dérive
+latérale n'est plus un défaut : c'est le mouvement. Ce test ne migre pas, il est **remplacé**
+par son contraire — l'item reste sur un cercle de rayon constant. Les six autres intentions
+survivent telles quelles.
+
+---
+
+## 10. Bouton d'activation de l'animation
+
+> Demandé le 31/07/2026 : *« un bouton sur la machine pour activer/désactiver l'animation —
+> certains ne voudront peut-être pas voir les animations aller à 500 km/h »*.
+
+La demande est fondée, et chiffrable : un `fast_inserter` sous module de vitesse tombe à
+**2 ticks par mouvement**, soit 100 ms pour un demi-tour. À 60 images par seconde, cela fait
+six images pour 180° — une hélice, pas un bras.
+
+### 10.1 « Désactivé » ne doit pas vouloir dire « immobile »
+
+Un bras figé ne dit plus rien : un inserter bloqué, un inserter au repos et un inserter en
+plein travail auraient la même image, et l'on perdrait le retour visuel gagné par FIO-067.
+
+La bonne sémantique est **sans interpolation**, pas **sans mouvement** : la tourelle prend
+directement la pose que son état implique, et saute d'une pose à l'autre aux transitions.
+
+| État | Animation active | Animation désactivée |
+|---|---|---|
+| `WAITING` | tourelle côté source | idem |
+| `SWINGING` | balayage continu source → cible | saut immédiat à la pose cible |
+| `BLOCKED` | tourelle côté cible, immobile | idem |
+| `RETURNING` | balayage continu cible → source | saut immédiat à la pose source |
+
+On garde toute l'information — quel côté, quel item en main, bloqué ou non — et on supprime
+exactement ce qui gêne : le flou. Le coût d'implémentation est **négatif** : c'est une
+branche qui *saute* le calcul d'interpolation.
+
+### 10.2 Là où ça se branche, tout existe déjà
+
+| Besoin | Ce qui existe |
+|---|---|
+| envoyer le réglage au serveur | `C2SInserterSetting.Setting` — un cas d'énumération à ajouter ; la validation (expéditeur, chunk, distance, menu ouvert) est déjà écrite |
+| le persister | un booléen dans `saveAdditional` / `load` |
+| le synchroniser | un booléen dans `getUpdateTag` — **1 bit**, sur un tag déjà envoyé |
+| le copier d'une machine à l'autre | `InserterSettings` : c'est un réglage, il a sa place dans le configurateur |
+| le bouton | un `Button` vanilla de 16×16 |
+
+**Emplacement.** Le bandeau décrit en [`07`](07-DESIGN-INSERTERS.md) §8 est occupé de x = 28
+à 142 par les deux commandes redstone ; il reste x ≈ 146-162, et le bandeau entier est libre
+sur un inserter insensible au redstone. C'est jouable — mais c'est le troisième widget posé à
+la main sur une texture qui n'a pas de case pour lui, et cela **renforce FIO-071** plutôt que
+de l'attendre.
+
+### 10.3 La question qu'il faut poser
+
+Un réglage d'animation est une **préférence de confort**, or il sera ici stocké dans le monde
+et **partagé entre tous les joueurs** : si l'un le coupe, les autres le subissent.
+
+C'est bien ce qui a été demandé — « un bouton sur la machine » — et c'est défendable : cela
+permet de calmer *un* inserter précis sans tout désactiver, ce qu'un réglage global ne
+permet pas. Mais le complément naturel est une **option client** globale, qui n'a pas à
+transiter par le serveur. Les deux ne s'excluent pas : le bouton dit « cette machine »,
+l'option client dirait « chez moi ». Le bouton d'abord, tel que demandé ; l'option client si
+le besoin apparaît en multijoueur.
+
+---
+
+## 11. Plan révisé
+
+Les §9 et §10 remplacent les étapes 1 à 4 de la §6. Le chantier **rétrécit** : un seul bone
+à créer au lieu de trois, un seul degré de liberté, et le pivot n'est plus une inconnue.
+
+| # | Étape | Coût | Note |
+|---|---|---|---|
+| 1 | Script de restructuration des 3 géos : bones `turret` et `hand`, re-parentage de `bearing` et `base_top` | S | critère : **rendu identique** avant / après |
+| 2 | `InserterTurretPose` — angle en calcul pur : quatre états, carburant, mode sans interpolation | S | JUnit, comme `InserterCarryPath` |
+| 3 | `handleAnimations` : `setRotY` sur `turret`, `crashIfBoneMissing → true` | S | vérifier le **sens** de rotation à l'œil |
+| 4 | Item accroché à la pince via `getModelPosition()` ; `InserterCarryPath` retiré | S | réécrit six des sept intentions de test, en inverse la septième (§9.5) |
+| 5 | Bouton d'activation : énumération, NBT, `getUpdateTag`, `InserterSettings`, widget | S | tout existe, voir §10.2 |
+| 6 | Vérification en jeu | S | 4 états × 3 géométries × 2 portées, un burner en ravitaillement, un `fast` sous module |
+
+**Abandonné du plan initial** : la rotation en X, la hiérarchie `mast` / `hand` à trois
+niveaux, l'étirement du mât. L'étirement pourra revenir si le `long_handed_inserter` déçoit à
+l'œil, mais il n'est plus sur le chemin critique.
+
+### Ce qu'il ne faut toujours pas faire
+
+- **Ne pas synchroniser un compteur d'angle.** L'échéance absolue suffit.
+- **Ne pas animer depuis le tick serveur.** L'angle est une fonction du temps client.
+- **Ne pas ajouter d'états** à la machine pour les besoins du rendu.
+- **Ne pas faire du bouton un état de gameplay.** Il ne doit rien changer au débit, au coût
+  ni au comportement — seulement à l'image. Un GameTest doit le verrouiller : le même
+  transfert, animation activée puis désactivée, donne le même résultat.
