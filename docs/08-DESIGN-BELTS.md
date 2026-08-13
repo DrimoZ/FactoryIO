@@ -161,20 +161,38 @@ sealed interface BeltTarget {
 Les blockstates du dépôt utilisent `facing` (4 valeurs) × `connected` (0-7).
 D'après les noms de modèles, la sémantique est :
 
-| `connected` | Modèle | Signification déduite |
-|---|---|---|
-| 0 | `transport_belt` | droit, isolé |
-| 1 | `_ct` | connecté (droit, chaîné) |
-| 2 | `_ct_output` | sortie chaînée |
-| 3 | `_ct_input` | entrée chaînée |
-| 4 | `_left_ct_input` | entrée latérale gauche |
-| 5 | `_left_ct` | virage gauche |
-| 6 | `_right_ct_input` | entrée latérale droite |
-| 7 | `_right_ct` | virage droit |
+| `connected` | Modèle | Forme | Raccords | Éléments |
+|---|---|---|---|---|
+| 0 | `transport_belt` | droit | aucun | 22 |
+| 3 | `_ct_input` | droit | entrée | 23 |
+| 2 | `_ct_output` | droit | sortie | 23 |
+| 1 | `_ct` | droit | entrée + sortie | 24 |
+| 4 | `_left_ct_input` | **virage gauche** | entrée | 56 |
+| 5 | `_left_ct` | **virage gauche** | entrée + sortie | 57 |
+| 6 | `_right_ct_input` | **virage droit** | entrée | 56 |
+| 7 | `_right_ct` | **virage droit** | entrée + sortie | 57 |
 
-> ⚠ Cette table est **reconstituée à partir des noms de fichiers**. Il faut la
-> valider visuellement en jeu au jalon 3.2 et la figer dans une énumération Java
-> (`BeltShape`) avant d'écrire la logique de connexion.
+> ✅ **Table vérifiée sur la géométrie des modèles**, et non plus déduite des noms.
+> Les 32 variantes du blockstate se répartissent en 8 modèles × 4 rotations en Y.
+> Deux mesures tranchent :
+>
+> - les quatre premiers modèles tiennent dans `x, z ∈ [0 ; 16]` ; les quatre
+>   derniers débordent (`x ∈ [−1 ; 16]`, `z ∈ [−1,5 ; 16,5]`) et comptent 56 à 57
+>   éléments contre 22 à 24. Ce sont donc bien des **virages**, pas des bandes
+>   droites à entrée latérale ;
+> - le suffixe `_ct` **ajoute** des éléments au lieu d'en retirer : 22 isolé, 23
+>   avec un raccord, 24 avec deux. `connected` encode donc une **forme** et une
+>   **paire de raccords**, pas une direction d'entrée.
+
+**Correction que cela apporte à la règle 3 ci-dessous** : il n'existe aucun modèle
+de bande droite recevant une entrée latérale, et c'est normal — dans Factorio,
+c'est la bande **entrante** qui se dessine courbée, pas celle qui reçoit. Le
+virage appartient donc à l'amont. Une bande droite alimentée par le côté reste un
+modèle droit.
+
+Autre relevé utile : toutes les bandes font **8 unités de haut**, soit une
+demi-dalle. La pince d'un inserter plongé descend à 10,07 — elle passe donc juste
+au-dessus de la bande, sans la traverser.
 
 Règles de connexion à implémenter dans `updateShape` / `getStateForPlacement` :
 
