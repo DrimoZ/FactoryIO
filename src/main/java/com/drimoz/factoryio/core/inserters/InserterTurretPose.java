@@ -108,10 +108,11 @@ public final class InserterTurretPose {
 
         if (mode.isFrozen()) return InserterArmKinematics.Pose.REST;
 
-        return InserterArmKinematics.solveLifted(
-                InserterArmKinematics.CONTAINER_REACH,
-                InserterArmKinematics.CONTAINER_Y,
-                liftAt(state, progress, mode, ticksPerSwing));
+        // La pince reste sur le cercle d'extension : seule son élévation change. Le bras garde
+        // donc sa silhouette et pivote, au lieu de s'aplatir pour gagner de la portée.
+        return InserterArmKinematics.atElevation(
+                InserterArmKinematics.DIVE_ELEVATION_DEGREES
+                        + liftAt(state, progress, mode, ticksPerSwing));
     }
 
     /**

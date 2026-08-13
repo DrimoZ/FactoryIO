@@ -32,14 +32,12 @@ class InserterCarryPathTest {
     private static final boolean TO_SELF = true;
 
     /** Bras plongé dans le conteneur : la pose des deux extrémités du trajet. */
-    private static final InserterArmKinematics.Pose DIVED = InserterArmKinematics.solve(
-            InserterArmKinematics.CONTAINER_REACH, InserterArmKinematics.CONTAINER_Y);
+    private static final InserterArmKinematics.Pose DIVED =
+            InserterArmKinematics.atElevation(InserterArmKinematics.DIVE_ELEVATION_DEGREES);
 
     /** Bras relevé à mi-course, à pleine amplitude. */
-    private static final InserterArmKinematics.Pose LIFTED = InserterArmKinematics.solveLifted(
-            InserterArmKinematics.CONTAINER_REACH,
-            InserterArmKinematics.CONTAINER_Y,
-            InserterTurretPose.MAX_LIFT_DEGREES);
+    private static final InserterArmKinematics.Pose LIFTED = InserterArmKinematics.atElevation(
+            InserterArmKinematics.DIVE_ELEVATION_DEGREES + InserterTurretPose.MAX_LIFT_DEGREES);
 
     private static final float AT_SOURCE = InserterTurretPose.SOURCE_DEGREES;
     private static final float AT_TARGET = InserterTurretPose.TARGET_DEGREES;

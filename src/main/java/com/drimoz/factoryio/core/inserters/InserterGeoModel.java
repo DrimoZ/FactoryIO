@@ -1,11 +1,18 @@
 package com.drimoz.factoryio.core.inserters;
 
+import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.model.Inserter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.model.GeoModel;
+
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public class InserterGeoModel extends GeoModel<InserterBlockEntity> {
 
@@ -72,17 +79,53 @@ public class InserterGeoModel extends GeoModel<InserterBlockEntity> {
         float partialTick = state.getPartialTick();
         InserterArmKinematics.Pose pose = inserter.getArmPose(partialTick);
 
-        getBone(InserterGeo.TURRET_BONE).ifPresent(turret ->
-                turret.setRotY(-inserter.getTurretDegrees(partialTick) * Mth.DEG_TO_RAD));
+        rotate(InserterGeo.TURRET_BONE, bone ->
+                bone.setRotY(-inserter.getTurretDegrees(partialTick) * Mth.DEG_TO_RAD));
 
-        // Les deux inclinaisons viennent de la même résolution : le mât et la tête ne peuvent
-        // pas décrire deux gestes différents.
-        getBone(InserterGeo.ARM_BONE).ifPresent(arm ->
-                arm.setRotX(pose.mastDegrees() * Mth.DEG_TO_RAD));
+        // Le bras est rigide : seul le mât s'incline. La tête reçoit tout de même son angle
+        // — nul aujourd'hui — pour que le jour où le modèle portera une vraie articulation, il
+        // n'y ait rien à rebrancher ici.
+        rotate(InserterGeo.ARM_BONE, bone ->
+                bone.setRotX(pose.mastDegrees() * Mth.DEG_TO_RAD));
 
-        getBone(InserterGeo.HEAD_BONE).ifPresent(head ->
-                head.setRotX(pose.headDegrees() * Mth.DEG_TO_RAD));
+        rotate(InserterGeo.HEAD_BONE, bone ->
+                bone.setRotX(pose.headDegrees() * Mth.DEG_TO_RAD));
     }
+
+    /**
+     * Applique une rotation à un bone, et <b>fait du bruit</b> s'il n'existe pas.
+     *
+     * <p>{@link #crashIfBoneMissing()} ne couvre que les bones visés par une <i>keyframe</i> :
+     * un {@code getBone(...).ifPresent(...)} sur un bone absent ne fait rien, en silence. Or
+     * tout le mouvement de ce mod passe par du code, pas par des keyframes — la garde de
+     * GeckoLib ne protégeait donc rien de ce qui compte ici.
+     *
+     * <p>C'est exactement la forme de BUG-016, qui a vécu des mois parce qu'une animation
+     * visait un {@code bone2} inexistant : une géométrie ajoutée sans les bons bones
+     * s'afficherait figée, sans une ligne dans le journal.
+     *
+     * <p>Journalisé une seule fois par bone manquant : cette méthode est appelée à chaque
+     * image, pour chaque inserter visible.
+     */
+    private void rotate(String bone, Consumer<GeoBone> rotation) {
+        Optional<GeoBone> found = getBone(bone);
+
+        if (found.isPresent()) {
+            rotation.accept(found.get());
+            return;
+        }
+
+        if (this.missingBones.add(bone)) {
+            FactoryIO.LOGGER.error(
+                    "{} : bone « {} » absent de la géométrie — le bras restera figé. "
+                            + "Toute géométrie d'inserter doit porter « {} », « {} » et « {} ».",
+                    getModelResource(null), bone,
+                    InserterGeo.TURRET_BONE, InserterGeo.ARM_BONE, InserterGeo.HEAD_BONE);
+        }
+    }
+
+    /** Bones déjà signalés, pour ne pas noyer le journal à raison d'une ligne par image. */
+    private final Set<String> missingBones = ConcurrentHashMap.newKeySet();
 
     /**
      * Un bone introuvable doit faire du bruit.

@@ -7,18 +7,20 @@
 > à redécouper dans Blockbench ») et la §6.1 de [`07`](07-DESIGN-INSERTERS.md), dont la
 > recommandation nomme une méthode GeckoLib 3 qui n'existe plus.
 >
-> ⚠ **Ce qui décrit le code actuel : les §13 et §14.** Le reste raconte comment on y est
-> arrivé, en deux conceptions successivement abandonnées :
+> ⚠ **Ce qui décrit le code actuel : les §13 et §15.** Le reste raconte comment on y est
+> arrivé, en trois conceptions successivement réfutées :
 >
 > | Sections | Conception | Statut |
 > |---|---|---|
 > | §5 à §7 | rotation du seul bras autour de l'axe horizontal | remplacée par la §9 |
-> | §9 à §12 | rotation de tourelle, puis deux segments à contre-rotation | **réfutée en jeu**, voir §14 |
-> | §13, §14 | convention de signe GeckoLib, puis cinématique inverse | ✅ en vigueur |
+> | §9 à §12 | tourelle, puis deux segments à contre-rotation | **réfutée en jeu** — bras disloqué |
+> | §14 | cinématique inverse à deux segments | **réfutée en jeu** — bras plat, puis décollé |
+> | §13 | convention de signe GeckoLib | ✅ en vigueur |
+> | **§15** | **bras rigide, un seul pivot** | ✅ **en vigueur** |
 >
-> Elles sont conservées parce que les raisonnements qui y mènent restent instructifs — la
-> §12 en particulier montre une erreur défendue par un argument de simplicité — mais **elles
-> ne décrivent plus le code**.
+> Elles sont conservées parce que la suite d'erreurs est plus instructive que le résultat :
+> les trois corrections ont porté sur la couche au-dessus du vrai problème, sans jamais
+> examiner l'hypothèse de départ. La **§15.3** en fait le bilan.
 
 ---
 
@@ -920,3 +922,79 @@ choisir entre les deux gestes.
 `CONTAINER_REACH` (15,6), `CONTAINER_Y` (9,5) et `MAX_LIFT_DEGREES` (20). Tout le reste en
 découle. Descendre `CONTAINER_Y` fait plonger davantage, au prix du poignet — cf. le tableau
 de la §14.3.
+
+---
+
+## 15. Le bras est rigide — la §14 se trompait aussi (01/08/2026)
+
+> Retour de jeu : *« toujours pas bon ??? comment ça les bords ne sont pas joints ? la partie
+> grise n'est pas contre le tout haut point de la partie centrale ? »*
+
+### 15.1 La mesure qui tranche
+
+Distance de chaque pièce du bone `head` à **son propre pivot** :
+
+| Pièce | Distance au pivot |
+|---|---|
+| pince | 2,0 à 2,5 |
+| flèche | 6,4 |
+| **contrepoids** | **18,1**, et de l'autre côté |
+
+Le contrepoids est plus loin du pivot que le mât n'est long (13,93).
+
+**Ce bone n'est pas un poignet.** C'est tout l'ensemble supérieur — flèche, contrepoids,
+pince — et son pivot se trouve à l'extrémité *pince*, pas à une articulation. Le faire tourner
+de 7° déplace donc le contrepoids de `18,1 × sin 7° ≈ 2,2` unités, et l'ensemble se décolle
+visiblement du sommet du mât.
+
+### 15.2 Ce que le modèle décrit
+
+Un **châssis rigide en A** : un mât diagonal, une flèche horizontale posée dessus, un
+contrepoids à l'arrière, une pince à l'avant. Un seul pivot réel, l'épaule. Une grue, pas un
+bras articulé.
+
+Les §12 et §14 ont toutes deux échoué **pour la même raison** : elles supposaient une chaîne à
+deux segments et cherchaient le bon angle du second. Il n'y a pas de second segment.
+
+### 15.3 L'erreur de méthode, qui vaut mieux que l'erreur elle-même
+
+Trois conceptions, trois échecs, et à chaque fois la correction portait sur la couche
+au-dessus du vrai problème :
+
+| Version | Ce qui était mis en cause | Ce qui l'était vraiment |
+|---|---|---|
+| §12 | la valeur de la contre-rotation | le sens du calcul |
+| §14 | le sens du calcul | la paramétrisation |
+| §14 bis | la paramétrisation (portée/hauteur → cercle) | **la structure du modèle** |
+
+Chaque correction était juste à son niveau et n'a rien réglé, parce que l'hypothèse de départ
+— « c'est un bras à deux segments » — n'a jamais été examinée. Elle venait du nom des bones,
+`arm` et `head`, créés par un script de restructuration : **des noms, pas des mesures.**
+
+*Avant de calculer sur une structure, mesurer qu'elle existe.* Une distance pièce–pivot aurait
+suffi, et coûtait cinq minutes.
+
+### 15.4 Ce que ça donne
+
+Une seule grandeur : l'élévation de la pince. Le bras conserve sa silhouette par construction,
+puisqu'il ne se déforme plus.
+
+| Pose | Élévation | Portée | Hauteur |
+|---|---|---|---|
+| plongée | 18° | 0,97 bloc | 0,63 |
+| repos sculpté | 32,7° | 0,86 | 0,87 |
+| mi-course | 38° | 0,81 | 0,94 |
+
+Le relevé qui s'efface sur les inserters rapides (§14.5) reste valable, tel quel.
+
+### 15.5 Ce qui devient possible, et ce qui reste impossible
+
+**Possible, et devenu simple** : le `long_handed_inserter`. Il prend à deux blocs mais sa pince
+n'atteint que 0,97 — décalage antérieur à tout ce travail. Un bras rigide se met à l'échelle en
+une ligne : `k ≈ 1,97` et une plongée à 9° pour atteindre deux blocs, les deux dérivés de
+`grabDistance`. Réserve : une mise à l'échelle uniforme épaissit le bras autant qu'elle
+l'allonge.
+
+**Impossible sans toucher au modèle** : une vraie articulation. Il faudrait une flèche dont le
+pivot soit au point où elle rencontre le mât, et un contrepoids rattaché au mât. Chantier
+d'art.
