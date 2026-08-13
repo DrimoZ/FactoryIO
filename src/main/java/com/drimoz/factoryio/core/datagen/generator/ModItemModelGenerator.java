@@ -19,7 +19,10 @@ public class ModItemModelGenerator extends ItemModelProvider {
                 withExistingParent("item/" + inserter.getName(), modLoc("block/" + inserter.getName())));
 
         // L'item d'un bloc reprend le modèle du bloc, il n'a pas de texture propre.
-        ModBlocks.ENTRIES.forEach(block -> {
+        //
+        // MODELLED et non ENTRIES : les convoyeurs ont déjà leur modèle d'item écrit à la
+        // main, et en générer un second le mettrait en concurrence avec celui du dépôt.
+        ModBlocks.MODELLED.forEach(block -> {
             String name = block.getId().getPath();
             withExistingParent("item/" + name, modLoc("block/" + name));
         });

@@ -7,6 +7,9 @@
     "factory_io:long_handed_inserter",
     "factory_io:stack_filter_inserter",
     "factory_io:stack_inserter",
-    "factory_io:creative_energy_source"
+    "factory_io:creative_energy_source",
+    "factory_io:transport_belt",
+    "factory_io:fast_transport_belt",
+    "factory_io:express_transport_belt"
   ]
 }
