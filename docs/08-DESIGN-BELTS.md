@@ -184,11 +184,21 @@ D'après les noms de modèles, la sémantique est :
 >   avec un raccord, 24 avec deux. `connected` encode donc une **forme** et une
 >   **paire de raccords**, pas une direction d'entrée.
 
-**Correction que cela apporte à la règle 3 ci-dessous** : il n'existe aucun modèle
-de bande droite recevant une entrée latérale, et c'est normal — dans Factorio,
-c'est la bande **entrante** qui se dessine courbée, pas celle qui reçoit. Le
-virage appartient donc à l'amont. Une bande droite alimentée par le côté reste un
-modèle droit.
+**Le virage appartient à la bande qui reçoit**, et la règle 4 ci-dessous le disait
+déjà correctement. Une bande n'a qu'un `facing`, qui est sa **sortie** : dans un
+coude, la tuile où la direction change pointe vers la nouvelle direction et reçoit
+par le côté. C'est donc elle qui se dessine courbée ; l'amont reste droit et pointe
+simplement vers elle.
+
+> ⚠ Une première rédaction de ce paragraphe affirmait l'inverse — « c'est la bande
+> entrante qui se dessine courbée ». C'était une conclusion tirée d'un comptage
+> d'éléments qui ne la portait pas, et elle contredisait la règle 4 sans que ce soit
+> relevé. Deux mesures ne remplacent pas le raisonnement qu'elles sont censées
+> étayer.
+
+Il n'existe en revanche aucun modèle distinct pour une bande **droite** recevant en
+plus une entrée latérale — un T. C'est normal : elle se dessine droite, et la bande
+latérale bute simplement contre elle.
 
 Autre relevé utile : toutes les bandes font **8 unités de haut**, soit une
 demi-dalle. La pince d'un inserter plongé descend à 10,07 — elle passe donc juste
