@@ -396,84 +396,55 @@ Livrer une version jouable dès le jalon 3.7 — ne pas attendre 3.11.
 
 ---
 
-## 11. Convoyeurs en pente
+## 11. Monter et descendre : des ascenseurs, pas des rampes
 
-> Question du mainteneur : *« que faire pour les convoyeurs verticaux ? il faut gérer les
-> extrémités de ces cas spéciaux aussi »*.
+> Décision du mainteneur, 01/08/2026 : *« je veux pas de slope mais un truc qui monte en
+> vertical direct, comme les chutes de Create. Empiler des blocs. »*
 
-### 11.1 Ce que les assets autorisent, et ce qu'ils interdisent
+Une première rédaction de cette section décrivait des rampes à 45°, sur le modèle des rails
+vanilla. Elle est remplacée — et le choix retenu **simplifie** le problème.
 
-Deux faits relevés sur les fichiers, avant toute conception :
+### 11.1 Pourquoi c'est plus simple, et pas seulement différent
 
-- **aucun asset de rampe n'existe.** Les blockstates ne déclarent que `facing` et
-  `connected`, et les huit modèles sont plats (`y ∈ [0 ; 8]`). Une pente demande une
-  propriété de blockstate **et** de nouveaux modèles ;
-- **une rampe en virage est impossible.** Un élément de modèle de bloc n'admet qu'**une
-  seule rotation, sur un seul axe**. Les modèles de virage ont déjà consommé la leur sur Y
-  (45°, 22,5°) ; une pente en demanderait une sur X. On ne peut pas cumuler.
+Une rampe débouche sur un voisin **diagonal** : en avant et un cran plus haut. Aucun bloc ne
+touche donc sa sortie par une face, et celui qui reçoit ne peut pas trouver son amont parmi
+ses voisins immédiats. Il fallait examiner **trois candidats à trois hauteurs**, et ne pas se
+tromper — au sommet de chaque rampe, une erreur coupait la ligne sans rien casser de visible.
 
-**Les rampes seront donc droites uniquement.** Ce n'est pas une simplification choisie mais
-une contrainte du format — la même famille de limite que celle qui a imposé GeckoLib pour le
-bras (§2 bis de [`11`](11-DESIGN-ANIMATION.md)).
+Un ascenseur débouche toujours sur un voisin **de face**. Toute la résolution tient alors en
+une phrase, valable pour les trois sens :
 
-### 11.2 Ce que la pente ne change pas
+> **Un voisin m'alimente si sa sortie est ma position.**
 
-Rien au transport. `BeltLane` compte des cases, et une case en pente est une case :
-avancement, compression, débit, ordre — tout est inchangé. Seuls changent **la position du
-bloc aval** et **le tracé** que suit le rendu.
+Six faces, un seul test, aucune liste de candidats par forme. C'est `BeltFlow.feeds` et rien
+d'autre.
 
-C'est le bénéfice d'avoir isolé le cœur : la pente est arrivée après, et n'a pas coûté une
-ligne dans la partie qui décrit le transport.
+### 11.2 La sortie fait autorité
 
-### 11.3 La règle : la sortie fait autorité
+C'est la propriété qui rend cette phrase suffisante. Un convoyeur sait où il déverse ; il ne
+devine jamais qui l'alimente à partir de sa propre forme.
 
-Chaque convoyeur sait où il débouche :
+Sans cela, un ascenseur et la bande qu'il alimente auraient chacun leur idée de la connexion,
+et il suffirait qu'elles divergent pour couper la ligne.
 
-```
-sortie = position + facing + dénivelé        (dénivelé : plat 0, montée +1, descente −1)
-```
+### 11.3 Les extrémités d'une colonne
 
-Un convoyeur ne déduit **pas** son amont de sa propre forme. Il demande aux trois candidats
-possibles lequel débouche sur lui.
+Toutes découlent de la règle unique, sans code particulier :
 
-Ce sens est le seul qui marche, et c'est tout l'objet de la question posée. Une montée dépose
-un cran plus haut ; le convoyeur qui reçoit a, lui, son entrée à son propre niveau. S'il
-cherchait son amont en `position − facing`, il ne trouverait rien et **la ligne se couperait
-au sommet de chaque rampe**, sans rien casser de visible — juste un bouchon dont la cause est
-ailleurs.
-
-C'est exactement la logique des rails vanilla, qui regardent aussi un cran au-dessus et un
-cran en dessous.
-
-| Candidat amont | Qui s'y trouve |
+| Situation | Ce qui se passe |
 |---|---|
-| `pos − facing` | un convoyeur plat |
-| `pos − facing − 1` | une **montée** qui arrive |
-| `pos − facing + 1` | une **descente** qui arrive |
+| **pied** — une bande bute sur un ascenseur | sa sortie est la position de l'ascenseur : il l'alimente |
+| **empilement** — ascenseurs superposés | chacun déverse dans celui du dessus ; leurs orientations n'ont pas à concorder |
+| **sommet** — une bande posée au-dessus | elle trouve l'ascenseur parmi ses six voisins, sans règle « accepter par le dessous » |
+| **descente** | symétrique en tout point |
+| **colonne vers le vide** | la sortie ne trouve rien → blocage → compression, chemin déjà écrit |
+| **montée surmontée d'une descente** | les deux se nourrissent mutuellement. Ni blocage ni duplication : les items circulent. C'est un puits sans fond, pas un défaut |
 
-Occuper une de ces positions ne suffit pas : un convoyeur perpendiculaire est bien derrière
-nous mais déverse ailleurs. Seul `feeds(...)`, qui regarde où l'amont débouche réellement,
-établit la connexion.
-
-### 11.4 Les extrémités, cas par cas
-
-| Jonction | Comportement |
-|---|---|
-| plat → montée | le pied de rampe reçoit à son propre niveau, rien de particulier |
-| montée → plat | **le cas qui justifie la règle** : le sommet trouve la rampe un cran plus bas |
-| montée → montée | s'enchaîne, deux blocs plus haut et deux plus loin |
-| descente | symétrique en tout point |
-| rampe vers le vide | la sortie ne trouve rien → blocage → compression, chemin déjà écrit |
-| rampe vers un virage | **interdit** : un virage est forcément plat (§11.1) |
-
-Les deux derniers ne demandent aucun code particulier : le premier réutilise le blocage, le
-second est refusé à la pose.
-
-### 11.5 Ce qui reste à trancher
+### 11.4 Ce qui reste à décider
 
 | Point | Proposition |
 |---|---|
-| **Vitesse en pente** | inchangée. Le trajet est √2 plus long, donc l'item paraît un peu plus rapide ; c'est imperceptible et l'alternative complique le débit annoncé |
-| **Dégagement au-dessus** | ne rien imposer, comme les rails vanilla. Un bloc au-dessus d'une rampe n'empêche rien, il masque |
-| **Inserter sur une rampe** | autoriser, dépose sur la case médiane. À revoir si l'item paraît flotter |
-| **Modèles** | à dessiner : une rampe droite par tier, avec ses variantes de raccord. Chantier d'art |
+| **Deux voies ou une** | **deux**, comme une bande. Une seule voie ferait de tout ascenseur un goulot d'étranglement de moitié, et les joueurs les éviteraient |
+| **Vitesse** | celle du tier, sans correction. Un bloc traversé est un bloc traversé, qu'il soit horizontal ou vertical |
+| **Virage** | interdit sur un ascenseur : il monte, il ne tourne pas — et aucun modèle ne combine les deux |
+| **Modèles** | à dessiner : un ascenseur par tier. Aucun asset vertical n'existe, mais c'était déjà vrai des rampes |

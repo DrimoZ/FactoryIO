@@ -121,13 +121,13 @@ class BeltShapeTest {
     }
 
     @Test
-    @DisplayName("Une pente non plate interdit le virage, et la forme le reflète")
-    void slopeAndShapeAgree() {
-        for (BeltSlope slope : BeltSlope.values()) {
-            BeltShape shape = BeltShape.of(false, true, false, slope.allowsCurve());
+    @DisplayName("Un ascenseur interdit le virage, et la forme le reflète")
+    void flowAndShapeAgree() {
+        for (BeltFlow flow : BeltFlow.values()) {
+            BeltShape shape = BeltShape.of(false, true, false, flow.allowsCurve());
 
-            assertEquals(slope.allowsCurve() ? BeltShape.CURVE_LEFT : BeltShape.STRAIGHT, shape,
-                    "pente " + slope.getSerializedName());
+            assertEquals(flow.isHorizontal() ? BeltShape.CURVE_LEFT : BeltShape.STRAIGHT, shape,
+                    "sens " + flow.getSerializedName());
         }
     }
 

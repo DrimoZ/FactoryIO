@@ -93,11 +93,11 @@ public enum BeltShape {
      * Forme à afficher, d'après les entrées effectivement raccordées.
      *
      * <p>« Raccordée » veut dire qu'un convoyeur <b>débouche</b> réellement de ce côté, ce que
-     * seul {@link BeltSlope#feeds} établit. Un voisin qui se contente d'occuper la place n'y
+     * seul {@link BeltFlow#feeds} établit. Un voisin qui se contente d'occuper la place n'y
      * change rien.
      *
-     * @param canCurve {@code false} en pente : une rampe est forcément droite, un élément de
-     *                 modèle n'admettant qu'une rotation et le virage ayant déjà pris la sienne
+     * @param canCurve {@code false} sur un ascenseur : il monte, il ne tourne pas. Un élément de
+     *                 modèle n'admet de toute façon qu'une rotation, et le virage a pris la sienne
      */
     public static BeltShape of(boolean fromBack, boolean fromLeft, boolean fromRight, boolean canCurve) {
         if (!canCurve || fromBack) return STRAIGHT;
