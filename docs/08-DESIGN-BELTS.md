@@ -76,8 +76,23 @@ chunk devient un vrai problème ; la sérialisation est complexe.
 l'impose.
 
 Le prototype [FIO-090](06-BACKLOG.md) doit trancher **avec des chiffres**, pas
-d'intuition : 2 000 blocs, 8 000 items, mesure Spark avant d'écrire une ligne de
-gameplay.
+d'intuition.
+
+> **Mis à jour le 01/08/2026.** FIO-090 a été découpé en trois, un par budget du §1,
+> parce qu'il en mélangeait deux et en oubliait un — et parce qu'il prétendait
+> trancher A contre B en ne mesurant que A.
+>
+> | | Budget | État |
+> |---|---|---|
+> | FIO-090a | tick serveur | ✅ **0,035 ms/tick pour 1,2 % du budget** ([`10`](10-BENCHMARKS.md)) |
+> | FIO-090b | rendu | ⬜ demande le bloc et son renderer |
+> | FIO-090c | réseau | ⬜ **le risque réel**, voir §6 |
+>
+> Le premier a été mesuré **sans lancer le jeu** : les classes de transport ne
+> dépendent pas de Minecraft. Conséquence pour la recommandation ci-dessus — le
+> tick serveur n'est pas ce qui menace le design A, et « prototyper avant tout
+> gameplay » n'a plus lieu d'être pour les deux budgets restants, qui exigent
+> justement du gameplay pour être mesurés.
 
 ---
 

@@ -114,3 +114,45 @@ seuil ne soit franchi mérite d'être regardé — et d'être ajouté au tableau
 | Coût de rendu | demande un client ; l'affichage n'est validé par aucun test (FIO-054) |
 | Frontières de chunk, chunks déchargés | relève des convoyeurs (FIO-100) |
 | Usine réelle mixte | Spark, en jeu |
+
+---
+
+## Convoyeurs — coût du transport seul (01/08/2026)
+
+Premier des trois budgets de [`08`](08-DESIGN-BELTS.md) §1, mesuré **sans lancer le jeu** :
+`BeltLane`, `BeltTransport` et `BeltSink` ne dépendent pas de Minecraft, on peut donc les
+compiler seuls et les chronométrer.
+
+2 000 convoyeurs chaînés, `ticksPerSlot = 4` (le tier de base), 20 000 ticks après chauffe :
+
+| Remplissage | Items | Coût |
+|---|---|---|
+| 100 % | 16 000 | **0,036 ms/tick** |
+| 50 % | 8 000 | **0,035 ms/tick** |
+| vide | 0 | 0,019 ms/tick |
+
+**Budget : 3 ms/tick. L'algorithme en consomme 1,2 %.**
+
+### Ce que ce chiffre dit, et ce qu'il ne dit pas
+
+Il ne mesure **que l'algorithme**. Pas le ticker de block entity, pas le NBT, pas la
+résolution du voisin aval, pas l'accès aux chunks. En jeu le coût réel sera plus élevé — à
+titre de calibrage, 1 000 inserters endormis coûtent déjà 0,035 ms/tick rien qu'en plomberie
+de ticker, pour un travail nul.
+
+C'est donc une **borne inférieure**. Elle est malgré tout décisive dans un sens : si
+l'algorithme seul avait consommé les 3 ms, le design A serait mort sur place. Il en consomme
+un cinquantième, et le coût varie à peine avec la charge — un convoyeur plein ne coûte pas
+plus cher qu'un convoyeur à moitié vide, parce que le travail est proportionnel au nombre de
+**blocs**, pas d'items.
+
+**Le tick serveur n'est donc pas le risque des convoyeurs.** Restent le rendu et le réseau,
+qui sont les deux budgets non mesurés.
+
+### Reproduire
+
+Les trois classes se compilent hors du projet :
+
+```bash
+javac -d out src/main/java/com/drimoz/factoryio/core/belts/Belt{Lane,Transport,Sink}.java
+```
