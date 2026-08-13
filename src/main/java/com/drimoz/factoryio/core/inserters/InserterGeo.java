@@ -19,7 +19,7 @@ final class InserterGeo {
     /** Bone pivotant en X, dans la tourelle : le bras qui plonge dans le conteneur. */
     static final String ARM_BONE = "arm";
 
-    /** Bone du coude : la tête contre-tourne pour garder la pince à plat. */
+    /** Bone du coude : son angle est résolu avec celui du mât, jamais posé à part. */
     static final String HEAD_BONE = "head";
 
     private InserterGeo() {}

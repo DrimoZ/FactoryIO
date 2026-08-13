@@ -46,6 +46,17 @@ import java.util.List;
  * <p>À comparer aux 40 ticks par mouvement — soit 80 ticks et 0,25 item/s — que
  * partageaient auparavant les sept modèles.
  *
+ * <h2>Slots d'amélioration</h2>
+ *
+ * <p>Ils suivent la chaîne de fabrication plutôt que le débit : 1 pour le burner, 2 pour le
+ * palier intermédiaire, 3 pour le {@code fast}, 4 pour les deux {@code stack}. Améliorer un
+ * inserter demande donc d'abord d'en fabriquer un meilleur — c'est la progression que les
+ * recettes décrivent déjà, et elle empêche de transformer un burner en machine de fin de
+ * partie à coups de modules.
+ *
+ * <p>C'est un trait <b>structurel</b> : il fixe la taille de l'inventaire. Les valeurs qu'un
+ * module apporte, elles, sont réglables à chaud (voir {@code InserterUpgradeTuning}).
+ *
  * <h2>Énergie</h2>
  *
  * <p>Le coût reste exprimé <b>par mouvement</b> et non par tick actif : c'est ce que la
@@ -94,13 +105,13 @@ public final class InserterDefaults {
      */
     public static List<Inserter> all() {
         return List.of(
-                burner("burner_inserter", 17, 1, 1, false),
-                electric("inserter", 12, 1, 1, false, 8),
-                electric("long_handed_inserter", 8, 1, 2, false, 10),
-                electric("filter_inserter", 12, 1, 1, true, 10),
-                electric("fast_inserter", 4, 1, 1, false, 25),
-                electric("stack_inserter", 4, 3, 1, false, 35),
-                electric("stack_filter_inserter", 4, 3, 1, true, 40));
+                burner("burner_inserter", 17, 1, 1, false, 1),
+                electric("inserter", 12, 1, 1, false, 2, 8),
+                electric("long_handed_inserter", 8, 1, 2, false, 2, 10),
+                electric("filter_inserter", 12, 1, 1, true, 2, 10),
+                electric("fast_inserter", 4, 1, 1, false, 3, 25),
+                electric("stack_inserter", 4, 3, 1, false, 4, 35),
+                electric("stack_filter_inserter", 4, 3, 1, true, 4, 40));
     }
 
     // Inner work
@@ -117,27 +128,28 @@ public final class InserterDefaults {
     private static final int BURNER_FUEL_CAPACITY = 4000;
 
     private static Inserter burner(
-            String name, int ticksPerSwing, int handSize, int grabDistance, boolean filterable) {
+            String name, int ticksPerSwing, int handSize, int grabDistance, boolean filterable,
+            int upgradeSlots) {
 
         int fuelPerSwing = BURN_TIME_PER_ACTIVE_TICK * ticksPerSwing;
 
         return Inserter.burner(
                 id(name), true,
                 grabDistance, ticksPerSwing, handSize,
-                filterable,
+                filterable, upgradeSlots,
                 BURNER_FUEL_CAPACITY, fuelPerSwing);
     }
 
     private static Inserter electric(
             String name, int ticksPerSwing, int handSize, int grabDistance, boolean filterable,
-            int fePerActiveTick) {
+            int upgradeSlots, int fePerActiveTick) {
 
         int energyPerSwing = fePerActiveTick * ticksPerSwing;
 
         return Inserter.electric(
                 id(name), true,
                 grabDistance, ticksPerSwing, handSize,
-                filterable,
+                filterable, upgradeSlots,
                 /* energyCapacity */ energyPerSwing * 100, ENERGY_TRANSFER_RATE, energyPerSwing);
     }
 

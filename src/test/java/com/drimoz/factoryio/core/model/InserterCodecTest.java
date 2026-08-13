@@ -245,6 +245,36 @@ class InserterCodecTest {
             assertEquals(inserter.getTicksPerSwing(), reread.getTicksPerSwing(), inserter.getName());
             assertEquals(inserter.getItemsPerSecond(), reread.getItemsPerSecond(), 1.0e-9, inserter.getName());
             assertEquals(inserter.useEnergy(), reread.useEnergy(), inserter.getName());
+            assertEquals(inserter.getUpgradeSlots(), reread.getUpgradeSlots(), inserter.getName());
         }
+    }
+
+    // Slots d'amélioration
+
+    @Test
+    @DisplayName("Un JSON qui ne dit rien obtient le nombre de slots par défaut")
+    void upgradeSlotsDefault() {
+        assertEquals(InserterCodec.DEFAULT_UPGRADE_SLOTS, parseOrThrow("{}").getUpgradeSlots());
+    }
+
+    @Test
+    @DisplayName("Zéro slot est accepté : c'est un choix, pas une faute de frappe")
+    void zeroUpgradeSlotsIsAccepted() {
+        assertEquals(0, parseOrThrow("{\"upgradeSlots\": 0}").getUpgradeSlots());
+    }
+
+    @Test
+    @DisplayName("Un nombre de slots négatif est refusé avec un motif nommant le champ")
+    void negativeUpgradeSlotsIsRejected() {
+        assertTrue(errorOf("{\"upgradeSlots\": -1}").contains("upgradeSlots"),
+                "le motif doit nommer le champ fautif");
+    }
+
+    @Test
+    @DisplayName("Un nombre de slots démesuré est ramené au plafond plutôt que de casser le menu")
+    void hugeUpgradeSlotCountIsBounded() {
+        // Écrêté et non refusé : la borne est une contrainte d'affichage, pas une règle du
+        // format. Un pack qui vise trop haut obtient un inserter jouable et un avertissement.
+        assertEquals(Inserter.MAX_UPGRADE_SLOTS, parseOrThrow("{\"upgradeSlots\": 99}").getUpgradeSlots());
     }
 }

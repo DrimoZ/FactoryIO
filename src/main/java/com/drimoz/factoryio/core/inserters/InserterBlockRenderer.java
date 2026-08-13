@@ -75,9 +75,9 @@ public class InserterBlockRenderer implements BlockEntityRenderer<InserterBlockE
      * Affiche l'item en main, le long de sa trajectoire (cf. FIO-067, FIO-060).
      *
      * <p>Avant cela l'item se téléportait d'un coffre à l'autre : rien à l'écran ne
-     * distinguait un inserter qui travaille d'un inserter bloqué. Le bras lui-même reste
-     * figé faute de géométrie animable (cf. FIO-066) ; l'item est donc le seul retour
-     * visuel du transfert.
+     * distinguait un inserter qui travaille d'un inserter bloqué. Le bras est animé depuis
+     * FIO-066, et l'item se cale sur lui : la position vient des <b>mêmes angles</b> que ceux
+     * posés sur les bones (cf. FIO-067b), pas d'une trajectoire calculée à part.
      *
      * <p>L'état suffit à décider : {@code SWINGING} donne un item en mouvement,
      * {@code BLOCKED} le même item immobile en bout de course — un inserter dont la cible
@@ -100,7 +100,7 @@ public class InserterBlockRenderer implements BlockEntityRenderer<InserterBlockE
         Vec3 position = InserterCarryPath.positionOf(
                 facing,
                 inserter.getTurretDegrees(partialTick),
-                inserter.getArmPitchDegrees(partialTick),
+                inserter.getArmPose(partialTick),
                 inserter.isCarryingFuel(),
                 inserter.getArmProgress(partialTick));
 

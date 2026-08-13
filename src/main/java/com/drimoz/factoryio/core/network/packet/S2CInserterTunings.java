@@ -3,6 +3,8 @@ package com.drimoz.factoryio.core.network.packet;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.model.InserterTuning;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeTuning;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeTunings;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkEvent;
@@ -32,30 +34,43 @@ public class S2CInserterTunings {
 
     private final Map<ResourceLocation, InserterTuning> tunings;
 
+    /**
+     * Le barème des améliorations voyage dans le même paquet.
+     *
+     * <p>Il est émis aux mêmes moments et pour la même raison que les réglages d'inserter :
+     * le client en a besoin pour le débit annoncé et pour la vitesse d'animation. Un second
+     * paquet n'apporterait qu'un enregistrement de plus à tenir.
+     */
+    private final InserterUpgradeTuning upgrades;
+
     // Life cycle
 
-    public S2CInserterTunings(Map<ResourceLocation, InserterTuning> tunings) {
+    public S2CInserterTunings(Map<ResourceLocation, InserterTuning> tunings, InserterUpgradeTuning upgrades) {
         this.tunings = tunings;
+        this.upgrades = upgrades;
     }
 
-    /** Capture les réglages courants de tous les inserters enregistrés. */
+    /** Capture les réglages courants de tous les inserters enregistrés, et le barème. */
     public static S2CInserterTunings current() {
         Map<ResourceLocation, InserterTuning> tunings = new HashMap<>();
 
         InserterRegistry.getInstance().getInserters()
                 .forEach(inserter -> tunings.put(inserter.getId(), inserter.getTuning()));
 
-        return new S2CInserterTunings(tunings);
+        return new S2CInserterTunings(tunings, InserterUpgradeTunings.current());
     }
 
     public S2CInserterTunings(FriendlyByteBuf buf) {
         this.tunings = buf.readMap(FriendlyByteBuf::readResourceLocation, InserterTuning::read);
+        this.upgrades = InserterUpgradeTuning.read(buf);
     }
 
     public void toBytes(FriendlyByteBuf buf) {
         buf.writeMap(this.tunings,
                 FriendlyByteBuf::writeResourceLocation,
                 (out, tuning) -> tuning.write(out));
+
+        this.upgrades.write(buf);
     }
 
     // Interface
@@ -70,11 +85,15 @@ public class S2CInserterTunings {
     public void handle(Supplier<NetworkEvent.Context> supplier) {
         NetworkEvent.Context context = supplier.get();
 
-        context.enqueueWork(() -> this.tunings.forEach((id, tuning) -> {
-            Inserter inserter = InserterRegistry.getInstance().getInserterById(id);
+        context.enqueueWork(() -> {
+            this.tunings.forEach((id, tuning) -> {
+                Inserter inserter = InserterRegistry.getInstance().getInserterById(id);
 
-            if (inserter != null) inserter.applyTuning(tuning);
-        }));
+                if (inserter != null) inserter.applyTuning(tuning);
+            });
+
+            InserterUpgradeTunings.set(this.upgrades);
+        });
 
         context.setPacketHandled(true);
     }

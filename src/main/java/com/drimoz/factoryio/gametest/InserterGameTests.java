@@ -8,6 +8,7 @@ import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
 import com.drimoz.factoryio.core.inserters.InserterSettings;
+import com.drimoz.factoryio.core.inserters.InserterSlotLayout;
 import com.drimoz.factoryio.core.inserters.InserterState;
 import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
 import com.drimoz.factoryio.core.model.Inserter;
@@ -28,6 +29,9 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
+
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.items.IItemHandler;
@@ -550,45 +554,62 @@ public class InserterGameTests {
     // Tests (Améliorations)
 
     /**
-     * Poser un module accélère l'inserter, et un module inférieur ne l'écrase pas.
+     * Poser un module accélère l'inserter, et deux modules d'un même axe <b>s'additionnent</b>.
      *
-     * <p>Le second point est le seul qui puisse détruire quelque chose : accepter un palier
-     * plus faible reviendrait à consommer le module posé <i>et</i> à perdre le meilleur
-     * déjà en place.
+     * <p>C'est le cœur du modèle à slots libres : deux modules de vitesse valent la somme de
+     * leurs paliers, et non le meilleur des deux. La limite n'est plus « un par axe » mais le
+     * nombre de slots — un {@code inserter} en offre deux.
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 100)
-    public static void upgradeChangesTheEffectiveTuning(GameTestHelper helper) {
+    public static void upgradesStackWithinTheAvailableSlots(GameTestHelper helper) {
         setupChain(helper, "inserter");
 
         InserterBlockEntity blockEntity = inserter(helper);
         int baseTicks = blockEntity.getTicksPerSwing();
 
-        ItemStack replaced = blockEntity.installUpgrade(
+        ItemStack first = blockEntity.installUpgrade(
                 InserterUpgradeType.SPEED, new ItemStack(ModItems.SPEED_MODULE_2.get()));
 
-        helper.assertTrue(replaced != null && replaced.isEmpty(), "L'axe était censé être libre");
-        helper.assertTrue(blockEntity.getTicksPerSwing() < baseTicks,
-                "Le module de vitesse n'a pas raccourci le mouvement");
+        helper.assertTrue(first != null && first.isEmpty(), "Le premier module a été refusé");
 
-        // Un palier inférieur doit être refusé, pas posé.
-        helper.assertTrue(
-                blockEntity.installUpgrade(
-                        InserterUpgradeType.SPEED, new ItemStack(ModItems.SPEED_MODULE_1.get())) == null,
-                "Un module plus faible a été accepté");
+        int afterFirst = blockEntity.getTicksPerSwing();
+        helper.assertTrue(afterFirst < baseTicks, "Le module de vitesse n'a pas raccourci le mouvement");
 
-        // Un palier supérieur rend le précédent.
-        ItemStack returned = blockEntity.installUpgrade(
+        // Un second module du même axe s'ajoute au premier au lieu de le remplacer.
+        //
+        // Deux modules de palier MAXIMAL, délibérément : avec un palier 2 puis un palier 1,
+        // la somme vaut 3 et passe sous n'importe quel plafond, y compris celui qui annulait
+        // l'empilement. Le cas qui prouve quelque chose est celui où le total dépasse ce
+        // qu'un seul module peut porter.
+        ItemStack second = blockEntity.installUpgrade(
                 InserterUpgradeType.SPEED, new ItemStack(ModItems.SPEED_MODULE_3.get()));
 
-        helper.assertTrue(returned != null && returned.is(ModItems.SPEED_MODULE_2.get()),
-                "Le module remplacé n'a pas été rendu");
+        helper.assertTrue(second != null && second.isEmpty(), "Le second module a été refusé");
+        helper.assertTrue(blockEntity.getUpgrades().level(InserterUpgradeType.SPEED) == 5,
+                "Les paliers ne se sont pas additionnés : "
+                        + blockEntity.getUpgrades().level(InserterUpgradeType.SPEED) + " au lieu de 5");
+        helper.assertTrue(blockEntity.getTicksPerSwing() < afterFirst,
+                "Le second module n'a rien changé au mouvement");
+
+        // Les deux slots sont pleins : le troisième module est refusé, pas avalé.
+        helper.assertTrue(
+                blockEntity.installUpgrade(
+                        InserterUpgradeType.SPEED, new ItemStack(ModItems.SPEED_MODULE_3.get())) == null,
+                "Un module a été accepté alors qu'aucun slot n'était libre");
 
         helper.succeed();
     }
 
-    /** Les modules posés survivent à une sauvegarde, et retombent quand le bloc est cassé. */
+    /**
+     * Les modules posés survivent à une sauvegarde.
+     *
+     * <p>Ils n'ont plus de persistance à eux : ce sont des items dans des slots, donc ils
+     * suivent {@code inserterInventory}. Ce test vérifie précisément cela — que le palier se
+     * <b>redéduit</b> du contenu des slots au chargement, sans qu'aucun état parallèle n'ait
+     * été écrit.
+     */
     @GameTest(template = TEMPLATE, timeoutTicks = 100)
-    public static void upgradesPersistAndDrop(GameTestHelper helper) {
+    public static void upgradesPersistInTheirSlots(GameTestHelper helper) {
         setupChain(helper, "inserter");
 
         InserterBlockEntity blockEntity = inserter(helper);
@@ -603,15 +624,70 @@ public class InserterGameTests {
                 "Le palier n'a pas survécu à la sauvegarde");
 
         helper.assertTrue(
-                blockEntity.getUpgrades().installed(InserterUpgradeType.CAPACITY)
-                        .is(ModItems.PRODUCTIVITY_MODULE_3.get()),
-                "Le module posé n'a pas survécu à la sauvegarde");
-
-        helper.assertTrue(
-                blockEntity.getUpgrades().allInstalled().size() == 1,
-                "Le module ne fait pas partie de ce qui tombe au sol");
+                upgradeSlotContents(blockEntity).stream()
+                        .anyMatch(stack -> stack.is(ModItems.PRODUCTIVITY_MODULE_3.get())),
+                "Le module n'est plus dans son slot après le chargement");
 
         helper.succeed();
+    }
+
+    /**
+     * Le joueur pose et retire ses modules ; un voisin ne peut ni l'un ni l'autre.
+     *
+     * <p>Ce test existe parce que le contraire est arrivé. Les restrictions du contrat
+     * externe — « seul le slot de carburant est accessible » — vivaient sur le stockage
+     * lui-même, et le menu passant par la capability, elles s'appliquaient aussi au joueur :
+     * un module entrait par le clic droit sur le bloc, qui écrit directement, mais ne
+     * ressortait <b>jamais</b>. Aucun test ne couvrait le chemin du menu, seulement celui du
+     * clic droit.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void theMenuCanTakeUpgradesBackOutButNeighboursCannot(GameTestHelper helper) {
+        setupChain(helper, "inserter");
+
+        InserterBlockEntity blockEntity = inserter(helper);
+        InserterSlotLayout layout = blockEntity.LAYOUT;
+        int slot = layout.upgrade(0);
+
+        IItemHandler menu = blockEntity.getMenuItems();
+        IItemHandler neighbour = inserterHandler(helper);
+
+        // Le menu accepte le module...
+        ItemStack leftover = menu.insertItem(slot, new ItemStack(ModItems.SPEED_MODULE_2.get()), false);
+        helper.assertTrue(leftover.isEmpty(), "Le menu a refusé un module");
+        helper.assertTrue(blockEntity.getUpgrades().level(InserterUpgradeType.SPEED) == 2,
+                "Le palier n'a pas suivi la pose par le menu");
+
+        // ... un voisin, non : ni pour le déposer, ni pour le reprendre.
+        helper.assertFalse(
+                neighbour.insertItem(slot, new ItemStack(ModItems.SPEED_MODULE_1.get()), true).isEmpty(),
+                "Un hopper a pu déposer un module");
+        helper.assertTrue(neighbour.extractItem(slot, 1, true).isEmpty(),
+                "Un hopper a pu siphonner un module");
+
+        // ... et le menu le rend.
+        ItemStack removed = menu.extractItem(slot, 1, false);
+        helper.assertTrue(removed.is(ModItems.SPEED_MODULE_2.get()),
+                "Le menu n'a pas rendu le module");
+        helper.assertTrue(blockEntity.getUpgrades().level(InserterUpgradeType.SPEED) == 0,
+                "Le palier a survécu au retrait du module");
+
+        helper.succeed();
+    }
+
+    /** Le contenu des slots d'amélioration, tel qu'un joueur le verrait dans le menu. */
+    private static List<ItemStack> upgradeSlotContents(InserterBlockEntity blockEntity) {
+        List<ItemStack> contents = new ArrayList<>();
+
+        blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(handler -> {
+            InserterSlotLayout layout = blockEntity.LAYOUT;
+
+            for (int i = 0; i < layout.upgradeCount(); i++) {
+                contents.add(handler.getStackInSlot(layout.upgrade(i)));
+            }
+        });
+
+        return contents;
     }
 
     // Tests (Animation)
@@ -728,7 +804,7 @@ public class InserterGameTests {
 
         helper.assertFalse(copy.isWhitelist(), "Le mode de liste n'a pas été copié");
         helper.assertTrue(copy.isTagFilter(0), "La correspondance par tag n'a pas été copiée");
-        helper.assertTrue(copy.getRedstoneCondition().threshold() == 7,
+        helper.assertTrue(copy.getConfiguredRedstoneCondition().threshold() == 7,
                 "Le seuil redstone n'a pas été copié");
         helper.assertTrue(copy.getAnimationMode() == InserterAnimationMode.SNAP,
                 "Le réglage d'animation n'a pas été copié");

@@ -26,3 +26,6 @@ forge*changelog.txt
 
 # logs de lancement (runClient / runServer / runData)
 *.log
+
+# journaux du client/serveur de dev (runClient, runData)
+logs

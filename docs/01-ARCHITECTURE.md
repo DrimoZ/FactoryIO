@@ -92,9 +92,10 @@ Trois objets, et la frontière entre eux est le point important de toute cette p
 
 | Objet | Contenu | Modifiable par |
 |---|---|---|
-| [`Inserter`](../src/main/java/com/drimoz/factoryio/core/model/Inserter.java) | identité, traits **structurels** (`useEnergy`, `filterable`), références runtime | rien, après l'enregistrement |
+| [`Inserter`](../src/main/java/com/drimoz/factoryio/core/model/Inserter.java) | identité, traits **structurels** (`useEnergy`, `filterable`, `upgradeSlots`), références runtime | rien, après l'enregistrement |
 | [`InserterTuning`](../src/main/java/com/drimoz/factoryio/core/model/InserterTuning.java) | **réglages** : vitesse, portée, main, coûts | un datapack, à chaud (FIO-037) |
-| [`InserterUpgrades`](../src/main/java/com/drimoz/factoryio/core/upgrade/InserterUpgrades.java) | modules posés sur **un exemplaire** | le joueur, en jeu |
+| [`InserterUpgradeTuning`](../src/main/java/com/drimoz/factoryio/core/upgrade/InserterUpgradeTuning.java) | **barème des améliorations** : facteurs, bonus, plafond de cumul, natures verrouillées | un datapack, à chaud |
+| [`InserterUpgrades`](../src/main/java/com/drimoz/factoryio/core/upgrade/InserterUpgrades.java) | paliers cumulés sur **un exemplaire**, **dérivés du contenu des slots** | le joueur, en jeu |
 
 Les traits structurels décident du plan d'inventaire, du type de block entity, du menu et
 de la géométrie : les changer supposerait de reconstruire blocs et items, donc d'invalider
@@ -184,8 +185,19 @@ dangereux, puisqu'un coffre posé à deux blocs d'un long handed inserter ne dé
 
 [`InserterSlotLayout`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterSlotLayout.java)
 est la **source unique** des index : buffer, puis carburant s'il y en a un, puis les cinq
-filtres. Il a remplacé trois conventions concurrentes (DT-03) et est couvert par JUnit sur
-les quatre combinaisons énergie × filtre.
+filtres, puis les slots d'amélioration. Il a remplacé trois conventions concurrentes (DT-03)
+et est couvert par JUnit sur les quatre combinaisons énergie × filtre.
+
+Les slots d'amélioration sont **en queue**, et c'est un invariant testé. Les insérer ailleurs
+décalerait les index déjà écrits en NBT : les filtres d'un monde existant reviendraient comme
+carburant. En queue, ce qui est sauvegardé garde son sens et les nouveaux slots naissent vides.
+
+C'est aussi ce qui a permis de supprimer un état parallèle. Les modules **sont** le contenu de
+ces slots ; `InserterUpgrades` n'est plus qu'une lecture qu'on en fait, recalculée sur
+`onContentsChanged`. Sauvegarde NBT, chute au sol et shift-clic sont donc ceux de n'importe
+quel inventaire, et il n'existe plus deux copies susceptibles de diverger. Le client, lui, ne
+reçoit jamais le contenu des slots : ses paliers viennent de `getUpdateTag`, ce qui suffit à
+l'animation et aux tooltips.
 
 ---
 
@@ -292,11 +304,22 @@ suffit à voir l'effet d'un JSON modifié.
   hériter — les deux signatures `render` de GeckoLib et de `BlockEntityRenderer` ont le même
   effacement, donc aucune ne peut être surchargée dans une sous-classe où `T` est fixé.
   `RenderType.entityCutoutNoCull`.
-- **Item transporté** : arc de Bézier quadratique calculé par
+- **Bras** : animé par **cinématique inverse** (FIO-066, [`11`](11-DESIGN-ANIMATION.md) §14).
+  On impose le point que la pince doit atteindre, et
+  [`InserterArmKinematics`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterArmKinematics.java)
+  en déduit les deux inclinaisons. C'est le sens du calcul qui compte : deux angles posés
+  indépendamment ne décrivent pas un bras, ils décrivent deux pièces — et c'est exactement ce
+  qui avait produit un bras disloqué. Le bone `turret` fait le demi-tour en Y ; `arm` et
+  `head` reçoivent les deux angles d'une même résolution, donc ils ne peuvent plus se
+  contredire.
+- **Item transporté** : cinématique **directe** depuis la même pose, calculée par
   [`InserterCarryPath`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterCarryPath.java),
-  classe de calcul pur donc testable, éclairé à sa propre position.
-- **Bras** : non animé. La plomberie existe et fonctionne ; c'est la **géométrie** qui
-  manque — le bone `inserter` porte tout l'assemblage, socle compris (FIO-066, en pause).
+  classe de calcul pur donc testable, éclairé à sa propre position. L'item est dans la pince,
+  pas sur une trajectoire parallèle qui pourrait la contredire.
+- **Le fichier d'animation ne porte aucune keyframe**, volontairement : le mouvement est
+  asservi à un état serveur, il est donc posé image par image dans
+  `InserterGeoModel#handleAnimations`. Des keyframes exigeraient de synchroniser une
+  progression à chaque tick, soit le trafic périodique supprimé par BUG-004.
 
 ---
 

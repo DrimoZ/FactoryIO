@@ -5,6 +5,7 @@ import com.drimoz.factoryio.core.generic.container.BaseMenu;
 import com.drimoz.factoryio.core.generic.container.slots.GhostSlot;
 import com.drimoz.factoryio.core.generic.container.slots.InserterBufferSlot;
 import com.drimoz.factoryio.core.generic.container.slots.InserterFuelSlot;
+import com.drimoz.factoryio.core.generic.container.slots.InserterUpgradeSlot;
 import com.drimoz.factoryio.core.model.Inserter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,7 +16,7 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.Nullable;
 
 public class InserterContainer extends BaseMenu {
@@ -115,19 +116,31 @@ public class InserterContainer extends BaseMenu {
             return;
         }
 
-        this.BLOCK_ENTITY.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(handler -> {
-            this.addSlot(new InserterBufferSlot(handler, InserterBlockEntity.BUFFER_SLOT, 124, 45));
+        // Le stockage réel, et non la capability : celle-ci est le contrat offert aux
+        // voisins — dépôt de carburant, reprise des résidus — et n'a jamais eu vocation à
+        // décrire ce qu'un joueur a le droit de faire dans l'écran. Passer par elle rendait
+        // les slots d'amélioration inutilisables dans les deux sens.
+        IItemHandler handler = this.BLOCK_ENTITY.getMenuItems();
 
-            if (LAYOUT.hasFuelSlot()) {
-                this.addSlot(new InserterFuelSlot(this.BLOCK_ENTITY, handler, LAYOUT.fuel(), 80, 49));
-            }
+        this.addSlot(new InserterBufferSlot(handler, InserterBlockEntity.BUFFER_SLOT, 124, 45));
 
-            // Les index viennent du layout : plus de « FILTER_SLOTS[i] - 1 » à corriger
-            // à la main selon le type d'inserter (cf. DT-03).
-            for (int i = 0; i < LAYOUT.filterCount(); i++) {
-                this.addSlot(new InserterFilterSlot(this.BLOCK_ENTITY, handler, i, 8 + i * 18, 49));
-            }
-        });
+        if (LAYOUT.hasFuelSlot()) {
+            this.addSlot(new InserterFuelSlot(this.BLOCK_ENTITY, handler, LAYOUT.fuel(), 80, 49));
+        }
+
+        // Les index viennent du layout : plus de « FILTER_SLOTS[i] - 1 » à corriger
+        // à la main selon le type d'inserter (cf. DT-03).
+        for (int i = 0; i < LAYOUT.filterCount(); i++) {
+            this.addSlot(new InserterFilterSlot(this.BLOCK_ENTITY, handler, i, 8 + i * 18, 49));
+        }
+
+        // ⚠ Emplacement PROVISOIRE, en attente de la refonte du GUI. Ces slots doivent
+        // exister : le shift-clic balaie [premier slot machine, premier + LAYOUT.size()[,
+        // et un intervalle plus large que la liste des slots lèverait une exception dans
+        // le pipeline réseau. Seule leur POSITION est à revoir.
+        for (int i = 0; i < LAYOUT.upgradeCount(); i++) {
+            this.addSlot(new InserterUpgradeSlot(handler, LAYOUT.upgrade(i), 8 + i * 18, 17));
+        }
 
         this.addDataSlots(this.powerData);
     }

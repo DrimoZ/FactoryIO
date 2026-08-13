@@ -9,6 +9,7 @@ import com.drimoz.factoryio.core.init.ModRegistries;
 import com.drimoz.factoryio.core.network.packet.S2CInserterTunings;
 import com.drimoz.factoryio.core.registry.InserterLoader;
 import com.drimoz.factoryio.core.registry.InserterReloadListener;
+import com.drimoz.factoryio.core.registry.UpgradeReloadListener;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
 import com.drimoz.factoryio.core.resourcepack.EPackType;
 import com.drimoz.factoryio.core.resourcepack.PackRepositorySource;
@@ -103,6 +104,7 @@ public class FactoryIO
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
         event.addListener(new InserterReloadListener());
+        event.addListener(new UpgradeReloadListener());
     }
 
     /**

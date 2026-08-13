@@ -119,13 +119,13 @@ public class C2SInserterSetting {
 				blockEntity.setWhitelist(value == 1);
 			}
 			case REDSTONE_MODE -> blockEntity.setRedstoneCondition(
-					blockEntity.getRedstoneCondition()
+					blockEntity.getConfiguredRedstoneCondition()
 							.withMode(InserterRedstoneCondition.Mode.byOrdinal(value)));
 
 			// Le constructeur de la condition borne le seuil : une valeur forgée hors de
 			// [0, 15] est ramenée dans le domaine plutôt que rejetée.
 			case REDSTONE_THRESHOLD -> blockEntity.setRedstoneCondition(
-					blockEntity.getRedstoneCondition().withThreshold(value));
+					blockEntity.getConfiguredRedstoneCondition().withThreshold(value));
 
 			// Purement visuel : aucun effet sur le débit, les coûts ou les transferts.
 			case ANIMATION -> blockEntity.setAnimationMode(InserterAnimationMode.byOrdinal(value));

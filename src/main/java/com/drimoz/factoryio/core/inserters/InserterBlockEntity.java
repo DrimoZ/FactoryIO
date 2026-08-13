@@ -6,6 +6,8 @@ import com.drimoz.factoryio.core.generic.container.energy.EnergyContainer;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.model.InserterTuning;
 import com.drimoz.factoryio.core.init.ModTags;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeTuning;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeTunings;
 import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
 import com.drimoz.factoryio.core.upgrade.InserterUpgrades;
 import net.minecraft.core.BlockPos;
@@ -41,6 +43,7 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
+import net.minecraftforge.items.IItemHandlerModifiable;
 import org.jetbrains.annotations.NotNull;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
@@ -84,6 +87,9 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
     protected ItemStackHandler itemStorage;
     protected LazyOptional<IItemHandler> lazyItem;
+
+    /** Vue restreinte exposée aux voisins ; le menu passe par {@link #getMenuItems()}. */
+    private ExternalItemHandler externalItems;
 
     // private properties
 
@@ -147,6 +153,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      */
     private InserterTuning effectiveTuning;
     private InserterTuning effectiveBase;
+    private InserterUpgradeTuning effectiveUpgradeTuning;
 
     /**
      * Tick de jeu auquel le mouvement de bras en cours se termine.
@@ -254,38 +261,116 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
                 // Du carburant déposé à la main doit relancer un inserter endormi.
                 wakeUp();
+
+                // Les modules sont des items dans des slots : poser, retirer ou déplacer
+                // l'un d'eux passe forcément par ici. C'est le seul point de mise à jour
+                // des paliers, ce qui rend impossible qu'ils divergent du contenu réel.
+                if (LAYOUT.isUpgrade(slot)) refreshUpgrades();
             }
-
-            @NotNull
-            @Override
-            public ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
-                // Depuis l'extérieur, seul le slot de carburant est accessible.
-                if (slot != LAYOUT.fuel()) return stack;
-                if (ForgeHooks.getBurnTime(stack, null) <= 0) return stack;
-                if (!stack.is(ModTags.Items.INSERTER_FUEL)) return stack;
-
-                return super.insertItem(slot, stack, simulate);
-            }
-
-            /**
-             * Depuis l'extérieur, seuls les <b>résidus</b> ressortent du slot de carburant.
-             *
-             * <p>C'est la règle du four vanilla : un hopper récupère le seau vide, pas le
-             * charbon. Autoriser l'extraction du carburant lui-même transformait tout
-             * hopper placé sous un burner inserter en siphon, qui le laissait à sec en
-             * boucle sans que rien ne l'explique au joueur.
-             */
-            @NotNull
-            @Override
-            public ItemStack extractItem(int slot, int amount, boolean simulate) {
-                if (slot != LAYOUT.fuel()) return ItemStack.EMPTY;
-                if (ForgeHooks.getBurnTime(getStackInSlot(slot), null) > 0) return ItemStack.EMPTY;
-
-                return super.extractItem(slot, amount, simulate);
-            }
-
         };
-        this.lazyItem = LazyOptional.of(() -> this.itemStorage);
+
+        // La capability expose une VUE restreinte, pas le stockage lui-même.
+        //
+        // Les restrictions vivaient sur le stockage, si bien que tout le monde les subissait
+        // — y compris le menu, qui passe par la capability. Un module ne pouvait donc ni
+        // entrer dans son slot ni en sortir : « seul le slot de carburant est accessible »
+        // était vrai du joueur autant que d'un hopper. Le stockage est désormais neutre, et
+        // le contrat externe est une enveloppe. C'est la même séparation que celle faite pour
+        // l'énergie (cf. BUG-003), et pour la même raison : ce que la machine s'autorise sur
+        // son propre inventaire n'a rien à voir avec ce qu'elle offre à ses voisins.
+        this.externalItems = new ExternalItemHandler(this.itemStorage, LAYOUT);
+
+        this.lazyItem = LazyOptional.of(() -> this.externalItems);
+    }
+
+    /**
+     * Ce que les voisins — hoppers, tuyaux, autres mods — ont le droit de faire.
+     *
+     * <p>Volontairement plus étroit que le stockage : on <b>dépose</b> du carburant, on
+     * <b>reprend</b> les résidus, et rien d'autre. Le buffer de transport, les filtres et les
+     * modules ne sont pas accessibles de l'extérieur.
+     */
+    private static final class ExternalItemHandler implements IItemHandlerModifiable {
+
+        private final IItemHandlerModifiable storage;
+        private final InserterSlotLayout layout;
+
+        private ExternalItemHandler(IItemHandlerModifiable storage, InserterSlotLayout layout) {
+            this.storage = storage;
+            this.layout = layout;
+        }
+
+        @Override
+        public int getSlots() {
+            return this.storage.getSlots();
+        }
+
+        @NotNull
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            return this.storage.getStackInSlot(slot);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return this.storage.getSlotLimit(slot);
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return acceptsFuel(slot, stack);
+        }
+
+        @Override
+        public void setStackInSlot(int slot, @NotNull ItemStack stack) {
+            // Écrire directement contournerait les deux règles ci-dessous ; un mod qui
+            // manipule la capability à la main ne doit pas avoir plus de droits qu'un hopper.
+            if (!acceptsFuel(slot, stack)) return;
+
+            this.storage.setStackInSlot(slot, stack);
+        }
+
+        @NotNull
+        @Override
+        public ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+            if (!acceptsFuel(slot, stack)) return stack;
+
+            return this.storage.insertItem(slot, stack, simulate);
+        }
+
+        /**
+         * Seuls les <b>résidus</b> ressortent du slot de carburant.
+         *
+         * <p>C'est la règle du four vanilla : un hopper récupère le seau vide, pas le
+         * charbon. Autoriser l'extraction du carburant lui-même transformait tout hopper
+         * placé sous un burner inserter en siphon, qui le laissait à sec en boucle sans que
+         * rien ne l'explique au joueur (cf. BUG-044).
+         */
+        @NotNull
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot != this.layout.fuel()) return ItemStack.EMPTY;
+            if (ForgeHooks.getBurnTime(this.storage.getStackInSlot(slot), null) > 0) return ItemStack.EMPTY;
+
+            return this.storage.extractItem(slot, amount, simulate);
+        }
+
+        private boolean acceptsFuel(int slot, @NotNull ItemStack stack) {
+            return slot == this.layout.fuel()
+                    && ForgeHooks.getBurnTime(stack, null) > 0
+                    && stack.is(ModTags.Items.INSERTER_FUEL);
+        }
+    }
+
+    /**
+     * Le stockage réel, sans restriction — pour le menu.
+     *
+     * <p>Le joueur qui a l'écran ouvert n'est pas un voisin : il pose et retire ses modules,
+     * dépose du carburant à la main, et ce sont des gestes que la capability n'a aucune
+     * raison d'autoriser à un tuyau.
+     */
+    public IItemHandlerModifiable getMenuItems() {
+        return this.itemStorage;
     }
 
     // Interface (DataFromData)
@@ -298,15 +383,30 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      * partout, y compris sur la trajectoire affichée et sur les jauges, sans un seul
      * {@code if} ailleurs dans la classe.
      */
+    /**
+     * <p>Le cache est revalidé sur <b>deux</b> références, et la seconde vaut d'être
+     * expliquée. Un {@code /reload} qui ne change que les facteurs d'amélioration laisse le
+     * réglage du type inchangé : surveiller la seule base suffirait à manquer le
+     * rechargement, et les modules garderaient leur ancien effet jusqu'au redémarrage. Les
+     * deux objets étant remplacés d'un bloc et jamais champ par champ, un {@code !=} suffit
+     * dans les deux cas.
+     */
     public InserterTuning getEffectiveTuning() {
         InserterTuning base = inserter.getTuning();
+        InserterUpgradeTuning upgradeTuning = upgradeTuning();
 
-        if (this.effectiveBase != base) {
+        if (this.effectiveBase != base || this.effectiveUpgradeTuning != upgradeTuning) {
             this.effectiveBase = base;
-            this.effectiveTuning = this.upgrades.applyTo(base);
+            this.effectiveUpgradeTuning = upgradeTuning;
+            this.effectiveTuning = this.upgrades.applyTo(base, upgradeTuning);
         }
 
         return this.effectiveTuning;
+    }
+
+    /** Barème des améliorations en vigueur — point de passage unique. */
+    private InserterUpgradeTuning upgradeTuning() {
+        return InserterUpgradeTunings.current();
     }
 
     public int getMaximumItemCountPerAction(){
@@ -351,7 +451,13 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
     // Interface (ItemStorage)
 
-    /** Lâche le contenu réel au sol. Les filtres sont des items fantômes : ils ne tombent pas. */
+    /**
+     * Lâche le contenu réel au sol. Les filtres sont des items fantômes : ils ne tombent pas.
+     *
+     * <p>Les modules d'amélioration tombent sans un mot de plus : depuis qu'ils occupent des
+     * slots, ils font partie du contenu réel. La ligne qui les rendait séparément a disparu
+     * avec l'état qui les dupliquait.
+     */
     public void drops() {
         List<ItemStack> dropped = new ArrayList<>();
 
@@ -360,10 +466,6 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
             dropped.add(itemStorage.getStackInSlot(slot));
         }
-
-        // Les modules posés tombent avec le reste : ce sont des items que le joueur a
-        // fabriqués, pas un réglage.
-        dropped.addAll(this.upgrades.allInstalled());
 
         SimpleContainer inventory = new SimpleContainer(dropped.size());
         for (int i = 0; i < dropped.size(); i++) {
@@ -380,34 +482,73 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     }
 
     /**
-     * Pose un module et rend celui qu'il remplace.
+     * Pose un module dans le premier slot d'amélioration libre.
      *
-     * <p>Un palier inférieur ou égal est refusé plutôt que posé : accepter un module moins
-     * bon détruirait silencieusement le meilleur déjà en place.
+     * <p>Le geste au clic droit reste utile — c'est le plus rapide, et il fonctionne sans
+     * ouvrir le menu — mais il n'a plus rien de particulier : il ne fait que remplir un
+     * slot. Le remplacement d'un palier inférieur par un meilleur, qui était nécessaire
+     * tant qu'un axe n'admettait qu'un module, n'a plus lieu d'être : deux modules cohabitent
+     * désormais, et le joueur retire celui qu'il veut par le menu.
      *
-     * @return le module remplacé, vide si l'axe était libre ; {@code null} si le module
-     *         n'apporte rien
+     * @return {@code ItemStack.EMPTY} si le module est posé ; {@code null} s'il est refusé —
+     *         parce qu'il n'en est pas un, ou parce qu'il ne reste aucun slot libre
      */
     @Nullable
     public ItemStack installUpgrade(InserterUpgradeType type, @Nonnull ItemStack module) {
-        int level = type.levelOf(module);
-        if (level <= 0 || level <= this.upgrades.level(type)) return null;
+        if (type.levelOf(module) <= 0) return null;
 
-        ItemStack replaced = this.upgrades.installed(type);
+        int free = firstFreeUpgradeSlot();
+        if (free == InserterSlotLayout.NONE) return null;
 
-        this.upgrades = this.upgrades.with(type, module, level);
+        ItemStack single = module.copy();
+        single.setCount(1);
+
+        // setStackInSlot passe par onContentsChanged, qui relit les paliers : il n'y a rien
+        // à mettre à jour ici.
+        this.itemStorage.setStackInSlot(free, single);
+
+        return ItemStack.EMPTY;
+    }
+
+    /** @return l'index du premier slot d'amélioration vide, ou {@link InserterSlotLayout#NONE} */
+    private int firstFreeUpgradeSlot() {
+        for (int i = 0; i < LAYOUT.upgradeCount(); i++) {
+            int slot = LAYOUT.upgrade(i);
+
+            if (this.itemStorage.getStackInSlot(slot).isEmpty()) return slot;
+        }
+
+        return InserterSlotLayout.NONE;
+    }
+
+    /**
+     * Relit les paliers depuis les slots d'amélioration.
+     *
+     * <p><b>Serveur uniquement.</b> Le client ne reçoit pas le contenu des slots — ils ne
+     * sont dans aucun tag de mise à jour — donc les relire chez lui remettrait tous les
+     * paliers à zéro et ferait ralentir l'animation d'un inserter amélioré. Ses paliers
+     * viennent de {@code getUpdateTag}.
+     */
+    private void refreshUpgrades() {
+        if (this.level != null && this.level.isClientSide) return;
+
+        InserterUpgrades refreshed = InserterUpgrades.from(
+                this.itemStorage, LAYOUT.firstUpgrade(), LAYOUT.upgradeCount());
+
+        if (refreshed.equals(this.upgrades)) return;
+
+        this.upgrades = refreshed;
         invalidateEffectiveTuning();
 
         wakeUp();
         syncToClients();
-
-        return replaced;
     }
 
     /** Force le recalcul des réglages effectifs au prochain accès. */
     private void invalidateEffectiveTuning() {
         this.effectiveBase = null;
         this.effectiveTuning = null;
+        this.effectiveUpgradeTuning = null;
     }
 
     // Interface (Réglages transportables)
@@ -494,7 +635,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     public void onLoad() {
         super.onLoad();
 
-        this.lazyItem = LazyOptional.of(() -> itemStorage);
+        this.lazyItem = LazyOptional.of(() -> this.externalItems);
         if(IS_ENERGY) {
             this.lazyEnergy = LazyOptional.of(() -> energyStorage);
             syncEnergyLimitsFromDefinition();
@@ -543,9 +684,9 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
             tag.put("inserterHeldStack", this.heldStack.save(new CompoundTag()));
         }
 
-        if (!this.upgrades.isEmpty()) {
-            tag.put("inserterUpgrades", this.upgrades.save(true));
-        }
+        // Rien pour les améliorations : les modules sont dans « inserterInventory » comme
+        // n'importe quel item, et les paliers s'en déduisent. Les écrire ici serait une
+        // seconde vérité, donc une occasion de diverger.
 
         super.saveAdditional(tag);
     }
@@ -569,7 +710,10 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.redstoneCondition = readCondition(tag);
         this.animationMode = InserterAnimationMode.byOrdinal(tag.getByte("inserterAnimation"));
 
-        this.upgrades = InserterUpgrades.load(tag.getCompound("inserterUpgrades"));
+        migrateLegacyUpgrades(tag);
+
+        this.upgrades = InserterUpgrades.from(
+                this.itemStorage, LAYOUT.firstUpgrade(), LAYOUT.upgradeCount());
         invalidateEffectiveTuning();
 
         this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
@@ -589,6 +733,48 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         // l'état qui décrit exactement « un item à livrer et rien pour l'instant ».
         if (this.state == InserterState.WAITING && !this.heldStack.isEmpty()) {
             this.state = InserterState.BLOCKED;
+        }
+    }
+
+    /**
+     * Reloge dans les slots les modules d'un monde d'avant les slots d'amélioration.
+     *
+     * <p>L'ancien format rangeait, sous {@code inserterUpgrades}, un sous-compound par axe
+     * portant {@code level} et {@code item}. Sans cette reprise, les modules d'un joueur
+     * disparaîtraient au premier chargement — et pas seulement leur effet : les <b>items</b>
+     * eux-mêmes, qu'il avait fabriqués. Le mod s'interdit de détruire un item ailleurs ; il
+     * n'y a pas de raison d'y consentir ici.
+     *
+     * <p>La reprise est <b>sans perte tolérée</b> : un module qui ne trouve pas de slot
+     * libre — sur un inserter dont la définition en offre moins que l'ancien système n'en
+     * admettait — tombe au sol plutôt que d'être oublié.
+     */
+    private void migrateLegacyUpgrades(CompoundTag tag) {
+        if (!tag.contains("inserterUpgrades")) return;
+
+        CompoundTag legacy = tag.getCompound("inserterUpgrades");
+
+        for (InserterUpgradeType type : InserterUpgradeType.all()) {
+            if (!legacy.contains(type.id())) continue;
+
+            CompoundTag entry = legacy.getCompound(type.id());
+            if (!entry.contains("item")) continue;
+
+            ItemStack module = ItemStack.of(entry.getCompound("item"));
+            if (module.isEmpty()) continue;
+
+            int free = firstFreeUpgradeSlot();
+            if (free != InserterSlotLayout.NONE) {
+                this.itemStorage.setStackInSlot(free, module);
+                continue;
+            }
+
+            // Pas de place : on ne le garde pas en silence.
+            FactoryIO.LOGGER.warn(
+                    "{} en {} : plus de slot d'amélioration libre, {} est rendu au sol",
+                    inserter.getId(), this.worldPosition, module);
+
+            dropAtBlock(module);
         }
     }
 
@@ -622,7 +808,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         // Les paliers seulement : ils changent la durée d'un mouvement et la taille de la
         // main, donc ce que le client affiche. Les modules posés ne servent qu'au serveur.
         if (!this.upgrades.isEmpty()) {
-            tag.put("inserterUpgrades", this.upgrades.save(false));
+            tag.put("inserterUpgrades", this.upgrades.save());
         }
 
         return tag;
@@ -908,14 +1094,16 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         return InserterTurretPose.turretDegrees(this.state, getArmProgress(partialTick), this.animationMode);
     }
 
-    /** Inclinaison du mât à l'image courante, en degrés. */
-    public float getArmPitchDegrees(float partialTick) {
-        return InserterTurretPose.armPitchDegrees(this.state, getArmProgress(partialTick), this.animationMode);
-    }
-
-    /** Contre-inclinaison de la tête, qui garde la pince à plat. */
-    public float getHeadPitchDegrees(float partialTick) {
-        return InserterTurretPose.headPitchDegrees(this.state, getArmProgress(partialTick), this.animationMode);
+    /**
+     * Pose du bras à l'image courante : les deux inclinaisons, résolues ensemble.
+     *
+     * <p>Elles sortent d'un même calcul de cinématique inverse et ne sont donc jamais
+     * indépendantes. C'est ce qui rend la dislocation impossible — le défaut qu'avait la
+     * première version, où chaque bone recevait un angle calculé de son côté.
+     */
+    public InserterArmKinematics.Pose getArmPose(float partialTick) {
+        return InserterTurretPose.armPose(
+                this.state, getArmProgress(partialTick), this.animationMode, getTicksPerSwing());
     }
 
     public InserterAnimationMode getAnimationMode() {
@@ -1118,7 +1306,29 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         return inserter.isAffectedByRedstone();
     }
 
+    /**
+     * @return la condition qui s'applique réellement, module d'amélioration compris
+     *
+     * <p>Sans module de <b>redstone avancé</b>, la condition retombe sur
+     * {@link InserterRedstoneCondition#DEFAULT} : un signal coupe l'inserter, et rien de
+     * plus. Le réglage fin — modes et seuil — est ce que le module déverrouille.
+     *
+     * <p>La condition réglée par le joueur est <b>conservée</b> pendant ce temps, et non
+     * effacée : retirer puis reposer un module rend son réglage à l'inserter. Un état perdu
+     * en silence est le genre de détail qui fait passer une amélioration pour un piège.
+     * {@link #getConfiguredRedstoneCondition()} donne cette valeur mémorisée, dont l'écran a
+     * besoin pour afficher ce que le joueur a choisi.
+     */
     public InserterRedstoneCondition getRedstoneCondition() {
+        if (this.upgrades.unlocks(InserterUpgradeType.ADVANCED_REDSTONE, upgradeTuning())) {
+            return this.redstoneCondition;
+        }
+
+        return InserterRedstoneCondition.DEFAULT;
+    }
+
+    /** @return la condition telle que le joueur l'a réglée, module ou non */
+    public InserterRedstoneCondition getConfiguredRedstoneCondition() {
         return this.redstoneCondition;
     }
 

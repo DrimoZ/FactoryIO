@@ -7,11 +7,18 @@
 > à redécouper dans Blockbench ») et la §6.1 de [`07`](07-DESIGN-INSERTERS.md), dont la
 > recommandation nomme une méthode GeckoLib 3 qui n'existe plus.
 >
-> ⚠ **Le plan courant est en §11.** Les §5, §6 et §7 décrivent une première conception,
-> fondée sur une rotation du seul bras autour de l'axe horizontal ; elle a été remplacée
-> par la rotation de tourelle de la §9, décidée le 31/07/2026. Elles sont conservées parce
-> que le raisonnement qui y mène reste utile — notamment §5.1, toujours valable — mais
-> **elles ne décrivent plus ce qui sera fait**.
+> ⚠ **Ce qui décrit le code actuel : les §13 et §14.** Le reste raconte comment on y est
+> arrivé, en deux conceptions successivement abandonnées :
+>
+> | Sections | Conception | Statut |
+> |---|---|---|
+> | §5 à §7 | rotation du seul bras autour de l'axe horizontal | remplacée par la §9 |
+> | §9 à §12 | rotation de tourelle, puis deux segments à contre-rotation | **réfutée en jeu**, voir §14 |
+> | §13, §14 | convention de signe GeckoLib, puis cinématique inverse | ✅ en vigueur |
+>
+> Elles sont conservées parce que les raisonnements qui y mènent restent instructifs — la
+> §12 en particulier montre une erreur défendue par un argument de simplicité — mais **elles
+> ne décrivent plus le code**.
 
 ---
 
@@ -653,9 +660,10 @@ le besoin apparaît en multijoueur.
 > **l'image**. Aucun test n'affirme qu'un rendu est juste. Restent donc à contrôler à
 > l'œil, au premier lancement :
 >
-> 1. **le sens de rotation** — la pince doit passer par la droite de l'inserter, vu de
->    dessus. Si elle passe par la gauche, inverser le signe de
->    `InserterTurretPose.SOURCE_DEGREES` ; c'est la seule ligne à toucher ;
+> 1. ~~**le sens de rotation**~~ — **tranché par le calcul, plus par l'œil** (FIO-163, voir
+>    §13). GeckoLib compte les rotations en Y à l'envers de la convention du mod ;
+>    `InserterGeoModel` nie l'angle à la frontière. Il reste à confirmer que la pince passe
+>    bien par la **droite**, mais ce n'est plus une inconnue à lever — c'est une vérification ;
 > 2. **la restructuration des géométries** — le socle et les trois pieds doivent rester
 >    plantés au sol, seules la tourelle et les deux bagues supérieures tourner ;
 > 3. **la convention de pivot** (§8.4) — normalement sans effet ici, le pivot étant sur
@@ -693,6 +701,11 @@ l'œil, mais il n'est plus sur le chemin critique.
 ---
 
 ## 12. Le bras articulé — deux segments (31/07/2026)
+
+> ⚠ **Cette section décrit une conception réfutée en jeu.** La contre-rotation qu'elle
+> présente comme une élégance disloque le bras : voir la **§14**, qui la remplace. Le texte
+> est conservé parce que l'erreur est instructive — elle a été défendue par un argument de
+> simplicité, et c'est ce raisonnement-là qu'il faut savoir reconnaître.
 
 > Retour de jeu : *« l'animation du bras vers le coffre ne pourrait pas être plus fluide,
 > en prenant les deux axes du bras au lieu d'un ? »*
@@ -745,3 +758,165 @@ signe de GeckoLib comptait donc, cette fois. Le bytecode tranche —
 `BakedModelFactory` appelle `updatePivot(-pivot.x, pivot.y, pivot.z)` : **seul x est nié**.
 Le coude a x = 0, son pivot passe donc intact. Plus rien ne reste à confirmer à l'œil de ce
 côté.
+
+---
+
+## 13. Le sens de rotation — GeckoLib compte à l'envers (FIO-163)
+
+> Retour de jeu : *« le déplacement des items n'est pas juste »*. Diagnostiqué sur le
+> bytecode de GeckoLib 4.4.9, pas à l'œil.
+
+### 13.1 Les deux conventions
+
+`GeoBlockRenderer.actuallyRender` translate de `(0,5 ; 0 ; 0,5)`, appelle `rotateBlock(facing)`,
+**puis** `handleAnimations` : les bones tournent dans un repère déjà orienté par le bloc.
+
+| Ce que fait `rotateBlock` | Angle |
+|---|---|
+| NORTH | 0° |
+| WEST | **+90°** |
+| SOUTH | 180° |
+| EAST | 270° |
+
+`RenderUtils.rotateMatrixAroundBone` applique `setRotY` **sur le même axe et sans négation**
+— contrairement au pivot, où seul `x` est nié (§12.5). Puisque WEST vaut +90° et que la pose
+sculptée regarde le nord, une rotation positive envoie le devant du modèle (−z) sur −x :
+**la pince part à gauche**.
+
+`InserterCarryPath` construit au contraire son repère sur `facing`, avec
+`right = (−stepZ, stepX)` : à +90°, l'item part **à droite**.
+
+### 13.2 Pourquoi ça ne se voyait qu'à mi-course
+
+Les deux conventions sont symétriques par rapport à l'axe de l'inserter. Elles **coïncident
+exactement** à 0° et à 180° — c'est-à-dire aux deux extrémités du trajet, là où l'œil vérifie
+naturellement que l'item est dans la pince — et divergent au maximum à 90°. D'où un défaut
+qui se lit comme « l'item n'est pas tout à fait juste » plutôt que comme « l'item est à
+l'opposé du bras ».
+
+### 13.3 Pourquoi les tests ne l'ont pas vu
+
+`midSwingIsSideways` vérifiait qu'à 90° la composante **sur l'axe** de l'inserter est nulle.
+C'est vrai des deux côtés. La suite entière était aveugle au signe latéral — le seul qui était
+faux. `positiveAngleSweepsToTheRight` fixe désormais le côté, dans les quatre orientations.
+
+**La leçon générale** : une assertion de perpendicularité ne contraint pas un sens. Chaque fois
+qu'un test vérifie qu'une grandeur est nulle, se demander ce que vaut celle qui ne l'est pas.
+
+### 13.4 Où vit la correction
+
+À la **frontière**, dans `InserterGeoModel#handleAnimations`, et nulle part ailleurs :
+`InserterTurretPose` garde une convention lisible et testable en JUnit, GeckoLib garde la
+sienne, et la conversion est à l'endroit unique où l'on passe de l'une à l'autre. Nier
+`SOURCE_DEGREES` aurait propagé la convention de GeckoLib dans du calcul pur qui n'a aucune
+raison de la connaître.
+
+---
+
+## 14. Cinématique inverse — la §12 était fausse (01/08/2026)
+
+> Retour de jeu, capture à l'appui : *« les animations ne sont pas bonnes du tout !! comment
+> ça le coude est scindé ? la partie haute fait juste du haut/bas et l'autre avant/arrière ? »*
+
+Le constat est exact. Le bras n'était pas articulé, il était **disloqué**.
+
+### 14.1 L'erreur, et pourquoi elle a été défendue
+
+`HEAD_COUNTER_ROTATION = 1.0` faisait que la tête défaisait exactement l'inclinaison du mât.
+La §12.3 en tire un argument : *« la pince descend sans jamais basculer — le geste d'une
+pelleteuse qui garde son godet horizontal »*, et surtout *« la position de la pince se calcule
+en une rotation et une addition, au lieu de deux rotations composées »*.
+
+**C'est cette simplification qui aurait dû alerter.** Elle n'est vraie que parce que la tête
+garde une orientation *fixe dans le repère du modèle*. Or la pose sculptée aligne presque les
+deux segments — 7,8° d'écart au coude. Quand le mât descend à l'horizontale et que la tête
+reste à son angle d'origine, l'écart passe à **39°** : deux pièces qui se croisent.
+
+La leçon générale : *un calcul qui se simplifie soudainement décrit peut-être autre chose que
+ce qu'on croit.* Ici, la simplification signalait que la tête ne suivait plus le mât.
+
+### 14.2 Le bon sens de calcul
+
+Deux angles posés indépendamment ne décrivent pas un bras — ils décrivent deux pièces. Il faut
+imposer **où va la pince** et en déduire les angles, pas l'inverse :
+
+```
+InserterArmKinematics.solve(portée, hauteur) → (angle mât, angle tête)
+```
+
+Loi des cosinus, convention coude vers le bas — celle de la pose sculptée. Les deux angles
+sortent liés, donc la dislocation devient **impossible à écrire**.
+
+Et surtout, ça donne une assertion : `position(solve(cible)) == cible`. « La pince atteint le
+point demandé » se teste ; « ça a l'air articulé » ne se testait pas. C'est ce test qui
+manquait, et il aurait refusé la version disloquée.
+
+### 14.3 Ce que la géométrie interdit
+
+Mesures, rotations de cubes appliquées :
+
+| Segment | Longueur |
+|---|---|
+| mât (épaule → coude) | **13,93** |
+| tête (coude → pince) | **2,50** |
+
+Un rapport de 5,6 pour 1 : c'est un **poignet**, pas un avant-bras. Plus la pince descend,
+plus il doit se casser :
+
+| Hauteur visée (portée 15,6) | Angle au coude |
+|---|---|
+| pose sculptée | 7,8° |
+| 9,5 — **retenu** | 24° |
+| 8,0 | 41° |
+| 6,6 | 49° |
+| 8,87 à portée 13,8 (replié) | 86° |
+
+**Conclusion à assumer : ce modèle ne peut pas faire une pelleteuse.** Un coude qui travaille
+demande 40 à 86° de flexion, ce qui casse la silhouette. Le geste retenu est donc un bras
+qui s'étend, plonge modérément et balaie — le coude restant à 24°, constant.
+
+Rendre la pelleteuse possible demande d'**allonger le second segment** dans le modèle, à 5 ou
+6 unités. C'est un chantier d'art, pas de code : la cinématique ci-dessus le produirait sans
+être modifiée.
+
+### 14.4 Le relevé est un angle, pas une hauteur
+
+Relever la pince de 5 unités en gardant la portée place la cible à **16,94** de l'épaule, pour
+un bras de **16,42**. Hors d'atteinte : la résolution l'écrête, et le mouvement se bloque à
+mi-course au lieu de monter.
+
+Le relevé est donc une **rotation autour de l'épaule**, qui conserve la distance. La pince
+monte en se rapprochant, ce que fait un vrai bras. Conséquence à connaître : cette rotation
+déplace le bras sans le déformer, donc **le coude ne bouge pas de tout le trajet**.
+
+Ce défaut a été trouvé par un test, pas par l'œil — et l'œil ne l'aurait pas expliqué.
+
+### 14.5 L'amplitude suit la vitesse
+
+> Retour de jeu : *« la seconde est plus jolie mais risque d'être trop longue pour des
+> mouvements rapides ? »*
+
+Objection fondée. Le plongeon aux extrémités est obligatoire — c'est ainsi que la pince atteint
+le conteneur. Le **relevé à mi-course**, lui, est décoratif : l'inserter balaie au-dessus de
+son propre bloc et n'a rien à franchir. Or c'est lui qui coûte du temps.
+
+L'amplitude suit donc la durée disponible : pleine à 12 ticks par mouvement ou plus, nulle à 4
+et en dessous.
+
+| Inserter | ticks/mouvement | Relevé |
+|---|---|---|
+| burner | 17 | plein |
+| inserter, filter | 12 | plein |
+| long handed | 8 | moitié |
+| fast, stack | 4 | **aucun** |
+| fast sous module de vitesse | 2 | **aucun** |
+
+Un inserter rapide garde donc le bras tendu et se contente de pivoter — le geste de Factorio.
+La transition est continue : il n'y a pas de bascule de mode visible, et il n'a pas fallu
+choisir entre les deux gestes.
+
+### 14.6 Les trois réglages
+
+`CONTAINER_REACH` (15,6), `CONTAINER_Y` (9,5) et `MAX_LIFT_DEGREES` (20). Tout le reste en
+découle. Descendre `CONTAINER_Y` fait plonger davantage, au prix du poignet — cf. le tableau
+de la §14.3.

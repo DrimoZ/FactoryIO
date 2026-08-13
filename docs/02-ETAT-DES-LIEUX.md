@@ -72,7 +72,8 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Boîte de collision | ✅ | socle + palier calqués sur le modèle (BUG-017) |
 | Recettes | ✅ | **les 7**, en chaîne : burner → inserter → {long handed, fast, filter} → stack → stack filter (FIO-125) |
 | Copier / coller de réglages | ✅ | item `configurator`, ouvert par le tag `factory_io:configurators` |
-| Améliorations posables | ✅ | vitesse / capacité / efficacité, 3 paliers, tags `factory_io:upgrades/<axe>/<palier>` ; rendues quand le bloc tombe |
+| Améliorations posables | 🟡 | **vrais slots** (1 à 4 selon le modèle), modules **empilables**, paliers cumulés ; natures cumulatives et débloquantes ; barème réglable ; tags `factory_io:upgrades/<axe>/<palier>` ; tombent avec le reste du contenu. **L'interface reste à faire** : les slots sont posés à un emplacement provisoire (FIO-162, FIO-071) |
+| Recettes des modules | 🔴 | **aucune** : les 9 modules et le configurateur sont inaccessibles en survie (FIO-164) |
 | Rotation et cible visée | ✅ | tourner un inserter change enfin ce qu'il vise (BUG-042) |
 | Loot tables | ✅ | générées par `runData` et versionnées |
 

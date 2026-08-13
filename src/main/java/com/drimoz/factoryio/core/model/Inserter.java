@@ -45,6 +45,17 @@ public class Inserter {
     private final boolean useEnergy;
 
     /**
+     * Nombre de slots d'amélioration.
+     *
+     * <p>Structurel, et pas un réglage : il fixe la taille de l'inventaire, donc du menu et
+     * du NBT. Le réduire sur un monde existant enfermerait des modules dans des slots
+     * devenus inaccessibles. Tout le reste du système d'améliorations — facteurs, plafond de
+     * cumul, natures verrouillées — est au contraire réglable à chaud par datapack, dans
+     * {@code InserterUpgradeTuning}.
+     */
+    private final int upgradeSlots;
+
+    /**
      * Réglages, remplaçables à chaud par un datapack.
      *
      * <p>Volontairement non final : c'est le seul état mutable qui subsiste, et il est
@@ -71,13 +82,13 @@ public class Inserter {
     public static Inserter burner(
             ResourceLocation id, boolean affectedByRedstone,
             int grabDistance, int ticksPerSwing, int preferredItemCountPerAction,
-            boolean filterable,
+            boolean filterable, int upgradeSlots,
             int fuelCapacity, int fuelConsumption
     ) {
         return new Inserter(
                 id, affectedByRedstone,
                 grabDistance, ticksPerSwing, preferredItemCountPerAction,
-                filterable, false,
+                filterable, false, upgradeSlots,
                 fuelCapacity, fuelConsumption,
                 0, 0, 0);
     }
@@ -86,13 +97,13 @@ public class Inserter {
     public static Inserter electric(
             ResourceLocation id, boolean affectedByRedstone,
             int grabDistance, int ticksPerSwing, int preferredItemCountPerAction,
-            boolean filterable,
+            boolean filterable, int upgradeSlots,
             int energyCapacity, int energyTransferRate, int energyConsumption
     ) {
         return new Inserter(
                 id, affectedByRedstone,
                 grabDistance, ticksPerSwing, preferredItemCountPerAction,
-                filterable, true,
+                filterable, true, upgradeSlots,
                 0, 0,
                 energyCapacity, energyTransferRate, energyConsumption);
     }
@@ -100,7 +111,7 @@ public class Inserter {
     public Inserter(
             ResourceLocation id, boolean affectedByRedstone,
             int grabDistance, int ticksPerSwing, int preferredItemCountPerAction,
-            boolean filterable, boolean useEnergy,
+            boolean filterable, boolean useEnergy, int upgradeSlots,
             int fuelCapacity, int fuelConsumption,
             int energyCapacity, int energyTransferRate, int energyConsumption
     ) {
@@ -110,6 +121,7 @@ public class Inserter {
         // une combinaison légitime, que l'ancien setUseEnergy interdisait (cf. BUG-014).
         this.filterable = filterable;
         this.useEnergy = useEnergy;
+        this.upgradeSlots = boundedUpgradeSlots(id, upgradeSlots);
 
         this.defaultTuning = new InserterTuning(
                 affectedByRedstone,
@@ -129,6 +141,15 @@ public class Inserter {
 
     /** Valeur des champs sans objet pour ce mode d'alimentation. */
     public static final int UNUSED = -1;
+
+    /**
+     * Plafond du nombre de slots d'amélioration.
+     *
+     * <p>Une borne d'interface, pas d'équilibrage : les slots doivent tenir dans le panneau
+     * qui les affiche. Un JSON qui en demanderait cinquante produirait un menu impossible à
+     * dessiner — mieux vaut l'écrêter en le disant que le découvrir à l'ouverture.
+     */
+    public static final int MAX_UPGRADE_SLOTS = 6;
 
     // Interface
 
@@ -150,6 +171,11 @@ public class Inserter {
 
     public boolean useEnergy() {
         return useEnergy;
+    }
+
+    /** Nombre de slots d'amélioration de ce modèle. */
+    public int getUpgradeSlots() {
+        return upgradeSlots;
     }
 
     public boolean isAffectedByRedstone() {
@@ -287,6 +313,22 @@ public class Inserter {
 
         FactoryIO.LOGGER.warn("{} : {} = {} est invalide, valeur ramenée à 1", id, field, value);
         return 1;
+    }
+
+    /**
+     * Ramène le nombre de slots d'amélioration dans {@code [0, MAX_UPGRADE_SLOTS]}.
+     *
+     * <p>Zéro est une valeur <b>légitime</b> — un inserter qui n'accepte aucune amélioration
+     * est un choix de conception défendable — d'où un plancher à 0 et non à 1.
+     */
+    private static int boundedUpgradeSlots(ResourceLocation id, int value) {
+        if (value >= 0 && value <= MAX_UPGRADE_SLOTS) return value;
+
+        int bounded = Math.max(0, Math.min(value, MAX_UPGRADE_SLOTS));
+        FactoryIO.LOGGER.warn("{} : upgradeSlots = {} est hors de [0, {}], valeur ramenée à {}",
+                id, value, MAX_UPGRADE_SLOTS, bounded);
+
+        return bounded;
     }
 
     @Override

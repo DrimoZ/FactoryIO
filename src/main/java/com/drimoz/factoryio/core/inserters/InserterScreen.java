@@ -138,7 +138,7 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
     private void refreshRedstoneControls() {
         if (this.redstoneModeButton == null || !getMenu().isBacked()) return;
 
-        InserterRedstoneCondition condition = getMenu().getBlockEntity().getRedstoneCondition();
+        InserterRedstoneCondition condition = getMenu().getBlockEntity().getConfiguredRedstoneCondition();
 
         this.redstoneModeButton.setMessage(
                 ModUtils.tooltipComponent(condition.mode().translationKey()));
@@ -148,13 +148,13 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
     }
 
     private void cycleRedstoneMode() {
-        InserterRedstoneCondition condition = getMenu().getBlockEntity().getRedstoneCondition();
+        InserterRedstoneCondition condition = getMenu().getBlockEntity().getConfiguredRedstoneCondition();
 
         send(C2SInserterSetting.Setting.REDSTONE_MODE, condition.mode().next().ordinal());
     }
 
     private void cycleRedstoneThreshold() {
-        InserterRedstoneCondition condition = getMenu().getBlockEntity().getRedstoneCondition();
+        InserterRedstoneCondition condition = getMenu().getBlockEntity().getConfiguredRedstoneCondition();
 
         send(C2SInserterSetting.Setting.REDSTONE_THRESHOLD, condition.nextThreshold().threshold());
     }

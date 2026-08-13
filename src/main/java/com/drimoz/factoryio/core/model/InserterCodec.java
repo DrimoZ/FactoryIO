@@ -50,6 +50,14 @@ public final class InserterCodec {
     private static final int DEFAULT_ENERGY_TRANSFER_RATE = 500;
     private static final int DEFAULT_ENERGY_CONSUMPTION = 96;
 
+    /**
+     * Slots d'amélioration d'un inserter défini par l'utilisateur.
+     *
+     * <p>Le milieu du barème livré : un JSON qui ne dit rien obtient un inserter améliorable
+     * sans être d'emblée au plafond.
+     */
+    public static final int DEFAULT_UPGRADE_SLOTS = 2;
+
     private static final int DEFAULT_FUEL_CAPACITY = 3200;
     private static final int DEFAULT_FUEL_CONSUMPTION = 68;
 
@@ -59,51 +67,18 @@ public final class InserterCodec {
     private InserterCodec() {}
 
     /**
-     * Champ optionnel qui <b>propage</b> les erreurs, contrairement à
-     * {@code Codec#optionalFieldOf}.
+     * Champ optionnel qui <b>propage</b> les erreurs.
      *
-     * <p>Le comportement de DFU est un piège coûteux ici : {@code optionalFieldOf} est
-     * <i>clément</i>, il rattrape l'échec de lecture d'un champ présent et rend
-     * {@code Optional.empty()} — ou la valeur par défaut. Autrement dit, avec le codec
-     * naïf, {@code "ticksPerSwing": -4000} et {@code "grabDistance": "loin"} passaient
-     * exactement comme avant : sans un mot, avec la valeur par défaut. C'est le défaut
-     * même que ce ticket devait corriger, et il aurait survécu à sa correction si les
-     * tests ne l'avaient pas relevé.
-     *
-     * <p>{@code ExtraCodecs.strictOptionalField} rendrait ce service, mais n'existe pas
-     * en 1.20.1.
+     * <p>Le mécanisme et sa raison d'être sont dans {@link StrictCodecs} : il a été extrait
+     * pour servir aussi au barème des améliorations.
      */
     private static <T> MapCodec<Optional<T>> strictOptional(Codec<T> codec, String name) {
-        return new MapCodec<>() {
-            @Override
-            public <O> DataResult<Optional<T>> decode(DynamicOps<O> ops, MapLike<O> input) {
-                O value = input.get(name);
-                if (value == null) return DataResult.success(Optional.empty());
-
-                return codec.parse(ops, value)
-                        .mapError(error -> "« " + name + " » : " + error)
-                        .map(Optional::of);
-            }
-
-            @Override
-            public <O> RecordBuilder<O> encode(Optional<T> value, DynamicOps<O> ops, RecordBuilder<O> prefix) {
-                return value.isPresent()
-                        ? prefix.add(name, codec.encodeStart(ops, value.get()))
-                        : prefix;
-            }
-
-            @Override
-            public <O> Stream<O> keys(DynamicOps<O> ops) {
-                return Stream.of(ops.createString(name));
-            }
-        };
+        return StrictCodecs.optional(codec, name);
     }
 
     /** Variante à valeur par défaut, tout aussi stricte sur un champ présent mais invalide. */
     private static <T> MapCodec<T> strictOptional(Codec<T> codec, String name, T fallback) {
-        return strictOptional(codec, name).xmap(
-                value -> value.orElse(fallback),
-                value -> Objects.equals(value, fallback) ? Optional.empty() : Optional.of(value));
+        return StrictCodecs.optional(codec, name, fallback);
     }
 
     /**
@@ -127,6 +102,7 @@ public final class InserterCodec {
             boolean useEnergy,
             boolean filterable,
             boolean affectedByRedstone,
+            int upgradeSlots,
             int grabDistance,
             Optional<Integer> ticksPerSwing,
             Optional<Integer> legacyCooldown,
@@ -143,6 +119,10 @@ public final class InserterCodec {
                 strictOptional(Codec.BOOL, "useEnergy", false).forGetter(Fields::useEnergy),
                 strictOptional(Codec.BOOL, "filterable", false).forGetter(Fields::filterable),
                 strictOptional(Codec.BOOL, "affectedByRedstone", true).forGetter(Fields::affectedByRedstone),
+                // NON_NEGATIVE_INT et non POSITIVE_INT : un inserter qui n'accepte aucune
+                // amélioration est un choix de conception, pas une faute de frappe.
+                strictOptional(ExtraCodecs.NON_NEGATIVE_INT, "upgradeSlots", DEFAULT_UPGRADE_SLOTS)
+                        .forGetter(Fields::upgradeSlots),
                 strictOptional(ExtraCodecs.POSITIVE_INT, "grabDistance", 1).forGetter(Fields::grabDistance),
                 strictOptional(ExtraCodecs.POSITIVE_INT, "ticksPerSwing").forGetter(Fields::ticksPerSwing),
                 strictOptional(ExtraCodecs.POSITIVE_INT, "cooldownBetweenActions").forGetter(Fields::legacyCooldown),
@@ -166,6 +146,7 @@ public final class InserterCodec {
                     energy,
                     inserter.isFilterable(),
                     inserter.isAffectedByRedstone(),
+                    inserter.getUpgradeSlots(),
                     inserter.getGrabDistance(),
                     Optional.of(inserter.getTicksPerSwing()),
                     Optional.empty(),
@@ -192,14 +173,14 @@ public final class InserterCodec {
                     ? Inserter.electric(
                             id, affectedByRedstone,
                             grabDistance, swing.result().orElseThrow(), preferredItemCountPerAction,
-                            filterable,
+                            filterable, upgradeSlots,
                             energyCapacity.orElse(DEFAULT_ENERGY_CAPACITY),
                             energyTransferRate.orElse(DEFAULT_ENERGY_TRANSFER_RATE),
                             energyConsumption.orElse(DEFAULT_ENERGY_CONSUMPTION))
                     : Inserter.burner(
                             id, affectedByRedstone,
                             grabDistance, swing.result().orElseThrow(), preferredItemCountPerAction,
-                            filterable,
+                            filterable, upgradeSlots,
                             fuelCapacity.orElse(DEFAULT_FUEL_CAPACITY),
                             fuelConsumption.orElse(DEFAULT_FUEL_CONSUMPTION));
 

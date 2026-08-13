@@ -3,7 +3,7 @@ package com.drimoz.factoryio.core.inserters;
 import net.minecraft.util.Mth;
 
 /**
- * Pose du bras d'un inserter : orientation de la tourelle et inclinaison du bras (FIO-066).
+ * Pose d'un inserter : orientation de la tourelle et trajectoire de la pince (FIO-066).
  *
  * <h2>Deux degrés de liberté, deux rôles</h2>
  *
@@ -11,13 +11,24 @@ import net.minecraft.util.Mth;
  * la source vers la cible. Tout ce qui surmonte les pieds la suit, bagues supérieures du
  * palier comprises.
  *
- * <p>Le <b>bras</b> s'incline autour de l'axe horizontal : c'est le plongeon dans le
- * conteneur. Il est baissé aux deux extrémités du trajet — là où il doit aller chercher et
- * déposer — et relevé à mi-course pour passer au-dessus. Sans lui, la pince ne descend
- * jamais et reste à 0,86 bloc du centre du coffre, suspendue au-dessus du couvercle.
+ * <p>Le <b>bras</b>, lui, n'a pas d'angle propre. On lui donne un <b>point à atteindre</b>,
+ * et {@link InserterArmKinematics} en déduit les deux inclinaisons. C'est le changement de
+ * fond par rapport à la première version, qui posait deux angles indépendants et regardait où
+ * la pince tombait : elle a produit un bras disloqué, parce que deux angles libres ne
+ * décrivent pas un bras.
  *
- * <p>C'est l'inclinaison qui rend la portée juste : baissée à l'horizontale, la pince
- * atteint {@code 1,025} bloc, soit exactement le centre du voisin.
+ * <h2>Le relevé à mi-course dépend de la vitesse</h2>
+ *
+ * <p>Le plongeon aux deux extrémités est obligatoire — c'est ainsi que la pince atteint
+ * l'intérieur du conteneur. Le <b>relevé à mi-course</b>, lui, est décoratif : un inserter
+ * balaie au-dessus de son propre bloc et n'a rien à franchir.
+ *
+ * <p>Or c'est lui qui coûte du temps. Sur un {@code fast_inserter} sous module de vitesse —
+ * deux ticks par mouvement, cent millisecondes — un plongeon, un relevé et un second plongeon
+ * ne sont plus un geste mais une convulsion. L'amplitude du relevé suit donc la durée
+ * disponible : pleine sur un inserter lent, nulle sur un inserter rapide, qui garde alors le
+ * bras tendu et se contente de pivoter. C'est exactement le geste de Factorio, et la
+ * transition est continue — il n'y a pas de bascule de mode visible.
  *
  * <h2>Pas de cas particulier pour le carburant</h2>
  *
@@ -25,7 +36,7 @@ import net.minecraft.util.Mth;
  * C'est l'<b>item</b> qui s'arrête à la machine au lieu de suivre la pince
  * ({@link InserterCarryPath}). Une branche de moins, et le geste reste juste.
  *
- * <p>Classe de calcul pur, sans dépendance au monde ni au client : testable en JUnit.
+ * <p>Classe de calcul pur : testable en JUnit.
  */
 public final class InserterTurretPose {
 
@@ -41,31 +52,27 @@ public final class InserterTurretPose {
     public static final float SOURCE_DEGREES = 180f;
 
     /**
-     * Élévation de la pince au repos, en degrés au-dessus de l'horizontale.
+     * Angle dont la pince se relève à mi-course, en degrés, à pleine amplitude.
      *
-     * <p>Déduite de la géométrie : le sommet du mât est à 7,28 unités au-dessus de l'épaule
-     * et à 11,87 devant elle, soit {@code atan(7.28 / 11.87)}.
+     * <p><b>Un angle, et non une hauteur.</b> Monter verticalement en gardant la portée
+     * placerait la pince à 16,94 de l'épaule, pour un bras qui mesure 16,42 au maximum : la
+     * cible sortirait du domaine atteignable et la résolution la ramènerait à la limite, avec
+     * un mouvement qui se bloque au lieu de monter. Une rotation autour de l'épaule garde la
+     * distance constante, donc toujours atteignable — et le geste est celui d'un vrai bras,
+     * qui se replie un peu en se relevant.
      */
-    public static final float REST_ELEVATION_DEGREES = 31.53f;
+    public static final double MAX_LIFT_DEGREES = 20.0D;
 
     /**
-     * Part de l'inclinaison du mât que la tête reprend à son compte.
+     * En deçà de cette durée de mouvement, plus aucun relevé.
      *
-     * <p>À 1, la pince reste rigoureusement à plat pendant que le mât s'abaisse : c'est le
-     * geste d'une pelleteuse qui garde son godet horizontal, et c'est ce qui distingue un
-     * bras articulé d'un balancier. La descendre donnerait une pince qui pique du nez.
+     * <p>Quatre ticks, soit deux cents millisecondes : en dessous, un aller-retour vertical
+     * ne se lit plus, il scintille.
      */
-    public static final float HEAD_COUNTER_ROTATION = 1.0f;
+    public static final int LIFT_MIN_TICKS = 4;
 
-    /**
-     * Inclinaison appliquée au mât pour plonger dans un conteneur, en degrés.
-     *
-     * <p>Exactement l'opposé de l'élévation au repos : le bras descend jusqu'à
-     * l'horizontale, ce qui amène la pince à hauteur de coffre. Le signe est celui de
-     * {@code setRotX} — négatif abaisse la pince en l'éloignant, ce qui se vérifie par le
-     * calcul et non par tâtonnement (cf. {@link InserterCarryPath}).
-     */
-    public static final float DIVE_DEGREES = -REST_ELEVATION_DEGREES;
+    /** À partir de cette durée, le relevé est à pleine amplitude. */
+    public static final int LIFT_FULL_TICKS = 12;
 
     private InserterTurretPose() {}
 
@@ -87,32 +94,60 @@ public final class InserterTurretPose {
         };
     }
 
-    /** Contre-inclinaison de la tête, en degrés. */
-    public static float headPitchDegrees(InserterState state, float progress, InserterAnimationMode mode) {
-        // La tête défait ce que le mât vient de faire : la pince descend sans basculer.
-        return -HEAD_COUNTER_ROTATION * armPitchDegrees(state, progress, mode);
+    /**
+     * Pose du bras, résolue depuis le point que la pince doit atteindre.
+     *
+     * <p>Les deux inclinaisons sortent ensemble d'un même calcul : elles ne peuvent donc pas
+     * se contredire, et le bras ne peut pas se disloquer.
+     *
+     * @param ticksPerSwing durée d'un mouvement ; c'est elle qui décide de l'amplitude du
+     *                      relevé à mi-course
+     */
+    public static InserterArmKinematics.Pose armPose(
+            InserterState state, float progress, InserterAnimationMode mode, int ticksPerSwing) {
+
+        if (mode.isFrozen()) return InserterArmKinematics.Pose.REST;
+
+        return InserterArmKinematics.solveLifted(
+                InserterArmKinematics.CONTAINER_REACH,
+                InserterArmKinematics.CONTAINER_Y,
+                liftAt(state, progress, mode, ticksPerSwing));
     }
 
     /**
-     * Inclinaison du mât, en degrés — 0 au repos, {@link #DIVE_DEGREES} plongé.
+     * Angle dont la pince est relevée à cet instant, en degrés.
      *
-     * <p>Le bras est baissé quand la pince est <b>arrivée</b> quelque part : au repos
-     * au-dessus de la source, bloqué au-dessus de la cible, et aux deux extrémités d'un
-     * trajet. Il se relève à mi-course pour franchir le bloc.
+     * <p>Nul aux deux extrémités du trajet — la pince est dans le conteneur — et maximal à
+     * mi-course. Un sinus plutôt qu'une parabole : sa dérivée s'annule aux extrémités, donc
+     * la pince ne jaillit pas du coffre.
      */
-    public static float armPitchDegrees(InserterState state, float progress, InserterAnimationMode mode) {
-        if (mode.isFrozen()) return 0f;
+    public static double liftAt(
+            InserterState state, float progress, InserterAnimationMode mode, int ticksPerSwing) {
 
-        // Immobile à une extrémité : le bras est dans le conteneur, il y reste.
-        if (state == InserterState.WAITING || state == InserterState.BLOCKED) return DIVE_DEGREES;
+        // Immobile à une extrémité : la pince est dans le conteneur, elle y reste.
+        if (state == InserterState.WAITING || state == InserterState.BLOCKED) return 0.0D;
 
-        if (!mode.isInterpolated()) return DIVE_DEGREES;
+        // Sans interpolation, on ne montre que les poses d'arrivée : jamais de relevé.
+        if (!mode.isInterpolated()) return 0.0D;
 
-        // Plongé aux deux bouts, relevé au milieu. Un sinus plutôt qu'une parabole : sa
-        // dérivée s'annule aux extrémités, donc le bras ne se relève pas d'un coup en
-        // sortant du coffre.
         float t = Mth.clamp(progress, 0f, 1f);
 
-        return DIVE_DEGREES * (1f - Mth.sin(t * Mth.PI));
+        return liftAmplitude(ticksPerSwing) * Mth.sin(t * Mth.PI);
+    }
+
+    /**
+     * Amplitude du relevé pour une durée de mouvement donnée.
+     *
+     * <p>C'est la réponse à l'objection « trop long pour des mouvements rapides » : plutôt
+     * que de choisir entre le geste de pelleteuse et celui de Factorio, on interpole de l'un
+     * à l'autre selon le temps disponible.
+     */
+    public static double liftAmplitude(int ticksPerSwing) {
+        if (ticksPerSwing <= LIFT_MIN_TICKS) return 0.0D;
+        if (ticksPerSwing >= LIFT_FULL_TICKS) return MAX_LIFT_DEGREES;
+
+        double share = (double) (ticksPerSwing - LIFT_MIN_TICKS) / (LIFT_FULL_TICKS - LIFT_MIN_TICKS);
+
+        return MAX_LIFT_DEGREES * share;
     }
 }
