@@ -418,6 +418,46 @@ public class InserterGameTests {
     }
 
     /**
+     * L'inserter complète les piles entamées avant d'en ouvrir de nouvelles.
+     *
+     * <p>Un balayage positionnel dépose dans le premier slot qui accepte — et un slot vide
+     * accepte toujours. Une case libre placée <b>avant</b> une pile entamée du même item
+     * suffisait donc à faire ouvrir une pile de plus, à chaque cycle. Sur un coffre où l'on
+     * prend et l'on dépose en même temps, des cases se libèrent en permanence devant les piles
+     * en cours et le même item finit éparpillé sur une dizaine de piles partielles, saturant le
+     * coffre sans presque rien y ranger.
+     *
+     * <p>Le montage reproduit exactement cette disposition : slot 0 libre, slot 5 entamé.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void insertionFillsPartialStacksFirst(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+
+        Container target = container(helper, TARGET);
+        int started = 8;
+
+        // La case libre est devant la pile entamée : c'est toute la disposition du défaut.
+        target.setItem(0, ItemStack.EMPTY);
+        target.setItem(5, new ItemStack(Items.COBBLESTONE, started));
+
+        helper.succeedWhen(() -> {
+            helper.assertTrue(target.getItem(5).getCount() > started,
+                    "La pile entamée n'a pas été complétée : " + target.getItem(5).getCount());
+
+            helper.assertTrue(target.getItem(0).isEmpty(),
+                    "Une pile a été ouverte devant, alors qu'il y avait de la place derrière : "
+                            + target.getItem(0));
+
+            int total = countCobblestone(helper);
+            helper.assertTrue(total == MOVED_ITEMS + started,
+                    "Les items ne sont pas conservés : " + total);
+        });
+    }
+
+    /**
      * Un inserter bloqué doit reprendre son cycle dès que la cible se libère (FIO-060).
      *
      * <p>{@code BLOCKED} est le seul état dont on ne sort pas par une échéance : s'il

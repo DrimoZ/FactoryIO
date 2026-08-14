@@ -1636,22 +1636,76 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     private record InsertPlan(int movable, int firstSlot) {}
 
     /**
+     * Ordre dans lequel les slots de la cible sont sollicités : <b>les piles à compléter
+     * d'abord, les slots libres ensuite</b>.
+     *
+     * <h3>Pourquoi cet ordre, et pas l'ordre positionnel</h3>
+     *
+     * <p>Un balayage positionnel dépose dans le premier slot qui accepte — et un slot
+     * <b>vide</b> accepte toujours. Si le coffre a une case libre avant une pile entamée du
+     * même item, l'inserter ouvre une nouvelle pile au lieu de compléter l'ancienne. Sur un
+     * coffre où l'on prend et l'on dépose en même temps, des cases se libèrent devant les
+     * piles en cours et le même item finit éparpillé sur une dizaine de piles partielles,
+     * jusqu'à saturer le coffre en n'y rangeant presque rien.
+     *
+     * <p>C'est le comportement que tout inventaire correct évite, et la raison d'être de
+     * {@code ItemHandlerHelper.insertItemStacked} — qu'on ne peut pas employer tel quel ici,
+     * l'éjection ayant besoin de simuler avant d'extraire (cf. BUG-006) et de mémoriser le
+     * premier slot preneur (DT-07).
+     *
+     * <h3>Pourquoi l'ordre est calculé une fois pour toutes</h3>
+     *
+     * <p>Il est établi <b>avant</b> toute écriture, puis partagé par la simulation et
+     * l'insertion. Le recalculer entre les deux le ferait changer sous nos pieds : un slot
+     * vide rempli par la passe des libres deviendrait une pile à compléter, donc appartiendrait
+     * désormais à la première passe, et l'insertion ne suivrait plus la simulation — la
+     * quantité extraite du buffer ne correspondrait plus à ce que la cible accepte, ce qui est
+     * exactement la façon dont on détruit des items.
+     */
+    private static int[] insertionOrder(IItemHandler handler, @Nonnull ItemStack stack, int startSlot) {
+        int slots = handler.getSlots();
+        int[] order = new int[slots];
+        int index = 0;
+
+        for (int pass = 0; pass < 2; pass++) {
+            boolean wantMergeable = pass == 0;
+
+            for (int offset = 0; offset < slots; offset++) {
+                int slot = Math.floorMod(startSlot + offset, slots);
+
+                if (mergeableWith(handler, stack, slot) == wantMergeable) {
+                    order[index++] = slot;
+                }
+            }
+        }
+
+        return order;
+    }
+
+    /** Ce slot porte-t-il déjà une pile que {@code stack} viendrait compléter ? */
+    private static boolean mergeableWith(IItemHandler handler, @Nonnull ItemStack stack, int slot) {
+        ItemStack current = handler.getStackInSlot(slot);
+
+        return !current.isEmpty() && ItemHandlerHelper.canItemStacksStack(stack, current);
+    }
+
+    /**
      * Simule l'insertion et relève au passage le premier slot preneur.
      *
-     * <p>Balaye dans le même ordre que {@link #insertDistributed}, sans quoi la quantité
-     * simulée ne correspondrait pas à ce qui sera réellement inséré.
+     * <p>Balaye dans l'ordre fourni, le même que {@link #insertDistributed}, sans quoi la
+     * quantité simulée ne correspondrait pas à ce qui sera réellement inséré.
      *
      * <p>Le premier slot preneur sort d'ici plutôt que d'un troisième balayage : l'éjection
      * parcourait l'inventaire cible trois fois — simulation, insertion, puis recherche du
      * slot à mémoriser — pour une information que la première passe connaissait déjà.
      */
-    private static InsertPlan planInsert(IItemHandler handler, @Nonnull ItemStack stack, int startSlot) {
+    private static InsertPlan planInsert(IItemHandler handler, @Nonnull ItemStack stack, int[] order, int startSlot) {
         int remaining = stack.getCount();
-        int slots = handler.getSlots();
         int firstSlot = -1;
 
-        for (int offset = 0; offset < slots && remaining > 0; offset++) {
-            int slot = Math.floorMod(startSlot + offset, slots);
+        for (int slot : order) {
+            if (remaining <= 0) break;
+
             int before = remaining;
 
             remaining = handler.insertItem(slot, ItemHandlerHelper.copyStackWithSize(stack, remaining), true).getCount();
@@ -1666,12 +1720,12 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
     /** Insère en répartissant sur plusieurs slots. @return ce qui n'a pas pu être placé */
     @Nonnull
-    private static ItemStack insertDistributed(IItemHandler handler, @Nonnull ItemStack stack, int startSlot) {
+    private static ItemStack insertDistributed(IItemHandler handler, @Nonnull ItemStack stack, int[] order) {
         ItemStack remaining = stack;
-        int slots = handler.getSlots();
 
-        for (int offset = 0; offset < slots && !remaining.isEmpty(); offset++) {
-            int slot = Math.floorMod(startSlot + offset, slots);
+        for (int slot : order) {
+            if (remaining.isEmpty()) break;
+
             remaining = handler.insertItem(slot, remaining, false);
         }
 
@@ -1734,7 +1788,9 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
             pEntity.lastSourceSlot = slot;
             pEntity.rescueLeftover(
                     pEntity.insertItemInternal(targetSlot, taken, false),
-                    rest -> ItemHandlerHelper.insertItem(source, rest, false));
+                    // insertItemStacked, et non insertItem : rendre un reliquat à la source
+                    // doit compléter la pile d'où il vient plutôt qu'en ouvrir une nouvelle.
+                    rest -> ItemHandlerHelper.insertItemStacked(source, rest, false));
             return taken;
         }
 
@@ -1781,10 +1837,15 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
         int startSlot = Math.floorMod(pEntity.lastTargetSlot, Math.max(1, target.getSlots()));
 
+        // Établi une seule fois, avant toute écriture, puis partagé par la simulation et
+        // l'insertion : elles doivent solliciter les slots dans le même ordre, sinon la
+        // quantité extraite du buffer ne correspond plus à ce que la cible accepte.
+        int[] order = insertionOrder(target, probe, startSlot);
+
         // Le premier slot preneur est mémorisé, et non startSlot : réécrire le point de
         // départ avec lui-même rendait la mémorisation inopérante du côté cible, alors que
         // le côté source en bénéficiait bien (cf. DT-07, BUG-036).
-        InsertPlan plan = planInsert(target, probe, startSlot);
+        InsertPlan plan = planInsert(target, probe, order, startSlot);
         if (plan.movable() <= 0) return ItemStack.EMPTY;
 
         ItemStack taken = pEntity.extractItemInternal(BUFFER_SLOT, plan.movable(), false);
@@ -1792,7 +1853,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
         pEntity.lastTargetSlot = plan.firstSlot();
         pEntity.rescueLeftover(
-                insertDistributed(target, taken, startSlot),
+                insertDistributed(target, taken, order),
                 rest -> pEntity.insertItemInternal(BUFFER_SLOT, rest, false));
         return taken;
     }
