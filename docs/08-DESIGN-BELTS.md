@@ -516,6 +516,37 @@ Le composant le plus délicat après le transport lui-même.
 
 Chacun de ces cas mérite un **GameTest** dédié.
 
+### État, et deux cas qui n'étaient pas tenus
+
+| Cas | État |
+|---|---|
+| Chunk aval déchargé | ✅ **corrigé** — voir ci-dessous. Non couvert par un test : un gabarit de 5×5×5 ne permet pas de décharger un chunk |
+| Casse d'un convoyeur plein | ✅ `contentsDropWhenTheBeltIsBroken` |
+| Piston | ✅ `aBeltCannotBePushedByAPiston` |
+| Waterlogging | ✅ propriété présente ; les items sont à position fixe, rien ne flotte |
+| Boucle fermée saturée | ✅ **corrigé** (BUG-050), `aSaturatedLoopKeepsTurning` |
+| Deux convoyeurs face à face | ✅ **corrigé** — voir ci-dessous, `twoBeltsFacingEachOtherBothBlock` |
+| Rechargement de monde | 🟡 `contentsSurviveAReload` couvre un bloc et son tampon, pas 500 items |
+| `/reload` datapack | ⬜ les vitesses ne viennent pas encore d'un datapack |
+
+**Le chunk aval déchargé était un piège de plomberie.** `Level.getBlockEntity`
+passe par `getChunkAt`, qui **charge le chunk** s'il ne l'est pas. Une ligne
+pointant vers un chunk déchargé le faisait donc charger à chaque tick, et de
+proche en proche : un convoyeur au bord du monde chargé entraînait le suivant,
+puis le suivant. Une garde `isLoaded` suffit, et le comportement retombe sur
+celui que ce tableau demandait déjà — bloquer et comprimer, sans rien perdre.
+
+**Deux convoyeurs face à face se passaient des items.** Leurs deux sorties sont
+sur la **même** face : rien ne peut y circuler sans se croiser. L'item de tête de
+l'un ressortait donc à l'extrémité *opposée* de l'autre, après avoir traversé le
+bloc entier. Pire, la détection de boucle de BUG-050 y voyait un circuit et les
+faisait « tourner » indéfiniment.
+
+C'est aussi ce que disait déjà la forme visible : un convoyeur ne cherche ses
+entrées que derrière et sur les côtés, **jamais devant**. Le transport
+contredisait le rendu. Un convoyeur ne prend donc plus pour aval un voisin dont
+la sortie est sa propre position, et le raccord de sortie disparaît avec lui.
+
 ---
 
 ## 10. Découpage en jalons
@@ -547,7 +578,7 @@ Livrer une version jouable dès le jalon 3.7 — ne pas attendre 3.11.
 | 3.5 | **Items rendus.** Texture animée impossible en l'état (§5). Budget FPS non mesuré : c'est [FIO-090b](06-BACKLOG.md) |
 | 3.6 | **À moitié.** Simulation client et paquets sur événement écrits ; réconciliation non (§6) |
 | 3.7 | **Fait.** Un inserter dépose sur la voie lointaine, et c'est le **convoyeur** qui le décide à partir de la face reçue par `getCapability`. L'inserter n'a pas une ligne au sujet des convoyeurs. Voie proche en recours plutôt qu'interdite (FIO-166) |
-| 3.10 | **Commencé.** `BeltGameTests` couvre ce qu'aucun test pur n'atteint : résolution de l'aval à travers le monde, boucle saturée, bout de ligne, cassage, sérialisation du tampon, hopper vanilla, résolution des connexions. Les cas limites de §9 restent à traiter |
+| 3.10 | **Commencé.** `BeltGameTests` couvre ce qu'aucun test pur n'atteint : résolution de l'aval à travers le monde, boucle saturée, bout de ligne, cassage, sérialisation du tampon, hopper vanilla, résolution des connexions. Les cas limites de §9 sont traités sauf deux, recensés dans le tableau de §9 |
 
 **Ce qui manque pour jouer** : rien n'alimente un convoyeur automatiquement,
 sinon un hopper. Le jalon 3.7 reste le seuil.

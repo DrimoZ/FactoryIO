@@ -260,10 +260,42 @@ public class BeltBlockEntity extends BlockEntity {
             return this.downstream;
         }
 
-        this.downstream = this.level.getBlockEntity(exit) instanceof BeltBlockEntity target ? target : null;
+        this.downstream = resolve(this.level, this.worldPosition, exit);
         this.downstreamAt = exit;
 
         return this.downstream;
+    }
+
+    /**
+     * Le convoyeur situé à {@code exit}, s'il peut réellement recevoir.
+     *
+     * <h3>Ne jamais charger le chunk d'en face</h3>
+     *
+     * <p>{@code Level.getBlockEntity} passe par {@code getChunkAt}, qui <b>charge le chunk</b>
+     * s'il ne l'est pas. Une ligne qui pointe vers un chunk déchargé le ferait donc charger à
+     * chaque tick, et de proche en proche — un convoyeur posé au bord du monde chargé
+     * entraînerait le suivant, puis le suivant. La garde de chargement est la première ligne du
+     * §9 de [`08`](../../../../../../../docs/08-DESIGN-BELTS.md) : l'amont doit <b>bloquer et
+     * comprimer</b>, sans rien perdre.
+     *
+     * <h3>Deux convoyeurs face à face ne se passent rien</h3>
+     *
+     * <p>Sinon chacun serait l'aval de l'autre, et l'item de tête de l'un traverserait le bloc
+     * entier pour ressortir à l'extrémité opposée de l'autre — les deux sorties sont sur la
+     * <b>même</b> face, donc rien ne peut y circuler sans se croiser. Pire, la détection de
+     * boucle y verrait un circuit et les ferait « tourner » indéfiniment.
+     *
+     * <p>C'est aussi ce que dit déjà la forme visible : un convoyeur ne cherche ses entrées que
+     * derrière et sur les côtés, jamais devant. Sans cette garde, le transport contredirait le
+     * rendu.
+     */
+    @Nullable
+    private static BeltBlockEntity resolve(Level level, BlockPos from, BlockPos exit) {
+        if (!level.isLoaded(exit)) return null;
+
+        if (!(level.getBlockEntity(exit) instanceof BeltBlockEntity target)) return null;
+
+        return target.flow().exit(exit, target.facing()).equals(from) ? null : target;
     }
 
     /** Le voisinage a changé : l'aval mémorisé n'est plus digne de confiance. */

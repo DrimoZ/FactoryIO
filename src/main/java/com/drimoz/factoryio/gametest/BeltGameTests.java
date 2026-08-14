@@ -133,6 +133,56 @@ public class BeltGameTests {
                 .thenSucceed();
     }
 
+    /**
+     * Deux convoyeurs face à face bloquent, et aucun ne gagne ([`08`](../../docs) §9).
+     *
+     * <p>Leurs deux sorties sont sur la <b>même</b> face : rien ne peut y circuler sans se
+     * croiser. Laisser le transfert se faire enverrait l'item de tête de l'un à l'extrémité
+     * <i>opposée</i> de l'autre, en traversant le bloc entier — et la détection de boucle y
+     * verrait un circuit à faire tourner indéfiniment.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void twoBeltsFacingEachOtherBothBlock(GameTestHelper helper) {
+        helper.setBlock(FIRST, belted(Direction.EAST));
+        helper.setBlock(SECOND, belted(Direction.WEST));
+
+        List<BlockPos> pair = List.of(FIRST, SECOND);
+        int placed = fill(helper, pair);
+
+        // Un repère dans chacun, pour distinguer « bloqué » de « les items s'échangent ».
+        belt(helper, FIRST).transport().lane(BeltTransport.LEFT).take(0);
+        belt(helper, FIRST).transport().lane(BeltTransport.LEFT).offerAt(0, new ItemStack(Items.DIAMOND));
+
+        helper.startSequence()
+                .thenIdle(60)
+                .thenExecute(() -> {
+                    helper.assertTrue(total(helper, pair) == placed,
+                            "Des items ont été perdus entre deux bandes opposées : " + total(helper, pair));
+
+                    ItemStack marker = belt(helper, FIRST).transport().lane(BeltTransport.LEFT).get(0);
+
+                    helper.assertTrue(marker != null && marker.is(Items.DIAMOND),
+                            "Le repère a bougé : les deux bandes se passent des items");
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Un convoyeur ne se laisse pas pousser par un piston ([`08`](../../docs) §9).
+     *
+     * <p>Le bloc se déplacerait, son contenu non — ou l'inverse selon l'ordre.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void aBeltCannotBePushedByAPiston(GameTestHelper helper) {
+        helper.setBlock(FIRST, belted(Direction.EAST));
+
+        helper.assertTrue(
+                helper.getBlockState(FIRST).getPistonPushReaction() == net.minecraft.world.level.material.PushReaction.BLOCK,
+                "Un piston pourrait déplacer le convoyeur et le désynchroniser de son contenu");
+
+        helper.succeed();
+    }
+
     // Tests (Monde)
 
     /** Casser un convoyeur plein ne doit pas détruire son contenu. */

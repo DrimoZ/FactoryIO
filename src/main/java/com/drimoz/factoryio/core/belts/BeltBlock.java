@@ -198,9 +198,26 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
         boolean fromLeft = fedFrom(level, pos, pos.relative(BeltShape.leftOf(facing)));
         boolean fromRight = fedFrom(level, pos, pos.relative(BeltShape.rightOf(facing)));
 
-        boolean hasOutput = level.getBlockState(this.flow.exit(pos, facing)).getBlock() instanceof BeltBlock;
+        return BeltShape.connectedOf(
+                fromBack, fromLeft, fromRight, hasOutput(level, pos, facing), this.flow.allowsCurve());
+    }
 
-        return BeltShape.connectedOf(fromBack, fromLeft, fromRight, hasOutput, this.flow.allowsCurve());
+    /**
+     * Y a-t-il un convoyeur devant, et peut-il recevoir ?
+     *
+     * <p>Deux bandes face à face ne se passent rien — leurs sorties sont sur la même face — et
+     * ne doivent donc pas afficher de raccord. Sans cette condition, la forme visible
+     * annoncerait une liaison que le transport refuse.
+     */
+    private boolean hasOutput(LevelReader level, BlockPos pos, Direction facing) {
+        BlockPos exit = this.flow.exit(pos, facing);
+
+        if (!(level.getBlockState(exit).getBlock() instanceof BeltBlock target)) return false;
+
+        BlockState state = level.getBlockState(exit);
+        if (!state.hasProperty(FACING)) return false;
+
+        return !target.flow.exit(exit, state.getValue(FACING)).equals(pos);
     }
 
     /**
