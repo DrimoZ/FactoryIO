@@ -49,6 +49,55 @@ class BeltTransportTest {
         return belt;
     }
 
+    // La cadence réglable
+
+    /**
+     * Accélérer un convoyeur déjà en service ne doit pas faire déborder son sous-tick.
+     *
+     * <p>À quatre ticks par case, le sous-tick monte à trois. Passer à un tick par case sans
+     * le ramener dans les bornes laisserait {@code progress} rendre une avance supérieure à 1 :
+     * l'item déborderait de son bloc au premier rendu. Même écueil que la relecture NBT, autre
+     * source.
+     */
+    @Test
+    @DisplayName("Changer la cadence ramène le sous-tick dans les bornes")
+    void changingTheCadenceClampsTheSubTick() {
+        BeltTransport<String> belt = new BeltTransport<>(4);
+        belt.offer(BeltTransport.LEFT, "item");
+
+        belt.tick(new Recorder());
+        belt.tick(new Recorder());
+        belt.tick(new Recorder());
+
+        assertEquals(3, belt.subTick(), "le montage du test ne place pas le sous-tick au maximum");
+
+        belt.setTicksPerSlot(1);
+
+        assertEquals(0, belt.subTick(), "le sous-tick a survécu à une cadence plus courte");
+        assertTrue(belt.progress(BeltTransport.LEFT, 0, 1f, true) <= 1f,
+                "l'item déborde de son bloc");
+    }
+
+    @Test
+    @DisplayName("La nouvelle cadence s'applique aux pas suivants")
+    void theNewCadenceTakesEffect() {
+        BeltTransport<String> belt = new BeltTransport<>(4);
+        belt.offer(BeltTransport.LEFT, "item");
+
+        belt.setTicksPerSlot(1);
+
+        assertTrue(belt.tick(new Recorder()), "un pas par tick était attendu après le changement");
+        assertEquals(1, belt.lane(BeltTransport.LEFT).count());
+    }
+
+    @Test
+    @DisplayName("Une cadence nulle ou négative est refusée")
+    void aCadenceMustBeAtLeastOneTick() {
+        BeltTransport<String> belt = new BeltTransport<>(4);
+
+        assertThrows(IllegalArgumentException.class, () -> belt.setTicksPerSlot(0));
+    }
+
     // L'horloge
 
     /**

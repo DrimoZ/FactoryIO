@@ -1,5 +1,6 @@
 package com.drimoz.factoryio;
 
+import com.drimoz.factoryio.core.belts.BeltSpeeds;
 import com.drimoz.factoryio.core.configs.CommonConfig;
 import com.drimoz.factoryio.core.datagen.ModDataGenerators;
 import com.drimoz.factoryio.core.init.ModBlocks;
@@ -25,6 +26,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
@@ -60,6 +62,8 @@ public class FactoryIO
         eventBus.register(new ModDataGenerators());
         eventBus.addListener(this::onCommonSetup);
         eventBus.addListener(this::onRegisterResourcePacks);
+        eventBus.addListener(this::onConfigLoaded);
+        eventBus.addListener(this::onConfigReloaded);
 
         ModNetworks.init();
 
@@ -86,6 +90,23 @@ public class FactoryIO
         }
 
         FactoryIO.LOGGER.debug("Dépôt de packs {} enregistré", e.getPackType());
+    }
+
+    /**
+     * La configuration vient d'être lue : les vitesses de convoyeur qui en dérivent doivent
+     * l'être à nouveau.
+     *
+     * <p>Au chargement, les convoyeurs n'existent pas encore et l'invalidation ne coûte rien.
+     * Au <b>re</b>chargement, en revanche, elle est la seule chose qui empêche un convoyeur
+     * déjà posé de garder pour toujours la vitesse en vigueur à sa construction — c'est le
+     * défaut de BUG-047, sur une autre valeur dérivée.
+     */
+    private void onConfigLoaded(final ModConfigEvent.Loading event) {
+        if (event.getConfig().getSpec() == CommonConfig.SPEC) BeltSpeeds.invalidate();
+    }
+
+    private void onConfigReloaded(final ModConfigEvent.Reloading event) {
+        if (event.getConfig().getSpec() == CommonConfig.SPEC) BeltSpeeds.invalidate();
     }
 
     public void onCommonSetup(final FMLCommonSetupEvent event)

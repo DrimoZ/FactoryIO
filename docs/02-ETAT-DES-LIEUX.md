@@ -97,7 +97,7 @@ doit faire en connaissance de cause.
 | Textures (3 tiers) | ✅ présentes |
 | Blockstates + 24 modèles avec `connected` 0-7 | ✅ présents |
 | Modèles d'item | ✅ présents |
-| Options de config `*_BELT_COOLDOWN` | 🟡 déclarées, jamais lues — voir `BeltTier` |
+| Options de config de vitesse | ✅ lues, appliquées aux convoyeurs déjà posés |
 | Transport (`BeltLane`, `BeltTransport`, `BeltFlow`, `BeltShape`, `BeltPath`) | ✅ écrit, testé en JUnit, sans dépendance à Minecraft |
 | Bloc, block entity, placement, `connected` | ✅ les trois tiers existent en jeu |
 | Rendu des items | ✅ `BeltItemRenderer` |
@@ -182,7 +182,7 @@ Reste volontairement en place :
 |---|---|
 | `Inserter.texture` (assigné, jamais lu) | à raccorder au rendu en Phase 2 |
 | ~~`getActionMultiplier()`~~ | supprimé par FIO-065 avec le reste du modèle temporel |
-| `*_BELT_COOLDOWN` | réservé pour la Phase 3 |
+| ~~`*_BELT_COOLDOWN`~~ | **branchées** : renommées en `ticks_per_slot`, lues par `BeltSpeeds`. Leur ancienne unité — celle du compteur d'inserter supprimé par FIO-065 — rendait un branchement direct impossible |
 | `ModTags.Items.INSERTERS`, `ModTags.Blocks.TOOL_*` | consommés par les générateurs de tags |
 | `GuiButton.onRightClick()`, `hasUV()`, `hasUVHover()` | API du widget, utile à la refonte GUI (FIO-071) |
 | `StringHelper.getShiftInfoGui()` | ses clés de langue existent désormais |

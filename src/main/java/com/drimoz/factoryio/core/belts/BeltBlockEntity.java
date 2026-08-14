@@ -77,11 +77,32 @@ public class BeltBlockEntity extends BlockEntity {
     /** Marque de parcours de {@link #willMove} : c'est elle qui détecte les boucles. */
     private final boolean[] visiting = new boolean[BeltTransport.LANES];
 
+    /** Génération de configuration à laquelle la cadence a été fixée. Voir {@link #refreshSpeed}. */
+    private int speedGeneration;
+
     public BeltBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlocks.BELT_ENTITY.get(), pos, state);
 
-        this.transport = new BeltTransport<>(tierOf(state).ticksPerSlot(), BeltTier.SLOTS_PER_LANE);
+        this.transport = new BeltTransport<>(
+                BeltSpeeds.ticksPerSlot(tierOf(state)), BeltTier.SLOTS_PER_LANE);
+
+        this.speedGeneration = BeltSpeeds.generation();
         this.lazyItems = newHandlers();
+    }
+
+    /**
+     * Remet la cadence en accord avec la configuration si celle-ci a changé.
+     *
+     * <p>Une comparaison d'entiers par tick, contre une lecture de configuration par tick.
+     * Et surtout : sans ce rappel, un convoyeur déjà posé garderait pour toujours la vitesse
+     * en vigueur au moment de sa construction — le défaut exact de BUG-047.
+     */
+    private void refreshSpeed() {
+        int generation = BeltSpeeds.generation();
+        if (generation == this.speedGeneration) return;
+
+        this.speedGeneration = generation;
+        this.transport.setTicksPerSlot(BeltSpeeds.ticksPerSlot(tierOf(getBlockState())));
     }
 
     @SuppressWarnings("unchecked")
@@ -131,6 +152,8 @@ public class BeltBlockEntity extends BlockEntity {
     // Interface (Tick)
 
     public static void tick(Level level, BlockPos pos, BlockState state, BeltBlockEntity belt) {
+        belt.refreshSpeed();
+
         // Un convoyeur vide n'a rien à faire, et c'est le cas de la majorité d'entre eux sur
         // une usine réelle. canSleep remet aussi l'horloge à zéro, pour qu'un item déposé
         // ensuite ne fasse pas un demi-pas à l'instant de son arrivée.

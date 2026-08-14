@@ -527,7 +527,7 @@ Chacun de ces cas mérite un **GameTest** dédié.
 | Boucle fermée saturée | ✅ **corrigé** (BUG-050), `aSaturatedLoopKeepsTurning` |
 | Deux convoyeurs face à face | ✅ **corrigé** — voir ci-dessous, `twoBeltsFacingEachOtherBothBlock` |
 | Rechargement de monde | 🟡 `contentsSurviveAReload` couvre un bloc et son tampon, pas 500 items |
-| `/reload` datapack | ⬜ les vitesses ne viennent pas encore d'un datapack |
+| `/reload` datapack | 🟡 les vitesses viennent de la **config**, relues à chaque (re)chargement de celle-ci ; pas d'un datapack |
 
 **Le chunk aval déchargé était un piège de plomberie.** `Level.getBlockEntity`
 passe par `getChunkAt`, qui **charge le chunk** s'il ne l'est pas. Une ligne

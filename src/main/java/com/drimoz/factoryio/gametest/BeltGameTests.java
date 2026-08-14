@@ -4,8 +4,10 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
 import com.drimoz.factoryio.core.belts.BeltLane;
+import com.drimoz.factoryio.core.belts.BeltSpeeds;
 import com.drimoz.factoryio.core.belts.BeltTier;
 import com.drimoz.factoryio.core.belts.BeltTransport;
+import com.drimoz.factoryio.core.configs.CommonConfig;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -226,6 +228,64 @@ public class BeltGameTests {
                 "Le tampon n'a pas survécu à la sérialisation");
 
         helper.succeed();
+    }
+
+    // Tests (Configuration)
+
+    /**
+     * Le barème livré et la valeur par défaut de la configuration sont la même chose.
+     *
+     * <p>Deux endroits décrivent la vitesse : l'énumération, qui sert de repli tant que la
+     * configuration n'est pas chargée, et le fichier TOML. Qu'ils divergent ferait accélérer
+     * ou ralentir les convoyeurs au moment précis où la configuration devient disponible —
+     * un changement de comportement sans cause visible.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 20)
+    public static void shippedSpeedsMatchTheConfigDefaults(GameTestHelper helper) {
+        for (BeltTier tier : BeltTier.values()) {
+            helper.assertTrue(BeltSpeeds.ticksPerSlot(tier) == tier.ticksPerSlot(),
+                    "Le barème et la configuration divergent pour " + tier + " : "
+                            + tier.ticksPerSlot() + " contre " + BeltSpeeds.ticksPerSlot(tier));
+        }
+
+        helper.succeed();
+    }
+
+    /**
+     * Un convoyeur <b>déjà posé</b> suit un changement de configuration.
+     *
+     * <p>Sans cela il garderait pour toujours la vitesse en vigueur au moment de sa
+     * construction, et modifier le fichier n'aurait d'effet que sur les convoyeurs posés
+     * ensuite — le défaut de BUG-047, sur une autre valeur dérivée.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void aPlacedBeltFollowsAConfigChange(GameTestHelper helper) {
+        helper.setBlock(FIRST, ModBlocks.belt(BeltTier.TRANSPORT).get().defaultBlockState()
+                .setValue(BeltBlock.FACING, Direction.EAST));
+
+        // Un item, sinon le convoyeur se rendort et ne tique plus.
+        belt(helper, FIRST).accept(BeltTransport.LEFT, new ItemStack(Items.COBBLESTONE));
+
+        int shipped = BeltTier.TRANSPORT.ticksPerSlot();
+        int changed = shipped + 3;
+
+        CommonConfig.BELT_COOLDOWN.set(changed);
+        BeltSpeeds.invalidate();
+
+        helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    int actual = belt(helper, FIRST).transport().ticksPerSlot();
+
+                    // Remis avant toute assertion : un échec ne doit pas laisser la
+                    // configuration modifiée pour les tests suivants.
+                    CommonConfig.BELT_COOLDOWN.set(shipped);
+                    BeltSpeeds.invalidate();
+
+                    helper.assertTrue(actual == changed,
+                            "Le convoyeur posé garde son ancienne cadence : " + actual);
+                })
+                .thenSucceed();
     }
 
     // Tests (Blocs voisins)

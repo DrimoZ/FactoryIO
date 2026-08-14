@@ -35,7 +35,9 @@ public final class BeltTransport<T> {
     public static final int RIGHT = 1;
 
     private final BeltLane<T>[] lanes;
-    private final int ticksPerSlot;
+
+    /** Non final : un changement de configuration doit s'appliquer aux blocs déjà posés. */
+    private int ticksPerSlot;
 
     /** Sous-ticks écoulés depuis le dernier pas, de 0 à {@code ticksPerSlot}. */
     private int subTick;
@@ -63,6 +65,23 @@ public final class BeltTransport<T> {
 
     public int ticksPerSlot() {
         return this.ticksPerSlot;
+    }
+
+    /**
+     * Change la cadence d'un convoyeur déjà en service.
+     *
+     * <p>Le sous-tick est <b>ramené dans les bornes</b> de la nouvelle cadence. Sans cela, un
+     * convoyeur qui passe de quatre ticks par case à un garderait un sous-tick de trois, et
+     * {@code progress} rendrait une avance supérieure à 1 : l'item déborderait de son bloc au
+     * premier rendu. Même raison que {@link #restoreSubTick}, autre source, même écueil.
+     */
+    public void setTicksPerSlot(int ticksPerSlot) {
+        if (ticksPerSlot < 1) {
+            throw new IllegalArgumentException("Un pas dure au moins un tick : " + ticksPerSlot);
+        }
+
+        this.ticksPerSlot = ticksPerSlot;
+        this.subTick = Math.min(this.subTick, ticksPerSlot - 1);
     }
 
     public int subTick() {

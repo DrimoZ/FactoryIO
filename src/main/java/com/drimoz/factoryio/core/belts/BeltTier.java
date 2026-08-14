@@ -10,16 +10,21 @@ package com.drimoz.factoryio.core.belts;
  * FIO-065 sur les inserters, où {@code cooldownBetweenActions} et un plafond d'actions par
  * tick décrivaient la même chose de deux façons, et annonçaient le double du débit réel.
  *
- * <h2>Pourquoi pas les clés de configuration existantes</h2>
+ * <h2>Ce barème est le repli, la configuration fait foi</h2>
  *
- * <p>{@code CommonConfig} déclare {@code BELT_COOLDOWN} et ses variantes, à 30, 20 et 10.
- * Elles ne sont branchées nulle part, et <b>ne peuvent pas l'être telles quelles</b> : leur
- * unité est celle de l'ancien compteur d'inserter, incrémenté de dix par tick, que FIO-065 a
- * justement supprimée. Trente y valait trois ticks, pas trente. Et leurs rapports — 3, 2, 1 —
- * ne sont pas ceux du tableau de vitesses ci-dessous.
+ * <p>Les clés de {@code CommonConfig} sont désormais lues, par {@link BeltSpeeds}. Elles ont
+ * dû être <b>renommées</b> pour cela : elles valaient 30, 20 et 10 dans l'unité de l'ancien
+ * compteur d'inserter, incrémenté de dix par tick, que FIO-065 a supprimée — trente y valait
+ * trois ticks, pas trente — et leurs rapports 3:2:1 ne sont pas ceux du tableau ci-dessous.
+ * Garder le nom en changeant la valeur par défaut aurait laissé les fichiers existants imposer
+ * un convoyeur sept fois et demie trop lent, sans un mot.
  *
- * <p>Les câbler sans trancher leur unité rejouerait DT-10. Ce barème-ci est explicite et
- * verrouillé par des tests ; les clés de config attendent une décision, pas un branchement.
+ * <p>Les valeurs ci-dessous restent la <b>valeur par défaut</b> de ces clés et le repli tant
+ * que la configuration n'est pas chargée. Un GameTest verrouille l'égalité des deux : qu'elles
+ * divergent ferait changer la vitesse au moment précis où la configuration devient disponible.
+ *
+ * <p>La lecture vit dans {@link BeltSpeeds} et non ici, pour que cette énumération reste
+ * utilisable par des tests JUnit, qui tournent sans Forge.
  *
  * <h2>Le barème</h2>
  *
