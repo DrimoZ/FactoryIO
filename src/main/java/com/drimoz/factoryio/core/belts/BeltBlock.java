@@ -4,7 +4,11 @@ import com.drimoz.factoryio.core.init.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -28,6 +32,8 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
@@ -212,6 +218,68 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
         return BeltFlow.feeds(candidate, belt.flow(), state.getValue(FACING), pos);
     }
 
+    // Interface (Pose à la main)
+
+    /**
+     * Poser un item sur la bande, ou en reprendre un.
+     *
+     * <p>Factorio le permet, et c'est ici la seule façon d'alimenter un convoyeur tant que
+     * l'inserter ne les connaît pas ([FIO-097](../../../../../../../docs/06-BACKLOG.md)). La
+     * voie et la case se déduisent de l'endroit exact où le joueur clique : viser la voie
+     * gauche doit poser sur la voie gauche.
+     */
+    @NotNull
+    @Override
+    public InteractionResult use(
+            @NotNull BlockState state, Level level, @NotNull BlockPos pos, Player player,
+            @NotNull InteractionHand hand, BlockHitResult hit) {
+
+        if (!(level.getBlockEntity(pos) instanceof BeltBlockEntity belt)) return InteractionResult.PASS;
+
+        Direction facing = state.getValue(FACING);
+
+        Vec3 local = hit.getLocation().subtract(Vec3.atLowerCornerOf(pos)).subtract(0.5D, 0D, 0.5D);
+
+        int lane = local.dot(BeltPath.vector(BeltShape.leftOf(facing))) > 0D
+                ? BeltTransport.LEFT
+                : BeltTransport.RIGHT;
+
+        int slot = slotAt(local.dot(BeltPath.vector(facing)), BeltTier.SLOTS_PER_LANE);
+
+        ItemStack held = player.getItemInHand(hand);
+
+        if (held.isEmpty()) {
+            if (level.isClientSide) return InteractionResult.SUCCESS;
+
+            ItemStack taken = belt.takeNear(lane, slot);
+            if (taken.isEmpty()) return InteractionResult.PASS;
+
+            player.getInventory().placeItemBackInInventory(taken);
+
+            return InteractionResult.CONSUME;
+        }
+
+        if (level.isClientSide) return InteractionResult.SUCCESS;
+
+        if (!belt.acceptAt(lane, slot, held)) return InteractionResult.CONSUME;
+
+        if (!player.getAbilities().instabuild) held.shrink(BeltBlockEntity.ITEMS_PER_SLOT);
+
+        return InteractionResult.CONSUME;
+    }
+
+    /**
+     * Case visée, d'après la distance au centre du bloc le long de la circulation.
+     *
+     * <p>Le repère est celui du rendu : l'avance va de 0 au bord d'entrée à 1 au bord de
+     * sortie, et les cases s'y répartissent à parts égales.
+     */
+    private static int slotAt(double along, int slots) {
+        int slot = (int) ((along + 0.5D) * slots);
+
+        return Math.max(0, Math.min(slot, slots - 1));
+    }
+
     // Interface (Block entity)
 
     @Nullable
@@ -225,10 +293,10 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
             @NotNull Level level, @NotNull BlockState state, @NotNull BlockEntityType<T> type) {
 
-        // Serveur uniquement : le client n'a rien à faire avancer tant que la synchronisation
-        // n'est pas écrite (cf. 08 §6).
-        if (level.isClientSide) return null;
-
+        // Des deux côtés, et c'est délibéré : le mouvement d'un convoyeur est déterministe,
+        // donc le client le rejoue au lieu de le recevoir. L'alternative — un paquet par item
+        // et par mouvement — est le premier piège recensé (08 §1), et celui dans lequel le
+        // code des inserters est tombé (BUG-004).
         return createTickerHelper(type, ModBlocks.BELT_ENTITY.get(), BeltBlockEntity::tick);
     }
 
@@ -246,7 +314,7 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
             BlockState newState, boolean moving) {
 
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof BeltBlockEntity belt) {
-            List<net.minecraft.world.item.ItemStack> contents = belt.contents();
+            List<ItemStack> contents = belt.contents();
 
             SimpleContainer container = new SimpleContainer(contents.size());
             for (int index = 0; index < contents.size(); index++) {

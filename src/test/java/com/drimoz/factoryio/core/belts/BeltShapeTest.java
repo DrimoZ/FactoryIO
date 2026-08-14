@@ -156,6 +156,62 @@ class BeltShapeTest {
                 () -> assertEquals(Direction.EAST, BeltShape.rightOf(Direction.NORTH)));
     }
 
+    // La réciproque, dont dépend le rendu
+
+    /**
+     * Le rendu n'a que {@code connected} sous la main, et doit en retrouver la forme.
+     *
+     * <p>Se tromper ici ne casse rien de visible sur le bloc — le modèle, lui, vient du
+     * blockstate — mais fait traverser les virages en ligne droite aux items.
+     */
+    @ParameterizedTest
+    @EnumSource(BeltShape.class)
+    @DisplayName("Chaque valeur produite se relit comme la forme qui l'a produite")
+    void connectedRoundTrips(BeltShape shape) {
+        for (boolean hasInput : new boolean[] {false, true}) {
+            for (boolean hasOutput : new boolean[] {false, true}) {
+                int connected = shape.connected(hasInput, hasOutput);
+
+                // Un virage sans entrée retombe sur la bande droite : c'est cette forme-là,
+                // et non le virage, que le rendu doit relire.
+                BeltShape expected = shape.isCurve() && !hasInput ? BeltShape.STRAIGHT : shape;
+
+                assertEquals(expected, BeltShape.of(connected),
+                        shape + " avec entrée=" + hasInput + " sortie=" + hasOutput);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Une valeur hors table se relit comme une bande droite")
+    void unknownConnectedReadsAsStraight() {
+        assertEquals(BeltShape.STRAIGHT, BeltShape.of(BeltShape.MAX_CONNECTED + 1));
+    }
+
+    // Le trajet d'un item
+
+    /**
+     * Sur un virage, l'item n'entre pas dans la direction du bloc.
+     *
+     * <p>Recevoir par la gauche veut dire que l'amont pousse <b>de gauche à droite</b> : sa
+     * direction de circulation est celle qui va du côté gauche vers le centre. L'inverser
+     * ferait entrer les items par le mauvais bord.
+     */
+    @ParameterizedTest
+    @EnumSource(value = Direction.class, names = {"NORTH", "SOUTH", "EAST", "WEST"})
+    @DisplayName("L'entrée d'un virage circule depuis le côté qui l'alimente")
+    void curveEntryComesFromItsFeedingSide(Direction facing) {
+        assertAll(
+                () -> assertEquals(facing, BeltShape.STRAIGHT.entryTravel(facing),
+                        "une bande droite entre comme elle sort"),
+                () -> assertEquals(BeltShape.rightOf(facing), BeltShape.CURVE_LEFT.entryTravel(facing),
+                        "recevoir par la gauche, c'est être poussé vers la droite"),
+                () -> assertEquals(BeltShape.leftOf(facing), BeltShape.CURVE_RIGHT.entryTravel(facing),
+                        "recevoir par la droite, c'est être poussé vers la gauche"),
+                () -> assertTrue(BeltShape.CURVE_LEFT.entryTravel(facing).getAxis() != facing.getAxis(),
+                        "un virage tourne : l'entrée est perpendiculaire à la sortie"));
+    }
+
     // Robustesse
 
     @Test

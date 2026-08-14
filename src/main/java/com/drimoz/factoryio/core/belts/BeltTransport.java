@@ -102,6 +102,17 @@ public final class BeltTransport<T> {
      * @return {@code true} si quelque chose a bougé, de quoi décider d'une mise en sommeil
      */
     public boolean tick(BeltSink<T> downstream) {
+        return tick(downstream, BeltLane.NO_STAMP);
+    }
+
+    /**
+     * Fait avancer le convoyeur d'un tick, en datant le pas.
+     *
+     * @param stamp pas courant — le temps du monde. Il empêche un item qui vient d'entrer
+     *              d'avancer une seconde fois dans le même tick, ce qui, le long d'une ligne,
+     *              lui ferait traverser plusieurs blocs d'un coup. Voir {@link BeltLane#advance}
+     */
+    public boolean tick(BeltSink<T> downstream, long stamp) {
         this.subTick++;
 
         if (this.subTick < this.ticksPerSlot) return false;
@@ -115,7 +126,7 @@ public final class BeltTransport<T> {
         for (int lane = 0; lane < LANES; lane++) {
             int index = lane;
 
-            moved |= this.lanes[lane].advance(item -> downstream.accept(index, item));
+            moved |= this.lanes[lane].advance(item -> downstream.accept(index, item), stamp);
         }
 
         return moved;
@@ -142,6 +153,11 @@ public final class BeltTransport<T> {
         return this.lanes[lane].offer(item);
     }
 
+    /** Dépose sur la case d'entrée en datant l'arrivée — voir {@link BeltLane#advance}. */
+    public boolean offer(int lane, T item, long stamp) {
+        return this.lanes[lane].offer(item, stamp);
+    }
+
     /**
      * Dépose sur une case précise.
      *
@@ -150,6 +166,26 @@ public final class BeltTransport<T> {
      */
     public boolean offerAt(int lane, int slot, T item) {
         return this.lanes[lane].offerAt(slot, item);
+    }
+
+    /** Dépose sur une case précise en datant l'arrivée — voir {@link BeltLane#advance}. */
+    public boolean offerAt(int lane, int slot, T item, long stamp) {
+        return this.lanes[lane].offerAt(slot, item, stamp);
+    }
+
+    /**
+     * Vide les deux voies et remet l'horloge à zéro.
+     *
+     * <p>Nécessaire à la synchronisation : un paquet décrit l'état complet du convoyeur, et
+     * doit <b>écraser</b> celui du client. Sans cela, une case déjà occupée refuserait le
+     * dépôt et le client conserverait indéfiniment un item que le serveur n'a plus.
+     */
+    public void clear() {
+        for (BeltLane<T> lane : this.lanes) {
+            lane.clear();
+        }
+
+        this.subTick = 0;
     }
 
     // Interface (Rendu)

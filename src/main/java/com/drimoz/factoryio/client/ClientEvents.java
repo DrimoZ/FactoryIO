@@ -1,6 +1,8 @@
 package com.drimoz.factoryio.client;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.belts.BeltItemRenderer;
+import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.inserters.InserterBlockRenderer;
 import com.drimoz.factoryio.core.inserters.InserterContainer;
 import com.drimoz.factoryio.core.inserters.InserterScreen;
@@ -35,6 +37,10 @@ public final class ClientEvents {
                 event.registerBlockEntityRenderer(
                         inserter.getBlockEntityType().get(),
                         context -> new InserterBlockRenderer(inserter)));
+
+        // Un seul renderer pour les trois tiers : ils partagent un type de block entity, et la
+        // vitesse ne change rien à la façon de dessiner un item.
+        event.registerBlockEntityRenderer(ModBlocks.BELT_ENTITY.get(), BeltItemRenderer::new);
     }
 
     @SubscribeEvent

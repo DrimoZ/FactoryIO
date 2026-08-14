@@ -77,6 +77,27 @@ public enum BeltShape {
         return value == NO_VARIANT ? STRAIGHT.connected(hasInput, hasOutput) : value;
     }
 
+    /**
+     * Direction dans laquelle les items <b>circulent en entrant</b> dans ce bloc.
+     *
+     * <p>Sur une bande droite c'est la direction du bloc. Sur un virage, c'est celle de la bande
+     * qui l'alimente : recevoir par la gauche veut dire que l'amont pousse de gauche à droite.
+     *
+     * <p>Le rendu en a besoin, et lui seul : c'est le début du trajet que parcourt un item, dont
+     * {@code facing} n'est que la fin.
+     */
+    public Direction entryTravel(Direction facing) {
+        return switch (this) {
+            case STRAIGHT -> facing;
+            case CURVE_LEFT -> rightOf(facing);
+            case CURVE_RIGHT -> leftOf(facing);
+        };
+    }
+
+    public boolean isCurve() {
+        return this != STRAIGHT;
+    }
+
     // Interface (Statique)
 
     /** Le côté gauche d'une bande, vu depuis sa sortie. */
@@ -108,6 +129,31 @@ public enum BeltShape {
 
         if (fromLeft) return CURVE_LEFT;
         if (fromRight) return CURVE_RIGHT;
+
+        return STRAIGHT;
+    }
+
+    /**
+     * Forme correspondant à une valeur de {@code connected}.
+     *
+     * <p>La réciproque de {@link #connected} — ce que lit le rendu, qui n'a sous la main que
+     * l'état du bloc. Elle balaie la <b>même</b> table que l'aller : une seconde table écrite à
+     * part serait une occasion de diverger, et rien ne le signalerait avant qu'un item ne
+     * traverse un virage en ligne droite.
+     *
+     * <p>Une valeur hors table retombe sur la bande droite, comme {@link #connected} : un état
+     * posé à la main dans une commande ne doit pas casser le rendu.
+     */
+    public static BeltShape of(int connected) {
+        for (BeltShape shape : values()) {
+            if (shape.bare == connected
+                    || shape.inputOnly == connected
+                    || shape.outputOnly == connected
+                    || shape.both == connected) {
+
+                return shape;
+            }
+        }
 
         return STRAIGHT;
     }

@@ -6,10 +6,16 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,6 +50,9 @@ public class BeltBlockEntity extends BlockEntity {
     private static final String TAG_ITEM = "item";
     private static final String TAG_SUB_TICK = "beltSubTick";
 
+    /** Index sous lequel le tampon est écrit en NBT : aucune case ne le porte. */
+    private static final int STAGED_SLOT = -1;
+
     private final BeltTransport<ItemStack> transport;
 
     /** Aval mémorisé, et la position à laquelle il l'a été. */
@@ -52,10 +61,20 @@ public class BeltBlockEntity extends BlockEntity {
     @Nullable
     private BlockPos downstreamAt;
 
+    private final LazyOptional<IItemHandler> lazyItems;
+
+    /** Mémorisation de {@link #willMove}, par voie et pour la durée d'un tick. */
+    private final long[] moveKnownAt = {Long.MIN_VALUE, Long.MIN_VALUE};
+    private final boolean[] moveKnown = new boolean[BeltTransport.LANES];
+
+    /** Marque de parcours de {@link #willMove} : c'est elle qui détecte les boucles. */
+    private final boolean[] visiting = new boolean[BeltTransport.LANES];
+
     public BeltBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlocks.BELT_ENTITY.get(), pos, state);
 
         this.transport = new BeltTransport<>(tierOf(state).ticksPerSlot(), BeltTier.SLOTS_PER_LANE);
+        this.lazyItems = LazyOptional.of(() -> new BeltItemHandler(this));
     }
 
     // Interface (Traits du bloc)
@@ -92,7 +111,11 @@ public class BeltBlockEntity extends BlockEntity {
         // ensuite ne fasse pas un demi-pas à l'instant de son arrivée.
         if (belt.transport.canSleep()) return;
 
-        belt.transport.tick(belt::handOff);
+        // Le temps du monde date le pas. C'est lui qui empêche un item déposé par le bloc
+        // amont d'avancer une seconde fois dans le même tick — voir BeltLane#advance.
+        long stamp = level.getGameTime();
+
+        belt.transport.tick((lane, item) -> belt.handOff(lane, item, stamp), stamp);
     }
 
     /**
@@ -101,10 +124,96 @@ public class BeltBlockEntity extends BlockEntity {
      * <p>Un item ne change pas de côté en franchissant une frontière de bloc : ce serait
      * indétectable à l'œil sur une bande droite, et faux dès le premier séparateur.
      */
-    private boolean handOff(int lane, ItemStack item) {
+    private boolean handOff(int lane, ItemStack item, long stamp) {
         BeltBlockEntity target = resolveDownstream();
+        if (target == null) return false;
 
-        return target != null && target.transport.offer(lane, item);
+        BeltLane<ItemStack> track = target.transport.lane(lane);
+
+        // Cas courant : l'aval a déjà libéré son entrée.
+        if (track.offer(item, stamp)) return true;
+
+        // Sinon le tampon, mais seulement si l'aval bougera pour de bon : y déposer devant un
+        // mur reviendrait à avaler des items dans un trou.
+        if (track.isStaged()) return false;
+        if (!willMove(target, lane, stamp)) return false;
+
+        return track.stage(item);
+    }
+
+    /**
+     * L'aval finira-t-il par faire de la place ?
+     *
+     * <h3>Pourquoi la question se pose</h3>
+     *
+     * <p>Elle décide du dépôt dans le tampon, et donc du sort des <b>boucles fermées</b>. Une
+     * boucle saturée doit tourner : chacun de ses items a une destination, c'est seulement
+     * qu'aucune n'est libre au même instant. Un mur, à l'inverse, doit comprimer. Les deux se
+     * distinguent par cette seule question.
+     *
+     * <h3>Comment elle se répond</h3>
+     *
+     * <p>Une voie libère son entrée dès qu'elle décale, donc dès qu'il lui reste une case
+     * libre. Sinon, elle ne décale que si sa propre sortie part. La question remonte ainsi la
+     * chaîne jusqu'à trouver une case libre — la réponse est oui — ou un bout de ligne sans
+     * aval — la réponse est non.
+     *
+     * <p><b>Une boucle n'a ni l'un ni l'autre.</b> Revenir sur ses pas signifie qu'il n'y a
+     * aucun obstacle nulle part : la réponse est oui, et tout le circuit avance d'un cran.
+     *
+     * <h3>Deux précautions</h3>
+     *
+     * <p><b>Itératif, pas récursif.</b> Une ligne de deux mille convoyeurs est une chaîne de
+     * deux mille appels ; la pile n'y survivrait pas.
+     *
+     * <p><b>Mémorisé pour le tick.</b> La réponse est la même pour tous les blocs d'une même
+     * chaîne comprimée — c'est ce que la question signifie. On la note donc sur tout le chemin
+     * parcouru, ce qui ramène le coût d'un tick à un seul parcours par chaîne au lieu d'un par
+     * bloc.
+     */
+    private static boolean willMove(BeltBlockEntity start, int lane, long now) {
+        List<BeltBlockEntity> path = new ArrayList<>();
+        BeltBlockEntity current = start;
+
+        boolean result;
+
+        while (true) {
+            if (current.moveKnownAt[lane] == now) {
+                result = current.moveKnown[lane];
+                break;
+            }
+
+            // Revenu sur nos pas : c'est une boucle, donc aucun obstacle. Tout tourne.
+            if (current.visiting[lane]) {
+                result = true;
+                break;
+            }
+
+            current.visiting[lane] = true;
+            path.add(current);
+
+            BeltBlockEntity next = current.resolveDownstream();
+            if (next == null) {
+                result = false;
+                break;
+            }
+
+            // Une case libre quelque part suffit : le décalage libérera l'entrée.
+            if (!next.transport.lane(lane).isFull()) {
+                result = true;
+                break;
+            }
+
+            current = next;
+        }
+
+        for (BeltBlockEntity belt : path) {
+            belt.visiting[lane] = false;
+            belt.moveKnownAt[lane] = now;
+            belt.moveKnown[lane] = result;
+        }
+
+        return result;
     }
 
     /** @return {@code true} si l'aval prendrait la tête de cette voie — pour le rendu */
@@ -151,11 +260,105 @@ public class BeltBlockEntity extends BlockEntity {
         ItemStack single = item.copy();
         single.setCount(ITEMS_PER_SLOT);
 
-        if (!this.transport.offer(lane, single)) return false;
+        if (!this.transport.offer(lane, single, this.level.getGameTime())) return false;
 
         setChanged();
+        sync();
 
         return true;
+    }
+
+    /**
+     * Dépose un item sur une case précise.
+     *
+     * <p>C'est ce dont ont besoin la pose à la main et, plus tard, l'inserter : ni l'un ni
+     * l'autre ne déposent en bout de bande, mais là où ils touchent.
+     *
+     * <p>Si la case visée est prise, on remonte vers l'amont — les items s'accumulent derrière,
+     * ce qui est le geste attendu quand on en pose plusieurs de suite au même endroit.
+     *
+     * @return {@code true} s'il a été pris ; l'appelant garde le sien sinon
+     */
+    public boolean acceptAt(int lane, int slot, ItemStack item) {
+        if (item.isEmpty() || this.level == null) return false;
+
+        ItemStack single = item.copy();
+        single.setCount(ITEMS_PER_SLOT);
+
+        BeltLane<ItemStack> track = this.transport.lane(lane);
+
+        for (int candidate = Math.min(slot, track.exitSlot()); candidate >= 0; candidate--) {
+            if (!track.offerAt(candidate, single, this.level.getGameTime())) continue;
+
+            setChanged();
+            sync();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Dépose sur la case demandée, et sur elle seule.
+     *
+     * <p>C'est ce dont a besoin un {@link BeltItemHandler} : celui qui insère a désigné une
+     * case précise et attend un oui ou un non sur celle-là. Se rabattre ailleurs, comme le fait
+     * la pose à la main, lui ferait croire qu'une case libre est occupée.
+     */
+    public boolean acceptExactly(int lane, int slot, ItemStack item) {
+        if (item.isEmpty() || this.level == null) return false;
+
+        ItemStack single = item.copy();
+        single.setCount(ITEMS_PER_SLOT);
+
+        if (!this.transport.offerAt(lane, slot, single, this.level.getGameTime())) return false;
+
+        setChanged();
+        sync();
+
+        return true;
+    }
+
+    /** Retire l'item de la case demandée, et d'elle seule. */
+    public ItemStack takeExactly(int lane, int slot) {
+        if (this.level == null) return ItemStack.EMPTY;
+
+        ItemStack item = this.transport.lane(lane).take(slot);
+        if (item == null || item.isEmpty()) return ItemStack.EMPTY;
+
+        setChanged();
+        sync();
+
+        return item;
+    }
+
+    /**
+     * Retire l'item de la case indiquée, ou de la plus proche qui en porte un.
+     *
+     * <p>La recherche part de la case visée et s'éloigne des deux côtés : viser à l'œil un
+     * huitième de bloc en mouvement n'est pas raisonnable.
+     */
+    public ItemStack takeNear(int lane, int slot) {
+        if (this.level == null) return ItemStack.EMPTY;
+
+        BeltLane<ItemStack> track = this.transport.lane(lane);
+
+        for (int radius = 0; radius < track.capacity(); radius++) {
+            for (int candidate : new int[] {slot - radius, slot + radius}) {
+                if (candidate < 0 || candidate >= track.capacity()) continue;
+                if (!track.isOccupied(candidate)) continue;
+
+                ItemStack item = track.take(candidate);
+
+                setChanged();
+                sync();
+
+                return item;
+            }
+        }
+
+        return ItemStack.EMPTY;
     }
 
     /** Tout ce que le convoyeur porte, pour le lâcher au sol quand le bloc tombe. */
@@ -170,6 +373,11 @@ public class BeltBlockEntity extends BlockEntity {
 
                 if (item != null && !item.isEmpty()) items.add(item.copy());
             }
+
+            // Le tampon aussi : un item qui y séjournait au moment du cassage existe autant
+            // que les autres.
+            ItemStack staged = track.staged();
+            if (staged != null && !staged.isEmpty()) items.add(staged.copy());
         }
 
         return items;
@@ -195,6 +403,18 @@ public class BeltBlockEntity extends BlockEntity {
 
                 lanes.add(entry);
             }
+
+            // Le tampon, sous un index qu'aucune case ne porte.
+            ItemStack staged = track.staged();
+
+            if (staged != null && !staged.isEmpty()) {
+                CompoundTag entry = new CompoundTag();
+                entry.putByte(TAG_LANE, (byte) lane);
+                entry.putByte(TAG_SLOT, (byte) STAGED_SLOT);
+                entry.put(TAG_ITEM, staged.save(new CompoundTag()));
+
+                lanes.add(entry);
+            }
         }
 
         // Seules les cases occupées sont écrites : une bande vide n'ajoute rien au fichier de
@@ -210,6 +430,12 @@ public class BeltBlockEntity extends BlockEntity {
     public void load(@NotNull CompoundTag tag) {
         super.load(tag);
 
+        // Un tag décrit l'état complet du convoyeur, et doit l'écraser. C'est indifférent au
+        // chargement d'un monde — tout est vide — mais pas à la réception d'un paquet : sans
+        // cela, une case déjà occupée refuserait le dépôt et le client garderait un item que
+        // le serveur n'a plus.
+        this.transport.clear();
+
         ListTag lanes = tag.getList(TAG_LANES, Tag.TAG_COMPOUND);
 
         for (int index = 0; index < lanes.size(); index++) {
@@ -221,12 +447,96 @@ public class BeltBlockEntity extends BlockEntity {
             // Une sauvegarde écrite avec une autre disposition — un datapack, une version
             // antérieure — ne doit pas faire sortir d'un tableau au chargement du monde.
             if (lane < 0 || lane >= BeltTransport.LANES) continue;
-            if (slot < 0 || slot >= this.transport.lane(lane).capacity()) continue;
+            if (slot != STAGED_SLOT && (slot < 0 || slot >= this.transport.lane(lane).capacity())) continue;
 
             ItemStack item = ItemStack.of(entry.getCompound(TAG_ITEM));
-            if (!item.isEmpty()) this.transport.offerAt(lane, slot, item);
+            if (item.isEmpty()) continue;
+
+            if (slot == STAGED_SLOT) this.transport.lane(lane).stage(item);
+            else this.transport.offerAt(lane, slot, item);
         }
 
         this.transport.restoreSubTick(tag.getByte(TAG_SUB_TICK));
+    }
+
+    // Interface (Capability)
+
+    /**
+     * Le convoyeur se présente comme un inventaire, sur toutes ses faces.
+     *
+     * <p>Hoppers, inserters, tuyaux : tout ce qui sait manipuler un {@link IItemHandler} peut
+     * prendre et déposer. Voir {@link BeltItemHandler} pour ce que cela change au gameplay.
+     *
+     * <p>Aucune face n'est refusée. Une bande est un objet physique : ce qui la surplombe peut
+     * y poser, ce qui la borde peut y prendre, et distinguer les faces reviendrait à inventer
+     * une règle que rien dans le jeu ne rendrait lisible.
+     */
+    @NotNull
+    @Override
+    public <T> LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction side) {
+        if (capability == ForgeCapabilities.ITEM_HANDLER && !isRemoved()) {
+            return this.lazyItems.cast();
+        }
+
+        return super.getCapability(capability, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+
+        this.lazyItems.invalidate();
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+
+        this.lazyItems.invalidate();
+    }
+
+    // Interface (Synchronisation)
+
+    /**
+     * Ce que le client reçoit à l'entrée du convoyeur dans sa vue.
+     *
+     * <p>Le même contenu que la sauvegarde : c'est l'état complet, et il n'existe pas de
+     * version allégée qui suffirait au rendu.
+     */
+    @NotNull
+    @Override
+    public CompoundTag getUpdateTag() {
+        CompoundTag tag = super.getUpdateTag();
+
+        saveAdditional(tag);
+
+        return tag;
+    }
+
+    @Nullable
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    /**
+     * Pousse l'état complet aux clients qui suivent ce chunk.
+     *
+     * <p><b>Sur événement uniquement</b> — un dépôt, un retrait. Jamais sur un pas de
+     * convoyeur : ce serait un paquet par item et par mouvement, le premier piège de
+     * [`08`](../../../../../../../docs/08-DESIGN-BELTS.md) §1. Entre deux événements, le client
+     * fait tourner la même boucle que le serveur et retrouve les mêmes positions.
+     *
+     * <p><b>Ce qui n'est pas encore là.</b> Les deux simulations peuvent diverger : l'ordre de
+     * tick des block entities n'est pas le même de part et d'autre, et un transfert entre deux
+     * blocs peut donc réussir ici et être remis d'un pas là-bas. La réconciliation périodique
+     * de §6 reste à écrire (jalon 3.6) ; sans elle, une ligne longtemps observée finira par
+     * afficher des positions décalées d'un cran.
+     */
+    private void sync() {
+        if (this.level == null || this.level.isClientSide) return;
+
+        this.level.sendBlockUpdated(
+                this.worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
     }
 }

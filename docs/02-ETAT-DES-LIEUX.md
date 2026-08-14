@@ -97,16 +97,24 @@ doit faire en connaissance de cause.
 | Textures (3 tiers) | ✅ présentes |
 | Blockstates + 24 modèles avec `connected` 0-7 | ✅ présents |
 | Modèles d'item | ✅ présents |
-| Options de config `*_BELT_COOLDOWN` | 🟡 déclarées, jamais lues |
-| **Code Java** | ⬜ **inexistant** |
+| Options de config `*_BELT_COOLDOWN` | 🟡 déclarées, jamais lues — voir `BeltTier` |
+| Transport (`BeltLane`, `BeltTransport`, `BeltFlow`, `BeltShape`, `BeltPath`) | ✅ écrit, testé en JUnit, sans dépendance à Minecraft |
+| Bloc, block entity, placement, `connected` | ✅ les trois tiers existent en jeu |
+| Rendu des items | ✅ `BeltItemRenderer` |
+| Capability `IItemHandler` sur toutes les faces | ✅ hoppers et inserters peuvent prendre et déposer |
+| Pose et retrait à la main (clic droit) | ✅ voie et case déduites du point cliqué |
+| Réconciliation client/serveur | ⬜ **manquante** — dérive non rattrapée, cf. [`08`](08-DESIGN-BELTS.md) §6 |
+| Ascenseurs verticaux | ⬜ le code les prévoit (`BeltFlow`), **les modèles n'existent pas** |
+| Alimentation automatique par l'inserter | ⬜ **manquante** (FIO-097) |
 
 Une implémentation antérieure (`FactoryIOConvoyerBlockEntity`, `FactoryIOConvoyerEntityBlock`)
 a été supprimée au commit `9acd8ff` (« Inserter - Rewrite 5/? »). Elle n'était
 qu'une coquille abstraite vide.
 
-C'est **le manque le plus important du projet** : sans convoyeurs, les inserters
-n'ont rien à alimenter et la boucle de gameplay Factorio n'existe pas.
-Spécification proposée : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).
+**Ce qui manque pour que la boucle Factorio existe** n'est plus le convoyeur mais
+le raccord : l'inserter ne sait pas viser une voie. En attendant, un convoyeur
+s'alimente à la main ou par un hopper.
+Spécification : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).
 
 ## 4. Items et progression
 

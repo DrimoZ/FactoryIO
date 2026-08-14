@@ -152,6 +152,58 @@ tick():
 
 Complexité : 8 opérations par bloc, uniquement tous les `ticksPerSlot` ticks.
 
+> **Cet algorithme est incomplet, et son défaut est sévère.** Il est correct pour
+> un bloc isolé, et faux dès qu'on en met deux bout à bout.
+>
+> Le parcours descendant protège une voie contre elle-même. Il ne la protège pas
+> contre sa voisine : si A et B franchissent leur pas au **même tick** et que A
+> est tické en premier, son item entre dans la case d'entrée de B, puis B avance
+> et le fait progresser une seconde fois. Le long d'une ligne, l'item la traverse
+> **entière en un tick**.
+>
+> Ce n'est pas théorique. Les block entities sont tickées dans leur ordre de
+> création, donc de pose : un joueur qui pose sa ligne en marchant le long produit
+> exactement l'ordre défavorable. Et sur un `express` — un pas par tick — tous les
+> blocs sont en phase, donc le cas se produit à chaque tick.
+>
+> **Correction** : dater le pas. Chaque case retient le tick où elle a été remplie
+> *de l'extérieur*, et `advance` passe celles qui portent le tick courant. Les deux
+> ordres de tick donnent alors la même vitesse (`BeltChainTest`).
+>
+> **Et un second défaut, plus grave : une boucle fermée saturée se bloque pour de
+> bon.** Tant qu'un transfert exige que la case d'entrée de l'aval soit libre *à
+> l'instant précis* où l'amont tique, chaque bloc d'un circuit plein attend le
+> suivant, qui attend le précédent. Aucun ordre de tick n'en sort. Constaté en jeu
+> sur une boucle de convoyeurs pleine, arrêtée net — et une boucle pleine est une
+> figure ordinaire de Factorio, qui doit tourner indéfiniment.
+>
+> Le même défaut, en moins visible, ralentissait déjà les boucles *presque*
+> pleines : elles n'avançaient qu'au rythme auquel le trou remonte le circuit, soit
+> un cran par tour complet.
+>
+> **Correction : une case tampon par voie**, à cheval sur la frontière amont.
+> L'amont y dépose quand l'entrée est encore prise, et `advance` la vide **après**
+> le décalage, donc une fois l'entrée libérée. La circularité est rompue sans
+> aucune structure de niveau, et les deux ordres de tick donnent le même résultat,
+> boucles comprises.
+>
+> Le tampon ne doit pas devenir un trou : l'amont n'y dépose que s'il a établi que
+> l'aval bougera réellement. C'est `BeltBlockEntity.willMove`, qui remonte la chaîne
+> jusqu'à une case libre (oui), un bout de ligne (non), ou un tour complet —
+> **revenir sur ses pas signifie qu'il n'y a aucun obstacle nulle part**, donc oui.
+> Itératif, parce qu'une ligne de deux mille convoyeurs ferait déborder la pile ;
+> et mémorisé pour la durée du tick sur tout le chemin parcouru, parce que la
+> réponse est la même pour toute une chaîne comprimée — ce qui ramène le coût à un
+> parcours par chaîne et par tick au lieu d'un par bloc.
+>
+> `BeltChainTest` verrouille les deux sens : la boucle saturée tourne à vitesse
+> nominale, et le bout de ligne comprime toujours sans rien avaler.
+>
+> **Ce qui reste.** Qu'un transfert entre deux blocs passe par l'entrée ou par le
+> tampon dépend encore de l'ordre de tick, mais le résultat, lui, n'en dépend plus.
+> Subsiste la dérive client/serveur de §6, pour laquelle la réconciliation reste à
+> écrire.
+
 **Mise en sommeil** : un convoyeur entièrement vide et dont l'amont est vide ne
 tick pas du tout. Réveil sur insertion ou `neighborChanged`. Sur une usine
 réelle, la majorité des convoyeurs sont vides ou saturés — les deux cas sont peu
@@ -250,6 +302,11 @@ C'est le deuxième point de risque, après le tick serveur.
 Texture animée via un `.mcmeta` sur la texture du bloc — **coût nul**, à
 privilégier sur toute animation par code.
 
+> **Vérifié, et pas faisable en l'état.** Les trois textures du dépôt
+> (`transport_belt.png` et ses deux variantes) font **16×16**. Une texture animée
+> est une bande verticale de N images de 16×16 ; il n'y a donc rien à animer.
+> Le `.mcmeta` attend de l'art, pas du code.
+
 ### Items
 
 Un `BlockEntityRenderer` par convoyeur rendant jusqu'à 8 items. À 300 convoyeurs
@@ -278,6 +335,25 @@ Vec3 pos = beltStart.lerp(beltEnd, progress).add(laneOffset(lane));
 L'interpolation avec `partialTick` est indispensable pour que le mouvement soit
 fluide malgré les pas discrets.
 
+> **Écrit — `BeltPath`, hors du renderer.** La formule ci-dessus est celle d'une
+> bande droite. Trois précisions que l'implémentation a dû ajouter :
+>
+> - **Les mesures viennent des modèles**, pas d'une estimation : la surface
+>   porteuse est à `8/16`, la bande porte de 2 à 14 sur 16, donc les deux voies
+>   sont centrées à ±`3/16` de l'axe. Le modèle `_ct_output` prolonge vers `z=0`
+>   pour `facing=north`, ce qui confirme que la sortie est bien du côté `facing`.
+> - **Un virage n'est pas une droite.** Une interpolation entre ses deux bords
+>   couperait la bande par le travers. Une Bézier quadratique dont le point de
+>   contrôle est le coin des deux voies suffit, et sa tangence aux extrémités
+>   fait que l'item entre et sort exactement dans l'axe des bandes voisines.
+> - **La continuité inter-blocs est gratuite, mais elle se vérifie** : l'avance 1
+>   d'un bloc et l'avance 0 du suivant tombent sur le même point du monde, et
+>   c'est précisément l'instant du transfert. `BeltPathTest` le verrouille, avec
+>   la non-sortie de la bande en virage et la non-intersection des deux voies.
+>
+> La géométrie vit dans `BeltPath`, sans aucun import client, pour la même raison
+> que `BeltTransport` : c'est ce qui la rend vérifiable en JUnit plutôt qu'à l'œil.
+
 ---
 
 ## 6. Synchronisation
@@ -297,6 +373,17 @@ Architecture recommandée :
    zone de vue) corrige les dérives ;
 4. tout paquet est **par chunk**, pas par bloc, et envoyé uniquement aux joueurs
    qui suivent ce chunk (`PacketDistributor.TRACKING_CHUNK`).
+
+> **État : 1 et 2 écrits, 3 et 4 non.** Le ticker est enregistré des deux côtés,
+> et `getUpdateTag` / `getUpdatePacket` poussent l'état complet sur événement
+> — dépôt à la main, insertion ou retrait par capability. Aucun paquet n'est
+> émis sur un pas de convoyeur.
+>
+> **La dérive est réelle et non corrigée.** L'ordre de tick des block entities
+> n'est pas le même des deux côtés, et un transfert entre deux blocs peut donc
+> réussir sur le serveur et être remis d'un pas sur le client (§3). Rien ne le
+> rattrape aujourd'hui : une ligne longtemps observée finira décalée d'un cran.
+> C'est le jalon 3.6, et le point 3 en est le cœur.
 
 Ce point est l'exact opposé de ce que fait le code actuel des inserters
 ([BUG-004](03-BUGS.md)) : il faut poser la bonne pratique dès le départ ici.
@@ -321,6 +408,36 @@ dans un coffre. C'est le rôle de l'inserter.
 `BlockEntity` du convoyeur via `IItemHandler`. Il faut exposer une capability
 cohérente — probablement en lecture seule sur la face du dessous, ou aucune
 capability du tout, pour éviter que le hopper court-circuite le gameplay.
+
+> **Décision prise, contraire à cette recommandation.** Le convoyeur expose un
+> `IItemHandler` complet **sur toutes ses faces** (`BeltItemHandler`) : hoppers,
+> inserters et tuyaux d'autres mods peuvent y prendre et y déposer. Demande
+> explicite du mainteneur, contre la parité Factorio.
+>
+> Huit cases d'une capacité de **1** chacune — voie gauche puis voie droite, et
+> dans chaque voie **de la sortie vers l'entrée**. Celui qui présente une pile de
+> 64 en dépose un et repart avec le reste.
+>
+> **L'index remonte le sens de circulation, et c'est délibéré.** Tout ce qui vide
+> un inventaire balaie ses cases dans l'ordre, hoppers compris. Indexer dans le
+> sens de la marche faisait prendre en premier la case d'**entrée**, donc les items
+> arrivés en **dernier** : le convoyeur se vidait par la fin, alors qu'une bande
+> est une file d'attente et se vide par l'avant. Constaté en jeu, corrigé en
+> inversant l'index.
+>
+> Contrepartie assumée : celui qui insère vise d'abord la case de sortie, donc un
+> item déposé sur une bande **vide** apparaît à son extrémité au lieu de la
+> parcourir. Dès qu'elle porte quelque chose, l'insertion se range derrière ce qui
+> est déjà là. Défaut visuel borné à un quart de bloc, contre une propriété de
+> gameplay de l'autre côté.
+>
+> **L'autre moitié de §7 est intacte** : le convoyeur, lui, ne va rien chercher ni
+> rien pousser de sa propre initiative. Un convoyeur qui bute sur un coffre ne le
+> remplit pas. La config `belts_insert_into_inventories` reste donc pertinente,
+> et non écrite.
+>
+> Conséquence assumée : un hopper sous une bande la vide. C'est ce qui rendait la
+> recommandation initiale prudente ; le choix a été fait en connaissance de cause.
 
 ---
 
@@ -393,6 +510,21 @@ Chacun de ces cas mérite un **GameTest** dédié.
 | 3.11 | Passe de perf finale | budgets §1 tenus |
 
 Livrer une version jouable dès le jalon 3.7 — ne pas attendre 3.11.
+
+### Avancement
+
+| Jalon | État |
+|---|---|
+| 3.1 | **Fait.** 0,035 ms/tick pour 2 000 blocs et 8 000 items, mesuré sans lancer le jeu ([`10`](10-BENCHMARKS.md)). Design A confirmé |
+| 3.2 | **Fait.** Les trois tiers existent, `connected` est résolu au placement |
+| 3.3 | **Fait.** Transport, compression, blocage, et la datation du pas (§3) |
+| 3.4 | **Écrit, non vérifié en jeu.** La table des formes et le trajet en virage sont testés ; deux bandes qui fusionnent ne l'ont pas encore été à l'écran |
+| 3.5 | **Items rendus.** Texture animée impossible en l'état (§5). Budget FPS non mesuré : c'est [FIO-090b](06-BACKLOG.md) |
+| 3.6 | **À moitié.** Simulation client et paquets sur événement écrits ; réconciliation non (§6) |
+| 3.7 | Rien. L'inserter ne connaît pas les convoyeurs — en attendant, la capability de §7 et la pose à la main les alimentent |
+
+**Ce qui manque pour jouer** : rien n'alimente un convoyeur automatiquement,
+sinon un hopper. Le jalon 3.7 reste le seuil.
 
 ---
 

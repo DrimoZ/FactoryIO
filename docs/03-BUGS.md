@@ -1,6 +1,11 @@
 # 03 — Catalogue des bugs
 
-> **État : 47 bugs sur 48 corrigés.**
+> **État : 50 bugs recensés, tous corrigés.** (L'en-tête annonçait « 47 sur 48 »
+> alors que les 48 lignes portaient déjà ✅ — décompte corrigé en même temps que
+> l'ajout de BUG-049.)
+>
+> **BUG-049 et BUG-050 viennent de sessions de jeu du mainteneur**, pas d'une
+> relecture : l'un et l'autre étaient invisibles au code et évidents à l'écran.
 >
 > Le mod est porté sur Forge 1.20.1 et **validé en jeu** par le mainteneur le 30/07/2026
 > (FIO-054). Vingt-quatre GameTests couvrent les invariants de monde
@@ -76,6 +81,8 @@ Sévérités :
 | [BUG-046](#bug-046) | ✅ S3 | Le bouton whitelist réagit à n'importe quel bouton de souris | `…InserterScreen.java` |
 | [BUG-047](#bug-047) | ✅ S3 | Un `/reload` désaccorde la jauge d'énergie de sa capacité réelle | `…InserterBlockEntity.java` |
 | [BUG-048](#bug-048) | ✅ S3 | Un carburant plus riche que la réserve est écrêté sans un mot | `inserter_fuel.json` |
+| [BUG-049](#bug-049) | ✅ S2 | L'éjection ouvre une pile de plus au lieu de compléter les entamées | `…InserterBlockEntity.java` |
+| [BUG-050](#bug-050) | ✅ S2 | Une boucle de convoyeurs saturée se bloque définitivement | `…BeltLane.java` |
 
 ---
 
@@ -1071,3 +1078,78 @@ soit exactement le plus riche des carburants du tag (le bloc d'algues séchées)
 n'accueille que des carburants qui y tiennent entièrement. Le cas « écrêtage » ne se présente
 donc plus pour la configuration livrée, et le filet de BUG-041 reste en place pour les packs
 qui élargiraient le tag.
+
+---
+
+## BUG-049 — L'éjection ouvre une pile de plus au lieu de compléter les entamées (S2) ✅
+
+**Fichier** : [`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java)
+
+Signalé en jeu : un coffre alimenté par un inserter finissait avec le **même item
+réparti sur une dizaine de piles partielles** — 6, 31, 6, 3, 6, 39, 2, 28, 8, 18 —
+au lieu de quelques piles pleines.
+
+`insertDistributed` et `planInsert` balayaient les slots de la cible dans l'ordre
+**positionnel**, à partir d'un point de départ mémorisé. Or un slot **vide accepte
+toujours** : une case libre placée avant une pile entamée du même item suffisait à
+faire ouvrir une pile de plus. Sur un coffre où l'on prend et l'on dépose en même
+temps — le montage courant, coffre → inserter → convoyeur → inserter → coffre —
+des cases se libèrent en permanence devant les piles en cours, et le phénomène se
+répète à chaque cycle jusqu'à saturer le coffre en n'y rangeant presque rien.
+
+**Correctif** : deux passes. Les slots portant déjà une pile fusionnable d'abord,
+les autres ensuite. C'est ce que fait `ItemHandlerHelper.insertItemStacked`, qu'on
+ne peut pas employer tel quel ici : l'éjection doit simuler avant d'extraire
+(cf. [BUG-006](#bug-006)) et relever le premier slot preneur (DT-07).
+
+**Le piège du correctif** : l'ordre est établi **une seule fois, avant toute
+écriture**, puis partagé par la simulation et l'insertion. Le recalculer entre les
+deux le ferait changer sous nos pieds — un slot vide rempli par la seconde passe
+devient une pile fusionnable, donc bascule dans la première — et l'insertion ne
+suivrait plus la simulation. La quantité extraite du buffer ne correspondrait plus
+à ce que la cible accepte : c'est exactement ainsi qu'on détruit des items.
+
+`InserterGameTests.insertionFillsPartialStacksFirst` reproduit la disposition
+fautive (case 0 libre, case 5 entamée) et échoue sans le correctif.
+
+Le retour d'un reliquat à la source passe désormais par
+`ItemHandlerHelper.insertItemStacked` pour la même raison.
+
+---
+
+## BUG-050 — Une boucle de convoyeurs saturée se bloque définitivement (S2) ✅
+
+**Fichier** : [`BeltLane.java`](../src/main/java/com/drimoz/factoryio/core/belts/BeltLane.java),
+[`BeltBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/belts/BeltBlockEntity.java)
+
+Signalé en jeu : un circuit fermé de convoyeurs, une fois plein, s'arrête net et
+ne repart jamais.
+
+Le transfert d'un bloc au suivant exigeait que la case d'entrée de l'aval soit
+libre **à l'instant précis** où l'amont tique. Sur une ligne, l'obstacle de tête
+crée un trou qui remonte, et tout finit par bouger. Sur un **circuit fermé plein**,
+il n'y a pas de tête : chaque bloc attend que le suivant se libère, et le suivant
+attend le précédent. Aucun ordre de tick n'en sort.
+
+Le même défaut, moins visible, ralentissait les boucles *presque* pleines : elles
+n'avançaient qu'au rythme auquel le trou remonte le circuit, soit un cran par tour.
+
+**Correctif** : une **case tampon** par voie, à cheval sur la frontière amont.
+L'amont y dépose quand l'entrée est encore prise ; `advance` la vide **après** le
+décalage, donc une fois l'entrée libérée. La circularité est rompue sans structure
+de niveau, et les deux ordres de tick donnent le même résultat.
+
+**Le piège du correctif** : un tampon devant un mur avalerait les items dans un
+trou. L'amont n'y dépose donc que si `BeltBlockEntity.willMove` a établi que l'aval
+bougera. Cette question remonte la chaîne jusqu'à une case libre (oui), un bout de
+ligne (non), ou **un tour complet** — revenir sur ses pas signifie qu'aucun
+obstacle n'existe nulle part, donc oui, et c'est exactement le cas de la boucle.
+
+Écrit **itérativement** : une ligne de deux mille convoyeurs ferait déborder la
+pile d'appels. Et **mémorisé pour la durée du tick sur tout le chemin parcouru**,
+la réponse étant la même pour toute une chaîne comprimée — un parcours par chaîne
+et par tick au lieu d'un par bloc.
+
+`BeltChainTest.aSaturatedLoopKeepsTurning` échoue sans le tampon ;
+`aDeadEndStillCompresses` est son pendant, et échouerait si le tampon avalait les
+items d'un bout de ligne.
