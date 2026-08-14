@@ -522,6 +522,7 @@ Livrer une version jouable dès le jalon 3.7 — ne pas attendre 3.11.
 | 3.5 | **Items rendus.** Texture animée impossible en l'état (§5). Budget FPS non mesuré : c'est [FIO-090b](06-BACKLOG.md) |
 | 3.6 | **À moitié.** Simulation client et paquets sur événement écrits ; réconciliation non (§6) |
 | 3.7 | Rien. L'inserter ne connaît pas les convoyeurs — en attendant, la capability de §7 et la pose à la main les alimentent |
+| 3.10 | **Commencé.** `BeltGameTests` couvre ce qu'aucun test pur n'atteint : résolution de l'aval à travers le monde, boucle saturée, bout de ligne, cassage, sérialisation du tampon, hopper vanilla, résolution des connexions. Les cas limites de §9 restent à traiter |
 
 **Ce qui manque pour jouer** : rien n'alimente un convoyeur automatiquement,
 sinon un hopper. Le jalon 3.7 reste le seuil.

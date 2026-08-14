@@ -87,6 +87,17 @@ public final class ModBlocks {
                     .toList();
 
     /**
+     * Le convoyeur d'un tier donné.
+     *
+     * <p>{@link #BELTS} est construit en parcourant {@code BeltTier.values()}, donc l'ordre
+     * des deux coïncide — mais s'appuyer sur cette coïncidence à chaque appel la rendrait
+     * fragile.
+     */
+    public static RegistryObject<Block> belt(BeltTier tier) {
+        return BELTS.get(tier.ordinal());
+    }
+
+    /**
      * Un seul type de block entity pour les trois tiers.
      *
      * <p>Le tier se lit sur le bloc, donc rien ne justifierait trois types — et trois types
