@@ -291,6 +291,31 @@ comportement exact peut venir plus tard.
 Pour une entrée latérale, la voie d'arrivée est déterminée par le côté :
 une bande entrant par la gauche alimente la voie gauche.
 
+> **Un inserter, lui, dépose sur la voie lointaine** — la règle sur laquelle
+> reposent tous les montages à deux voies de Factorio.
+>
+> Elle est tenue par le **convoyeur**, pas par l'inserter. `getCapability` reçoit
+> la face par laquelle la demande arrive ; la bande la croise avec son orientation,
+> en déduit quelle voie est la plus éloignée du demandeur, et range ses cases dans
+> cet ordre. L'inserter balaie l'inventaire dans l'ordre, comme partout ailleurs,
+> et **n'a pas une ligne de code au sujet des convoyeurs**. Hoppers et tuyaux
+> d'autres mods suivent la même règle sans rien savoir non plus.
+>
+> L'ordre est relu **à chaque appel**. Tourner un convoyeur échange ses voies sans
+> changer ni sa position ni son block entity : un ordre figé à la construction du
+> handler survivrait à la rotation et déposerait du mauvais côté — exactement le
+> piège de BUG-042.
+>
+> **Ce que cela a demandé ailleurs.** L'inserter mémorisait le slot où commencer son
+> balayage (DT-07). Sur un grand coffre c'est un vrai gain ; sur un inventaire de
+> huit cases, cela ne fait que démarrer au milieu, donc **sauter la voie lointaine**
+> et vider la règle de son sens. La mémorisation est désormais réservée aux
+> inventaires assez grands pour qu'elle serve.
+>
+> **Ce n'est pas la parité stricte** : Factorio n'utilise jamais la voie proche,
+> ici elle sert de recours quand la lointaine est pleine, pour que l'inserter ne se
+> bloque pas devant une bande à moitié vide. Voir FIO-166.
+
 ---
 
 ## 5. Rendu
@@ -521,7 +546,7 @@ Livrer une version jouable dès le jalon 3.7 — ne pas attendre 3.11.
 | 3.4 | **Écrit, non vérifié en jeu.** La table des formes et le trajet en virage sont testés ; deux bandes qui fusionnent ne l'ont pas encore été à l'écran |
 | 3.5 | **Items rendus.** Texture animée impossible en l'état (§5). Budget FPS non mesuré : c'est [FIO-090b](06-BACKLOG.md) |
 | 3.6 | **À moitié.** Simulation client et paquets sur événement écrits ; réconciliation non (§6) |
-| 3.7 | Rien. L'inserter ne connaît pas les convoyeurs — en attendant, la capability de §7 et la pose à la main les alimentent |
+| 3.7 | **Fait.** Un inserter dépose sur la voie lointaine, et c'est le **convoyeur** qui le décide à partir de la face reçue par `getCapability`. L'inserter n'a pas une ligne au sujet des convoyeurs. Voie proche en recours plutôt qu'interdite (FIO-166) |
 | 3.10 | **Commencé.** `BeltGameTests` couvre ce qu'aucun test pur n'atteint : résolution de l'aval à travers le monde, boucle saturée, bout de ligne, cassage, sérialisation du tampon, hopper vanilla, résolution des connexions. Les cas limites de §9 restent à traiter |
 
 **Ce qui manque pour jouer** : rien n'alimente un convoyeur automatiquement,

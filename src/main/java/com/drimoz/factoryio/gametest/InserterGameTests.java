@@ -1,6 +1,10 @@
 package com.drimoz.factoryio.gametest;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.belts.BeltBlock;
+import com.drimoz.factoryio.core.belts.BeltBlockEntity;
+import com.drimoz.factoryio.core.belts.BeltTier;
+import com.drimoz.factoryio.core.belts.BeltTransport;
 import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
@@ -455,6 +459,87 @@ public class InserterGameTests {
             helper.assertTrue(total == MOVED_ITEMS + started,
                     "Les items ne sont pas conservés : " + total);
         });
+    }
+
+    /**
+     * Un inserter dépose sur la voie <b>lointaine</b> d'un convoyeur (FIO-097).
+     *
+     * <p>C'est la règle de Factorio, et celle sur laquelle reposent tous les montages à deux
+     * voies. Elle est tenue par le <b>convoyeur</b>, pas par l'inserter : celui-ci balaie un
+     * inventaire dans l'ordre, comme partout ailleurs, et c'est la bande qui range ses cases
+     * selon la face par laquelle la demande arrive. L'inserter n'a pas une ligne de code au
+     * sujet des convoyeurs, et c'est le but.
+     *
+     * <p>Montage : l'inserter regarde l'est, la bande est donc à l'est de lui. Elle file vers
+     * le <b>nord</b>, si bien que l'inserter la borde par l'ouest — le côté de sa voie gauche.
+     * C'est donc la voie <b>droite</b> qui doit se remplir, et la gauche rester intacte.
+     *
+     * <p>Quatre items exactement : de quoi remplir la voie lointaine, et pas un de plus. Au
+     * delà, l'inserter se rabattrait sur la voie proche — écart assumé avec Factorio, qui ne
+     * l'utilise jamais (FIO-166).
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void anInserterDropsOnTheFarLaneOfABelt(GameTestHelper helper) {
+        helper.setBlock(SOURCE, Blocks.CHEST);
+        helper.setBlock(TARGET, ModBlocks.belt(BeltTier.TRANSPORT).get().defaultBlockState()
+                .setValue(BeltBlock.FACING, Direction.NORTH));
+
+        helper.setBlock(INSERTER, definitionOf("burner_inserter").getBlock().get().defaultBlockState()
+                .setValue(InserterBlock.FACING, Direction.EAST));
+
+        fuelInserter(helper);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, BeltTier.SLOTS_PER_LANE));
+
+        helper.succeedWhen(() -> {
+            BeltBlockEntity belt = (BeltBlockEntity) helper.getBlockEntity(TARGET);
+
+            helper.assertTrue(belt.transport().lane(BeltTransport.RIGHT).count() > 0,
+                    "Rien n'est arrivé sur la voie lointaine");
+
+            helper.assertTrue(belt.transport().lane(BeltTransport.LEFT).count() == 0,
+                    "L'inserter a déposé sur la voie proche, qui devait rester intacte");
+        });
+    }
+
+    /**
+     * Tourner la bande échange ses voies, et l'inserter doit suivre.
+     *
+     * <p>Une rotation change l'orientation sans changer la position ni le block entity. Un
+     * ordre de voies figé à la construction du handler survivrait donc à la rotation et
+     * continuerait de déposer du mauvais côté — la même famille de piège que BUG-042.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 900)
+    public static void rotatingTheBeltSwapsTheFarLane(GameTestHelper helper) {
+        helper.setBlock(SOURCE, Blocks.CHEST);
+        helper.setBlock(TARGET, ModBlocks.belt(BeltTier.TRANSPORT).get().defaultBlockState()
+                .setValue(BeltBlock.FACING, Direction.NORTH));
+
+        helper.setBlock(INSERTER, definitionOf("burner_inserter").getBlock().get().defaultBlockState()
+                .setValue(InserterBlock.FACING, Direction.EAST));
+
+        fuelInserter(helper);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, BeltTier.SLOTS_PER_LANE));
+
+        helper.startSequence()
+                // Faire d'abord travailler l'inserter : c'est ce premier dépôt qui peuplerait
+                // un cache, et sans lui la rotation ne prouverait rien.
+                .thenWaitUntil(() -> helper.assertTrue(
+                        beltLane(helper, BeltTransport.RIGHT) > 0,
+                        "Rien n'est arrivé sur la voie lointaine avant la rotation"))
+                // La bande file désormais au sud : l'inserter la borde par le côté droit, donc
+                // c'est la voie gauche qui lui devient lointaine.
+                .thenExecute(() -> helper.setBlock(TARGET,
+                        helper.getBlockState(TARGET).setValue(BeltBlock.FACING, Direction.SOUTH)))
+                .thenWaitUntil(() -> helper.assertTrue(
+                        beltLane(helper, BeltTransport.LEFT) > 0,
+                        "L'ordre des voies a survécu à la rotation : l'inserter dépose encore du même côté"))
+                .thenSucceed();
+    }
+
+    private static int beltLane(GameTestHelper helper, int lane) {
+        return ((BeltBlockEntity) helper.getBlockEntity(TARGET)).transport().lane(lane).count();
     }
 
     /**

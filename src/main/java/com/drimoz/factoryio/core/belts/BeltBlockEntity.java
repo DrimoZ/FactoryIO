@@ -61,7 +61,14 @@ public class BeltBlockEntity extends BlockEntity {
     @Nullable
     private BlockPos downstreamAt;
 
-    private final LazyOptional<IItemHandler> lazyItems;
+    /**
+     * Un handler par face, plus un pour l'appel sans face.
+     *
+     * <p>Ils ne diffèrent que par l'ordre des voies — voir {@link BeltItemHandler} — mais
+     * chacun doit rester une {@code LazyOptional} distincte : c'est l'objet que les voisins
+     * mettent en cache, et deux faces opposées n'ont pas la même voie lointaine.
+     */
+    private final LazyOptional<IItemHandler>[] lazyItems;
 
     /** Mémorisation de {@link #willMove}, par voie et pour la durée d'un tick. */
     private final long[] moveKnownAt = {Long.MIN_VALUE, Long.MIN_VALUE};
@@ -74,7 +81,24 @@ public class BeltBlockEntity extends BlockEntity {
         super(ModBlocks.BELT_ENTITY.get(), pos, state);
 
         this.transport = new BeltTransport<>(tierOf(state).ticksPerSlot(), BeltTier.SLOTS_PER_LANE);
-        this.lazyItems = LazyOptional.of(() -> new BeltItemHandler(this));
+        this.lazyItems = newHandlers();
+    }
+
+    @SuppressWarnings("unchecked")
+    private LazyOptional<IItemHandler>[] newHandlers() {
+        LazyOptional<IItemHandler>[] handlers = new LazyOptional[Direction.values().length + 1];
+
+        for (int index = 0; index < handlers.length; index++) {
+            Direction side = index < Direction.values().length ? Direction.values()[index] : null;
+
+            handlers[index] = LazyOptional.of(() -> new BeltItemHandler(this, side));
+        }
+
+        return handlers;
+    }
+
+    private static int handlerIndex(@Nullable Direction side) {
+        return side == null ? Direction.values().length : side.ordinal();
     }
 
     // Interface (Traits du bloc)
@@ -93,7 +117,8 @@ public class BeltBlockEntity extends BlockEntity {
         return getBlockState().getBlock() instanceof BeltBlock belt ? belt.flow() : BeltFlow.HORIZONTAL;
     }
 
-    private Direction facing() {
+    /** Direction dans laquelle la bande déverse. Lue à chaque appel : une rotation la change. */
+    public Direction facing() {
         BlockState state = getBlockState();
 
         return state.hasProperty(BeltBlock.FACING) ? state.getValue(BeltBlock.FACING) : Direction.NORTH;
@@ -468,14 +493,16 @@ public class BeltBlockEntity extends BlockEntity {
      * prendre et déposer. Voir {@link BeltItemHandler} pour ce que cela change au gameplay.
      *
      * <p>Aucune face n'est refusée. Une bande est un objet physique : ce qui la surplombe peut
-     * y poser, ce qui la borde peut y prendre, et distinguer les faces reviendrait à inventer
-     * une règle que rien dans le jeu ne rendrait lisible.
+     * y poser, ce qui la borde peut y prendre.
+     *
+     * <p>La face n'est pourtant pas ignorée : elle décide de la <b>voie lointaine</b>, celle
+     * sur laquelle un inserter dépose (FIO-097). D'où un handler par face.
      */
     @NotNull
     @Override
     public <T> LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction side) {
         if (capability == ForgeCapabilities.ITEM_HANDLER && !isRemoved()) {
-            return this.lazyItems.cast();
+            return this.lazyItems[handlerIndex(side)].cast();
         }
 
         return super.getCapability(capability, side);
@@ -485,14 +512,14 @@ public class BeltBlockEntity extends BlockEntity {
     public void invalidateCaps() {
         super.invalidateCaps();
 
-        this.lazyItems.invalidate();
+        for (LazyOptional<IItemHandler> handler : this.lazyItems) handler.invalidate();
     }
 
     @Override
     public void setRemoved() {
         super.setRemoved();
 
-        this.lazyItems.invalidate();
+        for (LazyOptional<IItemHandler> handler : this.lazyItems) handler.invalidate();
     }
 
     // Interface (Synchronisation)

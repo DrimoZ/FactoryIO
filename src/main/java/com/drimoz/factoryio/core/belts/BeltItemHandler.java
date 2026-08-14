@@ -1,8 +1,10 @@
 package com.drimoz.factoryio.core.belts;
 
+import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Le convoyeur vu comme un inventaire, pour tout ce qui sait manipuler un {@link IItemHandler} :
@@ -10,7 +12,32 @@ import org.jetbrains.annotations.NotNull;
  *
  * <h2>Une case du convoyeur, une case d'inventaire</h2>
  *
- * <p>Huit cases : la voie gauche, <b>de la sortie vers l'entrée</b>, puis la voie droite.
+ * <p>Huit cases : une voie <b>de la sortie vers l'entrée</b>, puis l'autre.
+ *
+ * <h2>Quelle voie vient en premier : la lointaine</h2>
+ *
+ * <p>C'est la règle de Factorio, et celle sur laquelle reposent tous les montages à deux voies :
+ * <b>un inserter dépose sur la voie la plus éloignée de lui</b>. Elle se déduit de la face par
+ * laquelle la demande arrive — {@code getCapability} la fournit — et de l'orientation de la
+ * bande. Un voisin qui touche le côté gauche est près de la voie gauche, donc c'est la droite
+ * qui lui est lointaine.
+ *
+ * <p>La conséquence tient dans ce que le convoyeur <b>n'a pas</b> à demander : l'inserter ne
+ * connaît pas les convoyeurs, et n'a pas une ligne de code à leur sujet. Il balaie un
+ * inventaire dans l'ordre, comme partout ailleurs ; c'est la bande qui range ses cases.
+ * Hoppers et tuyaux d'autres mods en bénéficient sans rien savoir non plus.
+ *
+ * <p>L'ordre est recalculé <b>à chaque appel</b> plutôt que figé à la construction. Tourner un
+ * convoyeur échange ses voies sans changer ni sa position ni son block entity : un ordre mis en
+ * cache survivrait à la rotation et déposerait du mauvais côté, exactement comme le cache
+ * d'inventaires voisins de BUG-042.
+ *
+ * <p><b>Ce n'est pas la parité stricte.</b> Factorio n'utilise <i>jamais</i> la voie proche ;
+ * ici elle sert de recours quand la lointaine est pleine. Le comportement observable est le
+ * même tant que la bande n'est pas saturée, et l'inserter ne se bloque pas devant un convoyeur
+ * à moitié vide. Voir FIO-166 pour la variante stricte.
+ *
+ * <h2>Et dans une voie, l'avant d'abord</h2>
  *
  * <p>Cet ordre est <b>l'inverse</b> du sens de circulation, et c'est délibéré. Tout ce qui vide
  * un inventaire balaie ses cases dans l'ordre — hoppers compris. Indexer dans le sens de la
@@ -44,8 +71,13 @@ public class BeltItemHandler implements IItemHandler {
 
     private final BeltBlockEntity belt;
 
-    public BeltItemHandler(BeltBlockEntity belt) {
+    /** Face par laquelle la demande arrive, ou {@code null} si l'appelant n'en donne pas. */
+    @Nullable
+    private final Direction side;
+
+    public BeltItemHandler(BeltBlockEntity belt, @Nullable Direction side) {
         this.belt = belt;
+        this.side = side;
     }
 
     // Interface
@@ -112,9 +144,33 @@ public class BeltItemHandler implements IItemHandler {
         return slot >= 0 && slot < getSlots();
     }
 
-    /** Les cases d'une voie se suivent : la gauche d'abord, puis la droite. */
-    private static int laneOf(int slot) {
-        return slot / BeltTier.SLOTS_PER_LANE;
+    /** Les cases d'une voie se suivent : la lointaine d'abord, puis la proche. */
+    private int laneOf(int slot) {
+        int first = farLane();
+
+        return slot < BeltTier.SLOTS_PER_LANE ? first : other(first);
+    }
+
+    /**
+     * La voie la plus éloignée de celui qui demande.
+     *
+     * <p>Un voisin qui touche le côté gauche de la bande est près de la voie gauche : c'est
+     * donc la droite qui lui est lointaine. Une face qui n'est ni l'un ni l'autre côté — le
+     * dessus, l'avant, l'arrière — n'a pas de voie proche, et l'ordre par défaut s'applique.
+     */
+    private int farLane() {
+        if (this.side == null) return BeltTransport.LEFT;
+
+        Direction facing = this.belt.facing();
+
+        if (this.side == BeltShape.leftOf(facing)) return BeltTransport.RIGHT;
+        if (this.side == BeltShape.rightOf(facing)) return BeltTransport.LEFT;
+
+        return BeltTransport.LEFT;
+    }
+
+    private static int other(int lane) {
+        return lane == BeltTransport.LEFT ? BeltTransport.RIGHT : BeltTransport.LEFT;
     }
 
     /**

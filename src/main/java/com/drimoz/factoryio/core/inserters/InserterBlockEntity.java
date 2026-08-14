@@ -198,6 +198,23 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     private int lastSourceSlot = 0;
     private int lastTargetSlot = 0;
 
+    /**
+     * Taille à partir de laquelle on mémorise le point de départ du balayage.
+     *
+     * <p>La mémorisation existe pour les <b>grands</b> inventaires : sur un double coffre dont
+     * seuls les derniers slots servent, elle rend le coût constant en régime établi au lieu de
+     * proportionnel (DT-07).
+     *
+     * <p>En deçà, elle ne fait rien gagner et elle <b>nuit</b> : commencer ailleurs qu'au
+     * premier slot défait l'ordre de priorité que la cible exprime par son indexation. Un
+     * convoyeur range ses cases voie lointaine d'abord (FIO-097) ; un balayage qui démarre au
+     * milieu saute cette voie et dépose du mauvais côté, ce qui vide la règle de son sens.
+     *
+     * <p>Le seuil est placé au-dessus du plus grand inventaire à qui l'ordre importe — huit
+     * cases pour un convoyeur, trois pour un four — et en dessous d'un coffre simple.
+     */
+    private static final int MEMOISED_SCAN_THRESHOLD = 16;
+
     /** Mise en sommeil après des tentatives infructueuses répétées. */
     private int failedAttempts = 0;
     private int sleepTicks = 0;
@@ -1682,6 +1699,18 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         return order;
     }
 
+    /**
+     * Où commencer le balayage d'un inventaire voisin.
+     *
+     * <p>Le slot mémorisé sur les grands, le premier sur les petits — voir
+     * {@link #MEMOISED_SCAN_THRESHOLD} pour la raison, qui n'est pas la performance.
+     */
+    private static int scanStart(int remembered, int slots) {
+        if (slots < MEMOISED_SCAN_THRESHOLD) return 0;
+
+        return Math.floorMod(remembered, Math.max(1, slots));
+    }
+
     /** Ce slot porte-t-il déjà une pile que {@code stack} viendrait compléter ? */
     private static boolean mergeableWith(IItemHandler handler, @Nonnull ItemStack stack, int slot) {
         ItemStack current = handler.getStackInSlot(slot);
@@ -1770,11 +1799,13 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         int wanted = pEntity.getMaximumItemCountPerAction();
         int slots = source.getSlots();
 
+        int startSlot = scanStart(pEntity.lastSourceSlot, slots);
+
         for (int offset = 0; offset < slots; offset++) {
             // Balayage circulaire depuis le dernier slot fructueux : sur un grand coffre
             // dont seuls les derniers slots sont remplis, le coût devient constant en
             // régime établi au lieu d'être proportionnel à la taille (cf. DT-07).
-            int slot = Math.floorMod(pEntity.lastSourceSlot + offset, slots);
+            int slot = Math.floorMod(startSlot + offset, slots);
 
             ItemStack probe = source.extractItem(slot, wanted, true);
             if (probe.isEmpty() || !accept.test(probe)) continue;
@@ -1835,7 +1866,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         ItemStack probe = pEntity.extractItemInternal(BUFFER_SLOT, wanted, true);
         if (probe.isEmpty()) return ItemStack.EMPTY;
 
-        int startSlot = Math.floorMod(pEntity.lastTargetSlot, Math.max(1, target.getSlots()));
+        int startSlot = scanStart(pEntity.lastTargetSlot, target.getSlots());
 
         // Établi une seule fois, avant toute écriture, puis partagé par la simulation et
         // l'insertion : elles doivent solliciter les slots dans le même ordre, sinon la

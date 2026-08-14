@@ -105,15 +105,16 @@ doit faire en connaissance de cause.
 | Pose et retrait à la main (clic droit) | ✅ voie et case déduites du point cliqué |
 | Réconciliation client/serveur | ⬜ **manquante** — dérive non rattrapée, cf. [`08`](08-DESIGN-BELTS.md) §6 |
 | Ascenseurs verticaux | ⬜ le code les prévoit (`BeltFlow`), **les modèles n'existent pas** |
-| Alimentation automatique par l'inserter | ⬜ **manquante** (FIO-097) |
+| Alimentation automatique par l'inserter | ✅ dépôt sur la voie lointaine, décidé par le convoyeur |
 
 Une implémentation antérieure (`FactoryIOConvoyerBlockEntity`, `FactoryIOConvoyerEntityBlock`)
 a été supprimée au commit `9acd8ff` (« Inserter - Rewrite 5/? »). Elle n'était
 qu'une coquille abstraite vide.
 
-**Ce qui manque pour que la boucle Factorio existe** n'est plus le convoyeur mais
-le raccord : l'inserter ne sait pas viser une voie. En attendant, un convoyeur
-s'alimente à la main ou par un hopper.
+**La boucle Factorio existe** : coffre → inserter → convoyeur → inserter → coffre
+fonctionne, et l'inserter dépose sur la voie lointaine. Ce qui manque désormais
+relève de la finition — réconciliation client/serveur, budget de rendu, modèles
+d'ascenseur — et non plus de la mécanique.
 Spécification : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).
 
 ## 4. Items et progression
