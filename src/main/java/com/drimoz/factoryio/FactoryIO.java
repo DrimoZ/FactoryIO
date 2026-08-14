@@ -1,6 +1,6 @@
 package com.drimoz.factoryio;
 
-import com.drimoz.factoryio.core.belts.BeltSpeeds;
+import com.drimoz.factoryio.core.belts.BeltSettings;
 import com.drimoz.factoryio.core.configs.CommonConfig;
 import com.drimoz.factoryio.core.datagen.ModDataGenerators;
 import com.drimoz.factoryio.core.init.ModBlocks;
@@ -102,11 +102,11 @@ public class FactoryIO
      * défaut de BUG-047, sur une autre valeur dérivée.
      */
     private void onConfigLoaded(final ModConfigEvent.Loading event) {
-        if (event.getConfig().getSpec() == CommonConfig.SPEC) BeltSpeeds.invalidate();
+        if (event.getConfig().getSpec() == CommonConfig.SPEC) BeltSettings.invalidate();
     }
 
     private void onConfigReloaded(final ModConfigEvent.Reloading event) {
-        if (event.getConfig().getSpec() == CommonConfig.SPEC) BeltSpeeds.invalidate();
+        if (event.getConfig().getSpec() == CommonConfig.SPEC) BeltSettings.invalidate();
     }
 
     public void onCommonSetup(final FMLCommonSetupEvent event)

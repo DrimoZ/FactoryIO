@@ -32,10 +32,14 @@ import org.jetbrains.annotations.Nullable;
  * cache survivrait à la rotation et déposerait du mauvais côté, exactement comme le cache
  * d'inventaires voisins de BUG-042.
  *
- * <p><b>Ce n'est pas la parité stricte.</b> Factorio n'utilise <i>jamais</i> la voie proche ;
- * ici elle sert de recours quand la lointaine est pleine. Le comportement observable est le
- * même tant que la bande n'est pas saturée, et l'inserter ne se bloque pas devant un convoyeur
- * à moitié vide. Voir FIO-166 pour la variante stricte.
+ * <p><b>La parité stricte est un réglage.</b> Factorio n'utilise <i>jamais</i> la voie proche ;
+ * par défaut, ici, elle sert de recours quand la lointaine est pleine — un inserter arrêté
+ * devant un convoyeur à moitié vide se lit comme une panne pour qui ne connaît pas Factorio.
+ * Les deux comportements sont indiscernables tant que la voie lointaine n'est pas saturée.
+ * {@code insert_on_far_lane_only} rétablit la règle exacte (FIO-166).
+ *
+ * <p>La restriction ne porte que sur le <b>dépôt</b> : Factorio interdit d'y poser, pas d'y
+ * prendre. Un inserter qui vide une bande la vide entièrement.
  *
  * <h2>Et dans une voie, l'avant d'abord</h2>
  *
@@ -111,6 +115,7 @@ public class BeltItemHandler implements IItemHandler {
     @Override
     public ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
         if (stack.isEmpty() || !isValid(slot)) return stack;
+        if (isNearLane(slot) && BeltSettings.farLaneOnly()) return stack;
         if (lane(slot).isOccupied(position(slot))) return stack;
 
         ItemStack remainder = stack.copy();
@@ -171,6 +176,25 @@ public class BeltItemHandler implements IItemHandler {
 
     private static int other(int lane) {
         return lane == BeltTransport.LEFT ? BeltTransport.RIGHT : BeltTransport.LEFT;
+    }
+
+    /**
+     * Cet index vise-t-il la voie <b>proche</b> de celui qui demande ?
+     *
+     * <p>Encore faut-il qu'il y en ait une : une demande venue du dessus, de l'avant ou de
+     * l'arrière n'a pas de côté, donc pas de voie proche, et le réglage de parité ne saurait
+     * lui interdire quoi que ce soit.
+     *
+     * <p>La restriction ne porte que sur le <b>dépôt</b>. Retirer un item de la voie proche
+     * reste permis : Factorio interdit d'y poser, pas d'y prendre.
+     */
+    private boolean isNearLane(int slot) {
+        if (slot < BeltTier.SLOTS_PER_LANE) return false;
+        if (this.side == null) return false;
+
+        Direction facing = this.belt.facing();
+
+        return this.side == BeltShape.leftOf(facing) || this.side == BeltShape.rightOf(facing);
     }
 
     /**

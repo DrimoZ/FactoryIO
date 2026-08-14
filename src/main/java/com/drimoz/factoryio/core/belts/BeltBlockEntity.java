@@ -84,9 +84,9 @@ public class BeltBlockEntity extends BlockEntity {
         super(ModBlocks.BELT_ENTITY.get(), pos, state);
 
         this.transport = new BeltTransport<>(
-                BeltSpeeds.ticksPerSlot(tierOf(state)), BeltTier.SLOTS_PER_LANE);
+                BeltSettings.ticksPerSlot(tierOf(state)), BeltTier.SLOTS_PER_LANE);
 
-        this.speedGeneration = BeltSpeeds.generation();
+        this.speedGeneration = BeltSettings.generation();
         this.lazyItems = newHandlers();
     }
 
@@ -98,11 +98,11 @@ public class BeltBlockEntity extends BlockEntity {
      * en vigueur au moment de sa construction — le défaut exact de BUG-047.
      */
     private void refreshSpeed() {
-        int generation = BeltSpeeds.generation();
+        int generation = BeltSettings.generation();
         if (generation == this.speedGeneration) return;
 
         this.speedGeneration = generation;
-        this.transport.setTicksPerSlot(BeltSpeeds.ticksPerSlot(tierOf(getBlockState())));
+        this.transport.setTicksPerSlot(BeltSettings.ticksPerSlot(tierOf(getBlockState())));
     }
 
     @SuppressWarnings("unchecked")

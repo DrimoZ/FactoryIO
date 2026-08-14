@@ -4,7 +4,7 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
 import com.drimoz.factoryio.core.belts.BeltLane;
-import com.drimoz.factoryio.core.belts.BeltSpeeds;
+import com.drimoz.factoryio.core.belts.BeltSettings;
 import com.drimoz.factoryio.core.belts.BeltTier;
 import com.drimoz.factoryio.core.belts.BeltTransport;
 import com.drimoz.factoryio.core.configs.CommonConfig;
@@ -243,9 +243,9 @@ public class BeltGameTests {
     @GameTest(template = TEMPLATE, timeoutTicks = 20)
     public static void shippedSpeedsMatchTheConfigDefaults(GameTestHelper helper) {
         for (BeltTier tier : BeltTier.values()) {
-            helper.assertTrue(BeltSpeeds.ticksPerSlot(tier) == tier.ticksPerSlot(),
+            helper.assertTrue(BeltSettings.ticksPerSlot(tier) == tier.ticksPerSlot(),
                     "Le barème et la configuration divergent pour " + tier + " : "
-                            + tier.ticksPerSlot() + " contre " + BeltSpeeds.ticksPerSlot(tier));
+                            + tier.ticksPerSlot() + " contre " + BeltSettings.ticksPerSlot(tier));
         }
 
         helper.succeed();
@@ -270,7 +270,7 @@ public class BeltGameTests {
         int changed = shipped + 3;
 
         CommonConfig.BELT_COOLDOWN.set(changed);
-        BeltSpeeds.invalidate();
+        BeltSettings.invalidate();
 
         helper.startSequence()
                 .thenIdle(2)
@@ -280,7 +280,7 @@ public class BeltGameTests {
                     // Remis avant toute assertion : un échec ne doit pas laisser la
                     // configuration modifiée pour les tests suivants.
                     CommonConfig.BELT_COOLDOWN.set(shipped);
-                    BeltSpeeds.invalidate();
+                    BeltSettings.invalidate();
 
                     helper.assertTrue(actual == changed,
                             "Le convoyeur posé garde son ancienne cadence : " + actual);

@@ -4,7 +4,7 @@ import com.drimoz.factoryio.core.configs.CommonConfig;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 /**
- * La vitesse effective d'un convoyeur : celle du barème, ou celle de la configuration.
+ * Ce que la configuration dit des convoyeurs : leur vitesse, et l'usage des voies.
  *
  * <h2>Pourquoi cette classe existe plutôt qu'une méthode sur {@link BeltTier}</h2>
  *
@@ -27,11 +27,11 @@ import net.minecraftforge.common.ForgeConfigSpec;
  * <p>C'est la leçon de BUG-047 : une valeur dérivée d'un réglage doit être <b>réappliquée</b>
  * quand le réglage change, faute de quoi elle survit à sa propre source.
  */
-public final class BeltSpeeds {
+public final class BeltSettings {
 
     private static volatile int generation;
 
-    private BeltSpeeds() {}
+    private BeltSettings() {}
 
     // Interface
 
@@ -47,6 +47,29 @@ public final class BeltSpeeds {
         if (!CommonConfig.SPEC.isLoaded()) return tier.ticksPerSlot();
 
         return Math.max(1, value(tier).get());
+    }
+
+    /**
+     * La voie proche est-elle interdite au dépôt ?
+     *
+     * <h3>Ce que change ce réglage</h3>
+     *
+     * <p>Factorio n'utilise <b>jamais</b> la voie proche : un inserter qui trouve la voie
+     * lointaine pleine attend, il ne se rabat pas. C'est ce qui rend une voie utilisable comme
+     * réserve, et ce sur quoi reposent les montages qui séparent deux ressources sur une même
+     * bande.
+     *
+     * <p>Par défaut, ici, il se rabat — un inserter arrêté devant un convoyeur à moitié vide
+     * se lit comme une panne pour qui ne connaît pas Factorio. Les deux comportements sont
+     * indiscernables tant que la voie lointaine n'est pas saturée.
+     *
+     * <p>Lu à chaque appel : le réglage ne dérive de rien et n'a rien à mémoriser, contrairement
+     * à la cadence.
+     */
+    public static boolean farLaneOnly() {
+        if (!CommonConfig.SPEC.isLoaded()) return false;
+
+        return CommonConfig.INSERT_ON_FAR_LANE_ONLY.get();
     }
 
     /** Numéro de génération courant : à comparer à celui qu'un convoyeur a mémorisé. */

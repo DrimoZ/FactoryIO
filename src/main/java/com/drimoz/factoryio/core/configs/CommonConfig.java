@@ -40,6 +40,9 @@ public class CommonConfig {
     public static final ForgeConfigSpec.ConfigValue<Integer> FAST_BELT_COOLDOWN;
     public static final ForgeConfigSpec.ConfigValue<Integer> EXPRESS_BELT_COOLDOWN;
 
+    /** Parité Factorio sur l'usage des voies. Voir {@code BeltSettings.farLaneOnly}. */
+    public static final ForgeConfigSpec.ConfigValue<Boolean> INSERT_ON_FAR_LANE_ONLY;
+
     private static final String BELT_SPEED_KEY = "ticks_per_slot";
 
     /**
@@ -108,6 +111,13 @@ public class CommonConfig {
         EXPRESS_BELT_COOLDOWN = BUILDER.comment(BELT_SPEED_COMMENT)
                 .defineInRange(BELT_SPEED_KEY, BeltTier.EXPRESS.ticksPerSlot(), 1, BELT_SPEED_MAX);
         BUILDER.pop();
+
+        INSERT_ON_FAR_LANE_ONLY = BUILDER
+                .comment("Factorio parity: inserters and hoppers only ever fill the lane furthest",
+                        "from them, and wait when it is full instead of using the near lane.",
+                        "Off by default: an inserter stalled in front of a half-empty belt reads",
+                        "as a fault to anyone who does not know Factorio.")
+                .define("insert_on_far_lane_only", false);
 
         BUILDER.pop();
 

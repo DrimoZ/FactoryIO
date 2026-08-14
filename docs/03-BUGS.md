@@ -8,7 +8,7 @@
 > relecture : l'un et l'autre étaient invisibles au code et évidents à l'écran.
 >
 > Le mod est porté sur Forge 1.20.1 et **validé en jeu** par le mainteneur le 30/07/2026
-> (FIO-054). Quarante GameTests couvrent les invariants de monde
+> (FIO-054). Quarante-et-un GameTests couvrent les invariants de monde
 > (`./gradlew runGameTestServer`) et une centaine de cas JUnit le calcul pur
 > (`./gradlew test`). Le **rendu** reste hors de portée des tests automatisés : il est
 > vérifié à l'œil, pas par une assertion.

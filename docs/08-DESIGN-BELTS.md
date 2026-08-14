@@ -312,9 +312,12 @@ une bande entrant par la gauche alimente la voie gauche.
 > et vider la règle de son sens. La mémorisation est désormais réservée aux
 > inventaires assez grands pour qu'elle serve.
 >
-> **Ce n'est pas la parité stricte** : Factorio n'utilise jamais la voie proche,
-> ici elle sert de recours quand la lointaine est pleine, pour que l'inserter ne se
-> bloque pas devant une bande à moitié vide. Voir FIO-166.
+> **La parité stricte est un réglage** : `insert_on_far_lane_only` rétablit la règle
+> exacte — la voie proche n'est jamais utilisée pour un dépôt, et l'inserter attend.
+> Désactivée par défaut, parce qu'un inserter arrêté devant un convoyeur à moitié vide
+> se lit comme une panne pour qui ne connaît pas Factorio, et que les deux comportements
+> sont indiscernables tant que la voie lointaine n'est pas saturée. La restriction ne
+> porte que sur le **dépôt** : Factorio interdit d'y poser, pas d'y prendre.
 
 ---
 

@@ -5,6 +5,7 @@ import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
 import com.drimoz.factoryio.core.belts.BeltTier;
 import com.drimoz.factoryio.core.belts.BeltTransport;
+import com.drimoz.factoryio.core.configs.CommonConfig;
 import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
@@ -500,6 +501,50 @@ public class InserterGameTests {
             helper.assertTrue(belt.transport().lane(BeltTransport.LEFT).count() == 0,
                     "L'inserter a déposé sur la voie proche, qui devait rester intacte");
         });
+    }
+
+    /**
+     * En parité stricte, l'inserter attend au lieu d'utiliser la voie proche (FIO-166).
+     *
+     * <p>C'est ce qui rend une voie utilisable comme réserve, et ce sur quoi reposent les
+     * montages qui séparent deux ressources sur une même bande. Sans le réglage, l'inserter se
+     * rabat dès que la voie lointaine sature, et la séparation ne tient plus.
+     *
+     * <p>Huit items pour deux fois la capacité d'une voie : de quoi déborder si le réglage ne
+     * mordait pas.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 900)
+    public static void strictParityLeavesTheNearLaneAlone(GameTestHelper helper) {
+        helper.setBlock(SOURCE, Blocks.CHEST);
+        helper.setBlock(TARGET, ModBlocks.belt(BeltTier.TRANSPORT).get().defaultBlockState()
+                .setValue(BeltBlock.FACING, Direction.NORTH));
+
+        helper.setBlock(INSERTER, definitionOf("burner_inserter").getBlock().get().defaultBlockState()
+                .setValue(InserterBlock.FACING, Direction.EAST));
+
+        fuelInserter(helper);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, 8));
+
+        CommonConfig.INSERT_ON_FAR_LANE_ONLY.set(true);
+
+        helper.startSequence()
+                // La voie lointaine se remplit d'abord, comme sans le réglage.
+                .thenWaitUntil(() -> helper.assertTrue(
+                        beltLane(helper, BeltTransport.RIGHT) == BeltTier.SLOTS_PER_LANE,
+                        "La voie lointaine n'est pas saturée"))
+                // Puis rien ne doit passer sur la proche, quel que soit le temps laissé.
+                .thenIdle(120)
+                .thenExecute(() -> {
+                    int near = beltLane(helper, BeltTransport.LEFT);
+
+                    // Remis avant l'assertion : un échec ne doit pas contaminer les autres tests.
+                    CommonConfig.INSERT_ON_FAR_LANE_ONLY.set(false);
+
+                    helper.assertTrue(near == 0,
+                            "L'inserter s'est rabattu sur la voie proche malgré la parité stricte : " + near);
+                })
+                .thenSucceed();
     }
 
     /**

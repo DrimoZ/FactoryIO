@@ -12,7 +12,7 @@ package com.drimoz.factoryio.core.belts;
  *
  * <h2>Ce barème est le repli, la configuration fait foi</h2>
  *
- * <p>Les clés de {@code CommonConfig} sont désormais lues, par {@link BeltSpeeds}. Elles ont
+ * <p>Les clés de {@code CommonConfig} sont désormais lues, par {@link BeltSettings}. Elles ont
  * dû être <b>renommées</b> pour cela : elles valaient 30, 20 et 10 dans l'unité de l'ancien
  * compteur d'inserter, incrémenté de dix par tick, que FIO-065 a supprimée — trente y valait
  * trois ticks, pas trente — et leurs rapports 3:2:1 ne sont pas ceux du tableau ci-dessous.
@@ -23,7 +23,7 @@ package com.drimoz.factoryio.core.belts;
  * que la configuration n'est pas chargée. Un GameTest verrouille l'égalité des deux : qu'elles
  * divergent ferait changer la vitesse au moment précis où la configuration devient disponible.
  *
- * <p>La lecture vit dans {@link BeltSpeeds} et non ici, pour que cette énumération reste
+ * <p>La lecture vit dans {@link BeltSettings} et non ici, pour que cette énumération reste
  * utilisable par des tests JUnit, qui tournent sans Forge.
  *
  * <h2>Le barème</h2>
