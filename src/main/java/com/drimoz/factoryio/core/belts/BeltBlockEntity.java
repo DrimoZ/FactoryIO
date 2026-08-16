@@ -55,11 +55,11 @@ public class BeltBlockEntity extends BlockEntity {
 
     private final BeltTransport<ItemStack> transport;
 
-    /** Aval mémorisé, et la position à laquelle il l'a été. */
+    /** Aval mémorisé, et l'état de bloc sous lequel il l'a été. */
     @Nullable
     private BeltBlockEntity downstream;
     @Nullable
-    private BlockPos downstreamAt;
+    private BlockState downstreamAt;
 
     /**
      * Un handler par face, plus un pour l'appel sans face.
@@ -152,18 +152,29 @@ public class BeltBlockEntity extends BlockEntity {
     // Interface (Tick)
 
     public static void tick(Level level, BlockPos pos, BlockState state, BeltBlockEntity belt) {
-        belt.refreshSpeed();
+        // Le temps du monde date le pas. C'est lui qui empêche un item déposé par le bloc
+        // amont d'avancer une seconde fois dans le même tick — voir BeltLane#advance.
+        belt.tickAt(level.getGameTime());
+    }
+
+    /**
+     * Le pas, daté par l'appelant.
+     *
+     * <p>Séparé de {@link #tick} pour une raison précise : une mesure qui appelle le tick en
+     * boucle ne fait pas avancer le monde, donc {@code getGameTime()} y reste <b>constant</b>.
+     * Or cette date sert de marque d'arrivée et de clé de mémorisation ; figée, elle
+     * immobiliserait tout après le premier pas et la mesure porterait sur un régime qui
+     * n'existe pas.
+     */
+    public void tickAt(long stamp) {
+        refreshSpeed();
 
         // Un convoyeur vide n'a rien à faire, et c'est le cas de la majorité d'entre eux sur
         // une usine réelle. canSleep remet aussi l'horloge à zéro, pour qu'un item déposé
         // ensuite ne fasse pas un demi-pas à l'instant de son arrivée.
-        if (belt.transport.canSleep()) return;
+        if (this.transport.canSleep()) return;
 
-        // Le temps du monde date le pas. C'est lui qui empêche un item déposé par le bloc
-        // amont d'avancer une seconde fois dans le même tick — voir BeltLane#advance.
-        long stamp = level.getGameTime();
-
-        belt.transport.tick((lane, item) -> belt.handOff(lane, item, stamp), stamp);
+        this.transport.tick((lane, item) -> handOff(lane, item, stamp), stamp);
     }
 
     /**
@@ -271,20 +282,32 @@ public class BeltBlockEntity extends BlockEntity {
         return target != null && !target.transport.lane(lane).isOccupied(target.transport.lane(lane).entrySlot());
     }
 
+    /**
+     * L'aval, mémorisé.
+     *
+     * <h3>Le cache est indexé sur l'état du bloc, pas sur une position recalculée</h3>
+     *
+     * <p>La version d'origine calculait la position de sortie à chaque appel pour la comparer
+     * à celle du cache. C'était correct et <b>coûteux</b> : deux lectures d'état de bloc et
+     * une <b>allocation de {@code BlockPos}</b>, par voie et par tick — soit, sur deux mille
+     * convoyeurs, quatre mille objets par tick jetés aussitôt. Le benchmark l'a montré.
+     *
+     * <p>Les {@code BlockState} sont des instances uniques : deux états ne diffèrent que s'ils
+     * sont deux objets différents. Comparer les références suffit donc à détecter une rotation
+     * — ce que BUG-042 exige — sans rien calculer ni allouer.
+     */
     @Nullable
     private BeltBlockEntity resolveDownstream() {
         if (this.level == null) return null;
 
-        BlockPos exit = flow().exit(this.worldPosition, facing());
+        BlockState state = getBlockState();
 
-        // Le cache vaut pour la position à laquelle il a été pris. Une rotation du bloc change
-        // cette position sans invalider quoi que ce soit d'autre.
-        if (this.downstream != null && exit.equals(this.downstreamAt) && !this.downstream.isRemoved()) {
+        if (this.downstreamAt == state && (this.downstream == null || !this.downstream.isRemoved())) {
             return this.downstream;
         }
 
-        this.downstream = resolve(this.level, this.worldPosition, exit);
-        this.downstreamAt = exit;
+        this.downstream = resolve(this.level, this.worldPosition, flow().exit(this.worldPosition, facing()));
+        this.downstreamAt = state;
 
         return this.downstream;
     }

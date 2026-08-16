@@ -149,6 +149,52 @@ plus cher qu'un convoyeur à moitié vide, parce que le travail est proportionne
 **Le tick serveur n'est donc pas le risque des convoyeurs.** Restent le rendu et le réseau,
 qui sont les deux budgets non mesurés.
 
+---
+
+## Convoyeurs — coût réel, block entities comprises (16/08/2026)
+
+La mesure ci-dessus s'annonçait comme une borne inférieure. Elle l'était, et **de deux ordres
+de grandeur**. `BeltBenchmarks` refait la mesure en jeu, sur de vrais blocs.
+
+| Régime | Blocs | Items | Avant | Après | Budget |
+|---|---|---|---|---|---|
+| Endormis | 1 372 | 0 | 0,583 | **0,068** | 0,15 |
+| Comprimés (lignes butant sur un mur) | 1 372 | 10 976 | 4,305 | **1,441** | 1,50 |
+| Boucles saturées | 980 | 7 840 | 4,074 | **1,672** | 1,50 |
+
+*(millisecondes par tick pour 1 000 convoyeurs ; budget du §1 de [`08`](08-DESIGN-BELTS.md)
+ramené au millier)*
+
+### La colonne « avant » est le vrai résultat
+
+Le premier passage donnait **4,3 ms/tick pour 1 000 convoyeurs**, soit près de trois fois le
+budget — là où la mesure hors-jeu annonçait 1,2 % de ce même budget. L'écart n'est pas dans
+l'algorithme : il est dans tout ce que la mesure hors-jeu ne pouvait pas voir.
+
+Deux causes, trouvées en regardant ce que le chemin chaud fait réellement :
+
+**Une allocation par voie et par tick.** `resolveDownstream` recalculait la position de sortie
+à chaque appel pour la comparer à celle du cache — deux lectures d'état de bloc et un
+`BlockPos` neuf, jeté aussitôt. Sur deux mille convoyeurs, quatre mille objets par tick. Les
+`BlockState` étant des instances uniques, comparer les **références** détecte une rotation
+aussi sûrement, sans rien allouer.
+
+**Un balayage de tableau pour savoir si une voie est vide.** C'est la question posée à chaque
+convoyeur et à chaque tick, et la seule chose qui s'exécute pour les innombrables convoyeurs
+vides d'une usine réelle. Un compteur tenu à jour la rend gratuite : **8,6× sur le régime
+endormi**, qui est le plus fréquent de tous.
+
+### Ce que ces chiffres disent
+
+Le budget est tenu, sans marge confortable. Les boucles saturées le dépassent de 11 %, mais
+elles sont ici saturées à **huit items par bloc** — deux fois la densité du scénario de
+référence — et une usine n'est pas faite que de circuits pleins.
+
+La leçon vaut plus que le chiffre : **une mesure hors-jeu ne remplace pas une mesure en jeu**,
+et l'écart n'est pas un facteur de sécurité mais un facteur cent. Ce qui coûtait n'était même
+pas du calcul — c'était une allocation et un parcours de tableau, tous deux invisibles à la
+lecture.
+
 ### Reproduire
 
 Les trois classes se compilent hors du projet :

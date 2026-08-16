@@ -49,6 +49,9 @@ public final class BeltLane<T> {
     /** Pas auquel chaque case a été remplie <b>de l'extérieur</b>. Voir {@link #advance}. */
     private final long[] arrived;
 
+    /** Cases occupées, tampon exclu. Tenu à jour : voir {@link #isEmpty}. */
+    private int occupied;
+
     /**
      * Case tampon, à cheval sur la frontière avec le bloc amont.
      *
@@ -99,14 +102,16 @@ public final class BeltLane<T> {
         return this.slots[slot] != null;
     }
 
+    /**
+     * Vide, tampon compris.
+     *
+     * <p>Tenu à jour plutôt que recalculé : c'est la question posée à <b>chaque convoyeur et
+     * à chaque tick</b>, y compris — surtout — aux innombrables convoyeurs vides d'une usine
+     * réelle, pour lesquels elle est la seule chose qui s'exécute. Un balayage de tableau y
+     * coûtait plus que tout le reste.
+     */
     public boolean isEmpty() {
-        if (this.staged != null) return false;
-
-        for (Object slot : this.slots) {
-            if (slot != null) return false;
-        }
-
-        return true;
+        return this.occupied == 0 && this.staged == null;
     }
 
     /**
@@ -116,21 +121,11 @@ public final class BeltLane<T> {
      * recevoir, et c'est justement le cas qui fait tourner une boucle.
      */
     public boolean isFull() {
-        for (Object slot : this.slots) {
-            if (slot == null) return false;
-        }
-
-        return true;
+        return this.occupied == this.slots.length;
     }
 
     public int count() {
-        int count = this.staged == null ? 0 : 1;
-
-        for (Object slot : this.slots) {
-            if (slot != null) count++;
-        }
-
-        return count;
+        return this.occupied + (this.staged == null ? 0 : 1);
     }
 
     // Interface (Tampon)
@@ -197,6 +192,7 @@ public final class BeltLane<T> {
 
         this.slots[slot] = item;
         this.arrived[slot] = stamp;
+        this.occupied++;
 
         return true;
     }
@@ -205,6 +201,7 @@ public final class BeltLane<T> {
     @SuppressWarnings("unchecked")
     public T take(int slot) {
         T item = (T) this.slots[slot];
+        if (item != null) this.occupied--;
 
         this.slots[slot] = null;
         this.arrived[slot] = NO_STAMP;
@@ -275,6 +272,7 @@ public final class BeltLane<T> {
         if (this.slots[exit] != null && !justArrived(exit, stamp) && sink.test(get(exit))) {
             this.slots[exit] = null;
             this.arrived[exit] = NO_STAMP;
+            this.occupied--;
             moved = true;
         }
 
@@ -298,6 +296,7 @@ public final class BeltLane<T> {
             this.slots[entry] = this.staged;
             this.arrived[entry] = stamp;
             this.staged = null;
+            this.occupied++;
             moved = true;
         }
 
@@ -315,6 +314,7 @@ public final class BeltLane<T> {
         Arrays.fill(this.arrived, NO_STAMP);
 
         this.staged = null;
+        this.occupied = 0;
     }
 
     // Interface (Rendu)
