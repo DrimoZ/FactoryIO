@@ -217,10 +217,13 @@ Spécification détaillée : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).
 | 3.5 | Rendu : items sur la bande, texture animée, `BlockEntityRenderer` instancié |
 | 3.6 | Synchronisation client : interpolation, pas de paquet par item |
 | 3.7 | Interaction inserter ↔ convoyeur (prise/dépose sur une voie précise) |
-| 3.8 | Convoyeurs souterrains (`underground belt`) |
 | 3.9 | Séparateurs (`splitter`) avec priorité et filtre |
 | 3.10 | Franchissement de frontière de chunk, chunks non chargés |
 | 3.11 | Perfs : 10 000 items sur bande < 3 ms/tick |
+
+**Pas de jalon 3.8** : les souterrains sont hors périmètre depuis le 16/08/2026
+(voir [`08`](08-DESIGN-BELTS.md) §8.1). Numérotation conservée pour ne pas invalider
+les renvois existants.
 
 **Risque principal** : le rendu et la synchronisation. Un convoyeur naïf (un
 `ItemEntity` par item, ou un paquet par item) s'effondre à 200 items. Le design
@@ -296,6 +299,6 @@ circuits électroniques sans mode créatif.
 |---|---|---|
 | `0.1.0` | inserters fonctionnels, rien ne casse | Phase 0 + 1 |
 | `0.2.0` | inserters au niveau Factorio, performants | Phase 2 |
-| `0.4.0` | convoyeurs + souterrains + séparateurs | Phase 3 |
+| `0.4.0` | convoyeurs + séparateurs | Phase 3 |
 | `0.7.0` | machines, recettes, progression jouable | Phase 4 |
 | `1.0.0` | intégrations, i18n, publication | Phase 5 |

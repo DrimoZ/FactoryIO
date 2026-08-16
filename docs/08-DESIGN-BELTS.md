@@ -471,15 +471,18 @@ capability du tout, pour éviter que le hopper court-circuite le gameplay.
 
 ## 8. Sous-systèmes ultérieurs
 
-### 8.1 Convoyeurs souterrains
+### 8.1 Convoyeurs souterrains — **hors périmètre**
 
-- Paire entrée/sortie, même tier, alignées, distance max (4 / 6 / 8 blocs selon le
-  tier, cf. Factorio).
-- L'appairage se calcule à la pose et se met en cache ; il se recalcule sur
-  `neighborChanged` **dans le corridor uniquement**.
-- Les items en transit sont stockés dans le BE d'entrée sous forme de file avec
-  un temps de sortie — pas de simulation intermédiaire.
-- Cas limite : la sortie est déchargée → l'entrée bloque et compresse.
+**Retirés le 16/08/2026, décision du mainteneur.** La spécification qui figurait
+ici (paire entrée/sortie, portée maximale par tier, file d'attente dans le bloc
+d'entrée) est supprimée, et le jalon 3.8 avec elle.
+
+Rien n'avait été écrit : aucune classe, aucun asset, aucun blockstate. La section
+venait de l'audit initial (`28b9afa`) et n'a jamais dépassé le papier.
+
+Ce paragraphe reste pour une seule raison : empêcher que la fonctionnalité ne
+resurgisse d'elle-même la prochaine fois qu'on relira ce document. Ce n'est pas un
+oubli, c'est un choix.
 
 ### 8.2 Séparateurs
 
@@ -563,10 +566,13 @@ la sortie est sa propre position, et le raccord de sortie disparaît avec lui.
 | 3.5 | Rendu des items + texture animée + interpolation | 300 convoyeurs > 60 FPS |
 | 3.6 | Sync par simulation client + réconciliation | < 5 Ko/s, pas de téléportation visible |
 | 3.7 | Inserter ↔ convoyeur | boucle four → bande → inserter → four |
-| 3.8 | Souterrains | — |
 | 3.9 | Séparateurs | — |
 | 3.10 | Cas limites §9 + GameTests | tous verts |
 | 3.11 | Passe de perf finale | budgets §1 tenus |
+
+**Le jalon 3.8 n'existe plus** : c'étaient les souterrains, retirés du périmètre
+(§8.1). La numérotation est conservée telle quelle — plusieurs commits et documents
+renvoient à « jalon 3.5 », « 3.7 », « 3.10 », et les renuméroter les rendrait faux.
 
 Livrer une version jouable dès le jalon 3.7 — ne pas attendre 3.11.
 
