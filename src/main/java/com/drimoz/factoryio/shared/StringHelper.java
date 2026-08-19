@@ -1,11 +1,11 @@
 package com.drimoz.factoryio.shared;
 
-import com.mojang.blaze3d.platform.InputConstants;
+import com.drimoz.factoryio.client.ClientInput;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import org.lwjgl.glfw.GLFW;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -38,25 +38,24 @@ public final class StringHelper {
 
     // Interface (Entrées clavier)
 
+    /**
+     * Vrai si une touche Maj est enfoncée ; toujours faux hors du client.
+     *
+     * <p>Les appelants sont des {@code appendHoverText}, donc du code commun, alors que
+     * la lecture réelle touche {@code Minecraft} et GLFW. Le supplier de supplier est ce
+     * qui sépare les deux : {@link ClientInput} n'est nommée que dans une lambda qui ne
+     * s'exécute jamais sur un serveur dédié, sa classe n'y est donc jamais résolue. Un
+     * appel direct, lui, ferait tomber le serveur au chargement — c'était [BUG-005].
+     */
     public static boolean isShiftKeyDown() {
-        return isKeyDown(GLFW.GLFW_KEY_LEFT_SHIFT) || isKeyDown(GLFW.GLFW_KEY_RIGHT_SHIFT);
-    }
-
-    public static boolean isKeyDown(int glfw) {
-        InputConstants.Key key = InputConstants.Type.KEYSYM.getOrCreate(glfw);
-        if (key.getValue() == InputConstants.UNKNOWN.getValue()) return false;
-
-        try {
-            return InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), key.getValue());
-        } catch (Exception ignored) {
-            return false;
-        }
+        Boolean down = DistExecutor.unsafeCallWhenOn(Dist.CLIENT, () -> ClientInput::isShiftKeyDown);
+        return Boolean.TRUE.equals(down);
     }
 
     // Inner work
 
     /** Remplace les espaces (dont insécables) des formats localisés par des virgules. */
     private static String normalize(String formatted) {
-        return formatted.replace(' ', ',').replace(' ', ',');
+        return formatted.replace(' ', ',').replace(' ', ',');
     }
 }
