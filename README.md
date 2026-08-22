@@ -5,7 +5,7 @@ already have — vanilla or from any other mod — without a hopper in sight.
 
 **Forge 1.20.1** · Java 17 · MIT
 
-**[Download the beta](https://github.com/DrimoZ/FactoryIO/releases)**
+**[Download on CurseForge](https://www.curseforge.com/minecraft/mc-mods/factoryio)** · [GitHub releases](https://github.com/DrimoZ/FactoryIO/releases) · [Discord](https://discord.gg/b8ZutEfWyV)
 
 📖 **[The wiki](https://github.com/DrimoZ/FactoryIO/wiki) is the reference** — player guide,
 config, datapack docs and FAQ. This README is the short version.

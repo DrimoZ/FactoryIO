@@ -5,6 +5,10 @@ already have — vanilla or from any other mod — without a hopper in sight.
 
 **Forge 1.20.1** · Java 17 · MIT · **beta**
 
+**[Download on CurseForge](https://www.curseforge.com/minecraft/mc-mods/factoryio)** ·
+[GitHub](https://github.com/DrimoZ/FactoryIO) ·
+[Discord](https://discord.gg/b8ZutEfWyV)
+
 ## What it is
 
 Two things, done properly: machines that move items on their own, and belts that carry them.

@@ -11,6 +11,7 @@ you already have — vanilla or from any other mod — without a hopper in sight
 
 Forge 1.20.1 · MIT · [GitHub](https://github.com/DrimoZ/FactoryIO) ·
 [Wiki](https://github.com/DrimoZ/FactoryIO/wiki) ·
+[CurseForge](https://www.curseforge.com/minecraft/mc-mods/factoryio) ·
 [Discord](https://discord.com/invite/b8ZutEfWyV)
 
 > **This is a beta.** Inserters and belts are complete and tested. **There are no machines** — no

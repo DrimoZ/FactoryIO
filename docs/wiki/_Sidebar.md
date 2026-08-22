@@ -10,6 +10,10 @@
 **Running it**
 - [Configuration](Configuration)
 - [FAQ](FAQ)
+- [Troubleshooting](Troubleshooting)
 
 **Extending it**
 - [Datapack Guide](Datapack-Guide)
+
+**Elsewhere**
+- [Community](Community)
