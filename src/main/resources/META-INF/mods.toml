@@ -17,8 +17,12 @@ fast, stack, and filtering variants. Each one is defined by data rather than by 
 so additional inserters can be added by dropping a JSON file into
 config/factory_io/inserters/.
 
-Work in progress: transport belts, machines and the production chain are not
-implemented yet.
+Transport belts carry items on two lanes, curve, and hand off between blocks.
+Inserters drop onto the far lane, as in Factorio. Belts expose an inventory on every
+face, so hoppers and pipes from other mods can load and unload them.
+
+Beta: machines and the production chain are not implemented. Inserters and belts move
+items between inventories you already have.
 '''
 
 [[dependencies.factory_io]] #optional

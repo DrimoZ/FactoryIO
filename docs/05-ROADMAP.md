@@ -234,7 +234,21 @@ tourne 30 minutes sans perte d'item ni chute de TPS.
 
 ---
 
-## Phase 4 — Machines et progression (≈ 4 semaines)
+## Phase 4 — Machines et progression (≈ 4 semaines) — **ajournée**
+
+> **Reportée le 16/08/2026, décision du mainteneur** : « la Phase 4 n'a pas de sens pour
+> le moment ». Rien n'est supprimé — la spécification ci-dessous reste valable le jour où
+> elle reprendra — mais aucun travail de machine n'est engagé d'ici là.
+>
+> Ce que cela veut dire pour la version livrée : le mod est une **boîte à outils de
+> transport**, et il l'assume. Inserters et convoyeurs déplacent des items entre les
+> inventaires que le joueur a déjà, vanilla ou d'autres mods. C'est un périmètre plus
+> étroit que « Factorio dans Minecraft », mais c'est un périmètre **fini**, atteint, et
+> testé.
+>
+> La décision de périmètre non tranchée de FIO-124 — le mod produit-il son énergie ou
+> s'appuie-t-il sur Mekanism / Thermal ? — est ajournée avec le reste. Elle redevient le
+> premier point à trancher si la phase reprend.
 
 Sans cette phase, le mod reste une boîte à outils sans jeu.
 

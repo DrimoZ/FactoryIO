@@ -146,7 +146,10 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | FIO-102 | P3 | M | Sons et particules | — |
 | FIO-103 | P3 | M | Convoyeurs latéraux / rampes (si le périmètre le justifie) | — |
 
-## Épic E — Machines et progression (Phase 4)
+## Épic E — Machines et progression (Phase 4) — **ajourné**
+
+> Reporté le 16/08/2026, décision du mainteneur. Les tickets restent écrits et estimés ;
+> aucun n'est engagé. Voir [`05`](05-ROADMAP.md) §Phase 4.
 
 | ID | P | Est. | Ticket |
 |---|---|---|---|
