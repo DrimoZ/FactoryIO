@@ -70,6 +70,6 @@ public class ModItemTagsGenerator extends ItemTagsProvider {
 
     @Override
     public String getName() {
-        return "Factory'I/O Item Tags";
+        return "Factor'I/O Item Tags";
     }
 }

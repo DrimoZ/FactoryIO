@@ -10,7 +10,7 @@ performance et le rendu sont au niveau de la référence Factorio.
 Il est utile de poser la référence, parce que l'implémentation actuelle en
 diverge sur presque tous les points.
 
-| Propriété | Factorio | Factory'I/O aujourd'hui |
+| Propriété | Factorio | Factor'I/O aujourd'hui |
 |---|---|---|
 | Mouvement | bras continu, angle interpolé | 🟡 item interpolé, bras figé (FIO-060, FIO-066) |
 | Main | contient N items **visibles** | ✅ item visible en main (FIO-067) |
@@ -332,7 +332,7 @@ public void setCustomAnimations(InserterBlockEntity be, Integer id, AnimationEve
 ```
 
 Corriger dans tous les cas le fichier
-[`animated_block.animation.json`](../src/main/resources/assets/factory_io/animations/animated_block.animation.json)
+[`animated_block.animation.json`](../src/main/resources/assets/factor_io/animations/animated_block.animation.json)
 qui cible un bone `bone2` inexistant ([BUG-016](03-BUGS.md)).
 
 ### 6.2 Item tenu
@@ -443,13 +443,13 @@ les neuf modules existaient déjà comme items sans le moindre usage.
 
 | Geste | Tag consulté |
 |---|---|
-| accroupi + clic droit → mémoriser | `factory_io:configurators` |
-| clic droit → appliquer | `factory_io:configurators` |
-| clic droit avec un module | `factory_io:upgrades/<axe>/<palier>` |
+| accroupi + clic droit → mémoriser | `factor_io:configurators` |
+| clic droit → appliquer | `factor_io:configurators` |
+| clic droit avec un module | `factor_io:upgrades/<axe>/<palier>` |
 
 Le mod ne teste **jamais un item précis**. Un pack, ou un autre mod, rend son propre outil ou
 composant utilisable en l'ajoutant au tag voulu — sans une ligne de Java de part et d'autre.
-C'est la mécanique déjà employée par `factory_io:inserter_fuel`, et la raison est la même :
+C'est la mécanique déjà employée par `factor_io:inserter_fuel`, et la raison est la même :
 la liste des items qui conviennent est une donnée, pas du code.
 
 Neuf tags de paliers plutôt qu'un tag par axe : le palier doit être une donnée lui aussi,

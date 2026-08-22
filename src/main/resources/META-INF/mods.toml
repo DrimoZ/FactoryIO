@@ -4,18 +4,18 @@ license="MIT"
 issueTrackerURL="https://github.com/DrimoZ/FactoryIO/issues" #optional
 
 [[mods]] #mandatory
-modId="factory_io" #mandatory
+modId="factor_io" #mandatory
 version="${file.jarVersion}" #mandatory
-displayName="Factory'I/O" #mandatory
+displayName="Factor'I/O" #mandatory
 displayURL="https://github.com/DrimoZ/FactoryIO" #optional
 authors="DrimoZ" #optional
 description='''
-Factory'I/O brings Factorio's automation mechanics to Minecraft.
+Factor'I/O brings Factorio's automation mechanics to Minecraft.
 
 Inserters move items between inventories on their own: burner, electric, long handed,
 fast, stack, and filtering variants. Each one is defined by data rather than by code,
 so additional inserters can be added by dropping a JSON file into
-config/factory_io/inserters/.
+config/factor_io/inserters/.
 
 Transport belts carry items on two lanes, curve, and hand off between blocks.
 Inserters drop onto the far lane, as in Factorio. Belts expose an inventory on every
@@ -25,21 +25,21 @@ Beta: machines and the production chain are not implemented. Inserters and belts
 items between inventories you already have.
 '''
 
-[[dependencies.factory_io]] #optional
+[[dependencies.factor_io]] #optional
     modId="forge" #mandatory
     mandatory=true #mandatory
     versionRange="[47,)" #mandatory
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.factory_io]]
+[[dependencies.factor_io]]
     modId="minecraft"
     mandatory=true
     versionRange="[1.20.1,1.21)"
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.factory_io]]
+[[dependencies.factor_io]]
     modId="geckolib"
     mandatory=true
     versionRange="[4.4,)"

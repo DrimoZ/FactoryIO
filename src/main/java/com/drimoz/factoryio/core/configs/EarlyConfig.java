@@ -29,7 +29,7 @@ public final class EarlyConfig {
 
     // Private properties
 
-    private static final String CONFIG_FILE = "factory_io/factory_io-common.toml";
+    private static final String CONFIG_FILE = "factor_io/factor_io-common.toml";
     private static final String INSERTERS_PREFIX = FactoryIO.MOD_ID + ".Inserters.";
 
     private static CommentedFileConfig config;

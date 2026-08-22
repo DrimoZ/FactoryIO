@@ -103,7 +103,7 @@ encore `null` ; en 1.18.2 `ForgeConfigSpec.ConfigValue#get()` renvoie alors
 **silencieusement la valeur par défaut**.
 
 **Impact** : toute désactivation d'un inserter par l'utilisateur est ignorée. Le
-fichier `factory_io-common.toml` est écrit mais n'a aucun effet. Aucun message
+fichier `factor_io-common.toml` est écrit mais n'a aucun effet. Aucun message
 d'erreur.
 
 **Correctif** : déplacer la construction des inserters dans un listener
@@ -123,7 +123,7 @@ ModNetworks.init();                       // ligne 54, constructeur
 event.enqueueWork(ModNetworks::init);     // ligne 94, onCommonSetup
 ```
 
-`init()` appelle `NetworkRegistry.ChannelBuilder.named(factory_io:messages).simpleChannel()`.
+`init()` appelle `NetworkRegistry.ChannelBuilder.named(factor_io:messages).simpleChannel()`.
 Vérifié dans les sources Forge 40.2.4, `NetworkRegistry.createInstance` :
 
 ```java
@@ -217,7 +217,7 @@ Sur un serveur dédié, `net.minecraft.client.Minecraft` n'existe pas
 
 **Impact** : le mod est vraisemblablement inutilisable en multijoueur dédié.
 
-**Correctif** : écrire un vrai `pack.mcmeta` dans `config/factory_io/generated/`
+**Correctif** : écrire un vrai `pack.mcmeta` dans `config/factor_io/generated/`
 au moment de la génération et laisser `PathResourcePack` le lire normalement —
 supprimer complètement cette surcharge.
 
@@ -375,11 +375,11 @@ appelé uniquement quand un **JSON utilisateur** déclare un bloc `translations`
 Sans JSON utilisateur → liste vide → **aucun `LangGenerator` enregistré** →
 aucun fichier de langue.
 
-Par ailleurs `assets/factory_io/lang/en_us.json` ne contient **que** des clés de
-tooltip : ni `block.factory_io.*`, ni `item.factory_io.*`.
+Par ailleurs `assets/factor_io/lang/en_us.json` ne contient **que** des clés de
+tooltip : ni `block.factor_io.*`, ni `item.factor_io.*`.
 
 **Impact** : à l'installation, tous les blocs et les 33 items s'affichent avec
-leur clé brute (`block.factory_io.burner_inserter`). C'est la première chose que
+leur clé brute (`block.factor_io.burner_inserter`). C'est la première chose que
 voit un utilisateur.
 
 **Correctif** : toujours enregistrer `en_us` (et `fr_fr`) comme langues de base,
@@ -497,7 +497,7 @@ inutile.
 
 ## BUG-016 — Animation ciblant un bone inexistant (S2)
 
-**Fichier** : [`animated_block.animation.json`](../src/main/resources/assets/factory_io/animations/animated_block.animation.json)
+**Fichier** : [`animated_block.animation.json`](../src/main/resources/assets/factor_io/animations/animated_block.animation.json)
 
 ```json
 "bones": { "bone2": { "position": { "vector": [0, "math.sin(query.anim_time*120)", 0] } } }
@@ -671,7 +671,7 @@ pEntity.itemStorage.setStackInSlot(FUEL_SLOT, new ItemStack(stack.getItem(), sta
 - le cas `LAVA_BUCKET` est inatteignable : `getBurnTime(lava) = 20 000 >
   fuelCapacity = 15 000`, la condition `burnTime < capacity - current` est
   toujours fausse ; et de toute façon `InserterFuelSlot.mayPlace` exige le tag
-  `factory_io:inserter_fuel` qui ne contient que `coal` et `charcoal` ;
+  `factor_io:inserter_fuel` qui ne contient que `coal` et `charcoal` ;
 - le retour d'item devrait passer par
   `ForgeHooks.getCraftingRemainingItem` / `stack.getCraftingRemainingItem()`
   plutôt que par un cas particulier codé en dur ;
@@ -708,7 +708,7 @@ Le tag est vide, et le mod ne fournit aucune clé. La rotation par outil
 ([`InserterBlock.java:85-87`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlock.java#L85))
 n'est donc accessible qu'avec un mod tiers qui peuple ce tag.
 
-**Correctif** : ajouter un item `factory_io:wrench`, ou au minimum documenter la
+**Correctif** : ajouter un item `factor_io:wrench`, ou au minimum documenter la
 dépendance et prévoir une rotation par shift-clic à main nue.
 
 ---
@@ -755,14 +755,14 @@ new CreativeModeTab("creativeTab")
 ```
 
 Clé de traduction `itemGroup.creativeTab` — nom trop générique, collision
-probable avec d'autres mods. Utiliser `factory_io` → `itemGroup.factory_io`.
+probable avec d'autres mods. Utiliser `factor_io` → `itemGroup.factor_io`.
 
 ---
 
 ## BUG-031 — `PACK_FORMAT` incohérent (S3)
 
 `PackConstants.PACK_FORMAT = 8`, alors que `pack.mcmeta` et
-`factory_io.pack.mcmeta` déclarent `"pack_format": 9`. Pour 1.18.2 : resource
+`factor_io.pack.mcmeta` déclarent `"pack_format": 9`. Pour 1.18.2 : resource
 pack = 8, data pack = 9. Une seule constante ne peut pas couvrir les deux
 `EPackType`.
 
@@ -777,15 +777,15 @@ defaultInserterBlock.setRegistryName(i.getName());   // path seul
 ```
 
 Forge complète avec le namespace du mod **actif**, c'est-à-dire toujours
-`factory_io`. Un inserter enregistré par un mod tiers (cas prévu par
+`factor_io`. Un inserter enregistré par un mod tiers (cas prévu par
 `Inserter.getModId()` et par les logs de `registerInserter`) se retrouverait donc
-sous `factory_io:`. Utiliser `setRegistryName(i.getId())`.
+sous `factor_io:`. Utiliser `setRegistryName(i.getId())`.
 
 ---
 
 ## BUG-033 — Textures d'items orphelines (S3)
 
-`assets/factory_io/textures/item/` contient `logic_science_pack.png`,
+`assets/factor_io/textures/item/` contient `logic_science_pack.png`,
 `trouvernom_science_pack.png` (nom manifestement provisoire — « trouver nom ») et
 `uranium_fuel_cell.png` sans item correspondant dans `ModItems`.
 Inversement, `used_up_uranium_fuel_cell` est enregistré sans que
@@ -894,8 +894,8 @@ sans quoi tous les inserters seront deux fois trop lents.
 
 **Fichier** : [`README.md`](../README.md)
 
-- « Le jar se trouve dans `build/libs/factory_io-1.18.2-0.0.3.jar` » : depuis le port,
-  `version = "${mc_version}-${mod_version}"` produit `factory_io-1.20.1-0.0.3.jar`.
+- « Le jar se trouve dans `build/libs/factor_io-1.18.2-0.0.3.jar` » : depuis le port,
+  `version = "${mc_version}-${mod_version}"` produit `factor_io-1.20.1-0.0.3.jar`.
 - Le tableau « Stack technique » annonce des mappings `official`, alors que
   `build.gradle` utilise Parchment — et [FIO-051](06-BACKLOG.md) documente
   précisément le retour à Parchment. `02-ETAT-DES-LIEUX.md` §1 se contredit
@@ -931,7 +931,7 @@ converti, à aucun niveau de réserve.
 
 Conséquences :
 
-- l'aspiration, elle, ne vérifie rien d'autre que le tag `factory_io:inserter_fuel` :
+- l'aspiration, elle, ne vérifie rien d'autre que le tag `factor_io:inserter_fuel` :
   l'inserter ramène l'item, le pose dans son slot de carburant… et n'en fait rien.
   **Le slot est bouché** et l'inserter s'arrête, sans message ;
 - avec l'ancienne capacité de 15 000, le seau de lave (20 000) était dans ce cas —
@@ -1064,7 +1064,7 @@ observable qu'à l'écran.
 
 ## BUG-048 — Un carburant trop riche est écrêté sans un mot (S3) ✅
 
-**Fichier** : `data/factory_io/tags/items/inserter_fuel.json` et
+**Fichier** : `data/factor_io/tags/items/inserter_fuel.json` et
 [`InserterDefaults.java`](../src/main/java/com/drimoz/factoryio/core/model/InserterDefaults.java)
 
 BUG-041 a choisi d'**écrêter** plutôt que de refuser un carburant plus riche que la réserve.

@@ -39,5 +39,5 @@ Nothing here is a pure loss, and nothing is free: the cost is always the slot yo
 Nowhere, yet. **The nine modules have no recipes** and are creative-only in this beta. The
 mechanics, the stacking and the persistence are finished and tested; the crafting is not.
 
-Modules are recognised by the `factory_io:upgrades/<axis>/<tier>` **tags**, so a pack can make its
-own item act as a Speed 2 by adding it to `factory_io:upgrades/speed/2` — no Java involved.
+Modules are recognised by the `factor_io:upgrades/<axis>/<tier>` **tags**, so a pack can make its
+own item act as a Speed 2 by adding it to `factor_io:upgrades/speed/2` — no Java involved.

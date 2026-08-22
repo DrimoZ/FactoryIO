@@ -118,7 +118,7 @@ public record InserterUpgradeTuning(
     // Interface (Datapack)
 
     /**
-     * Lecture depuis {@code data/<namespace>/factory_io/upgrades/tuning.json}.
+     * Lecture depuis {@code data/<namespace>/factor_io/upgrades/tuning.json}.
      *
      * <p>Tous les champs sont optionnels et retombent sur le barème livré : un pack qui ne
      * veut changer qu'un facteur n'écrit qu'une ligne. Un champ <b>présent mais invalide</b>

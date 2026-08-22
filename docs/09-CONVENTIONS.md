@@ -42,7 +42,7 @@ Règles :
 | Paramètre de surcharge Mojang | garder le nom Mojang (`pLevel`, `pPos`) | — |
 | Paramètre de méthode propre | `lowerCamelCase` sans préfixe | `level`, `pos` |
 | ID de registre | `snake_case` | `fast_transport_belt` |
-| Clé de traduction | `<type>.factory_io.<id>` | `block.factory_io.inserter` |
+| Clé de traduction | `<type>.factor_io.<id>` | `block.factor_io.inserter` |
 
 Le préfixe `FactoryIO` était du bruit : le package identifie déjà le mod. Il a été retiré
 en un seul commit ([FIO-046](06-BACKLOG.md)), sans aucun changement fonctionnel.

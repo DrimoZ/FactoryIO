@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "RAR",
+    " C "
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:comparator"
+    },
+    "R": {
+      "tag": "forge:dusts/redstone"
+    },
+    "A": {
+      "item": "factor_io:inserter"
+    }
+  },
+  "result": {
+    "item": "factor_io:filter_inserter"
+  }
+}

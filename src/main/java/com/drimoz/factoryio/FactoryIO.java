@@ -36,8 +36,8 @@ import software.bernie.geckolib.GeckoLib;
 @Mod(FactoryIO.MOD_ID)
 public class FactoryIO
 {
-    public static final String MOD_ID = "factory_io";
-    public static final String MOD_DISPLAY_NAME = "Factory'I/O";
+    public static final String MOD_ID = "factor_io";
+    public static final String MOD_DISPLAY_NAME = "Factor'I/O";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public FactoryIO()
@@ -70,7 +70,7 @@ public class FactoryIO
         // Génère et corrige le fichier TOML ; sa lecture effective se fait en amont
         // via EarlyConfig (cf. la javadoc de cette classe).
         ModLoadingContext.get().registerConfig(
-                ModConfig.Type.COMMON, CommonConfig.SPEC, "factory_io/factory_io-common.toml");
+                ModConfig.Type.COMMON, CommonConfig.SPEC, "factor_io/factor_io-common.toml");
 
         GeckoLib.initialize();
 
@@ -112,7 +112,7 @@ public class FactoryIO
     public void onCommonSetup(final FMLCommonSetupEvent event)
     {
         // Ne PAS ré-appeler ModNetworks.init() ici : NetworkRegistry lève une
-        // IllegalArgumentException si le canal factory_io:messages est déjà enregistré.
+        // IllegalArgumentException si le canal factor_io:messages est déjà enregistré.
         InserterRegistry.getInstance().onCommonSetup();
     }
 

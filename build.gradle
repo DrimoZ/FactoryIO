@@ -137,6 +137,12 @@ tasks.named('jar', Jar).configure {
         ])
     }
 
+    // Les GameTests et les benchmarks ne partent pas dans le jar publié : ils ne servent
+    // qu'à runGameTestServer, qui tourne sur les classes compilées et non sur le jar.
+    // Les laisser dedans embarquerait du poids mort et des @GameTestHolder que Forge
+    // scanne chez les joueurs pour ne jamais rien en faire.
+    exclude 'com/drimoz/factoryio/gametest/**'
+
     finalizedBy 'reobfJar'
 }
 

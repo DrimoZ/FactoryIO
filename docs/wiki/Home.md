@@ -1,4 +1,4 @@
-# Factory'I/O
+# Factor'I/O
 
 Factorio's inserters and transport belts, in Minecraft. Items move between the inventories you
 already have — vanilla or from any other mod — without a hopper in sight.

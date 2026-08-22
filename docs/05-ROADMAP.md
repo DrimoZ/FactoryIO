@@ -143,8 +143,8 @@ n'ont pas été lancés, et aucun test manuel n'a été fait. C'est la prochaine
 
 ### 1.3 — Chargement des définitions (DT-05)
 
-- Passer de `config/factory_io/inserters/` à un
-  `SimpleJsonResourceReloadListener` sur `data/<ns>/factory_io/inserters/`.
+- Passer de `config/factor_io/inserters/` à un
+  `SimpleJsonResourceReloadListener` sur `data/<ns>/factor_io/inserters/`.
 - Synchroniser les définitions serveur→client à la connexion.
 - Support `/reload`.
 - ⚠ **Contrainte** : les blocs et items doivent exister avant les datapacks. Le
@@ -270,7 +270,7 @@ Sans cette phase, le mod reste une boîte à outils sans jeu.
 > en créatif sans mod tiers, et **ne préjuge pas** de la décision ci-dessous : c'est
 > précisément pour ne pas la trancher par accident qu'elle n'a pas de recette.
 
-**Décision de périmètre à prendre ici** : Factory'I/O produit-il sa propre
+**Décision de périmètre à prendre ici** : Factor'I/O produit-il sa propre
 énergie, ou se repose-t-il sur Mekanism/Thermal ? La deuxième option réduit
 fortement le périmètre mais crée une dépendance. Recommandation : fournir un
 générateur à vapeur minimal pour être jouable en standalone, et rester compatible

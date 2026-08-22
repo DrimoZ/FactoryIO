@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " H ",
+    "IFI",
+    " H "
+  ],
+  "key": {
+    "H": {
+      "item": "minecraft:hopper"
+    },
+    "I": {
+      "tag": "forge:storage_blocks/iron"
+    },
+    "F": {
+      "item": "factor_io:fast_inserter"
+    }
+  },
+  "result": {
+    "item": "factor_io:stack_inserter"
+  }
+}

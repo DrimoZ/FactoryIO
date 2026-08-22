@@ -41,12 +41,12 @@ troisième parce qu'il est visible en jeu.
 | ~~FIO-012~~ | ✅ | XS | Corriger `setEnabled()` ([BUG-018](03-BUGS.md)) et supprimer `getInnerFuelCapacity()` ([BUG-019](03-BUGS.md)) | — |
 | ~~FIO-013~~ | ✅ | S | `en_us.json` et `fr_fr.json` complets : 7 blocs + 33 items + tooltips ([BUG-011](03-BUGS.md)) | aucune clé brute affichée en jeu |
 | ~~FIO-014~~ | ✅ | S | Ajuster la `VoxelShape` de l'inserter ([BUG-017](03-BUGS.md)) | le joueur passe devant une rangée d'inserters |
-| ~~FIO-015~~ | ✅ | S | Item `factory_io:wrench` + peuplement du tag ([BUG-026](03-BUGS.md)) | la rotation fonctionne sans mod tiers |
+| ~~FIO-015~~ | ✅ | S | Item `factor_io:wrench` + peuplement du tag ([BUG-026](03-BUGS.md)) | la rotation fonctionne sans mod tiers |
 | ~~FIO-016~~ | ✅ | XS | Remplir `mods.toml` (description, logo, URLs, credits) ([BUG-027](03-BUGS.md)) | plus de warning `examplemod.png` |
 | ~~FIO-017~~ | ✅ | S | Nettoyer `build.gradle` : mods de test derrière un flag, supprimer GSON (DT-13) | `runClient` sans mods tiers par défaut |
 | ~~FIO-018~~ | ✅ | S | Supprimer le code mort ([`02`](02-ETAT-DES-LIEUX.md) §6) | ~500 lignes en moins, compilation OK |
 | ~~FIO-019~~ | ✅ | XS | Passer les logs de debug en `debug` / supprimer les `System.out` ([BUG-028](03-BUGS.md)) | — |
-| ~~FIO-020~~ | ✅ | XS | Renommer la creative tab en `factory_io` ([BUG-030](03-BUGS.md)) | — |
+| ~~FIO-020~~ | ✅ | XS | Renommer la creative tab en `factor_io` ([BUG-030](03-BUGS.md)) | — |
 
 ## Épic B — Fondations (Phase 1)
 
@@ -83,13 +83,13 @@ Il ne **crée** pas d'inserter, n'en supprime pas, et ne change ni `useEnergy` n
 enregistrés au chargement du mod — bien avant qu'un datapack ne soit lu. Les rendre
 dynamiques demanderait un registre à chaud, que Minecraft ne fournit pas, et invaliderait
 les blocs déjà posés dans les mondes existants. **La liste des inserters reste donc pilotée
-par `config/factory_io/inserters/`** ; un JSON de datapack qui vise un inserter inconnu
+par `config/factor_io/inserters/`** ; un JSON de datapack qui vise un inserter inconnu
 est signalé dans le journal, pas ignoré.
 
-Le chemin scruté est `data/<namespace>/factory_io/inserters/<nom>.json`. Il n'est pas
+Le chemin scruté est `data/<namespace>/factor_io/inserters/<nom>.json`. Il n'est pas
 couvert par un test automatique — un datapack de test ne survivrait pas au monde temporaire
 que crée `runGameTestServer`. Il a été **vérifié à la main le 30/07/2026** en déposant
-temporairement un `burner_inserter.json` dans `src/main/resources/data/factory_io/`, le
+temporairement un `burner_inserter.json` dans `src/main/resources/data/factor_io/`, le
 datapack intégré du mod : le journal a confirmé « 1 réglage(s) appliqué(s) », et la vitesse
 imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de doute.
 
@@ -117,8 +117,8 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | FIO-076 | P3 | M | Retirer les inserters endormis de la liste des tickers. **Le critère d'acceptation est désormais atteint par un autre chemin** : FIO-077 a vidé le préambule qui faisait le plancher, et 1 000 endormis coûtent 0,035 ms/tick, soit 0,07 % d'un tick. Le ticket reste ouvert par honnêteté — la piste est toujours valable — mais plus aucune mesure ne le justifie. | ~~1 000 endormis < 0,2 ms/tick de façon stable~~ **atteint** |
 | ~~FIO-077~~ | ✅ | S | **Alléger le préambule du tick** : `isEnabled()` lit un champ tenu à jour par `setBlockState` au lieu d'une propriété de blockstate, et `burnFuel()` descend dans `tickWaiting`, le seul état qui engage une dépense. | 3 à 8× sur les deux régimes ; les deux budgets DT-07 tenus ([`10`](10-BENCHMARKS.md)) |
 | ~~FIO-078~~ | ✅ | S | Fusionner le triple balayage de l'éjection : la simulation relève au passage le premier slot preneur, ce qui supprime la troisième passe sur l'inventaire cible | 3 passes → 2 |
-| ~~FIO-079~~ | ✅ | M | **Configurateur** : copier les réglages d'un inserter et les reposer ailleurs, ouvert par le tag `factory_io:configurators` ([`07`](07-DESIGN-INSERTERS.md) §7) | 1 GameTest ; un item d'un autre mod ajouté au tag fonctionne à l'identique |
-| ~~FIO-080~~ | ✅ | M | **Améliorations posables** : vitesse / capacité / efficacité, 3 paliers, portées par les 9 modules qui n'avaient aucun usage. Tags `factory_io:upgrades/<axe>/<palier>`, rendues quand le bloc tombe (rejoint [`07`](07-DESIGN-INSERTERS.md) §7 « bonus de taille de main ») | 2 GameTests, 14 cas JUnit ; un module inférieur ne peut pas écraser un meilleur |
+| ~~FIO-079~~ | ✅ | M | **Configurateur** : copier les réglages d'un inserter et les reposer ailleurs, ouvert par le tag `factor_io:configurators` ([`07`](07-DESIGN-INSERTERS.md) §7) | 1 GameTest ; un item d'un autre mod ajouté au tag fonctionne à l'identique |
+| ~~FIO-080~~ | ✅ | M | **Améliorations posables** : vitesse / capacité / efficacité, 3 paliers, portées par les 9 modules qui n'avaient aucun usage. Tags `factor_io:upgrades/<axe>/<palier>`, rendues quand le bloc tombe (rejoint [`07`](07-DESIGN-INSERTERS.md) §7 « bonus de taille de main ») | 2 GameTests, 14 cas JUnit ; un module inférieur ne peut pas écraser un meilleur |
 | ~~FIO-081~~ | ✅ | S | **Audit du 31/07/2026** : 7 anomalies corrigées (BUG-042 à BUG-048), code mort résiduel supprimé, `01-ARCHITECTURE.md` et `README.md` réécrits — ils décrivaient encore le code d'avant la Phase 1 | build vert, 21 GameTests, docs conformes au code |
 | ~~FIO-074~~ | ✅ | S | Face correcte passée à la capability en éjection ([BUG-023](03-BUGS.md)) | — |
 | ~~FIO-075~~ | ✅ | S | Carburant : `shrink(1)`, `getCraftingRemainingItem`, comparaison `<=` ([BUG-024](03-BUGS.md)) | un seau de lave rend un seau |

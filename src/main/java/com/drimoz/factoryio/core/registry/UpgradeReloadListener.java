@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * Barème des améliorations apporté par un datapack (FIO-165).
  *
- * <p>Lit {@code data/<namespace>/factory_io/upgrades/tuning.json} : facteurs de vitesse et
+ * <p>Lit {@code data/<namespace>/factor_io/upgrades/tuning.json} : facteurs de vitesse et
  * d'efficacité, bonus de capacité, plafond de cumul, natures exigeant un module. Un
  * {@code /reload} suffit à les changer.
  *
@@ -39,7 +39,7 @@ import java.util.Map;
 public class UpgradeReloadListener extends SimpleJsonResourceReloadListener {
 
     /** Dossier de datapack scruté, sous {@code data/<namespace>/}. */
-    public static final String DIRECTORY = "factory_io/upgrades";
+    public static final String DIRECTORY = "factor_io/upgrades";
 
     /** Nom du seul fichier lu, sans extension. */
     public static final String FILE = "tuning";

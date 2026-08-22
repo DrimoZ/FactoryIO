@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 /**
  * Pack de ressources servi depuis la mémoire (FIO-039).
  *
- * <p>Remplace un pack adossé à {@code config/factory_io/generated}, qui écrivait ses
+ * <p>Remplace un pack adossé à {@code config/factor_io/generated}, qui écrivait ses
  * fichiers sur disque pendant le chargement du jeu. Trois défauts disparaissent avec
  * l'écriture (cf. DT-05) : les entrées/sorties bloquantes sur le thread de chargement, les
  * assets orphelins qu'aucun nettoyage ne retirait, et le dossier lui-même — un état

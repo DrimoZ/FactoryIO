@@ -71,8 +71,8 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 | Rendu de l'item transporté | ✅ | l'item est **dans la pince** : une seule grandeur pilote le bras et l'item, ils ne peuvent plus se contredire (FIO-066, FIO-067) |
 | Boîte de collision | ✅ | socle + palier calqués sur le modèle (BUG-017) |
 | Recettes | ✅ | **les 7**, en chaîne : burner → inserter → {long handed, fast, filter} → stack → stack filter (FIO-125) |
-| Copier / coller de réglages | ✅ | item `configurator`, ouvert par le tag `factory_io:configurators` |
-| Améliorations posables | 🟡 | **vrais slots** (1 à 4 selon le modèle), modules **empilables**, paliers cumulés ; natures cumulatives et débloquantes ; barème réglable ; tags `factory_io:upgrades/<axe>/<palier>` ; tombent avec le reste du contenu. **L'interface reste à faire** : les slots sont posés à un emplacement provisoire (FIO-162, FIO-071) |
+| Copier / coller de réglages | ✅ | item `configurator`, ouvert par le tag `factor_io:configurators` |
+| Améliorations posables | 🟡 | **vrais slots** (1 à 4 selon le modèle), modules **empilables**, paliers cumulés ; natures cumulatives et débloquantes ; barème réglable ; tags `factor_io:upgrades/<axe>/<palier>` ; tombent avec le reste du contenu. **L'interface reste à faire** : les slots sont posés à un emplacement provisoire (FIO-162, FIO-071) |
 | Recettes des modules | 🔴 | **aucune** : les 9 modules et le configurateur sont inaccessibles en survie (FIO-164) |
 | Rotation et cible visée | ✅ | tourner un inserter change enfin ce qu'il vise (BUG-042) |
 | Loot tables | ✅ | générées par `runData` et versionnées |
@@ -141,7 +141,7 @@ Les trois textures orphelines de BUG-033 sont traitées : les deux provisoires s
 | Noms traduits | ✅ `en_us` et `fr_fr` |
 | Recettes | ⬜ aucune |
 | Usage en jeu | 🟡 les 9 modules et le configurateur servent ; les plaques, circuits et science packs, non |
-| Tags (`forge:plates/*`, `factory_io:upgrades/*`, `factory_io:configurators`) | ✅ générés et versionnés |
+| Tags (`forge:plates/*`, `factor_io:upgrades/*`, `factor_io:configurators`) | ✅ générés et versionnés |
 
 `stone` et `stone_brick` **dupliquent** des items vanilla — à supprimer ou à
 remplacer par les tags vanilla.

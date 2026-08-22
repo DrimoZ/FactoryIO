@@ -51,7 +51,7 @@ synchronisation.
 Constructeur @Mod FactoryIO()
  1. InserterLoader.setup()
       ├── EarlyConfig.load()            ← lit le TOML à la main (voir §3)
-      ├── config/factory_io/inserters/*.json → InserterCodec
+      ├── config/factor_io/inserters/*.json → InserterCodec
       └── InserterDefaults.all()        ← le barème des 7 inserters livrés
  2. InserterRegistry.registerAll()      ← DeferredRegister : bloc, item, BE, menu
  3. ModItems.init() + ModBlocks.init() + ModCreativeTab
@@ -224,7 +224,7 @@ l'état qui engage une dépense. C'est ce qui a fait tomber le coût d'un insert
 
 ## 8. Synchronisation réseau
 
-Canal `factory_io:messages`, **deux** paquets :
+Canal `factor_io:messages`, **deux** paquets :
 
 | Paquet | Sens | Quand |
 |---|---|---|
@@ -252,9 +252,9 @@ un écouteur de `PlayerInteractEvent.RightClickBlock` :
 
 | Geste | Tag | Effet |
 |---|---|---|
-| accroupi + clic droit | `factory_io:configurators` | relève les réglages dans l'item |
-| clic droit | `factory_io:configurators` | les repose sur un autre inserter |
-| clic droit | `factory_io:upgrades/<axe>/<palier>` | pose un module, rend celui qu'il remplace |
+| accroupi + clic droit | `factor_io:configurators` | relève les réglages dans l'item |
+| clic droit | `factor_io:configurators` | les repose sur un autre inserter |
+| clic droit | `factor_io:upgrades/<axe>/<palier>` | pose un module, rend celui qu'il remplace |
 
 C'est un évènement et non un `Item#useOn` parce que les deux gestes doivent fonctionner avec
 **n'importe quel item du tag**, y compris celui d'un autre mod, qui n'appellera jamais le
@@ -342,7 +342,7 @@ séparée de `InserterUpgrades` : le calcul d'un côté, les items de l'autre.
 
 ## 13. Ce qui n'existe qu'en assets
 
-`assets/factory_io/` contient blockstates, modèles et textures pour **3 convoyeurs**, avec
+`assets/factor_io/` contient blockstates, modèles et textures pour **3 convoyeurs**, avec
 une propriété `connected` à 8 valeurs. Il n'existe aucune classe Java correspondante :
 ces fichiers sont inertes. `CommonConfig` réserve déjà `*_BELT_COOLDOWN`, jamais lus.
 Spécification : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).

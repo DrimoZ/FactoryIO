@@ -206,7 +206,7 @@ Le tableau des problèmes ci-dessous se lit désormais ainsi :
 | Écriture disque pendant `AddPackFindersEvent` | ✅ plus aucune écriture |
 | Double branchement runtime **et** `GatherDataEvent` | ✅ mêmes producteurs, seule la sortie diffère |
 
-L'ancien dossier `config/factory_io/generated` n'est **pas** supprimé automatiquement :
+L'ancien dossier `config/factor_io/generated` n'est **pas** supprimé automatiquement :
 c'est un dossier de l'utilisateur. Sa présence est signalée une fois au démarrage.
 
 <details>
@@ -215,7 +215,7 @@ c'est un dossier de l'utilisateur. Sa présence est signalée une fois au démar
 **Impact : élevé · Effort : L · Quand : Phase 1**
 
 Le mod lance un `DataGenerator` **pendant le chargement du jeu**, écrit dans
-`config/factory_io/generated/`, puis expose ce dossier comme resource pack et
+`config/factor_io/generated/`, puis expose ce dossier comme resource pack et
 data pack virtuels.
 
 L'idée (générer les assets des inserters définis par données) est juste. Les
@@ -246,7 +246,7 @@ problèmes tiennent à l'implémentation :
 </details>
 
 Pour les **définitions** elles-mêmes, la bonne primitive Minecraft est un
-`SimpleJsonResourceReloadListener` sur un datapack (`data/<ns>/factory_io/inserters/*.json`),
+`SimpleJsonResourceReloadListener` sur un datapack (`data/<ns>/factor_io/inserters/*.json`),
 pas un dossier `config/`. Avantages : rechargement `/reload`, synchronisation
 serveur→client automatique, packaging en modpack, surcharge par datapack.
 

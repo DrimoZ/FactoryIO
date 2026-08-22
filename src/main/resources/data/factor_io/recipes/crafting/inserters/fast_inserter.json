@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " B ",
+    "IAI",
+    " B "
+  ],
+  "key": {
+    "B": {
+      "tag": "forge:storage_blocks/redstone"
+    },
+    "I": {
+      "tag": "forge:ingots/iron"
+    },
+    "A": {
+      "item": "factor_io:inserter"
+    }
+  },
+  "result": {
+    "item": "factor_io:fast_inserter"
+  }
+}

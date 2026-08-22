@@ -1,15 +1,15 @@
 {
   "values": [
-    "factory_io:burner_inserter",
-    "factory_io:fast_inserter",
-    "factory_io:filter_inserter",
-    "factory_io:inserter",
-    "factory_io:long_handed_inserter",
-    "factory_io:stack_filter_inserter",
-    "factory_io:stack_inserter",
-    "factory_io:creative_energy_source",
-    "factory_io:transport_belt",
-    "factory_io:fast_transport_belt",
-    "factory_io:express_transport_belt"
+    "factor_io:burner_inserter",
+    "factor_io:fast_inserter",
+    "factor_io:filter_inserter",
+    "factor_io:inserter",
+    "factor_io:long_handed_inserter",
+    "factor_io:stack_filter_inserter",
+    "factor_io:stack_inserter",
+    "factor_io:creative_energy_source",
+    "factor_io:transport_belt",
+    "factor_io:fast_transport_belt",
+    "factor_io:express_transport_belt"
   ]
 }

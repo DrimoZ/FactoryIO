@@ -46,7 +46,7 @@ The **Configurator** copies everything above between machines.
 It works across inserter types, applying whatever the target can hold: settings copied from a
 filter inserter onto one without filters simply drop the filter part.
 
-The tool is recognised by the `factory_io:configurators` **tag**, so a pack can make another
+The tool is recognised by the `factor_io:configurators` **tag**, so a pack can make another
 mod's tool do the same job by adding it to the tag.
 
 > The configurator has **no recipe yet** and is creative-only in this beta.

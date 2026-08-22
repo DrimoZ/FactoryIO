@@ -1,0 +1,11 @@
+{
+  "values": [
+    "factor_io:burner_inserter",
+    "factor_io:fast_inserter",
+    "factor_io:filter_inserter",
+    "factor_io:inserter",
+    "factor_io:long_handed_inserter",
+    "factor_io:stack_filter_inserter",
+    "factor_io:stack_inserter"
+  ]
+}

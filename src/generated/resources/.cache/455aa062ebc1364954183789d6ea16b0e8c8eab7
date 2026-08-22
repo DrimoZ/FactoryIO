@@ -1,0 +1,16 @@
+// 1.20.1	2026-08-22T12:20:35.6595292	Factor'I/O Item Tags
+bb671767b65201fe930b4013d64d9a823a044eae data/factor_io/tags/items/configurators.json
+004ca1aec6ba4e6f018bc11ad2813170461edc01 data/factor_io/tags/items/inserters.json
+f04ea331715336833bce9a0e46e4854911ee6753 data/factor_io/tags/items/upgrades/capacity/1.json
+14a882aae787450404c9a9a54bc6f3a1cfe8923d data/factor_io/tags/items/upgrades/capacity/2.json
+e201048ea6f36fae265375a528988fc038861b34 data/factor_io/tags/items/upgrades/capacity/3.json
+182702ebf3be7a0a3ba9dc0d5fd8320f041e3f21 data/factor_io/tags/items/upgrades/efficiency/1.json
+95766af31b7423d2719620d44b236c4bb8f84ab4 data/factor_io/tags/items/upgrades/efficiency/2.json
+049ad6421dc8957ab68fd10c5f9b70efc6077665 data/factor_io/tags/items/upgrades/efficiency/3.json
+da73affc621a38e158ad6dc48ddf42b503371287 data/factor_io/tags/items/upgrades/speed/1.json
+9479607a468025c4207aaadee95a1ca120d9d4fc data/factor_io/tags/items/upgrades/speed/2.json
+be868d4246b39637f8f7e39587517a8f07787d47 data/factor_io/tags/items/upgrades/speed/3.json
+1e1a2f2d67f45a92a71034e9d8f124a7ebc3909a data/forge/tags/items/plates.json
+deb944f013430d7c70782f05a8a88c83dab3bc65 data/forge/tags/items/plates/copper.json
+14cb1b0acc2e14d6f21c151734abd91c775c96cc data/forge/tags/items/plates/iron.json
+3ad4dff86c548658fdc4d60342edee81c5eb6490 data/forge/tags/items/plates/steel.json

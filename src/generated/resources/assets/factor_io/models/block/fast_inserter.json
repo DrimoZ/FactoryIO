@@ -1,0 +1,6 @@
+{
+  "parent": "factor_io:block/base_energy_inserter",
+  "textures": {
+    "all": "factor_io:block/inserters/fast_inserter"
+  }
+}

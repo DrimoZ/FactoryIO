@@ -51,7 +51,7 @@ class InserterGeometryTest {
     private record Bone(String name, String parent, List<double[]> pivots, JsonArray cubes) {}
 
     private static Map<String, Bone> bonesOf(String geometry) {
-        String path = "/assets/factory_io/geo/" + geometry + ".geo.json";
+        String path = "/assets/factor_io/geo/" + geometry + ".geo.json";
 
         try (InputStream in = InserterGeometryTest.class.getResourceAsStream(path)) {
             assertNotNull(in, "géométrie introuvable sur le classpath : " + path);

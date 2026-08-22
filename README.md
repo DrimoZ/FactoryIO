@@ -1,4 +1,4 @@
-# Factory'I/O
+# Factor'I/O
 
 Factorio's inserters and transport belts, in Minecraft. Items move between the inventories you
 already have — vanilla or from any other mod — without a hopper in sight.
@@ -102,7 +102,7 @@ filter. Breaking the block returns them.
 
 ## Configuration
 
-`config/factory_io/factory_io-common.toml`:
+`config/factor_io/factor_io-common.toml`:
 
 - which of the seven inserters exist at all;
 - belt speed, in ticks per slot, per tier;
@@ -117,17 +117,17 @@ Belt speed changes apply to belts **already placed**, not only to new ones.
 ## Data-driven
 
 An inserter is a **data file, not a Java class**. Dropping a JSON into
-`config/factory_io/inserters/` gives you a new inserter: block, item, block entity, menu and
+`config/factor_io/inserters/` gives you a new inserter: block, item, block entity, menu and
 screen are built from the definition, and its models, translations, loot table and tags are
 generated in memory at resource load. No assets to draw, no code to write.
 
 A **datapack** retunes the shipped inserters live — speed, reach, hand size, costs — through
-`data/<namespace>/factory_io/inserters/<name>.json` and a `/reload`. Validation is strict and
+`data/<namespace>/factor_io/inserters/<name>.json` and a `/reload`. Validation is strict and
 refuses rather than coercing: a bad field names itself in the log instead of silently becoming a
 default.
 
 Everything the mod recognises goes through **item tags**, never a hardcoded list:
-`factory_io:configurators` and `factory_io:upgrades/<axis>/<tier>`. Another mod's wrench or
+`factor_io:configurators` and `factor_io:upgrades/<axis>/<tier>`. Another mod's wrench or
 another pack's component becomes usable by joining the tag — no Java, and the two mods never
 need to know about each other.
 
@@ -159,12 +159,12 @@ every storage mod on Forge 1.20.1. Vanilla hoppers work in both directions.
 
 **Modpacks: yes.** No permission needed, no message required, public or private, monetised or
 not, on any platform or launcher. If you are reading this to find out whether you may include
-Factory'I/O, the answer is yes and you can stop reading.
+Factor'I/O, the answer is yes and you can stop reading.
 
 **Credit** is appreciated and never required.
 
 **Forks and addons: yes**, under the MIT terms. Please do not publish a fork under the name
-*Factory'I/O* — the name is not covered by the licence, and two mods sharing one name only
+*Factor'I/O* — the name is not covered by the licence, and two mods sharing one name only
 confuses players trying to work out which one broke their world.
 
 **Contributions** are accepted under the same terms as the rest of the repository.
@@ -180,7 +180,7 @@ anything looks odd, point `JAVA_HOME` at a 17.
 ./gradlew build
 ```
 
-The jar lands in `build/libs/factory_io-1.20.1-0.3.0-beta.jar`.
+The jar lands in `build/libs/factor_io-1.20.1-0.3.0-beta.jar`.
 
 ```bash
 ./gradlew runClient

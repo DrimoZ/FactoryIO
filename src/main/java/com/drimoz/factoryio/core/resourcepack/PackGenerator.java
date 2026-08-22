@@ -33,7 +33,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * <h2>Ce qui a changé, et pourquoi</h2>
  *
- * <p>Cette classe écrivait dans {@code config/factory_io/generated}, une fois par JVM, sous
+ * <p>Cette classe écrivait dans {@code config/factor_io/generated}, une fois par JVM, sous
  * garde d'un {@code static boolean hasGenerated}. Trois conséquences, toutes traitées ici
  * (cf. DT-05) : il fallait <b>redémarrer</b> le jeu pour voir l'effet d'un JSON, les assets
  * d'un inserter supprimé restaient sur le disque indéfiniment, et la génération faisait des
@@ -58,11 +58,11 @@ public class PackGenerator {
      * <p>Les producteurs de données de Mojang raisonnent en {@link Path} ; on leur en donne
      * un, dont on ne garde que la partie relative. Rien n'est jamais écrit à cet endroit.
      */
-    private static final Path VIRTUAL_ROOT = Path.of("factory_io-generated");
+    private static final Path VIRTUAL_ROOT = Path.of("factor_io-generated");
 
     /** Ancien dossier d'écriture, conservé pour pouvoir signaler qu'il ne sert plus. */
     private static final Path LEGACY_DIR =
-            FMLPaths.CONFIGDIR.get().resolve("factory_io/generated");
+            FMLPaths.CONFIGDIR.get().resolve("factor_io/generated");
 
     private static boolean legacyDirReported = false;
 

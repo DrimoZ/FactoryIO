@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class InserterCodecTest {
 
-    private static final ResourceLocation ID = new ResourceLocation("factory_io", "test_inserter");
+    private static final ResourceLocation ID = new ResourceLocation("factor_io", "test_inserter");
 
     private static DataResult<Inserter> parse(String json) {
         JsonElement element = JsonParser.parseString(json);
@@ -96,12 +96,12 @@ class InserterCodecTest {
     void translationsAndTextureAreRead() {
         Inserter inserter = parseOrThrow("""
                 {
-                  "texture": "factory_io:block/inserters/custom",
+                  "texture": "factor_io:block/inserters/custom",
                   "translations": { "en_US": "Custom Inserter", "fr_FR": "Inserteur custom" }
                 }
                 """);
 
-        assertEquals(new ResourceLocation("factory_io", "block/inserters/custom"), inserter.getTexture());
+        assertEquals(new ResourceLocation("factor_io", "block/inserters/custom"), inserter.getTexture());
         assertEquals(2, inserter.getTranslation().asMap().size());
     }
 

@@ -4,8 +4,8 @@ Two separate mechanisms, easy to confuse:
 
 | Where | What it does |
 |---|---|
-| `config/factory_io/inserters/<name>.json` | **creates** an inserter — read once at startup |
-| `data/<namespace>/factory_io/inserters/<name>.json` | **retunes** an existing one — applied on `/reload` |
+| `config/factor_io/inserters/<name>.json` | **creates** an inserter — read once at startup |
+| `data/<namespace>/factor_io/inserters/<name>.json` | **retunes** an existing one — applied on `/reload` |
 
 A datapack tunes; it cannot create, delete or rename. The list of inserters is a config
 question, because which blocks exist has to be known before registration, long before any
@@ -13,7 +13,7 @@ datapack is read.
 
 ## The name is the file name
 
-`dense_inserter.json` declares `factory_io:dense_inserter`. There is no `name` field.
+`dense_inserter.json` declares `factor_io:dense_inserter`. There is no `name` field.
 
 ## Fields
 
@@ -47,7 +47,7 @@ describes speed, no two numbers can disagree about how fast a machine is.
 
 ## Creating an inserter
 
-`config/factory_io/inserters/dense_inserter.json`:
+`config/factor_io/inserters/dense_inserter.json`:
 
 ```json
 {
@@ -71,7 +71,7 @@ You will want a recipe, which is an ordinary datapack recipe like any other.
 
 ## Retuning a shipped inserter
 
-`data/mypack/factory_io/inserters/fast_inserter.json`:
+`data/mypack/factor_io/inserters/fast_inserter.json`:
 
 ```json
 {
@@ -101,12 +101,12 @@ Nothing the mod recognises is hardcoded:
 
 | Tag | Contains |
 |---|---|
-| `factory_io:configurators` | items that copy and paste inserter settings |
-| `factory_io:upgrades/speed/<1-3>` | modules acting as a Speed module of that tier |
-| `factory_io:upgrades/productivity/<1-3>` | likewise for capacity |
-| `factory_io:upgrades/efficiency/<1-3>` | likewise for cost |
-| `factory_io:inserter_fuel` | what a burner will accept |
-| `factory_io:wrench` | what rotates a block |
+| `factor_io:configurators` | items that copy and paste inserter settings |
+| `factor_io:upgrades/speed/<1-3>` | modules acting as a Speed module of that tier |
+| `factor_io:upgrades/productivity/<1-3>` | likewise for capacity |
+| `factor_io:upgrades/efficiency/<1-3>` | likewise for cost |
+| `factor_io:inserter_fuel` | what a burner will accept |
+| `factor_io:wrench` | what rotates a block |
 
-Adding another mod's wrench to `factory_io:wrench` makes it rotate inserters. No Java, and the
+Adding another mod's wrench to `factor_io:wrench` makes it rotate inserters. No Java, and the
 two mods never need to know about each other.

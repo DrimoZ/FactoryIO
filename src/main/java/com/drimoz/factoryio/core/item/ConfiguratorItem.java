@@ -20,17 +20,17 @@ import java.util.Optional;
  *
  * <p>L'item ne porte aucun comportement d'interaction : c'est
  * {@code InserterInteractions} qui écoute le clic droit, et il ne reconnaît pas cet item
- * mais le <b>tag</b> {@code factory_io:configurators}. Tout item d'un autre mod ajouté à ce
+ * mais le <b>tag</b> {@code factor_io:configurators}. Tout item d'un autre mod ajouté à ce
  * tag fonctionne à l'identique, sans que ni l'un ni l'autre n'ait à se connaître. Cette
  * classe n'est donc que le porteur du NBT et de l'infobulle.
  */
 public class ConfiguratorItem extends Item {
 
     /** Racine du NBT, préfixée par le mod pour ne rien écraser. */
-    public static final String SETTINGS_TAG = "factory_io:settings";
+    public static final String SETTINGS_TAG = "factor_io:settings";
 
     /** Nom de la machine d'origine, affiché dans l'infobulle. */
-    private static final String SOURCE_TAG = "factory_io:source";
+    private static final String SOURCE_TAG = "factor_io:source";
 
     public ConfiguratorItem() {
         super(new Properties().stacksTo(1));

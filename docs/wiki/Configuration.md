@@ -1,6 +1,6 @@
 # Configuration
 
-Everything lives in `config/factory_io/factory_io-common.toml`, written by Forge on first launch.
+Everything lives in `config/factor_io/factor_io-common.toml`, written by Forge on first launch.
 
 > On the **very first** launch the file does not exist yet, so defaults apply and your settings
 > take effect from the second launch onwards. This is a Forge ordering constraint: which
@@ -9,7 +9,7 @@ Everything lives in `config/factory_io/factory_io-common.toml`, written by Forge
 ## Which inserters exist
 
 ```toml
-[factory_io.Inserters]
+[factor_io.Inserters]
     burner_inserter = true
     inserter = true
     long_handed_inserter = true
@@ -25,11 +25,11 @@ wants a shorter progression.
 ## Belt speed
 
 ```toml
-[factory_io.TRANSPORT_BELTS.transport_belt]
+[factor_io.TRANSPORT_BELTS.transport_belt]
     ticks_per_slot = 4
-[factory_io.TRANSPORT_BELTS.fast_transport_belt]
+[factor_io.TRANSPORT_BELTS.fast_transport_belt]
     ticks_per_slot = 2
-[factory_io.TRANSPORT_BELTS.express_transport_belt]
+[factor_io.TRANSPORT_BELTS.express_transport_belt]
     ticks_per_slot = 1
 ```
 
@@ -45,7 +45,7 @@ Changes apply to belts **already placed**, not only to new ones.
 ## Far lane
 
 ```toml
-[factory_io.TRANSPORT_BELTS]
+[factor_io.TRANSPORT_BELTS]
     insert_on_far_lane_only = false
 ```
 

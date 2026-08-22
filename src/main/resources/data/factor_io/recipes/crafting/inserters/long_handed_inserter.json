@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " I ",
+    " A ",
+    " I "
+  ],
+  "key": {
+    "I": {
+      "tag": "forge:ingots/iron"
+    },
+    "A": {
+      "item": "factor_io:inserter"
+    }
+  },
+  "result": {
+    "item": "factor_io:long_handed_inserter"
+  }
+}

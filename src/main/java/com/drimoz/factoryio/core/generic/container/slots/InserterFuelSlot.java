@@ -11,7 +11,7 @@ import net.minecraftforge.items.SlotItemHandler;
  * Slot de carburant d'un burner inserter.
  *
  * <p>Deux conditions cumulatives : l'item doit brûler <b>et</b> appartenir au tag
- * {@code factory_io:inserter_fuel}. Le temps de combustion seul ferait accepter tout ce
+ * {@code factor_io:inserter_fuel}. Le temps de combustion seul ferait accepter tout ce
  * qui alimente un four ; le tag seul laisserait passer un item qui ne brûle pas et
  * bloquerait le slot.
  *

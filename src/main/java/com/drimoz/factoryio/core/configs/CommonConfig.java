@@ -60,7 +60,7 @@ public class CommonConfig {
 
 
     static {
-        BUILDER.comment("Factory'I/O Configuration");
+        BUILDER.comment("Factor'I/O Configuration");
         BUILDER.push(FactoryIO.MOD_ID);
 
 

@@ -45,7 +45,7 @@ The burner keeps a burn-time reserve and tops it up **from the chest it is alrea
 below a threshold. It consumes one fuel item at a time, only when the previous is spent, the way
 a vanilla furnace does.
 
-Fuel comes from the `factory_io:inserter_fuel` tag. A fuel richer than the reserve can hold is
+Fuel comes from the `factor_io:inserter_fuel` tag. A fuel richer than the reserve can hold is
 refused rather than clipped, so nothing burns away unused.
 
 ## Energy, for the rest

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "CSC",
+    " C "
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:comparator"
+    },
+    "S": {
+      "item": "factor_io:stack_inserter"
+    }
+  },
+  "result": {
+    "item": "factor_io:stack_filter_inserter"
+  }
+}

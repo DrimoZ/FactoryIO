@@ -35,6 +35,6 @@ public class ModBlockTagsGenerator extends BlockTagsProvider {
 
     @Override
     public String getName() {
-        return "Factory'I/O Block Tags";
+        return "Factor'I/O Block Tags";
     }
 }

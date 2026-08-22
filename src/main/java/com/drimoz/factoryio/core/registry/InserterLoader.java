@@ -36,9 +36,9 @@ public class InserterLoader {
     }
 
     private static void setupInsertersList() {
-        var dir = FMLPaths.CONFIGDIR.get().resolve("factory_io/inserters/").toFile();
+        var dir = FMLPaths.CONFIGDIR.get().resolve("factor_io/inserters/").toFile();
         if (!dir.exists() && dir.mkdirs()) {
-            FactoryIO.LOGGER.info("Created /config/factory_io/inserters/ directory");
+            FactoryIO.LOGGER.info("Created /config/factor_io/inserters/ directory");
         }
 
         var files = dir.listFiles((FileFilter) FileFilterUtils.suffixFileFilter(".json"));

@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * Réglages d'inserter apportés par un datapack (FIO-037).
  *
- * <p>Lit {@code data/<namespace>/factory_io/inserters/<nom>.json} et applique ce qu'il y
+ * <p>Lit {@code data/<namespace>/factor_io/inserters/<nom>.json} et applique ce qu'il y
  * trouve aux inserters déjà enregistrés. Un {@code /reload} suffit donc à changer une
  * vitesse, une portée ou un coût, sans redémarrer — là où le dossier {@code config/}
  * demandait de relancer le jeu.
@@ -31,7 +31,7 @@ import java.util.Map;
  * dynamique, ce que Minecraft ne fournit pas, et invaliderait les blocs déjà posés dans le
  * monde.
  *
- * <p>La liste des inserters reste donc pilotée par {@code config/factory_io/inserters/} et
+ * <p>La liste des inserters reste donc pilotée par {@code config/factor_io/inserters/} et
  * par {@link com.drimoz.factoryio.core.model.InserterDefaults}. Un JSON de datapack qui
  * vise un inserter inconnu, ou qui contredit un trait structurel, est signalé plutôt
  * qu'ignoré.
@@ -39,7 +39,7 @@ import java.util.Map;
 public class InserterReloadListener extends SimpleJsonResourceReloadListener {
 
     /** Dossier de datapack scruté, sous {@code data/<namespace>/}. */
-    public static final String DIRECTORY = "factory_io/inserters";
+    public static final String DIRECTORY = "factor_io/inserters";
 
     private static final Gson GSON = new Gson();
 
@@ -64,7 +64,7 @@ public class InserterReloadListener extends SimpleJsonResourceReloadListener {
         if (target == null) {
             FactoryIO.LOGGER.error(
                     "{} : aucun inserter de ce nom. Un datapack règle les inserters existants, "
-                            + "il n'en crée pas — déclarez-le dans config/factory_io/inserters/", id);
+                            + "il n'en crée pas — déclarez-le dans config/factor_io/inserters/", id);
             return;
         }
 

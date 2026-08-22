@@ -15,11 +15,11 @@ import javax.annotation.Nullable;
  * <h2>Pourquoi des tags plutôt qu'une liste d'items</h2>
  *
  * <p>Un niveau d'amélioration est décrit par un <b>tag par palier</b>
- * ({@code factory_io:upgrades/speed/2}, etc.) et non par une référence à un item précis.
+ * ({@code factor_io:upgrades/speed/2}, etc.) et non par une référence à un item précis.
  * N'importe quel pack ou mod peut donc rendre son propre composant utilisable comme
  * amélioration en l'ajoutant au tag du palier voulu, sans une ligne de Java et sans que ce
  * mod n'ait à connaître le sien. C'est la même mécanique que
- * {@code factory_io:inserter_fuel}, et la raison est la même : la liste des items qui
+ * {@code factor_io:inserter_fuel}, et la raison est la même : la liste des items qui
  * conviennent est une donnée, pas du code.
  *
  * <p>Les modules livrés avec le mod peuplent ces tags par génération de données. Ils

@@ -1,7 +1,7 @@
 # Changelog
 
-All notable changes to Factory'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the jar is named
-`factory_io-<minecraft>-<version>.jar`.
+All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the jar is named
+`factor_io-<minecraft>-<version>.jar`.
 
 ## [0.3.0-beta] — 2026-08-16
 
