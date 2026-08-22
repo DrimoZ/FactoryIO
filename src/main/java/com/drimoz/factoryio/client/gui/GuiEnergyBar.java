@@ -1,4 +1,4 @@
-package com.drimoz.factoryio.shared.gui;
+package com.drimoz.factoryio.client.gui;
 
 import com.drimoz.factoryio.shared.StringHelper;
 import net.minecraft.client.gui.Font;

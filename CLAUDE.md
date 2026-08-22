@@ -26,8 +26,8 @@ com.drimoz.factoryio
 ├── FactoryIO.java        point d'entrée @Mod
 ├── core/                 belts, inserters, model, registry, network, power, upgrade,
 │                         datagen, configs, init, item, generic, resourcepack
-├── client/               tout ce qui est Dist.CLIENT
-├── shared/               helpers et widgets
+├── client/               tout ce qui est Dist.CLIENT, y compris les widgets de GUI
+├── shared/               helpers sans dépendance au client
 └── gametest/             GameTests et benchmarks
 ```
 
@@ -36,9 +36,12 @@ La cible de la refonte (`content/`, `util/`, …) est décrite dans
 progressivement** : ne pas déplacer de packages en passant.
 
 ⚠️ La migration n'est pas terminée. `core/inserters` contient encore des classes client
-(`InserterScreen`, `InserterBlockRenderer`) et `shared/StringHelper` appelle
-`Minecraft.getInstance()` depuis un package commun. Ne pas prendre l'existant pour
-modèle sur ce point.
+— `InserterScreen`, `InserterBlockRenderer`, `InserterGeoModel` — et `core/belts`
+porte `BeltItemRenderer`. Ne pas prendre l'existant pour modèle sur ce point.
+
+`shared/` est en revanche **propre** : `StringHelper` a rendu la lecture du clavier à
+`client/ClientInput`, et les deux widgets de `shared/gui` sont partis dans `client/gui`.
+Toute réapparition d'un import `net.minecraft.client` sous `shared/` est une régression.
 
 ## Règles non négociables
 

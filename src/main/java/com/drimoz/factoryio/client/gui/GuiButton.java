@@ -1,4 +1,4 @@
-package com.drimoz.factoryio.shared.gui;
+package com.drimoz.factoryio.client.gui;
 
 import com.drimoz.factoryio.core.init.ModNetworks;
 import com.drimoz.factoryio.core.network.packet.C2SInserterSetting;
