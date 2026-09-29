@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "factor_io:crafting/inserters/burner_inserter"
+        "recipe": "factor_io:crafting/belts/transport_belt"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "factor_io:crafting/inserters/burner_inserter"
+      "factor_io:crafting/belts/transport_belt"
     ]
   },
   "sends_telemetry_event": false

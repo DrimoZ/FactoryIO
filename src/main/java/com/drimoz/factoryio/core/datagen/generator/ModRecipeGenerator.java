@@ -1,6 +1,8 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.belts.BeltTier;
+import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.init.ModTags;
 import com.drimoz.factoryio.core.model.Inserter;
@@ -49,6 +51,7 @@ public class ModRecipeGenerator extends RecipeProvider {
     @Override
     protected void buildRecipes(Consumer<FinishedRecipe> writer) {
         inserters(writer);
+        belts(writer);
         materials(writer);
         circuits(writer);
         modules(writer);
@@ -194,79 +197,131 @@ public class ModRecipeGenerator extends RecipeProvider {
                 .save(writer, recipe("crafting/tools/configurator"));
     }
 
-    // Inserters : une chaîne, chacun fabriqué à partir du précédent
+    // Inserters
 
+    /**
+     * Les recettes de Factorio 1.1, ramenées à la grille : engrenages, plaques et circuits, plus
+     * de pièces vanilla (entonnoir, comparateur, blocs de redstone). Deux écarts :
+     *
+     * <ul>
+     *   <li>le filtrant se fait à partir de l'inserter simple, pas du rapide : ici il travaille à
+     *       la vitesse de l'inserter simple, et le tirer d'un rapide ferait payer une vitesse
+     *       perdue ;</li>
+     *   <li>les quantités de l'empilable (15 engrenages, 15 circuits) sont ramenées à ce qui tient
+     *       dans une grille, en gardant l'ordre de grandeur relatif.</li>
+     * </ul>
+     */
     private void inserters(Consumer<FinishedRecipe> writer) {
+        // Factorio : 1 plaque + 1 engrenage.
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, inserter("burner_inserter"))
-                .pattern(" A ")
-                .pattern("DED")
-                .pattern("BCB")
-                .define('A', Items.HOPPER)
-                .define('B', Items.HEAVY_WEIGHTED_PRESSURE_PLATE)
-                .define('C', Items.COBBLESTONE_WALL)
-                .define('D', Tags.Items.INGOTS_COPPER)
-                .define('E', Tags.Items.DUSTS_REDSTONE)
-                .unlockedBy("has_hopper", has(Items.HOPPER))
+                .pattern("G")
+                .pattern("P")
+                .define('G', ModTags.Items.GEARS_IRON)
+                .define('P', ModTags.Items.PLATES_IRON)
+                .unlockedBy("has_iron_gear", has(ModTags.Items.GEARS_IRON))
                 .save(writer, inserterRecipe("burner_inserter"));
 
+        // Factorio : 1 circuit électronique + 1 engrenage + 1 plaque.
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, inserter("inserter"))
-                .pattern(" R ")
-                .pattern("IBI")
-                .pattern(" C ")
-                .define('R', Tags.Items.DUSTS_REDSTONE)
-                .define('I', Tags.Items.INGOTS_IRON)
-                .define('B', inserter("burner_inserter"))
-                .define('C', Tags.Items.INGOTS_COPPER)
-                .unlockedBy("has_burner_inserter", has(inserter("burner_inserter")))
+                .pattern("C")
+                .pattern("G")
+                .pattern("P")
+                .define('C', ModTags.Items.CIRCUITS_BASIC)
+                .define('G', ModTags.Items.GEARS_IRON)
+                .define('P', ModTags.Items.PLATES_IRON)
+                .unlockedBy("has_electronic_circuit", has(ModTags.Items.CIRCUITS_BASIC))
                 .save(writer, inserterRecipe("inserter"));
 
+        // Factorio : 1 inserter + 1 engrenage + 1 plaque.
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, inserter("long_handed_inserter"))
-                .pattern(" I ")
-                .pattern(" A ")
-                .pattern(" I ")
-                .define('I', Tags.Items.INGOTS_IRON)
-                .define('A', inserter("inserter"))
+                .pattern("P")
+                .pattern("I")
+                .pattern("G")
+                .define('P', ModTags.Items.PLATES_IRON)
+                .define('I', inserter("inserter"))
+                .define('G', ModTags.Items.GEARS_IRON)
                 .unlockedBy("has_inserter", has(inserter("inserter")))
                 .save(writer, inserterRecipe("long_handed_inserter"));
 
-        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, inserter("filter_inserter"))
-                .pattern(" C ")
-                .pattern("RAR")
-                .pattern(" C ")
-                .define('C', Items.COMPARATOR)
-                .define('R', Tags.Items.DUSTS_REDSTONE)
-                .define('A', inserter("inserter"))
-                .unlockedBy("has_inserter", has(inserter("inserter")))
-                .save(writer, inserterRecipe("filter_inserter"));
-
+        // Factorio : 1 inserter + 2 circuits électroniques + 2 plaques.
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, inserter("fast_inserter"))
-                .pattern(" B ")
-                .pattern("IAI")
-                .pattern(" B ")
-                .define('B', Tags.Items.STORAGE_BLOCKS_REDSTONE)
-                .define('I', Tags.Items.INGOTS_IRON)
-                .define('A', inserter("inserter"))
+                .pattern(" C ")
+                .pattern("PIP")
+                .pattern(" C ")
+                .define('C', ModTags.Items.CIRCUITS_BASIC)
+                .define('P', ModTags.Items.PLATES_IRON)
+                .define('I', inserter("inserter"))
                 .unlockedBy("has_inserter", has(inserter("inserter")))
                 .save(writer, inserterRecipe("fast_inserter"));
 
+        // Factorio : 1 rapide + 4 circuits — ici l'inserter simple, voir plus haut.
+        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, inserter("filter_inserter"))
+                .pattern(" C ")
+                .pattern("CIC")
+                .pattern(" C ")
+                .define('C', ModTags.Items.CIRCUITS_BASIC)
+                .define('I', inserter("inserter"))
+                .unlockedBy("has_inserter", has(inserter("inserter")))
+                .save(writer, inserterRecipe("filter_inserter"));
+
+        // Factorio : 1 rapide + 15 engrenages + 15 circuits + 1 circuit avancé.
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, inserter("stack_inserter"))
-                .pattern(" H ")
-                .pattern("IFI")
-                .pattern(" H ")
-                .define('H', Items.HOPPER)
-                .define('I', Tags.Items.STORAGE_BLOCKS_IRON)
+                .pattern("GCG")
+                .pattern("CFC")
+                .pattern("GAG")
+                .define('G', ModTags.Items.GEARS_IRON)
+                .define('C', ModTags.Items.CIRCUITS_BASIC)
                 .define('F', inserter("fast_inserter"))
+                .define('A', ModTags.Items.CIRCUITS_ADVANCED)
                 .unlockedBy("has_fast_inserter", has(inserter("fast_inserter")))
                 .save(writer, inserterRecipe("stack_inserter"));
 
+        // Factorio : 1 empilable + 5 circuits.
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, inserter("stack_filter_inserter"))
                 .pattern(" C ")
                 .pattern("CSC")
                 .pattern(" C ")
-                .define('C', Items.COMPARATOR)
+                .define('C', ModTags.Items.CIRCUITS_BASIC)
                 .define('S', inserter("stack_inserter"))
                 .unlockedBy("has_stack_inserter", has(inserter("stack_inserter")))
                 .save(writer, inserterRecipe("stack_filter_inserter"));
+    }
+
+    // Convoyeurs
+
+    /**
+     * Factorio : 1 plaque + 1 engrenage → 2 convoyeurs ; le rapide ajoute 5 engrenages ; l'express
+     * 10 engrenages et du lubrifiant, que la boule de slime remplace faute de chimie.
+     */
+    private void belts(Consumer<FinishedRecipe> writer) {
+        Item transport = ModBlocks.belt(BeltTier.TRANSPORT).get().asItem();
+        Item fast = ModBlocks.belt(BeltTier.FAST).get().asItem();
+        Item express = ModBlocks.belt(BeltTier.EXPRESS).get().asItem();
+
+        ShapedRecipeBuilder.shaped(RecipeCategory.TRANSPORTATION, transport, 4)
+                .pattern("PGP")
+                .define('P', ModTags.Items.PLATES_IRON)
+                .define('G', ModTags.Items.GEARS_IRON)
+                .unlockedBy("has_iron_gear", has(ModTags.Items.GEARS_IRON))
+                .save(writer, recipe("crafting/belts/transport_belt"));
+
+        ShapedRecipeBuilder.shaped(RecipeCategory.TRANSPORTATION, fast)
+                .pattern("GGG")
+                .pattern("GBG")
+                .define('G', ModTags.Items.GEARS_IRON)
+                .define('B', transport)
+                .unlockedBy("has_transport_belt", has(transport))
+                .save(writer, recipe("crafting/belts/fast_transport_belt"));
+
+        ShapedRecipeBuilder.shaped(RecipeCategory.TRANSPORTATION, express)
+                .pattern("GSG")
+                .pattern("GBG")
+                .pattern(" S ")
+                .define('G', ModTags.Items.GEARS_IRON)
+                .define('S', Tags.Items.SLIMEBALLS)
+                .define('B', fast)
+                .unlockedBy("has_fast_transport_belt", has(fast))
+                .save(writer, recipe("crafting/belts/express_transport_belt"));
     }
 
     // Inner work

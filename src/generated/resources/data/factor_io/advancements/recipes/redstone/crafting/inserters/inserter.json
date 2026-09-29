@@ -1,13 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_burner_inserter": {
+    "has_electronic_circuit": {
       "conditions": {
         "items": [
           {
-            "items": [
-              "factor_io:burner_inserter"
-            ]
+            "tag": "forge:circuits/basic"
           }
         ]
       },
@@ -22,7 +20,7 @@
   },
   "requirements": [
     [
-      "has_burner_inserter",
+      "has_electronic_circuit",
       "has_the_recipe"
     ]
   ],

@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "factor_io:fast_transport_belt"
+    },
+    "G": {
+      "tag": "forge:gears/iron"
+    },
+    "S": {
+      "tag": "forge:slimeballs"
+    }
+  },
+  "pattern": [
+    "GSG",
+    "GBG",
+    " S "
+  ],
+  "result": {
+    "item": "factor_io:express_transport_belt"
+  },
+  "show_notification": true
+}

@@ -1,20 +1,20 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "redstone",
+  "category": "misc",
   "key": {
+    "B": {
+      "item": "factor_io:transport_belt"
+    },
     "G": {
       "tag": "forge:gears/iron"
-    },
-    "P": {
-      "tag": "forge:plates/iron"
     }
   },
   "pattern": [
-    "G",
-    "P"
+    "GGG",
+    "GBG"
   ],
   "result": {
-    "item": "factor_io:burner_inserter"
+    "item": "factor_io:fast_transport_belt"
   },
   "show_notification": true
 }

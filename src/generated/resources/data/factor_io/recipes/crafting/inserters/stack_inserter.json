@@ -2,20 +2,23 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "key": {
+    "A": {
+      "tag": "forge:circuits/advanced"
+    },
+    "C": {
+      "tag": "forge:circuits/basic"
+    },
     "F": {
       "item": "factor_io:fast_inserter"
     },
-    "H": {
-      "item": "minecraft:hopper"
-    },
-    "I": {
-      "tag": "forge:storage_blocks/iron"
+    "G": {
+      "tag": "forge:gears/iron"
     }
   },
   "pattern": [
-    " H ",
-    "IFI",
-    " H "
+    "GCG",
+    "CFC",
+    "GAG"
   ],
   "result": {
     "item": "factor_io:stack_inserter"

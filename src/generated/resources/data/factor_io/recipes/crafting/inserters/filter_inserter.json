@@ -2,19 +2,16 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "key": {
-    "A": {
-      "item": "factor_io:inserter"
-    },
     "C": {
-      "item": "minecraft:comparator"
+      "tag": "forge:circuits/basic"
     },
-    "R": {
-      "tag": "forge:dusts/redstone"
+    "I": {
+      "item": "factor_io:inserter"
     }
   },
   "pattern": [
     " C ",
-    "RAR",
+    "CIC",
     " C "
   ],
   "result": {

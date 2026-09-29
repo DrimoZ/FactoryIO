@@ -2,20 +2,20 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "key": {
-    "A": {
-      "item": "factor_io:inserter"
-    },
-    "B": {
-      "tag": "forge:storage_blocks/redstone"
+    "C": {
+      "tag": "forge:circuits/basic"
     },
     "I": {
-      "tag": "forge:ingots/iron"
+      "item": "factor_io:inserter"
+    },
+    "P": {
+      "tag": "forge:plates/iron"
     }
   },
   "pattern": [
-    " B ",
-    "IAI",
-    " B "
+    " C ",
+    "PIP",
+    " C "
   ],
   "result": {
     "item": "factor_io:fast_inserter"
