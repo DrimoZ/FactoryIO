@@ -84,6 +84,35 @@ You will want a recipe, which is an ordinary datapack recipe like any other.
 untouched. Naming an inserter that does not exist logs a warning telling you to declare it in
 `config/` instead.
 
+## Retuning the upgrades
+
+`data/mypack/factor_io/upgrades/tuning.json` — one file, and only that name:
+
+```json
+{
+  "speedFactor": 0.75,
+  "efficiencyFactor": 0.75,
+  "capacityBonus": 1,
+  "maxLevel": 6,
+  "requiresModule": []
+}
+```
+
+| Field | Meaning | Default |
+|---|---|---|
+| `speedFactor` | swing duration multiplied by this, per Speed tier — in ]0, 1] | 0.75 |
+| `efficiencyFactor` | cost per swing multiplied by this, per Efficiency tier — in ]0, 1] | 0.75 |
+| `capacityBonus` | items added per swing, per Productivity tier | 1 |
+| `maxLevel` | ceiling on the summed tiers of one axis | 6 |
+| `requiresModule` | abilities that need a module to work, e.g. `["advanced_redstone"]` | none |
+
+Every field is optional. `/reload` applies it to modules already installed, and removing the
+datapack restores the shipped values. A factor of `2` is **refused**, not clamped: it multiplies a
+duration, so "twice as fast" is `0.5`.
+
+The **number of upgrade slots** is not here: it sets the size of the machine's inventory, so it
+lives in the inserter definition (`upgradeSlots`) and takes effect on the next launch.
+
 ## Validation refuses, it does not guess
 
 A malformed file is **rejected and named in the log**, never silently coerced to a default. The

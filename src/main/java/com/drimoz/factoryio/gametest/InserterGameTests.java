@@ -17,6 +17,12 @@ import com.drimoz.factoryio.core.inserters.InserterSettings;
 import com.drimoz.factoryio.core.inserters.InserterSlotLayout;
 import com.drimoz.factoryio.core.inserters.InserterState;
 import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeTuning;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeTunings;
+import com.drimoz.factoryio.core.registry.UpgradeReloadListener;
+import com.google.gson.JsonParser;
+import net.minecraft.resources.ResourceLocation;
+import java.util.Map;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.model.InserterTuning;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
@@ -1115,6 +1121,47 @@ public class InserterGameTests {
                 "Un inserter d'un monde ancien doit garder sa pleine main");
         helper.assertTrue(blockEntity.getDropLane() == InserterDropLane.AUTO,
                 "Un inserter d'un monde ancien doit laisser la bande choisir sa voie");
+
+        helper.succeed();
+    }
+
+    // Tests (Barème d'améliorations par datapack, FIO-165)
+
+    /**
+     * Un barème chargé par datapack change l'effet des modules déjà posés ; un barème invalide
+     * est refusé et laisse le barème livré (FIO-165).
+     *
+     * <p>Passe par {@code UpgradeReloadListener.load}, soit exactement ce que fait un
+     * {@code /reload}, fichier compris.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void datapackUpgradeTuningReachesPlacedInserters(GameTestHelper helper) {
+        setupChain(helper, "inserter");
+
+        InserterBlockEntity blockEntity = inserter(helper);
+        blockEntity.installUpgrade(InserterUpgradeType.SPEED, new ItemStack(ModItems.SPEED_MODULE_1.get()));
+
+        int withShippedTuning = blockEntity.getTicksPerSwing();
+        ResourceLocation file = new ResourceLocation("test", UpgradeReloadListener.FILE);
+
+        try {
+            UpgradeReloadListener.load(Map.of(file, JsonParser.parseString("{ \"speedFactor\": 0.25 }")));
+
+            helper.assertTrue(blockEntity.getTicksPerSwing() < withShippedTuning,
+                    "Le barème du datapack n'a pas accéléré le module posé : "
+                            + blockEntity.getTicksPerSwing() + " ticks, contre " + withShippedTuning);
+
+            // « Deux fois plus vite » écrit 2 : refusé, et le barème livré reste en place.
+            UpgradeReloadListener.load(Map.of(file, JsonParser.parseString("{ \"speedFactor\": 2 }")));
+
+            helper.assertTrue(InserterUpgradeTunings.current().equals(InserterUpgradeTuning.DEFAULT),
+                    "Un facteur hors de ]0, 1] a été accepté au lieu d'être refusé");
+            helper.assertTrue(blockEntity.getTicksPerSwing() == withShippedTuning,
+                    "Le refus n'a pas rendu le barème livré");
+        } finally {
+            // Le barème est partagé par tous les tests : ne pas le laisser modifié.
+            InserterUpgradeTunings.reset();
+        }
 
         helper.succeed();
     }

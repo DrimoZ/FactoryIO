@@ -26,7 +26,7 @@ troisième parce qu'il est visible en jeu.
 | ~~FIO-171~~ | ✅ | XS | **Zones exclues JEI** pour les onglets (`client/compat/jei`). Le reste de l'intégration JEI reste FIO-150. | la liste de JEI ne recouvre pas un onglet ouvert |
 | ~~FIO-164~~ | ✅ | M | **Augments atteignables** — **fait**. Chaîne de composants Factorio en recettes datagen (`ModRecipeGenerator`, qui reprend aussi les 7 inserters) : plaques au tailleur de pierre, acier au haut fourneau, engrenage et câble (nouveaux), trois circuits, neuf modules distingués par un ingrédient central, configurateur. Ingrédients en tags Forge (`plates`, `gears`, `wires`, `circuits/basic|advanced|elite`). Textures des items utiles redessinées (`tools/item-textures.js`) ; les intermédiaires sans usage sont cachés de l'onglet créatif. `RecipeGameTests` vérifie la chaîne. Le module de redstone avancé passe à FIO-172. | fabriquer et poser chaque module en survie |
 | FIO-172 | P2 | S | **Module de redstone avancé.** Sa nature existe (`InserterUpgradeType.ADVANCED_REDSTONE`), aucun item ne la porte : item, texture, tag, recette, puis verrouiller la condition redstone dans `InserterUpgradeTuning.DEFAULT` — ce qui retire aux joueurs un réglage aujourd'hui gratuit, à annoncer. | la condition redstone ne s'applique qu'avec le module posé |
-| FIO-165 | P2 | S | **Charger le barème d'améliorations par datapack.** `InserterUpgradeTuning` a son codec réseau et son bornage ; il manque le listener et la synchronisation. `InserterBlockEntity.upgradeTuning()` est déjà le point de passage unique — un seul appelant à changer. | un `/reload` change le facteur de vitesse |
+| ~~FIO-165~~ | ✅ | S | **Barème d'améliorations par datapack** — **fait** : `UpgradeReloadListener` lit `factor_io/upgrades/tuning.json`, synchronisé par `S2CInserterTunings`. Clôture : les facteurs hors de ]0, 1] sont désormais **refusés** par le codec au lieu d'être ramenés en silence, un GameTest passe par le chemin d'un `/reload`, et le format est documenté dans le wiki. | un `/reload` change le facteur de vitesse — `datapackUpgradeTuningReachesPlacedInserters` |
 | 🟡 FIO-163 | **P1** | S | **Le déplacement des items n'est pas juste.** ~~M~~ → **cause trouvée et corrigée**, reste à confirmer à l'œil. C'était bien un écart de **repère**, mais pas celui qu'on croyait : le signe de la rotation de tourelle. `GeoBlockRenderer.rotateBlock` associe WEST à **+90°** autour du même axe que celui qu'emploie `RenderUtils.rotateMatrixAroundBone`, **sans négation** — un `setRotY` positif balaie donc par la **gauche**, quand `InserterTurretPose` et `InserterCarryPath` comptent vers la **droite**. Bras et item passaient de part et d'autre de l'axe : d'accord à 0° et 180°, donc aux deux extrémités, et au plus loin à mi-course. `InserterGeoModel` nie désormais l'angle à la frontière GeckoLib. La suite était aveugle au défaut — elle vérifiait la perpendicularité à mi-course, jamais le côté ; `positiveAngleSweepsToTheRight` comble le trou (4 cas). | l'item reste dans la pince sur tout le trajet, dans les quatre orientations |
 
 ## Épic A — Débloquer (Phase 0)
@@ -229,7 +229,8 @@ Diagnostic établi en comparant le projet à un **MDK Forge 1.20.1 vierge**, une
 ✅ FIO-071, 152, 162, 167..171   refonte de l'interface
 
 ✅ FIO-164   recettes et textures des composants
-FIO-163 (validation à l'œil) → FIO-165 → FIO-172
+✅ FIO-165   barème d'améliorations par datapack
+FIO-163 (validation à l'œil) → FIO-172
 puis Épic F (FIO-150 JEI, FIO-155/158 publication), puis Épic D
 ```
 
