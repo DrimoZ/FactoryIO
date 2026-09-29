@@ -47,8 +47,12 @@ public record InserterGuiLayout(
     public static final int SLOT = 18;
     public static final int HAND_SOCKET = 26;
 
-    private static final int CONTENT_HEIGHT_WITH_FILTERS = 48;
-    private static final int CONTENT_HEIGHT = 34;
+    /**
+     * Hauteur du contenu, <b>la même pour tous les types</b> : celle d'un inserter filtrant, le
+     * plus chargé. Passer d'un inserter à l'autre ne doit pas faire sauter la fenêtre ni
+     * l'inventaire du joueur ; un inserter sans filtres laisse simplement la rangée vide.
+     */
+    private static final int CONTENT_HEIGHT = 48;
 
     // Onglets latéraux
 
@@ -68,7 +72,7 @@ public record InserterGuiLayout(
     // Interface (Fenêtre)
 
     public int contentHeight() {
-        return filterable ? CONTENT_HEIGHT_WITH_FILTERS : CONTENT_HEIGHT;
+        return CONTENT_HEIGHT;
     }
 
     public int contentBottom() {
