@@ -178,5 +178,5 @@ public record InserterGuiLayout(
     }
 
     /** Largeur de l'onglet ouvert : de quoi loger quatre modules et leur effet. */
-    public static final int AUGMENT_TAB_WIDTH = 124;
+    public static final int AUGMENT_TAB_WIDTH = 140;
 }

@@ -49,6 +49,6 @@ public final class ClientEvents {
                 InserterRegistry.getInstance().getInserters().forEach(inserter ->
                         MenuScreens.register(
                                 inserter.getMenuType().get(),
-                                InserterScreen<InserterContainer>::new)));
+                                InserterScreen::new)));
     }
 }

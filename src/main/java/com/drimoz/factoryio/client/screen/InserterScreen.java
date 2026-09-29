@@ -1,25 +1,26 @@
 package com.drimoz.factoryio.client.screen;
 
-import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.generic.container.slots.GhostSlot;
+import com.drimoz.factoryio.client.gui.GuiSprites;
+import com.drimoz.factoryio.client.gui.IconButton;
+import com.drimoz.factoryio.client.gui.SideTab;
+import com.drimoz.factoryio.client.gui.SideTabs;
+import com.drimoz.factoryio.core.generic.container.slots.InserterBufferSlot;
+import com.drimoz.factoryio.core.generic.container.slots.InserterUpgradeSlot;
+import com.drimoz.factoryio.core.init.ModNetworks;
+import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterContainer;
 import com.drimoz.factoryio.core.inserters.InserterFilterSlot;
-import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
-import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
-import com.drimoz.factoryio.core.upgrade.InserterUpgrades;
-import com.drimoz.factoryio.shared.ModUtils;
-import com.drimoz.factoryio.client.gui.GuiButton;
-import com.drimoz.factoryio.core.init.ModNetworks;
+import com.drimoz.factoryio.core.inserters.InserterGuiLayout;
 import com.drimoz.factoryio.core.network.packet.C2SInserterSetting;
-import com.drimoz.factoryio.client.gui.GuiEnergyBar;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.network.chat.CommonComponents;
+import com.drimoz.factoryio.shared.ModUtils;
+import com.drimoz.factoryio.shared.StringHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -27,180 +28,255 @@ import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InserterScreen<T extends InserterContainer> extends AbstractContainerScreen<InserterContainer> {
+/**
+ * Écran d'un inserter, recomposé (FIO-071).
+ *
+ * <p>L'ancien écran collait trois textures complètes et posait chaque widget à la main sur un
+ * fond qui ne le prévoyait pas ; le quatrième n'avait plus de place. Celui-ci se construit :
+ *
+ * <ul>
+ *   <li>une fenêtre étirable, à la taille que donne {@link InserterGuiLayout} ;</li>
+ *   <li>dans la fenêtre, le travail de la machine — alimentation, main, filtres ;</li>
+ *   <li>dans le bandeau, les bascules à deux ou trois positions — marche, animation, liste ;</li>
+ *   <li>sur les côtés, des onglets pour tout le reste — informations à gauche, améliorations,
+ *       condition redstone et réglages à droite.</li>
+ * </ul>
+ *
+ * <p>Aucune coordonnée de slot n'est écrite ici : elles viennent du layout, que le menu lit
+ * aussi. Aucune coordonnée de texture non plus : elles sont toutes dans {@link GuiSprites}.
+ *
+ * <p>Rien n'est appliqué localement. Chaque réglage part au serveur, qui fait autorité et
+ * renvoie l'état par {@code getUpdateTag} ; l'écran relit le block entity à chaque image.
+ */
+public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
 
-    // Public properties
+    /** Teinte des slots de filtre en mode tag : assez transparente pour laisser voir l'item. */
+    private static final int TAG_FILTER_TINT = 0x6033B5E5;
 
-    public static final ResourceLocation GUI_FILTER_INSERTER = new ResourceLocation(FactoryIO.MOD_ID, "textures/gui/filter_inserter_gui.png");
-    public static final ResourceLocation GUI_BURNER_INSERTER = new ResourceLocation(FactoryIO.MOD_ID, "textures/gui/burner_inserter_gui.png");
-    public static final ResourceLocation GUI_INSERTER = new ResourceLocation(FactoryIO.MOD_ID, "textures/gui/inserter_gui.png");
+    /** Largeur des infobulles longues, au-delà de laquelle elles passent à la ligne. */
+    private static final int TOOLTIP_WIDTH = 200;
 
-    /** Identifiant du bouton whitelist, partagé avec le paquet C→S. */
-    private static final int WHITELIST_BUTTON = 6;
+    private static final int LABEL_COLOUR = 0x404040;
 
-    /**
-     * Bandeau libre de la texture, entre le titre et la rangée de slots.
-     *
-     * <p>Les deux commandes de la condition redstone y sont posées avec des widgets
-     * <b>vanilla</b>, qui apportent leur propre habillage : la texture du GUI n'a aucune
-     * case libre pour de nouvelles icônes, et en ajouter demanderait de la redessiner
-     * (cf. FIO-069, FIO-070).
-     */
-    private static final int CONTROLS_Y = 18;
+    private final InserterGuiLayout gui;
+    private final List<IconButton> toggles = new ArrayList<>();
+    private final ThroughputMeter meter = new ThroughputMeter();
+    private SideTabs tabs;
 
-    // Private properties
+    public InserterScreen(InserterContainer menu, Inventory playerInventory, Component title) {
+        super(menu, playerInventory, title);
 
-    private GuiEnergyBar energyBar;
-    private GuiButton whitelistButton;
-
-    private Button redstoneModeButton;
-    private Button redstoneThresholdButton;
-    private Button animationButton;
-
-    // Life cycle
-
-    public InserterScreen(T pMenu, Inventory pPlayerInventory, Component pTitle) {
-        super(pMenu, pPlayerInventory, pTitle);
+        this.gui = menu.getGuiLayout();
+        this.imageWidth = InserterGuiLayout.WIDTH;
+        this.imageHeight = this.gui.height();
+        this.titleLabelY = InserterGuiLayout.TITLE_Y;
+        this.inventoryLabelY = this.gui.inventoryLabelY();
     }
 
     @Override
     protected void init() {
         super.init();
 
-        int left = this.getGuiLeft();
-        int top = this.getGuiTop();
+        this.toggles.clear();
+        this.tabs = new SideTabs(List.of(), null);
+        if (!getMenu().isBacked()) return;
 
-        if (getMenu().usesEnergy()) {
-            energyBar = new GuiEnergyBar(left, top, 153, 11, 12, 51, 179, 54);
-        }
+        buildToggles();
+
+        List<SideTab> sideTabs = new ArrayList<>();
+        sideTabs.add(new InserterTabs.Info(this));
+        if (this.gui.hasAugmentTab()) sideTabs.add(new InserterTabs.Augments(this));
+        if (getMenu().isAffectedByRedstone()) sideTabs.add(new InserterTabs.Redstone(this));
+        sideTabs.add(new InserterTabs.Settings(this));
+
+        this.tabs = new SideTabs(sideTabs, this.gui.hasAugmentTab() ? InserterTabs.Augments.ID : null);
+    }
+
+    /**
+     * Bascules du bandeau, alignées à droite. Une bascule est un réglage à deux ou trois
+     * positions qu'on veut changer d'un clic : elle ne mérite pas un onglet.
+     */
+    private void buildToggles() {
+        int size = InserterGuiLayout.TOGGLE_SIZE;
+
+        this.toggles.add(new IconButton(0, 0, size, size)
+                .icon(() -> blockEntity().isSwitchedOn() ? GuiSprites.Icon.POWER_ON : GuiSprites.Icon.POWER_OFF)
+                .tooltip(() -> List.of(
+                        ModUtils.tooltipComponent(blockEntity().isSwitchedOn() ? "power_on" : "power_off")
+                                .withStyle(blockEntity().isSwitchedOn() ? ChatFormatting.GREEN : ChatFormatting.RED),
+                        ModUtils.tooltipComponent("power_help").withStyle(ChatFormatting.GRAY)))
+                .onPress(() -> send(C2SInserterSetting.Setting.POWER, blockEntity().isSwitchedOn() ? 0 : 1)));
+
+        this.toggles.add(new IconButton(0, 0, size, size)
+                .icon(() -> animationIcon(blockEntity().getAnimationMode()))
+                .tooltip(() -> List.of(
+                        ModUtils.tooltipComponent("animation",
+                                ModUtils.tooltipComponent(blockEntity().getAnimationMode().translationKey())
+                                        .withStyle(ChatFormatting.AQUA)),
+                        ModUtils.tooltipComponent("animation_help").withStyle(ChatFormatting.GRAY)))
+                .onPress(() -> send(C2SInserterSetting.Setting.ANIMATION,
+                        blockEntity().getAnimationMode().next().ordinal())));
+
         if (getMenu().isFilterable()) {
-            whitelistButton = new GuiButton(left, top, 7, 30, 16, 16, 194, 0);
+            this.toggles.add(new IconButton(0, 0, size, size)
+                    .icon(() -> blockEntity().isWhitelist() ? GuiSprites.Icon.WHITELIST : GuiSprites.Icon.BLACKLIST)
+                    .tooltip(() -> {
+                        boolean whitelist = blockEntity().isWhitelist();
+                        return List.of(
+                                ModUtils.tooltipComponent(whitelist ? "whitelist" : "blacklist"),
+                                ModUtils.tooltipComponent("whitelist_switch",
+                                                ModUtils.tooltipComponent(whitelist ? "blacklist" : "whitelist")
+                                                        .withStyle(ChatFormatting.GOLD))
+                                        .withStyle(ChatFormatting.GRAY));
+                    })
+                    .onPress(() -> send(C2SInserterSetting.Setting.FILTER_MODE, blockEntity().isWhitelist() ? 0 : 1)));
         }
 
-        addRedstoneControls(left, top);
-        addAnimationControl(left, top);
+        // Alignée à droite : les positions ne se connaissent qu'une fois la rangée complète.
+        int step = size + 1;
+        int x = InserterGuiLayout.WIDTH - 7 - this.toggles.size() * step + 1;
+        for (IconButton toggle : this.toggles) {
+            toggle.movedTo(x, InserterGuiLayout.TOGGLE_Y);
+            x += step;
+        }
+    }
+
+    private static GuiSprites.Icon animationIcon(InserterAnimationMode mode) {
+        return switch (mode) {
+            case SMOOTH -> GuiSprites.Icon.ANIMATION_SMOOTH;
+            case SNAP -> GuiSprites.Icon.ANIMATION_SNAP;
+            case OFF -> GuiSprites.Icon.ANIMATION_OFF;
+        };
+    }
+
+    // Interface (pour les onglets)
+
+    InserterBlockEntity blockEntity() {
+        return getMenu().getBlockEntity();
+    }
+
+    InserterGuiLayout gui() {
+        return this.gui;
+    }
+
+    ThroughputMeter meter() {
+        return this.meter;
     }
 
     /**
-     * Bascule l'interpolation du mouvement de tourelle (FIO-161).
-     *
-     * <p>Proposée sur <b>tous</b> les inserters, contrairement aux commandes redstone : un
-     * modèle rapide sous module de vitesse tombe à deux ticks par mouvement, soit six images
-     * pour un demi-tour, quel que soit son type.
-     *
-     * <p>Troisième widget posé à la main sur une texture qui n'a pas de case pour lui — la
-     * refonte du GUI (FIO-071) devient difficile à repousser.
+     * Envoie un réglage au serveur, sans l'appliquer localement : c'est lui qui fait autorité,
+     * et une prédiction afficherait brièvement un réglage qu'il pourrait refuser.
      */
-    private void addAnimationControl(int left, int top) {
+    void send(C2SInserterSetting.Setting setting, int value) {
         if (!getMenu().isBacked()) return;
 
-        this.animationButton = addRenderableWidget(Button
-                .builder(Component.empty(), button -> toggleAnimation())
-                .bounds(left + 142, top + CONTROLS_Y, 26, 16)
-                .build());
-
-        refreshAnimationControl();
+        ModNetworks.sendToServer(new C2SInserterSetting(blockEntity().getBlockPos(), setting, value));
     }
 
-    private void refreshAnimationControl() {
-        if (this.animationButton == null || !getMenu().isBacked()) return;
-
-        this.animationButton.setMessage(ModUtils.tooltipComponent(
-                getMenu().getBlockEntity().getAnimationMode().translationKey()));
+    /** Montre ou cache les slots d'amélioration avec l'onglet qui les porte. */
+    void showUpgradeSlots(boolean shown) {
+        for (Slot slot : getMenu().slots) {
+            if (slot instanceof InserterUpgradeSlot upgrade) upgrade.setShown(shown);
+        }
     }
 
-    private void toggleAnimation() {
-        if (!getMenu().isBacked()) return;
-
-        send(C2SInserterSetting.Setting.ANIMATION,
-                getMenu().getBlockEntity().getAnimationMode().next().ordinal());
+    /** Rectangles occupés par les onglets, pour JEI (FIO-171). */
+    public List<Rect2i> getExtraAreas() {
+        return this.tabs == null ? List.of() : this.tabs.areas();
     }
 
-    /**
-     * Ajoute les deux commandes de la condition redstone.
-     *
-     * <p>Un inserter qui ne réagit pas au redstone n'en reçoit aucune : lui proposer un
-     * réglage sans effet serait pire que de ne rien proposer.
-     */
-    private void addRedstoneControls(int left, int top) {
-        if (!getMenu().isAffectedByRedstone() || !getMenu().isBacked()) return;
+    // Interface (Cycle)
 
-        this.redstoneModeButton = addRenderableWidget(Button
-                .builder(Component.empty(), button -> cycleRedstoneMode())
-                .bounds(left + 28, top + CONTROLS_Y, 76, 16)
-                .build());
+    @Override
+    protected void containerTick() {
+        super.containerTick();
 
-        this.redstoneThresholdButton = addRenderableWidget(Button
-                .builder(Component.empty(), button -> cycleRedstoneThreshold())
-                .bounds(left + 108, top + CONTROLS_Y, 34, 16)
-                .build());
-
-        refreshRedstoneControls();
-    }
-
-    /** Aligne les libellés des boutons sur l'état réel de l'inserter. */
-    private void refreshRedstoneControls() {
-        if (this.redstoneModeButton == null || !getMenu().isBacked()) return;
-
-        InserterRedstoneCondition condition = getMenu().getBlockEntity().getConfiguredRedstoneCondition();
-
-        this.redstoneModeButton.setMessage(
-                ModUtils.tooltipComponent(condition.mode().translationKey()));
-
-        this.redstoneThresholdButton.setMessage(Component.literal(String.valueOf(condition.threshold())));
-        this.redstoneThresholdButton.active = condition.usesThreshold();
-    }
-
-    private void cycleRedstoneMode() {
-        InserterRedstoneCondition condition = getMenu().getBlockEntity().getConfiguredRedstoneCondition();
-
-        send(C2SInserterSetting.Setting.REDSTONE_MODE, condition.mode().next().ordinal());
-    }
-
-    private void cycleRedstoneThreshold() {
-        InserterRedstoneCondition condition = getMenu().getBlockEntity().getConfiguredRedstoneCondition();
-
-        send(C2SInserterSetting.Setting.REDSTONE_THRESHOLD, condition.nextThreshold().threshold());
-    }
-
-    /**
-     * Envoie le réglage au serveur, sans l'appliquer localement.
-     *
-     * <p>C'est le serveur qui fait autorité et renvoie l'état par {@code getUpdateTag} ;
-     * une prédiction locale n'avancerait à rien sinon à afficher brièvement un réglage que
-     * le serveur pourrait refuser.
-     */
-    private void send(C2SInserterSetting.Setting setting, int value) {
-        if (!getMenu().isBacked()) return;
-
-        ModNetworks.sendToServer(new C2SInserterSetting(
-                getMenu().getBlockEntity().getBlockPos(), setting, value));
+        if (this.minecraft != null && this.minecraft.level != null) {
+            this.meter.sample(this.minecraft.level.getGameTime(), getMenu().getItemsDelivered());
+        }
     }
 
     // Interface (Rendu)
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        // Le bloc a disparu sous l'écran : rien à dessiner, et le menu se ferme de
-        // lui-même au prochain stillValid (cf. BUG-020).
+        // Le bloc a disparu sous l'écran : rien à dessiner, et le menu se ferme de lui-même au
+        // prochain stillValid (cf. BUG-020).
         if (!getMenu().isBacked()) {
             this.onClose();
             return;
         }
 
         this.renderBackground(graphics);
-        this.refreshRedstoneControls();
-        this.refreshAnimationControl();
         super.render(graphics, mouseX, mouseY, partialTicks);
 
-        // Les slots en mode tag sont teintés par-dessus leur contenu : la texture de GUI
-        // est figée et n'a pas de case libre pour une icône (cf. FIO-069, FIO-071).
-        this.renderTagFilterHighlights(graphics);
+        renderTagFilterHighlights(graphics);
 
-        // Les tooltips du mod se dessinent après le rendu des slots, sinon ils passent
-        // dessous. L'ancienne version les traçait depuis renderBg.
+        // Après les slots, sinon les infobulles passent dessous.
         this.renderTooltip(graphics, mouseX, mouseY);
-        this.renderCustomTooltips(graphics, mouseX, mouseY);
+        renderWidgetTooltips(graphics, mouseX, mouseY);
+    }
+
+    @Override
+    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+        int left = this.leftPos;
+        int top = this.topPos;
+
+        // Les onglets d'abord : la fenêtre recouvre leur bord intérieur.
+        this.tabs.renderBackgrounds(graphics, left, top);
+        GuiSprites.panel(graphics, left, top, this.imageWidth, this.imageHeight);
+
+        renderPower(graphics, left, top);
+        renderHand(graphics, left, top);
+
+        for (Slot slot : getMenu().slots) {
+            // La main a son grand socle, et les slots d'onglet sont dessinés par l'onglet.
+            if (slot instanceof InserterBufferSlot || slot instanceof InserterUpgradeSlot) continue;
+
+            GuiSprites.slot(graphics, left + slot.x, top + slot.y);
+        }
+
+        for (IconButton toggle : this.toggles) toggle.render(graphics, this.font, left, top, mouseX, mouseY);
+
+        this.tabs.renderForegrounds(graphics, this.font, mouseX, mouseY);
+    }
+
+    /** Colonne de gauche : jauge d'énergie, ou flamme et slot de carburant. */
+    private void renderPower(GuiGraphics graphics, int left, int top) {
+        int capacity = getMenu().getPowerCapacity();
+        float fill = capacity > 0 ? (float) getMenu().getPowerStored() / capacity : 0f;
+
+        if (getMenu().usesEnergy()) {
+            GuiSprites.energyGauge(graphics, left + InserterGuiLayout.GAUGE_X, top + InserterGuiLayout.CONTENT_TOP,
+                    InserterGuiLayout.GAUGE_WIDTH, this.gui.gaugeHeight(), fill);
+        } else {
+            GuiSprites.flame(graphics, left + InserterGuiLayout.FLAME_X, top + InserterGuiLayout.FLAME_Y, fill);
+        }
+    }
+
+    /** Le trajet : ▶ main ▶. La main est le seul slot à grand socle — c'est ce qui bouge. */
+    private void renderHand(GuiGraphics graphics, int left, int top) {
+        GuiSprites.arrow(graphics, left + this.gui.inArrowX(), top + this.gui.arrowY());
+        GuiSprites.bigSlot(graphics, left + this.gui.handSocketX(), top + this.gui.handSocketY());
+        GuiSprites.arrow(graphics, left + this.gui.outArrowX(), top + this.gui.arrowY());
+    }
+
+    /**
+     * Le titre cède la place aux bascules plutôt que de passer dessous : un nom trop long est
+     * coupé et suffixé d'une ellipse.
+     */
+    @Override
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        int room = InserterGuiLayout.WIDTH - this.titleLabelX - 10
+                - this.toggles.size() * (InserterGuiLayout.TOGGLE_SIZE + 1);
+
+        String title = this.title.getString();
+        if (this.font.width(title) > room) {
+            title = this.font.plainSubstrByWidth(title, room - this.font.width("…")) + "…";
+        }
+
+        graphics.drawString(this.font, title, this.titleLabelX, this.titleLabelY, LABEL_COLOUR, false);
+        graphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, LABEL_COLOUR, false);
     }
 
     /** Teinte les slots de filtre dont la correspondance porte sur le tag. */
@@ -208,147 +284,82 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
         for (Slot slot : getMenu().slots) {
             if (!(slot instanceof InserterFilterSlot filter) || !filter.isTagFilter()) continue;
 
-            int x = this.getGuiLeft() + slot.x;
-            int y = this.getGuiTop() + slot.y;
-
+            int x = this.leftPos + slot.x;
+            int y = this.topPos + slot.y;
             graphics.fill(x, y, x + 16, y + 16, TAG_FILTER_TINT);
         }
     }
 
-    /** Teinte des slots en mode tag : ARGB, assez transparente pour laisser voir l'item. */
-    private static final int TAG_FILTER_TINT = 0x6033B5E5;
-
-    // Inner work (Améliorations)
-
-    /** Zone occupée par le résumé des améliorations, pour savoir quand le survol y tombe. */
-    private int upgradeSummaryX = -1;
-    private int upgradeSummaryWidth;
-
-    /**
-     * Résumé des modules posés, aligné à droite sur la ligne du titre.
-     *
-     * <p>La texture de GUI est figée et n'a aucune case libre (cf. FIO-071) : un résumé
-     * textuel sur une ligne déjà occupée par du texte est le seul emplacement qui ne
-     * demande pas de la redessiner. Le détail — et surtout le débit qui en résulte — est
-     * dans l'infobulle : c'est la grandeur avec laquelle on dimensionne une usine, et la
-     * seule façon de vérifier qu'un module sert à quelque chose.
-     */
-    @Override
-    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        super.renderLabels(graphics, mouseX, mouseY);
-
-        this.upgradeSummaryX = -1;
-
-        InserterBlockEntity blockEntity = getMenu().getBlockEntity();
-        if (blockEntity == null || blockEntity.getUpgrades().isEmpty()) return;
-
-        String summary = upgradeSummary(blockEntity.getUpgrades());
-
-        this.upgradeSummaryWidth = this.font.width(summary);
-        this.upgradeSummaryX = this.imageWidth - 8 - this.upgradeSummaryWidth;
-
-        graphics.drawString(this.font, summary, this.upgradeSummaryX, this.titleLabelY, 0x1D7C9E, false);
-    }
-
-    /** Une initiale et un palier par axe posé, par exemple {@code S2 C1}. */
-    private static String upgradeSummary(InserterUpgrades upgrades) {
-        StringBuilder summary = new StringBuilder();
-
-        for (InserterUpgradeType type : InserterUpgradeType.all()) {
-            int level = upgrades.level(type);
-            if (level <= 0) continue;
-
-            if (!summary.isEmpty()) summary.append(' ');
-            summary.append(Character.toUpperCase(type.id().charAt(0))).append(level);
-        }
-
-        return summary.toString();
-    }
-
-    /** Détail des améliorations et débit qui en résulte. */
-    private void renderUpgradeTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (this.upgradeSummaryX < 0) return;
-
-        int x = mouseX - this.getGuiLeft();
-        int y = mouseY - this.getGuiTop();
-
-        boolean hovered = x >= this.upgradeSummaryX && x <= this.upgradeSummaryX + this.upgradeSummaryWidth
-                && y >= this.titleLabelY && y <= this.titleLabelY + this.font.lineHeight;
-        if (!hovered) return;
-
-        InserterBlockEntity blockEntity = getMenu().getBlockEntity();
-        if (blockEntity == null) return;
+    private void renderWidgetTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (this.hoveredSlot != null && this.hoveredSlot.hasItem()) return;
 
         List<Component> lines = new ArrayList<>();
-        lines.add(ModUtils.tooltipComponent("upgrades").withStyle(ChatFormatting.WHITE));
 
-        for (InserterUpgradeType type : InserterUpgradeType.all()) {
-            int level = blockEntity.getUpgrades().level(type);
-            if (level <= 0) continue;
-
-            lines.add(ModUtils.tooltipComponent(type.translationKey()).withStyle(ChatFormatting.GRAY)
-                    .append(Component.literal(" " + level).withStyle(ChatFormatting.AQUA)));
+        for (IconButton toggle : this.toggles) {
+            lines.addAll(toggle.tooltipAt(this.leftPos, this.topPos, mouseX, mouseY));
         }
 
-        lines.add(ModUtils.tooltipComponent("effective_speed").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(String.format(" %.2f %s / %s",
-                        blockEntity.getItemsPerSecond(),
-                        ModUtils.tooltipString("items"),
-                        ModUtils.tooltipString("second"))).withStyle(ChatFormatting.AQUA)));
+        if (lines.isEmpty()) lines.addAll(this.tabs.tooltipAt(mouseX, mouseY));
 
-        graphics.renderComponentTooltip(this.font, lines, mouseX, mouseY);
+        if (lines.isEmpty() && isOverPower(mouseX, mouseY)) {
+            lines.add(getMenu().usesEnergy()
+                    ? StringHelper.displayEnergy(getMenu().getPowerStored(), getMenu().getPowerCapacity())
+                    : ModUtils.tooltipComponent("fuel_stored",
+                            getMenu().getPowerStored(), getMenu().getPowerCapacity()));
+        }
+
+        if (lines.isEmpty()) return;
+
+        List<FormattedCharSequence> wrapped = new ArrayList<>();
+        for (Component line : lines) wrapped.addAll(this.font.split(line, TOOLTIP_WIDTH));
+
+        graphics.renderTooltip(this.font, wrapped, mouseX, mouseY);
     }
 
-    @Override
-    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        ResourceLocation texture = backgroundTexture();
+    private boolean isOverPower(double mouseX, double mouseY) {
+        double x = mouseX - this.leftPos;
+        double y = mouseY - this.topPos;
 
-        int relX = (this.width - this.getXSize()) / 2;
-        int relY = (this.height - this.getYSize()) / 2;
+        boolean energy = getMenu().usesEnergy();
+        int x0 = energy ? InserterGuiLayout.GAUGE_X : InserterGuiLayout.FLAME_X;
+        int width = energy ? InserterGuiLayout.GAUGE_WIDTH : InserterGuiLayout.FLAME_SIZE;
+        int height = energy ? this.gui.gaugeHeight() : InserterGuiLayout.FLAME_SIZE;
 
-        // GuiGraphics.blit prend la texture en argument : plus besoin de
-        // RenderSystem.setShader / setShaderTexture.
-        graphics.blit(texture, relX, relY, 0, 0, this.getXSize(), this.getYSize());
-
-        if (getMenu().usesEnergy() && getMenu().hasEnergy()) {
-            energyBar.render(graphics, texture, getMenu().getEnergyScaled(51));
-        }
-
-        if (!getMenu().usesEnergy() && getMenu().hasFuel()) {
-            int k = getMenu().getFuelScaled(13);
-            graphics.blit(texture, relX + 80, relY + 32 + 12 - k, 176, 12 - k, 14, k + 1);
-        }
-
-        if (getMenu().isFilterable()) {
-            whitelistButton.render(graphics, texture, getMenu().getBlockEntity().isWhitelist());
-        }
+        return x >= x0 && x < x0 + width
+                && y >= InserterGuiLayout.CONTENT_TOP && y < InserterGuiLayout.CONTENT_TOP + height;
     }
 
     // Interface (Interaction)
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Bouton gauche seulement : la bascule répondait à n'importe quel bouton, molette
-        // comprise.
-        if (button == GhostSlot.LEFT_CLICK && getMenu().isFilterable() && getMenu().isBacked()) {
-            double relativeX = mouseX - this.getGuiLeft();
-            double relativeY = mouseY - this.getGuiTop();
+        if (button == 0 && getMenu().isBacked()) {
+            for (IconButton toggle : this.toggles) {
+                if (toggle.mouseClicked(this.leftPos, this.topPos, mouseX, mouseY)) return true;
+            }
 
-            boolean whitelist = getMenu().getBlockEntity().isWhitelist();
-            whitelistButton.onClick(relativeX, relativeY, getMenu().getBlockEntity().getBlockPos(),
-                    WHITELIST_BUTTON, whitelist ? 0 : 1, true);
+            if (this.tabs.mouseClicked(mouseX, mouseY, button)) return true;
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
     /**
-     * Ajoute au tooltip d'un slot de filtre son mode de correspondance et les tags
-     * concernés.
+     * Un clic sur un onglet est hors de la fenêtre, et vanilla le prendrait pour un lâcher de
+     * l'item porté par le curseur.
+     */
+    @Override
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int guiLeft, int guiTop, int mouseButton) {
+        return super.hasClickedOutside(mouseX, mouseY, guiLeft, guiTop, mouseButton)
+                && !this.tabs.contains(mouseX, mouseY);
+    }
+
+    /**
+     * Ajoute au tooltip d'un slot de filtre son mode de correspondance et les tags concernés.
      *
-     * <p>Sans cela, le mode par tag serait invisible : ni la teinte ni le clic droit ne
-     * sont devinables, et la liste des tags est ce qui permet de comprendre <i>pourquoi</i>
-     * un item passe le filtre.
+     * <p>Sans cela, le mode par tag serait invisible : ni la teinte ni le clic droit ne sont
+     * devinables, et la liste des tags est ce qui permet de comprendre <i>pourquoi</i> un item
+     * passe le filtre.
      */
     @Override
     protected List<Component> getTooltipFromContainerItem(ItemStack stack) {
@@ -367,60 +378,12 @@ public class InserterScreen<T extends InserterContainer> extends AbstractContain
             if (tags.isEmpty()) {
                 lines.add(ModUtils.tooltipComponent("filter_tag_none").withStyle(ChatFormatting.RED));
             } else {
-                tags.forEach(tag -> lines.add(
-                        Component.literal(" " + tag).withStyle(ChatFormatting.DARK_AQUA)));
+                tags.forEach(tag -> lines.add(Component.literal(" " + tag).withStyle(ChatFormatting.DARK_AQUA)));
             }
         }
 
         lines.add(ModUtils.tooltipComponent("filter_tag_switch").withStyle(ChatFormatting.DARK_GRAY));
 
         return lines;
-    }
-
-    // Inner work
-
-    private ResourceLocation backgroundTexture() {
-        if (!getMenu().usesEnergy()) return GUI_BURNER_INSERTER;
-        if (getMenu().isFilterable()) return GUI_FILTER_INSERTER;
-        return GUI_INSERTER;
-    }
-
-    private void renderCustomTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
-        InserterBlockEntity blockEntity = getMenu().getBlockEntity();
-        if (blockEntity == null) return;
-
-        renderUpgradeTooltip(graphics, mouseX, mouseY);
-
-        if (getMenu().usesEnergy()) {
-            // Valeurs lues sur le menu : côté client le block entity n'est plus synchronisé
-            // en continu, c'est le ContainerData qui fait foi (cf. BUG-004).
-            energyBar.renderTooltip(graphics, this.font, mouseX, mouseY,
-                    getMenu().getPowerStored(), getMenu().getPowerCapacity(), true);
-        }
-
-        if (this.redstoneModeButton != null && this.redstoneModeButton.isHovered()) {
-            graphics.renderTooltip(this.font,
-                    this.font.split(ModUtils.tooltipComponent("redstone_help"), 180),
-                    mouseX, mouseY);
-        }
-
-        if (this.animationButton != null && this.animationButton.isHovered()) {
-            graphics.renderTooltip(this.font,
-                    this.font.split(ModUtils.tooltipComponent("animation_help"), 180),
-                    mouseX, mouseY);
-        }
-
-        if (getMenu().isFilterable()) {
-            boolean whitelist = blockEntity.isWhitelist();
-
-            List<Component> lines = new ArrayList<>();
-            lines.add(ModUtils.tooltipComponent(whitelist ? "whitelist" : "blacklist"));
-            lines.add(ModUtils.tooltipComponent("whitelist_switch").withStyle(ChatFormatting.GRAY)
-                    .append(Component.literal(" "))
-                    .append(ModUtils.tooltipComponent(whitelist ? "blacklist" : "whitelist")
-                            .withStyle(ChatFormatting.GOLD)));
-
-            whitelistButton.renderComponentTooltip(graphics, this.font, lines, mouseX, mouseY, true);
-        }
     }
 }

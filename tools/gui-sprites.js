@@ -20,7 +20,7 @@ const zlib = require("zlib");
 
 const OUT = path.join("src", "main", "resources", "assets", "factor_io", "textures", "gui", "widgets.png");
 const W = 256;
-const H = 128;
+const H = 256; // 256×256 : les blit vanilla sans taille de texture supposent ce format
 
 const pixels = new Uint8Array(W * H * 4);
 
