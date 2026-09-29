@@ -31,6 +31,16 @@ public final class BeltSettings {
 
     private static volatile int generation;
 
+    /**
+     * Valeur imposée par un GameTest, ou {@code null} pour lire la configuration.
+     *
+     * <p>Un test qui passait par {@code CommonConfig...set()} écrivait dans le fichier de
+     * configuration du joueur, et l'observateur de fichiers de Forge le rechargeait en entier dès
+     * qu'un autre test écrivait le sien : la valeur revenait en arrière au milieu du test, qui
+     * échouait une fois sur quelques-unes. Les tests passent désormais par ici, en mémoire.
+     */
+    private static volatile Boolean farLaneOnlyOverride;
+
     private BeltSettings() {}
 
     // Interface
@@ -67,9 +77,17 @@ public final class BeltSettings {
      * à la cadence.
      */
     public static boolean farLaneOnly() {
+        Boolean override = farLaneOnlyOverride;
+        if (override != null) return override;
+
         if (!CommonConfig.SPEC.isLoaded()) return false;
 
         return CommonConfig.INSERT_ON_FAR_LANE_ONLY.get();
+    }
+
+    /** Pour les GameTests seulement : impose la parité stricte, ou rend la main à la configuration ({@code null}). */
+    public static void overrideFarLaneOnly(Boolean value) {
+        farLaneOnlyOverride = value;
     }
 
     /** Numéro de génération courant : à comparer à celui qu'un convoyeur a mémorisé. */

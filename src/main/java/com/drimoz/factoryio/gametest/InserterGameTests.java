@@ -3,9 +3,9 @@ package com.drimoz.factoryio.gametest;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
+import com.drimoz.factoryio.core.belts.BeltSettings;
 import com.drimoz.factoryio.core.belts.BeltTier;
 import com.drimoz.factoryio.core.belts.BeltTransport;
-import com.drimoz.factoryio.core.configs.CommonConfig;
 import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
@@ -533,7 +533,8 @@ public class InserterGameTests {
 
         container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, 8));
 
-        CommonConfig.INSERT_ON_FAR_LANE_ONLY.set(true);
+        // En mémoire et non par la configuration : voir BeltSettings.overrideFarLaneOnly.
+        BeltSettings.overrideFarLaneOnly(true);
 
         helper.startSequence()
                 // La voie lointaine se remplit d'abord, comme sans le réglage.
@@ -546,7 +547,7 @@ public class InserterGameTests {
                     int near = beltLane(helper, BeltTransport.LEFT);
 
                     // Remis avant l'assertion : un échec ne doit pas contaminer les autres tests.
-                    CommonConfig.INSERT_ON_FAR_LANE_ONLY.set(false);
+                    BeltSettings.overrideFarLaneOnly(null);
 
                     helper.assertTrue(near == 0,
                             "L'inserter s'est rabattu sur la voie proche malgré la parité stricte : " + near);
