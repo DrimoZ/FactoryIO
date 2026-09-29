@@ -16,7 +16,7 @@ JUnit 5.
 ./gradlew runData               # régénère src/generated/resources — à committer
 ./gradlew runClient             # client de dev
 ./gradlew runServer             # serveur dédié — le seul qui révèle les fuites client
-./gradlew runClient -PwithTestMods   # avec JEI chargé (lent)
+./gradlew runClient -PwithTestMods   # avec JEI et Jade chargés (lent)
 ```
 
 ## Structure
