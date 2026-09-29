@@ -140,10 +140,25 @@ public record InserterUpgradeTuning(
             },
             InserterUpgradeType::id);
 
+    /**
+     * Un facteur dans ]0, 1], <b>refusé</b> au-dehors plutôt que ramené dans le domaine.
+     *
+     * <p>Le constructeur borne aussi, mais en silence : c'est un filet pour le code, pas une
+     * validation de données. Un datapack qui écrit {@code 2} pour « deux fois plus vite » doit
+     * apprendre que le facteur multiplie une durée, pas voir son module rendu inopérant sans un
+     * mot.
+     */
+    private static final Codec<Double> FACTOR = Codec.DOUBLE.flatXmap(
+            factor -> factor > 0D && factor <= 1D
+                    ? DataResult.success(factor)
+                    : DataResult.error(() -> "facteur hors de ]0, 1] : " + factor
+                            + " — il multiplie une durée ou un coût, 0.75 veut dire « 25 % de moins »"),
+            DataResult::success);
+
     public static final Codec<InserterUpgradeTuning> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            StrictCodecs.optional(Codec.DOUBLE, "speedFactor", DEFAULT.speedFactor())
+            StrictCodecs.optional(FACTOR, "speedFactor", DEFAULT.speedFactor())
                     .forGetter(InserterUpgradeTuning::speedFactor),
-            StrictCodecs.optional(Codec.DOUBLE, "efficiencyFactor", DEFAULT.efficiencyFactor())
+            StrictCodecs.optional(FACTOR, "efficiencyFactor", DEFAULT.efficiencyFactor())
                     .forGetter(InserterUpgradeTuning::efficiencyFactor),
             StrictCodecs.optional(ExtraCodecs.NON_NEGATIVE_INT, "capacityBonus", DEFAULT.capacityBonus())
                     .forGetter(InserterUpgradeTuning::capacityBonus),

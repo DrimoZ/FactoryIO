@@ -52,14 +52,22 @@ public class UpgradeReloadListener extends SimpleJsonResourceReloadListener {
 
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> files, ResourceManager manager, ProfilerFiller profiler) {
+        load(files);
+    }
+
+    /**
+     * Ce que fait un {@code /reload}, sans le gestionnaire de ressources : les GameTests
+     * l'appellent directement avec un fichier écrit à la main.
+     */
+    public static void load(Map<ResourceLocation, JsonElement> files) {
         // Repartir du barème livré : un datapack retiré doit rendre au jeu ce qu'il était, et
         // non laisser en place la dernière valeur appliquée.
         InserterUpgradeTunings.reset();
 
-        files.forEach(this::applyOne);
+        files.forEach(UpgradeReloadListener::applyOne);
     }
 
-    private void applyOne(ResourceLocation id, JsonElement json) {
+    private static void applyOne(ResourceLocation id, JsonElement json) {
         if (!FILE.equals(id.getPath())) {
             FactoryIO.LOGGER.error(
                     "{} : le barème des améliorations se déclare dans « {}/{}.json » et nulle part "
