@@ -137,6 +137,7 @@
   "tooltip.factor_io.value_blocks": "%s bloc(s)",
   "tooltip.factor_io.value_energy": "%s FE",
   "tooltip.factor_io.value_energy_per_swing": "%s FE par mouvement",
+  "tooltip.factor_io.value_energy_per_tick": "%s FE/t au travail",
   "tooltip.factor_io.value_fuel_per_swing": "%s de combustible par mouvement",
   "tooltip.factor_io.value_items": "%s item(s)",
   "tooltip.factor_io.value_items_per_second": "%s items/s",
