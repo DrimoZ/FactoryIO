@@ -28,6 +28,8 @@ public class InserterContainer extends BaseMenu {
 
     private final InserterSlotLayout LAYOUT;
 
+    private final InserterGuiLayout GUI;
+
     private final InserterBlockEntity BLOCK_ENTITY;
 
     private final Inserter inserter;
@@ -59,6 +61,34 @@ public class InserterContainer extends BaseMenu {
         @Override
         public int getCount() {
             return syncedPower.length;
+        }
+    };
+
+    /**
+     * Compteur d'items livrés, tronqué à 16 bits (FIO-170).
+     *
+     * <p>Seules les différences entre deux lectures servent — l'écran en tire un débit — et
+     * elles restent justes modulo 65 536 : aucun inserter n'en livre autant en une seconde.
+     * Comme la réserve, la valeur ne part que si elle change, et seulement vers qui regarde.
+     */
+    private int syncedDelivered;
+
+    private final ContainerData statsData = new ContainerData() {
+        @Override
+        public int get(int index) {
+            if (!isServerSide()) return syncedDelivered;
+
+            return BLOCK_ENTITY.getItemsDelivered() & 0xFFFF;
+        }
+
+        @Override
+        public void set(int index, int value) {
+            syncedDelivered = value;
+        }
+
+        @Override
+        public int getCount() {
+            return 1;
         }
     };
 
@@ -104,12 +134,13 @@ public class InserterContainer extends BaseMenu {
 
         this.LAYOUT = BLOCK_ENTITY != null ? BLOCK_ENTITY.LAYOUT : InserterSlotLayout.of(inserterData);
         this.TE_INVENTORY_SLOT_COUNT = LAYOUT.size();
+        this.GUI = InserterGuiLayout.of(inserterData);
 
         // checkContainerSize validait l'inventaire du JOUEUR contre le nombre de slots de
         // la machine : l'assertion passait toujours et ne testait rien (cf. BUG-034).
 
-        addPlayerInventory(pPlayerInv);
-        addPlayerHotbar(pPlayerInv);
+        addPlayerInventory(pPlayerInv, GUI.inventoryY());
+        addPlayerHotbar(pPlayerInv, GUI.hotbarY());
 
         if (this.BLOCK_ENTITY == null) {
             FactoryIO.LOGGER.warn("Aucun inserter en {} : le menu s'ouvre vide et se referme", pPos);
@@ -122,27 +153,35 @@ public class InserterContainer extends BaseMenu {
         // les slots d'amélioration inutilisables dans les deux sens.
         IItemHandler handler = this.BLOCK_ENTITY.getMenuItems();
 
-        this.addSlot(new InserterBufferSlot(handler, InserterBlockEntity.BUFFER_SLOT, 124, 45));
+        // Index : InserterSlotLayout. Positions : InserterGuiLayout. Plus une coordonnée
+        // écrite ici (cf. DT-03, FIO-071).
+        this.addSlot(new InserterBufferSlot(handler, InserterBlockEntity.BUFFER_SLOT, GUI.handSlotX(), GUI.handSlotY()));
 
         if (LAYOUT.hasFuelSlot()) {
-            this.addSlot(new InserterFuelSlot(this.BLOCK_ENTITY, handler, LAYOUT.fuel(), 80, 49));
+            this.addSlot(new InserterFuelSlot(this.BLOCK_ENTITY, handler, LAYOUT.fuel(), GUI.fuelSlotX(), GUI.fuelSlotY()));
         }
 
-        // Les index viennent du layout : plus de « FILTER_SLOTS[i] - 1 » à corriger
-        // à la main selon le type d'inserter (cf. DT-03).
         for (int i = 0; i < LAYOUT.filterCount(); i++) {
-            this.addSlot(new InserterFilterSlot(this.BLOCK_ENTITY, handler, i, 8 + i * 18, 49));
+            this.addSlot(new InserterFilterSlot(this.BLOCK_ENTITY, handler, i, GUI.filterSlotX(i), GUI.filterSlotY()));
         }
 
-        // ⚠ Emplacement PROVISOIRE, en attente de la refonte du GUI. Ces slots doivent
-        // exister : le shift-clic balaie [premier slot machine, premier + LAYOUT.size()[,
-        // et un intervalle plus large que la liste des slots lèverait une exception dans
-        // le pipeline réseau. Seule leur POSITION est à revoir.
+        // Dans l'onglet des améliorations, hors de la fenêtre. Ils existent toujours — le
+        // shift-clic balaie [premier slot machine, premier + LAYOUT.size()[ — et l'écran ne
+        // fait que les montrer ou les cacher avec l'onglet.
         for (int i = 0; i < LAYOUT.upgradeCount(); i++) {
-            this.addSlot(new InserterUpgradeSlot(handler, LAYOUT.upgrade(i), 8 + i * 18, 17));
+            this.addSlot(new InserterUpgradeSlot(handler, LAYOUT.upgrade(i),
+                    InserterGuiLayout.augmentSlotX(i), InserterGuiLayout.augmentSlotY()));
         }
 
         this.addDataSlots(this.powerData);
+        this.addDataSlots(this.statsData);
+    }
+
+    /** Compteur d'items livrés, modulo 65 536 : n'en lire que les différences. */
+    public int getItemsDelivered() {
+        if (isServerSide()) return BLOCK_ENTITY.getItemsDelivered() & 0xFFFF;
+
+        return this.syncedDelivered & 0xFFFF;
     }
 
     // Interface BlockEntity
@@ -150,6 +189,16 @@ public class InserterContainer extends BaseMenu {
     @Nullable
     public InserterBlockEntity getBlockEntity() {
         return BLOCK_ENTITY;
+    }
+
+    /** Géométrie de l'écran, identique des deux côtés. */
+    public InserterGuiLayout getGuiLayout() {
+        return GUI;
+    }
+
+    /** Définition du type d'inserter, connue des deux côtés. */
+    public Inserter getInserter() {
+        return inserter;
     }
 
     /** @return {@code true} si le menu est adossé à un inserter bien réel */

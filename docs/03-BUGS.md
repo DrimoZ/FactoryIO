@@ -1033,7 +1033,7 @@ repli pour les mondes sauvegardés avant ce changement.
 
 ## BUG-046 — Le bouton whitelist réagit à n'importe quel bouton de souris (S3) ✅
 
-**Fichier** : [`InserterScreen.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterScreen.java) — `mouseClicked`
+**Fichier** : [`InserterScreen.java`](../src/main/java/com/drimoz/factoryio/client/screen/InserterScreen.java) — `mouseClicked`
 
 Le numéro du bouton n'était pas consulté : un clic droit, ou même un clic molette, sur la
 zone du bouton basculait le mode de filtrage.

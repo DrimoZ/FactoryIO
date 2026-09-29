@@ -30,7 +30,7 @@ public class PackRepositorySource implements RepositorySource {
     public void loadPacks(Consumer<Pack> consumer) {
         Pack pack = Pack.readMetaAndCreate(
                 PackConstants.PACK_ID,
-                Component.literal(PackConstants.PACK_NAME),
+                Component.translatable("pack." + FactoryIO.MOD_ID + ".generated"),
                 true,
                 this::createResources,
                 packType.getVanillaType(),

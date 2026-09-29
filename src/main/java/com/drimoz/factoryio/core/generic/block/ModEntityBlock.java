@@ -90,7 +90,6 @@ public abstract class ModEntityBlock extends BaseEntityBlock {
      */
     private void checkPoweredState(Level pLevel, BlockPos pPos, BlockState pState) {
         if (pLevel.isClientSide) return;
-        if (!isAffectedByRedstone()) return;
 
         boolean enabled = shouldBeEnabled(pLevel, pPos);
         if (enabled != pState.getValue(ENABLED)) {
@@ -110,7 +109,7 @@ public abstract class ModEntityBlock extends BaseEntityBlock {
      * la remplacent par une condition analogique réglable (cf. FIO-070).
      */
     protected boolean shouldBeEnabled(Level pLevel, BlockPos pPos) {
-        return !pLevel.hasNeighborSignal(pPos);
+        return !isAffectedByRedstone() || !pLevel.hasNeighborSignal(pPos);
     }
 
 

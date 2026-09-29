@@ -27,16 +27,25 @@ public abstract class BaseMenu extends AbstractContainerMenu {
     // Inner work (Inventory)
 
     protected void addPlayerInventory(Inventory playerInventory) {
+        addPlayerInventory(playerInventory, 84);
+    }
+
+    protected void addPlayerHotbar(Inventory playerInventory) {
+        addPlayerHotbar(playerInventory, 142);
+    }
+
+    /** @param top ordonnée de la première rangée, pour un écran dont la hauteur varie */
+    protected void addPlayerInventory(Inventory playerInventory, int top) {
         for (int i = 0; i < PLAYER_INVENTORY_ROW_COUNT; ++i) {
             for (int l = 0; l < PLAYER_INVENTORY_COLUMN_COUNT; ++l) {
-                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 8 + l * 18, 84 + i * 18));
+                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 8 + l * 18, top + i * 18));
             }
         }
     }
 
-    protected void addPlayerHotbar(Inventory playerInventory) {
+    protected void addPlayerHotbar(Inventory playerInventory, int top) {
         for (int i = 0; i < HOTBAR_SLOT_COUNT; ++i) {
-            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 142));
+            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, top));
         }
     }
 }

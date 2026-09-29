@@ -30,6 +30,9 @@ By default, an inserter falls back to the near lane once the far one is full, so
 stalls in front of a belt that visibly has room. Set `insert_on_far_lane_only` to make it wait
 instead, which is what Factorio does.
 
+Each inserter can also be told which lane to use, in the **Settings** tab of its screen: near or
+far overrides both the default and the config, for that inserter only.
+
 The rule is enforced by the belt, from the face the request arrives on. **Hoppers and pipes from
 other mods follow it too**, without knowing belts exist.
 

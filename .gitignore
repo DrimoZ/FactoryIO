@@ -29,3 +29,11 @@ forge*changelog.txt
 
 # journaux du client/serveur de dev (runClient, runData)
 logs
+
+# graphe de connaissance graphify : dérivé, volumineux, propre à chaque machine
+graphify-out/
+
+# outillage Claude Code local (skill graphify installé par machine, hooks personnels)
+.claude/CLAUDE.md
+.claude/settings.local.json
+.claude/skills/

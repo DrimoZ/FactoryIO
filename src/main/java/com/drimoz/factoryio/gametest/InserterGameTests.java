@@ -9,6 +9,7 @@ import com.drimoz.factoryio.core.configs.CommonConfig;
 import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
+import com.drimoz.factoryio.core.inserters.InserterDropLane;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
@@ -961,6 +962,8 @@ public class InserterGameTests {
         source.setRedstoneCondition(
                 new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 7));
         source.setAnimationMode(InserterAnimationMode.SNAP);
+        source.setHandSizeLimit(1);
+        source.setDropLane(InserterDropLane.FAR);
 
         InserterSettings settings = InserterSettings.load(source.captureSettings().save());
 
@@ -978,10 +981,140 @@ public class InserterGameTests {
                 "Le seuil redstone n'a pas été copié");
         helper.assertTrue(copy.getAnimationMode() == InserterAnimationMode.SNAP,
                 "Le réglage d'animation n'a pas été copié");
+        helper.assertTrue(copy.getHandSizeLimit() == 1, "La taille de main n'a pas été copiée");
+        helper.assertTrue(copy.getDropLane() == InserterDropLane.FAR, "La voie de dépose n'a pas été copiée");
 
         // Rejouer les mêmes réglages ne doit plus rien changer : c'est ce qui distingue
         // « appliqué » de « déjà comme ça » dans le retour au joueur.
         helper.assertFalse(copy.applySettings(settings), "Une application sans effet s'est déclarée effective");
+
+        helper.succeed();
+    }
+
+    // Tests (Réglages de l'écran : FIO-167 à 170)
+
+    /**
+     * Éteint, l'inserter ne bouge plus ; rallumé, il repart (FIO-167).
+     *
+     * <p>Vérifié sur la propriété {@code ENABLED} et sur les items : l'interrupteur doit passer
+     * par le même chemin que la redstone, sans quoi le rendu et le tick divergeraient.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void switchingOffStopsTheInserter(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        helper.startSequence()
+                .thenExecute(() -> inserter(helper).setSwitchedOn(false))
+                .thenWaitUntil(() -> helper.assertBlockProperty(INSERTER, InserterBlock.ENABLED, false))
+                .thenExecute(() -> container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS)))
+                .thenIdle(60)
+                .thenExecute(() -> helper.assertTrue(countIn(container(helper, TARGET)) == 0,
+                        "Un inserter éteint a déplacé des items"))
+                .thenExecute(() -> inserter(helper).setSwitchedOn(true))
+                .thenWaitUntil(() -> helper.assertTrue(countIn(container(helper, TARGET)) > 0,
+                        "L'inserter rallumé n'est pas reparti"))
+                .thenSucceed();
+    }
+
+    /** Éteint l'emporte sur la condition redstone, même quand elle serait satisfaite (FIO-167). */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void switchingOffWinsOverRedstone(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        helper.setBlock(INSERTER.above(), Blocks.REDSTONE_BLOCK);
+        inserter(helper).setRedstoneCondition(
+                new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 5));
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertBlockProperty(INSERTER, InserterBlock.ENABLED, true))
+                .thenExecute(() -> inserter(helper).setSwitchedOn(false))
+                .thenWaitUntil(() -> helper.assertBlockProperty(INSERTER, InserterBlock.ENABLED, false))
+                .thenSucceed();
+    }
+
+    /**
+     * Un plafond de main réduit chaque prise, et le compteur de livraison suit (FIO-168, 170).
+     *
+     * <p>Sur un stack inserter, qui prend plusieurs items d'un coup : plafonné à un, chaque
+     * mouvement n'en porte plus qu'un. Le compteur lu par l'écran doit compter ce qui arrive.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void handSizeLimitCapsEachSwing(GameTestHelper helper) {
+        setupChain(helper, "stack_inserter");
+        helper.setBlock(INSERTER.above(), ModBlocks.CREATIVE_ENERGY_SOURCE.get());
+
+        InserterBlockEntity blockEntity = inserter(helper);
+        helper.assertTrue(blockEntity.getMaximumItemCountPerAction() > 1,
+                "Le test suppose un inserter qui prend plusieurs items à la fois");
+
+        blockEntity.setHandSizeLimit(1);
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(inserter(helper).getState() == InserterState.SWINGING,
+                        "L'inserter n'a pas saisi"))
+                .thenExecute(() -> helper.assertTrue(inserter(helper).getHeldStack().getCount() == 1,
+                        "La prise dépasse le plafond : " + inserter(helper).getHeldStack().getCount()))
+                .thenWaitUntil(() -> helper.assertTrue(inserter(helper).getItemsDelivered() > 0,
+                        "Le compteur de livraison n'a pas bougé"))
+                .thenExecute(() -> helper.assertTrue(
+                        inserter(helper).getItemsDelivered() == countIn(container(helper, TARGET)),
+                        "Le compteur ne correspond pas à ce qui est arrivé"))
+                .thenSucceed();
+    }
+
+    /**
+     * Voie proche imposée : la voie lointaine reste vide (FIO-169).
+     *
+     * <p>Même montage que {@link #anInserterDropsOnTheFarLaneOfABelt}, résultat inverse.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void aChosenNearLaneIsUsedAlone(GameTestHelper helper) {
+        helper.setBlock(SOURCE, Blocks.CHEST);
+        helper.setBlock(TARGET, ModBlocks.belt(BeltTier.TRANSPORT).get().defaultBlockState()
+                .setValue(BeltBlock.FACING, Direction.NORTH));
+
+        helper.setBlock(INSERTER, definitionOf("burner_inserter").getBlock().get().defaultBlockState()
+                .setValue(InserterBlock.FACING, Direction.EAST));
+
+        fuelInserter(helper);
+        inserter(helper).setDropLane(InserterDropLane.NEAR);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, BeltTier.SLOTS_PER_LANE));
+
+        helper.succeedWhen(() -> {
+            helper.assertTrue(beltLane(helper, BeltTransport.LEFT) > 0, "Rien n'est arrivé sur la voie proche");
+            helper.assertTrue(beltLane(helper, BeltTransport.RIGHT) == 0,
+                    "L'inserter a déposé sur la voie lointaine malgré le choix de la proche");
+        });
+    }
+
+    /** Les trois réglages survivent à une sauvegarde, et un monde ancien garde son comportement. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void screenSettingsPersist(GameTestHelper helper) {
+        setupChain(helper, "inserter");
+
+        InserterBlockEntity blockEntity = inserter(helper);
+        blockEntity.setSwitchedOn(false);
+        blockEntity.setHandSizeLimit(3);
+        blockEntity.setDropLane(InserterDropLane.FAR);
+
+        blockEntity.load(blockEntity.saveWithoutMetadata());
+
+        helper.assertFalse(blockEntity.isSwitchedOn(), "L'interrupteur n'a pas survécu à la sauvegarde");
+        helper.assertTrue(blockEntity.getHandSizeLimit() == 3, "La taille de main n'a pas survécu à la sauvegarde");
+        helper.assertTrue(blockEntity.getDropLane() == InserterDropLane.FAR, "La voie n'a pas survécu à la sauvegarde");
+
+        // Un monde antérieur n'a aucune de ces clés : allumé, main au maximum, voie automatique.
+        blockEntity.load(new CompoundTag());
+
+        helper.assertTrue(blockEntity.isSwitchedOn(), "Un inserter d'un monde ancien doit rester allumé");
+        helper.assertTrue(blockEntity.getHandSizeLimit() == InserterBlockEntity.HAND_SIZE_MAX,
+                "Un inserter d'un monde ancien doit garder sa pleine main");
+        helper.assertTrue(blockEntity.getDropLane() == InserterDropLane.AUTO,
+                "Un inserter d'un monde ancien doit laisser la bande choisir sa voie");
 
         helper.succeed();
     }

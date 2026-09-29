@@ -65,8 +65,8 @@ public class ConfiguratorItem extends Item {
         }
 
         source(stack).ifPresent(name -> tooltip.add(
-                ModUtils.tooltipComponent("configurator_stored").withStyle(ChatFormatting.GRAY)
-                        .append(Component.literal(" ")).append(name.copy().withStyle(ChatFormatting.AQUA))));
+                ModUtils.tooltipComponent("configurator_stored", name.copy().withStyle(ChatFormatting.AQUA))
+                        .withStyle(ChatFormatting.GRAY)));
 
         if (!StringHelper.isShiftKeyDown()) {
             tooltip.add(StringHelper.getShiftInfoText());
@@ -77,14 +77,15 @@ public class ConfiguratorItem extends Item {
 
         tooltip.add(ModUtils.tooltipComponent(stored.whitelist() ? "whitelist" : "blacklist")
                 .withStyle(ChatFormatting.GRAY));
-        tooltip.add(ModUtils.tooltipComponent("configurator_filters").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(" " + stored.definedFilterCount()).withStyle(ChatFormatting.AQUA)));
+        tooltip.add(ModUtils.tooltipComponent("configurator_filters",
+                        Component.literal(String.valueOf(stored.definedFilterCount())).withStyle(ChatFormatting.AQUA))
+                .withStyle(ChatFormatting.GRAY));
 
-        tooltip.add(ModUtils.tooltipComponent(stored.redstone().mode().translationKey())
-                .withStyle(ChatFormatting.GRAY)
-                .append(stored.redstone().usesThreshold()
-                        ? Component.literal(" " + stored.redstone().threshold()).withStyle(ChatFormatting.AQUA)
-                        : Component.empty()));
+        tooltip.add((stored.redstone().usesThreshold()
+                ? ModUtils.tooltipComponent(stored.redstone().mode().translationKey() + "_value",
+                        Component.literal(String.valueOf(stored.redstone().threshold())).withStyle(ChatFormatting.AQUA))
+                : ModUtils.tooltipComponent(stored.redstone().mode().translationKey()))
+                .withStyle(ChatFormatting.GRAY));
 
         tooltip.add(ModUtils.tooltipComponent("configurator_help").withStyle(ChatFormatting.DARK_GRAY));
     }

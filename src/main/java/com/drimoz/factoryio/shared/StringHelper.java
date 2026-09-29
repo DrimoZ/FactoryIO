@@ -19,21 +19,18 @@ public final class StringHelper {
     public static Component displayEnergy(int energy, int capacity) {
         NumberFormat format = DecimalFormat.getNumberInstance();
 
-        return Component.literal(normalize(format.format(energy))).withStyle(ChatFormatting.GOLD)
-                .append(Component.literal(" / ").withStyle(ChatFormatting.WHITE))
-                .append(Component.literal(normalize(format.format(capacity))).withStyle(ChatFormatting.RED))
-                .append(Component.literal(" ").withStyle(ChatFormatting.DARK_RED)
-                        .append(ModUtils.tooltipComponent("energy_name")));
+        return ModUtils.tooltipComponent("energy_stored",
+                Component.literal(normalize(format.format(energy))).withStyle(ChatFormatting.GOLD),
+                Component.literal(normalize(format.format(capacity))).withStyle(ChatFormatting.RED));
     }
 
     // Interface (Tooltips)
 
     public static Component getShiftInfoText() {
-        MutableComponent hold = ModUtils.tooltipComponent("hold").withStyle(ChatFormatting.GRAY);
-        MutableComponent shift = Component.literal(" [Shift] ").withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC);
-        MutableComponent details = ModUtils.tooltipComponent("for_details").withStyle(ChatFormatting.GRAY);
+        MutableComponent shift = ModUtils.tooltipComponent("key_shift")
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC);
 
-        return hold.append(shift).append(details);
+        return ModUtils.tooltipComponent("hold_for_details", shift).withStyle(ChatFormatting.GRAY);
     }
 
     // Interface (Entrées clavier)

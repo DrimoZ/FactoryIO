@@ -383,22 +383,35 @@ combinateurs). C'est un mod à lui seul.
 
 ---
 
-## 8. Interface
+## 8. Interface — ✅ **appliquée (FIO-071)**
 
-L'écran actuel a trois textures figées et des positions codées en dur. Une fois
-les types d'inserters devenus dynamiques, cela ne tient plus.
+L'ancien écran collait trois textures complètes et posait chaque widget à la main
+sur un fond sans case libre. Il se compose désormais :
 
-Cible :
-
-- **une** texture de fond composable (fond + zones optionnelles) plutôt que trois
-  images complètes ;
-- disposition calculée depuis l'`InserterSlotLayout` ;
-- widgets réutilisables : `EnergyBar`, `FuelBar`, `ToggleButton`, `GhostSlot` ;
-- toutes les chaînes en clés de traduction (aujourd'hui les codes couleur `§7`,
-  `§b`, `§6` sont concaténés en dur dans le code — impossible à localiser
-  correctement) ;
-- affichage de l'état courant et du débit effectif (items/min), très utile pour
-  déboguer une usine.
+- **Géométrie commune.** `InserterGuiLayout` (code commun) calcule toutes les
+  positions depuis le type — alimentation, filtres, nombre de modules, redstone.
+  Le menu y lit ses slots, l'écran ses socles : une seule source, testée en JUnit
+  sur les 40 combinaisons possibles.
+- **Pièces, pas images.** Une planche 256×256 générée par `tools/gui-sprites.js` :
+  cadres étirables (9-slice), slots, jauge, flamme, icônes. `GuiSprites` est la
+  seule classe qui connaisse une coordonnée de texture.
+- **Fenêtre.** Le travail de la machine seulement : l'alimentation à gauche, puis le
+  trajet — le bloc source, la main, le bloc cible, reliés par deux flèches qui se
+  remplissent au rythme du bras —, et dessous les filtres suivis de leur bouton liste
+  blanche / liste noire. Le bandeau ne porte que le titre. Hauteur variable selon le type.
+- **Onglets latéraux, à la Thermal.** Un seul ouvert par côté, animés, le dernier
+  ouvert mémorisé, chacun assez large pour son titre. À gauche : *Informations*
+  (état, débit attendu et mesuré, consommation — FIO-170) et *Réglages* (taille de
+  main — FIO-168, voie de dépose — FIO-169, animation). À droite : *Améliorations*
+  (premier, ouvert par défaut : ses slots ont des coordonnées figées — FIO-162) et
+  *Contrôle* (l'interrupteur — FIO-167 —, puis la condition redstone, son seuil et le
+  signal reçu). Deux onglets par côté : aucune pile ne dépasse la fenêtre.
+- **Slots d'onglet.** Les coordonnées d'un `Slot` étant figées, un slot d'onglet
+  ne suit pas l'onglet : il est montré ou caché (`isActive`) selon que l'onglet
+  est entièrement ouvert. `hasClickedOutside` exclut les onglets, sans quoi un
+  clic dessus lâcherait l'item porté ; JEI les connaît comme zones exclues (FIO-171).
+- **Aucune chaîne en dur**, et plus de fragments recollés : des clés à trous
+  (FIO-152).
 
 ---
 

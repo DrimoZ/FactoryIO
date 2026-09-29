@@ -5,7 +5,7 @@ import com.drimoz.factoryio.core.belts.BeltItemRenderer;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.inserters.InserterBlockRenderer;
 import com.drimoz.factoryio.core.inserters.InserterContainer;
-import com.drimoz.factoryio.core.inserters.InserterScreen;
+import com.drimoz.factoryio.client.screen.InserterScreen;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraftforge.api.distmarker.Dist;
@@ -49,6 +49,6 @@ public final class ClientEvents {
                 InserterRegistry.getInstance().getInserters().forEach(inserter ->
                         MenuScreens.register(
                                 inserter.getMenuType().get(),
-                                InserterScreen<InserterContainer>::new)));
+                                InserterScreen::new)));
     }
 }

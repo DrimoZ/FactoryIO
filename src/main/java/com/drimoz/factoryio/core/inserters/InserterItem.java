@@ -81,32 +81,30 @@ public class InserterItem extends ModBlockItem implements GeoItem {
             return;
         }
 
-        tooltip.add(labelled("grab", inserter.getGrabDistance() + " " + ModUtils.tooltipString("blocks")));
+        tooltip.add(labelled("grab", ModUtils.tooltipComponent("value_blocks", inserter.getGrabDistance())));
 
         // Débit effectif, en items par seconde : c'est la grandeur avec laquelle on
         // dimensionne une usine. Le compte d'items par mouvement n'en disait rien, et
         // omettait qu'un item coûte deux mouvements (cf. BUG-038).
-        tooltip.add(labelled("speed", String.format("%.2f %s / %s",
-                inserter.getItemsPerSecond(),
-                ModUtils.tooltipString("items"),
-                ModUtils.tooltipString("second"))));
+        tooltip.add(labelled("speed", ModUtils.tooltipComponent("value_items_per_second",
+                String.format("%.2f", inserter.getItemsPerSecond()))));
 
         if (inserter.getPreferredItemCountPerAction() > 1) {
             tooltip.add(labelled("hand_size",
-                    inserter.getPreferredItemCountPerAction() + " " + ModUtils.tooltipString("items")));
+                    ModUtils.tooltipComponent("value_items", inserter.getPreferredItemCountPerAction())));
         }
 
         if (inserter.useEnergy()) {
             // Valeur PAR MOUVEMENT, pas par tick : l'ancien affichage divisait par le pas
             // du compteur et annonçait une consommation 4x trop faible (BUG-029).
             tooltip.add(labelled("consumption",
-                    inserter.getEnergyConsumption() + " " + ModUtils.tooltipString("energy_name")));
+                    ModUtils.tooltipComponent("value_energy", inserter.getEnergyConsumption())));
             tooltip.add(labelled("capacity",
-                    inserter.getEnergyCapacity() + " " + ModUtils.tooltipString("energy_name")));
+                    ModUtils.tooltipComponent("value_energy", inserter.getEnergyCapacity())));
         }
         else {
-            tooltip.add(labelled("fuel_consumption", String.valueOf(inserter.getFuelConsumption())));
-            tooltip.add(labelled("capacity", String.valueOf(inserter.getFuelCapacity())));
+            tooltip.add(labelled("fuel_consumption", Component.literal(String.valueOf(inserter.getFuelConsumption()))));
+            tooltip.add(labelled("capacity", Component.literal(String.valueOf(inserter.getFuelCapacity()))));
         }
 
         // Les valeurs ci-dessus sont celles du type ; un exemplaire posé peut faire mieux.
@@ -116,8 +114,9 @@ public class InserterItem extends ModBlockItem implements GeoItem {
 
     // Inner work
 
-    private static Component labelled(String tooltipKey, String value) {
-        return ModUtils.tooltipComponent(tooltipKey).withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(" " + value).withStyle(ChatFormatting.AQUA));
+    /** Libellé gris, valeur en cyan, et l'ordre des deux laissé à la traduction. */
+    private static Component labelled(String tooltipKey, Component value) {
+        return ModUtils.tooltipComponent(tooltipKey, value.copy().withStyle(ChatFormatting.AQUA))
+                .withStyle(ChatFormatting.GRAY);
     }
 }

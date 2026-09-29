@@ -21,8 +21,27 @@ import org.jetbrains.annotations.NotNull;
  */
 public class InserterUpgradeSlot extends SlotItemHandler {
 
+    /**
+     * Vrai tant que l'onglet qui le porte est ouvert.
+     *
+     * <p>Les coordonnées d'un slot sont figées à sa construction : un slot d'onglet ne peut
+     * pas suivre l'onglet qui se referme, il ne peut que disparaître. Seul l'écran touche à
+     * ce drapeau ; côté serveur il reste vrai, et c'est sans conséquence, le serveur ne
+     * dessinant rien et ne testant jamais le survol.
+     */
+    private boolean shown = true;
+
     public InserterUpgradeSlot(IItemHandler handler, int index, int x, int y) {
         super(handler, index, x, y);
+    }
+
+    public void setShown(boolean shown) {
+        this.shown = shown;
+    }
+
+    @Override
+    public boolean isActive() {
+        return this.shown;
     }
 
     @Override

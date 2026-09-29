@@ -23,7 +23,9 @@ public class ColoredItem extends ModItem {
 
     @Override
     public Component getName(ItemStack stack) {
-        return Component.literal(super.getName(stack).getString()).withStyle(style -> style.withColor(TextColor.parseColor(color)));
+        // Reste traduisible : un getString() figeait le nom dans la langue — ou la clé brute —
+        // du côté qui l'avait calculé.
+        return super.getName(stack).copy().withStyle(style -> style.withColor(TextColor.parseColor(color)));
     }
 
     @Override
