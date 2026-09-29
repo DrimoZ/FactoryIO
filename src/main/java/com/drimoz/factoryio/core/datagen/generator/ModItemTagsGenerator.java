@@ -37,6 +37,18 @@ public class ModItemTagsGenerator extends ItemTagsProvider {
         this.tag(ModTags.Items.PLATES_STEEL).add(ModItems.STEEL_PLATE.get());
         this.tag(ModTags.Items.PLATES_COPPER).add(ModItems.COPPER_PLATE.get());
 
+        this.tag(ModTags.Items.GEARS_IRON).add(ModItems.IRON_GEAR_WHEEL.get());
+        this.tag(ModTags.Items.GEARS).addTag(ModTags.Items.GEARS_IRON);
+
+        this.tag(ModTags.Items.WIRES_COPPER).add(ModItems.COPPER_CABLE.get());
+        this.tag(ModTags.Items.WIRES).addTag(ModTags.Items.WIRES_COPPER);
+
+        this.tag(ModTags.Items.CIRCUITS_BASIC).add(ModItems.ELECTRONIC_CIRCUIT.get());
+        this.tag(ModTags.Items.CIRCUITS_ADVANCED).add(ModItems.ADVANCED_CIRCUIT.get());
+        this.tag(ModTags.Items.CIRCUITS_ELITE).add(ModItems.PROCESSING_UNIT.get());
+        this.tag(ModTags.Items.CIRCUITS).addTags(
+                ModTags.Items.CIRCUITS_BASIC, ModTags.Items.CIRCUITS_ADVANCED, ModTags.Items.CIRCUITS_ELITE);
+
         this.tag(ModTags.Items.CONFIGURATOR).add(ModItems.CONFIGURATOR.get());
 
         addUpgradeTiers();

@@ -398,7 +398,8 @@ sur un fond sans case libre. Il se compose désormais :
 - **Fenêtre.** Le travail de la machine seulement : l'alimentation à gauche, puis le
   trajet — le bloc source, la main, le bloc cible, reliés par deux flèches qui se
   remplissent au rythme du bras —, et dessous les filtres suivis de leur bouton liste
-  blanche / liste noire. Le bandeau ne porte que le titre. Hauteur variable selon le type.
+  blanche / liste noire. Le bandeau ne porte que le titre. Même hauteur pour tous les types — celle d'un
+  inserter filtrant — : la fenêtre et l'inventaire ne bougent pas d'un inserter à l'autre.
 - **Onglets latéraux, à la Thermal.** Un seul ouvert par côté, animés, le dernier
   ouvert mémorisé, chacun assez large pour son titre. À gauche : *Informations*
   (état, débit attendu et mesuré, consommation — FIO-170) et *Réglages* (taille de

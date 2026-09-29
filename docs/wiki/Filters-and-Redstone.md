@@ -55,4 +55,5 @@ filter inserter onto one without filters simply drop the filter part.
 The tool is recognised by the `factor_io:configurators` **tag**, so a pack can make another
 mod's tool do the same job by adding it to the tag.
 
-> The configurator has **no recipe yet** and is creative-only in this beta.
+Crafted from an iron plate, two copper cables and a redstone dust — cheap on purpose, it is a
+convenience tool you want from the first inserters on.

@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "tag": "forge:wires/copper"
+    },
+    "E": {
+      "tag": "forge:circuits/basic"
+    },
+    "K": {
+      "item": "minecraft:dried_kelp"
+    }
+  },
+  "pattern": [
+    "CKC",
+    "E E",
+    "CKC"
+  ],
+  "result": {
+    "item": "factor_io:advanced_circuit"
+  },
+  "show_notification": true
+}

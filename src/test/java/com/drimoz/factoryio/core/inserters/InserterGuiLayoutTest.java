@@ -125,6 +125,15 @@ class InserterGuiLayoutTest {
     }
 
     @Test
+    @DisplayName("tous les types ont la même hauteur d'écran")
+    void everyTypeHasTheSameHeight() {
+        int height = everyLayout().get(0).height();
+        for (InserterGuiLayout gui : everyLayout()) {
+            assertEquals(height, gui.height(), gui + " n'a pas la hauteur commune");
+        }
+    }
+
+    @Test
     @DisplayName("un burner filtrant, sept slots, a sa place sans texture dédiée")
     void burnerFilterInserterFits() {
         InserterGuiLayout gui = new InserterGuiLayout(false, true, 2, true);

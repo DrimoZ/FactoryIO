@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "tag": "forge:circuits/advanced"
+    },
+    "M": {
+      "item": "factor_io:efficiency_module"
+    },
+    "P": {
+      "tag": "forge:circuits/elite"
+    },
+    "X": {
+      "tag": "forge:gems/amethyst"
+    }
+  },
+  "pattern": [
+    "PAP",
+    "MXM",
+    "APA"
+  ],
+  "result": {
+    "item": "factor_io:efficiency_module_2"
+  },
+  "show_notification": true
+}

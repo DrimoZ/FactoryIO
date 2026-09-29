@@ -18,6 +18,16 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
   state and the cost of a swing.
 - The configurator also copies hand size and drop lane.
 - JEI no longer draws over the screen's tabs.
+- **Recipes for the modules and the configurator**, through the Factorio component chain: plates
+  (stonecutter), steel (blast furnace), the new **iron gear wheel** and **copper cable**, then
+  electronic, advanced circuits and processing units. Ingredients are Forge tags, circuits
+  included (`forge:circuits/basic|advanced|elite`).
+- **New item textures** in the Minecraft style for plates, circuits, modules and the configurator.
+
+### Removed
+
+- Science packs, rocket parts, fuels and uranium are **hidden from the creative tab**: they have no
+  use until the machines arrive. They stay registered.
 
 ### Changed
 

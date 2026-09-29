@@ -37,8 +37,33 @@ Nothing here is a pure loss, and nothing is free: the cost is always the slot yo
 
 ## Where modules come from
 
-Nowhere, yet. **The nine modules have no recipes** and are creative-only in this beta. The
-mechanics, the stacking and the persistence are finished and tested; the crafting is not.
+From the Factorio component chain, brought to a crafting table:
+
+| Step | How |
+|---|---|
+| Iron, copper plate | an ingot in the **stonecutter** |
+| Steel plate | an iron plate in the **blast furnace** |
+| Iron gear wheel | 2 iron plates |
+| Copper cable | 1 copper plate → 2 |
+| Electronic circuit | 1 iron plate + 3 copper cables |
+| Advanced circuit | 2 electronic circuits + 2 dried kelp + 4 copper cables |
+| Processing unit | 4 electronic + 2 advanced circuits + 1 gunpowder |
+
+Dried kelp stands in for plastic and gunpowder for sulfuric acid until machines exist.
+
+**Tier 1** — 4 electronic and 4 advanced circuits around a core. **Tiers 2 and 3** — 2 modules of
+the tier below, 3 processing units, 3 advanced circuits, around a core. The core tells the families
+apart, since Factorio gives all three the same recipe:
+
+| | Tier 1 | Tier 2 | Tier 3 |
+|---|---|---|---|
+| Speed | sugar | rabbit's foot | phantom membrane |
+| Productivity | piston | sticky piston | shulker shell |
+| Efficiency | lapis lazuli | amethyst shard | echo shard |
+
+Every ingredient is a Forge **tag** where one exists — `forge:plates/iron`, `forge:wires/copper`,
+`forge:circuits/basic`, `/advanced`, `/elite` — so plates and circuits from other mods work in
+these recipes, and ours work in theirs.
 
 Modules are recognised by the `factor_io:upgrades/<axis>/<tier>` **tags**, so a pack can make its
 own item act as a Speed 2 by adding it to `factor_io:upgrades/speed/2` — no Java involved.

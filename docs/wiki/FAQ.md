@@ -14,10 +14,12 @@ a whole line can run on coal.
 
 In creative, the Creative Energy Source covers it.
 
-### Why can't I craft the modules or the configurator?
+### Some items have no recipe and are not in the creative tab.
 
-They have no recipes yet. The upgrade system itself is finished — installing, removing, stacking,
-persistence — but the crafting is not written. It is the main known gap of the beta.
+Science packs, rocket parts, fuels and uranium are registered for the machines to come, and have
+no use yet. They are hidden rather than removed, so a world that holds some loses nothing. Every
+item the mod actually uses — plates, gears, cables, circuits, modules, configurator — has a recipe:
+see [Upgrades](Upgrades).
 
 ### My inserter stopped with an item in its hand.
 

@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "tag": "forge:circuits/advanced"
+    },
+    "M": {
+      "item": "factor_io:productivity_module"
+    },
+    "P": {
+      "tag": "forge:circuits/elite"
+    },
+    "X": {
+      "item": "minecraft:sticky_piston"
+    }
+  },
+  "pattern": [
+    "PAP",
+    "MXM",
+    "APA"
+  ],
+  "result": {
+    "item": "factor_io:productivity_module_2"
+  },
+  "show_notification": true
+}

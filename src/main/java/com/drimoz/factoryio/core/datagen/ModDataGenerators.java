@@ -34,5 +34,6 @@ public class ModDataGenerators {
                 output, event.getLookupProvider(), blockTags.contentsGetter(), FactoryIO.MOD_ID, existingFileHelper));
 
         generator.addProvider(server, new ModLootGenerator(output));
+        generator.addProvider(server, new ModRecipeGenerator(output));
     }
 }

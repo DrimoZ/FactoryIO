@@ -95,6 +95,14 @@ repositories {
         }
     }
     maven {
+        // Jade, pour les tests d'interopérabilité (-PwithTestMods)
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+    maven {
         name = 'GeckoLib'
         url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
     }
@@ -121,6 +129,7 @@ dependencies {
     //   ./gradlew runClient -PwithTestMods
     if (project.hasProperty('withTestMods')) {
         runtimeOnly fg.deobf("mezz.jei:jei-${mc_version}-forge:${jei_version}")
+        runtimeOnly fg.deobf("maven.modrinth:jade:${jade_version}")
     }
 }
 
