@@ -36,7 +36,7 @@ La cible de la refonte (`content/`, `util/`, …) est décrite dans
 progressivement** : ne pas déplacer de packages en passant.
 
 ⚠️ La migration n'est pas terminée. `core/inserters` contient encore des classes client
-— `InserterScreen`, `InserterBlockRenderer`, `InserterGeoModel` — et `core/belts`
+— `InserterBlockRenderer`, `InserterGeoModel` — et `core/belts`
 porte `BeltItemRenderer`. Ne pas prendre l'existant pour modèle sur ce point.
 
 `shared/` est en revanche **propre** : `StringHelper` a rendu la lecture du clavier à

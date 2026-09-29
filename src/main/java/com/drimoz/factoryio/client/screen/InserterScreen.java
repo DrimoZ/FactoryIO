@@ -1,7 +1,11 @@
-package com.drimoz.factoryio.core.inserters;
+package com.drimoz.factoryio.client.screen;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.container.slots.GhostSlot;
+import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
+import com.drimoz.factoryio.core.inserters.InserterContainer;
+import com.drimoz.factoryio.core.inserters.InserterFilterSlot;
+import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
 import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
 import com.drimoz.factoryio.core.upgrade.InserterUpgrades;
 import com.drimoz.factoryio.shared.ModUtils;
