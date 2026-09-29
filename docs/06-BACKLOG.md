@@ -17,8 +17,13 @@ troisième parce qu'il est visible en jeu.
 
 | ID | P | Est. | Ticket | ✓ |
 |---|---|---|---|---|
-| FIO-071 | **P0** | L | **Refonte du GUI.** La texture est figée et n'a aucune case libre : commandes redstone, bouton d'animation et teinte des filtres par tag sont tous posés à la main sur un fond qui ne les prévoyait pas, à des positions en dur. Trois widgets ajoutés depuis, chacun un peu plus à l'étroit — et le prochain n'aura plus de place. Cible : un fond composable, une disposition dérivée de `InserterSlotLayout`, des widgets réutilisables, toutes les chaînes en clés de traduction ([`07`](07-DESIGN-INSERTERS.md) §8). | un `burner_filter_inserter` — 7 slots — s'affiche correctement sans retoucher la texture |
-| 🟡 FIO-162 | **P0** | M | **Reprendre l'ergonomie des améliorations.** **Mécanique livrée, interface à faire.** Fait : natures d'augment (cumulatives / débloquantes), barème `InserterUpgradeTuning` réglable par datapack, `upgradeSlots` structurel par modèle (1 à 4 selon la chaîne de fabrication), **vrais slots** dans le plan d'inventaire — donc pose, retrait et cumul —, `InserterUpgrades` réduit à une vue dérivée, reprise des mondes d'avant les slots. Reste : la **mise en page**, les slots étant posés à un emplacement provisoire en attendant le panneau en surimpression, et l'effet de chaque module lisible dans l'écran. Dépend maintenant de FIO-071 pour la seule partie qui reste. | poser et retirer un module sans casser l'inserter ; voir ce qui est installé |
+| ~~FIO-071~~ | ✅ | L | **Refonte du GUI** — **fait**, reste la validation visuelle en jeu. Fenêtre étirable (9-slice) à la taille d'`InserterGuiLayout`, code commun partagé par le menu et l'écran ; planche de sprites générée par `tools/gui-sprites.js` ; widgets `client/gui` (`GuiSprites`, `IconButton`, `SideTab(s)`) ; bascules dans le bandeau ; onglets latéraux à la Thermal. Les trois textures figées ont disparu ([`07`](07-DESIGN-INSERTERS.md) §8). | toutes les combinaisons de slots tiennent sans texture dédiée — `InserterGuiLayoutTest` les balaie |
+| ~~FIO-162~~ | ✅ | M | **Ergonomie des améliorations** — **fait**. Les slots vivent dans l'onglet *Améliorations*, premier à droite et ouvert par défaut, qui affiche aussi l'effet cumulé des modules (mouvement, main, coût : avant → après). | poser et retirer un module sans casser l'inserter ; voir ce qui est installé |
+| ~~FIO-167~~ | ✅ | S | **Interrupteur manuel.** Bascule du bandeau ; éteint l'emporte sur toute condition redstone, les deux se résument dans `ENABLED`. Persisté, synchronisé. | un inserter éteint ne bouge plus, même sous un signal qui l'autoriserait |
+| ~~FIO-168~~ | ✅ | S | **Plafond de main.** Onglet *Réglages* ; 0 = « le maximum », qui suit les modules de capacité. Le ravitaillement du burner n'y est pas soumis. Copié par le configurateur. | un stack inserter plafonné à 1 ne porte qu'un item par mouvement |
+| ~~FIO-169~~ | ✅ | S | **Voie de dépose Auto / Proche / Lointaine.** Onglet *Réglages*. Un choix explicite passe outre `insert_on_far_lane_only` ; sans effet hors convoyeur ou par l'avant. Vue d'une voie mémorisée dans `BeltItemHandler` : rien n'est alloué au tick. | voie proche imposée : la lointaine reste vide |
+| ~~FIO-170~~ | ✅ | S | **Onglet Informations.** État lisible (éteint, arrêté par la redstone, à court d'énergie, bloqué, au travail, en attente), débit attendu et **mesuré** (compteur de livraisons via `ContainerData`, moyenne sur 10 s côté client), consommation par mouvement. | le débit mesuré d'un inserter affamé se lit sous le débit attendu |
+| ~~FIO-171~~ | ✅ | XS | **Zones exclues JEI** pour les onglets (`client/compat/jei`). Le reste de l'intégration JEI reste FIO-150. | la liste de JEI ne recouvre pas un onglet ouvert |
 | FIO-164 | **P1** | M | **Rendre les augments atteignables.** Les 9 modules et le configurateur n'ont **aucune recette** : le système entier est réservé au créatif. Comprend aussi l'item du module de **redstone avancé**, dont la nature existe mais qu'aucun item ne porte — `InserterUpgradeTuning.DEFAULT` ne verrouille donc encore rien, et un test le fige explicitement jusqu'à ce que le module se fabrique. | fabriquer et poser chaque module en survie |
 | FIO-165 | P2 | S | **Charger le barème d'améliorations par datapack.** `InserterUpgradeTuning` a son codec réseau et son bornage ; il manque le listener et la synchronisation. `InserterBlockEntity.upgradeTuning()` est déjà le point de passage unique — un seul appelant à changer. | un `/reload` change le facteur de vitesse |
 | 🟡 FIO-163 | **P1** | S | **Le déplacement des items n'est pas juste.** ~~M~~ → **cause trouvée et corrigée**, reste à confirmer à l'œil. C'était bien un écart de **repère**, mais pas celui qu'on croyait : le signe de la rotation de tourelle. `GeoBlockRenderer.rotateBlock` associe WEST à **+90°** autour du même axe que celui qu'emploie `RenderUtils.rotateMatrixAroundBone`, **sans négation** — un `setRotY` positif balaie donc par la **gauche**, quand `InserterTurretPose` et `InserterCarryPath` comptent vers la **droite**. Bras et item passaient de part et d'autre de l'axe : d'accord à 0° et 180°, donc aux deux extrémités, et au plus loin à mi-course. `InserterGeoModel` nie désormais l'angle à la frontière GeckoLib. La suite était aveugle au défaut — elle vérifiait la perpendicularité à mi-course, jamais le côté ; `positiveAngleSweepsToTheRight` comble le trou (4 cas). | l'item reste dans la pince sur tout le trajet, dans les quatre orientations |
@@ -172,7 +177,7 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 |---|---|---|---|
 | FIO-150 | P1 | M | Plugin JEI (recettes + catégorie inserters) |
 | FIO-151 | P2 | M | Provider The One Probe / Jade |
-| FIO-152 | P1 | M | i18n complète, extraction de toutes les chaînes en dur (les codes `§7`/`§b` en dur dans les tooltips) |
+| ~~FIO-152~~ | ✅ | M | i18n complète — **fait** : plus de fragments recollés, des clés à trous (`%s`) ; `LangFilesTest` vérifie la parité `en_us`/`fr_fr` et l'existence des clés citées |
 | FIO-153 | P2 | M | Sons |
 | FIO-154 | P2 | L | Guide en jeu (Patchouli) |
 | FIO-155 | P1 | S | Documenter la procédure de publication (CurseForge + Modrinth), sans CI |
@@ -218,12 +223,12 @@ Diagnostic établi en comparant le projet à un **MDK Forge 1.20.1 vierge**, une
 ✅ FIO-001..018   Phase 0 appliquée
 ✅ FIO-040, 043   port Forge 1.20.1
 
-FIO-047 → 048 → 049 → 050          ← FAIRE TOURNER le mod porté (rien n'est validé)
-FIO-041 → 042                      ← filet de sécurité AVANT toute refonte
-FIO-030 → 031 → 032 → 033          ← tuer le spam réseau
-FIO-034 → 035 → 036                ← assainir le modèle
-FIO-038 → 039 → 037                ← assainir les assets
-puis Épic C, puis FIO-090 avant tout le reste de l'Épic D
+✅ FIO-047..050   mod porté validé en jeu
+✅ FIO-030..042   réseau, modèle, assets, filet de tests
+✅ FIO-071, 152, 162, 167..171   refonte de l'interface
+
+FIO-163 (validation à l'œil) → FIO-164 (recettes des modules) → FIO-165
+puis Épic F (FIO-150 JEI, FIO-155/158 publication), puis Épic D
 ```
 
 `FIO-041/042` (tests) est placé **avant** les refontes délibérément : sans filet,

@@ -26,6 +26,21 @@ blocks, which lets it skip over a belt to take from what is behind it.
 **Filtering** decides whether the machine has a filter panel at all. See
 [Filters and Redstone](Filters-and-Redstone).
 
+## The screen
+
+Right-click an inserter to open it.
+
+- **The window** shows what the machine is doing: its power on the left, the item in its hand
+  in the middle, and the five filter slots underneath on filtering models.
+- **The top bar** holds three buttons: **on/off** — off wins over any redstone signal —,
+  **animation** (smooth, snap, off), and on filtering models **whitelist/blacklist**.
+- **Tabs** slide out of the sides. On the left, **Information**: what the inserter is doing
+  right now, the rate it should reach and the rate it actually reaches, and what a swing costs.
+  A measured rate well under the expected one means a starving or blocked inserter. On the
+  right, **Upgrades** (open by default), **Redstone control** and **Settings**.
+- **Settings** caps the **hand size** — how many items a swing takes, "Max" following capacity
+  modules — and picks the **drop lane** on a belt: automatic, near or far.
+
 ## Crafting
 
 The seven form a chain, each built from the previous one:

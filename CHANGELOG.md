@@ -3,6 +3,26 @@
 All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the jar is named
 `factor_io-<minecraft>-<version>.jar`.
 
+## [Unreleased]
+
+### Added
+
+- **A new inserter screen.** It resizes to the model, and everything that is not the machine's
+  core job moved to side tabs: Information on the left, Upgrades, Redstone control and Settings
+  on the right.
+- **On/off button** on every inserter. Off wins over any redstone signal.
+- **Hand size cap**, per inserter: take fewer items per swing than the machine could.
+- **Drop lane choice**, per inserter: automatic, near or far, overriding
+  `insert_on_far_lane_only` for that inserter.
+- **Measured throughput** in the Information tab, next to the expected one, with the current
+  state and the cost of a swing.
+- The configurator also copies hand size and drop lane.
+- JEI no longer draws over the screen's tabs.
+
+### Changed
+
+- Tooltips are translated as whole sentences; nothing is glued together from fragments anymore.
+
 ## [0.3.0-beta] — 2026-08-16
 
 First public build. Inserters and transport belts are complete; machines are not.

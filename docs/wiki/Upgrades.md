@@ -1,7 +1,8 @@
 # Upgrades
 
-Three independent axes, three tiers each. Right-click an inserter with a module to install it;
-the module it replaces is handed back. Breaking the block returns everything.
+Three independent axes, three tiers each. Right-click an inserter with a module to install it in
+the first free slot, or place it yourself in the **Upgrades** tab of the screen — which also shows
+what the installed modules change, before → after. Breaking the block returns everything.
 
 | Module | Axis | Per tier | Pays |
 |---|---|---|---|
