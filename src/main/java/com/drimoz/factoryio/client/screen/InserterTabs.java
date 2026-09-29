@@ -140,7 +140,8 @@ final class InserterTabs {
 
         @Override
         protected int contentHeight() {
-            return 4 * ROW - 3;
+            // Une ligne de plus pour l'électrique : sa consommation par tick.
+            return 4 * ROW - 3 + (this.screen.getMenu().usesEnergy() ? LINE : 0);
         }
 
         @Override
@@ -167,6 +168,16 @@ final class InserterTabs {
                             this.screen.getMenu().usesEnergy() ? "value_energy_per_swing" : "value_fuel_per_swing",
                             be.getFuelConsumptionPerAction()),
                     x, y + 3 * ROW + LINE, VALUE);
+
+            // Le chiffre avec lequel on dimensionne une alimentation : un mouvement est facturé
+            // à son départ, aller comme retour, et dure ticksPerSwing. Au travail, l'inserter
+            // tire donc coût ÷ durée à chaque tick — modules compris, puisque les deux sont lus
+            // sur le réglage effectif.
+            if (this.screen.getMenu().usesEnergy()) {
+                double perTick = (double) be.getFuelConsumptionPerAction() / Math.max(1, be.getTicksPerSwing());
+                value(graphics, font, ModUtils.tooltipComponent("value_energy_per_tick", number(perTick)),
+                        x, y + 3 * ROW + 2 * LINE, VALUE);
+            }
         }
 
         private enum State {
