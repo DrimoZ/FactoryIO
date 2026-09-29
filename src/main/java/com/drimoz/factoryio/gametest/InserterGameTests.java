@@ -1125,6 +1125,45 @@ public class InserterGameTests {
         helper.succeed();
     }
 
+    // Tests (Cadence, BUG-051)
+
+    /**
+     * Un cycle dure exactement deux mouvements (BUG-051).
+     *
+     * <p>Le retour achevé, l'inserter passait en attente et ne saisissait qu'au tick suivant :
+     * un tick perdu par cycle, soit un débit réel inférieur de (2n + 1) / 2n au débit annoncé —
+     * ×1,25 à deux ticks par mouvement, ×1,5 à un seul. Mesuré entre deux livraisons
+     * successives, sur un inserter rapide alimenté sans limite.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 400)
+    public static void aCycleLastsExactlyTwoSwings(GameTestHelper helper) {
+        setupChain(helper, "fast_inserter");
+        helper.setBlock(INSERTER.above(), ModBlocks.CREATIVE_ENERGY_SOURCE.get());
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, 64));
+
+        long[] firstDelivery = new long[1];
+        int[] deliveredThen = new int[1];
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(inserter(helper).getItemsDelivered() > 0,
+                        "L'inserter n'a rien livré"))
+                .thenExecute(() -> {
+                    firstDelivery[0] = helper.getTick();
+                    deliveredThen[0] = inserter(helper).getItemsDelivered();
+                })
+                .thenWaitUntil(() -> helper.assertTrue(inserter(helper).getItemsDelivered() > deliveredThen[0],
+                        "Pas de seconde livraison"))
+                .thenExecute(() -> {
+                    long cycle = helper.getTick() - firstDelivery[0];
+                    long expected = 2L * inserter(helper).getTicksPerSwing();
+
+                    helper.assertTrue(cycle == expected,
+                            "Un cycle dure " + cycle + " ticks au lieu de " + expected
+                                    + " : le débit réel n'atteint pas le débit annoncé");
+                })
+                .thenSucceed();
+    }
+
     // Tests (Barème d'améliorations par datapack, FIO-165)
 
     /**

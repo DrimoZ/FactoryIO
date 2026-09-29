@@ -1108,6 +1108,12 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         // paquet économisé est la moitié du trafic d'un cycle nominal.
         this.state = InserterState.WAITING;
         setChanged();
+
+        // Et saisir dans le même tick, comme la dépose enchaîne sur le retour : attendre le
+        // tick suivant perdait un tick par cycle, soit un débit réel inférieur de
+        // (2n + 1) / 2n au débit annoncé — jusqu'à ×1,5 sur un inserter rapide amélioré
+        // (BUG-051).
+        tickWaiting();
     }
 
     /**
