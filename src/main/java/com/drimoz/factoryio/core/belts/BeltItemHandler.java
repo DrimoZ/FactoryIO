@@ -79,9 +79,40 @@ public class BeltItemHandler implements IItemHandler {
     @Nullable
     private final Direction side;
 
+    /** Vues réduites à une voie, créées au premier usage puis réutilisées (FIO-169). */
+    @Nullable
+    private LaneView farView;
+    @Nullable
+    private LaneView nearView;
+
     public BeltItemHandler(BeltBlockEntity belt, @Nullable Direction side) {
         this.belt = belt;
         this.side = side;
+    }
+
+    /**
+     * La même bande, réduite à une seule voie — pour un inserter qui en a choisi une (FIO-169).
+     *
+     * <p>La voie proche y est permise même sous {@code insert_on_far_lane_only} : le choix
+     * explicite d'un joueur, bloc par bloc, l'emporte sur le défaut du serveur.
+     *
+     * <p>La vue est mémorisée et non construite à chaque appel : elle est demandée depuis le
+     * tick de l'inserter, où rien ne doit être alloué.
+     *
+     * @return {@code null} si la demande n'arrive pas par un côté : il n'y a alors pas de voie
+     *         proche, donc pas de choix à respecter
+     */
+    @Nullable
+    public IItemHandler restrictedTo(boolean far) {
+        if (!arrivesFromASide()) return null;
+
+        if (far) {
+            if (this.farView == null) this.farView = new LaneView(0);
+            return this.farView;
+        }
+
+        if (this.nearView == null) this.nearView = new LaneView(BeltTier.SLOTS_PER_LANE);
+        return this.nearView;
     }
 
     // Interface
@@ -114,8 +145,14 @@ public class BeltItemHandler implements IItemHandler {
     @NotNull
     @Override
     public ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+        if (isValid(slot) && isNearLane(slot) && BeltSettings.farLaneOnly()) return stack;
+
+        return insertAt(slot, stack, simulate);
+    }
+
+    /** L'insertion elle-même, sans la règle de parité : les vues d'une voie la court-circuitent. */
+    private ItemStack insertAt(int slot, ItemStack stack, boolean simulate) {
         if (stack.isEmpty() || !isValid(slot)) return stack;
-        if (isNearLane(slot) && BeltSettings.farLaneOnly()) return stack;
         if (lane(slot).isOccupied(position(slot))) return stack;
 
         ItemStack remainder = stack.copy();
@@ -189,7 +226,11 @@ public class BeltItemHandler implements IItemHandler {
      * reste permis : Factorio interdit d'y poser, pas d'y prendre.
      */
     private boolean isNearLane(int slot) {
-        if (slot < BeltTier.SLOTS_PER_LANE) return false;
+        return slot >= BeltTier.SLOTS_PER_LANE && arrivesFromASide();
+    }
+
+    /** La demande touche-t-elle la bande par l'un de ses côtés, donc près d'une voie ? */
+    private boolean arrivesFromASide() {
         if (this.side == null) return false;
 
         Direction facing = this.belt.facing();
@@ -210,5 +251,59 @@ public class BeltItemHandler implements IItemHandler {
 
     private BeltLane<ItemStack> lane(int slot) {
         return this.belt.transport().lane(laneOf(slot));
+    }
+
+    /**
+     * Une voie de la bande, vue comme un inventaire de {@value BeltTier#SLOTS_PER_LANE} cases.
+     *
+     * <p>Les index sont ceux du handler complet, décalés : la voie lointaine en occupe la
+     * première moitié, la proche la seconde. Le rangement « l'avant d'abord » est donc conservé.
+     */
+    private final class LaneView implements IItemHandler {
+
+        private final int offset;
+
+        private LaneView(int offset) {
+            this.offset = offset;
+        }
+
+        @Override
+        public int getSlots() {
+            return BeltTier.SLOTS_PER_LANE;
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return BeltBlockEntity.ITEMS_PER_SLOT;
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return true;
+        }
+
+        @NotNull
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            if (slot < 0 || slot >= getSlots()) return ItemStack.EMPTY;
+
+            return BeltItemHandler.this.getStackInSlot(this.offset + slot);
+        }
+
+        @NotNull
+        @Override
+        public ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+            if (slot < 0 || slot >= getSlots()) return stack;
+
+            return insertAt(this.offset + slot, stack, simulate);
+        }
+
+        @NotNull
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot < 0 || slot >= getSlots()) return ItemStack.EMPTY;
+
+            return BeltItemHandler.this.extractItem(this.offset + slot, amount, simulate);
+        }
     }
 }

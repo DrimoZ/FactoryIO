@@ -30,6 +30,8 @@ import java.util.List;
  * @param whitelist     mode de la liste de filtrage
  * @param tagFilterMask slots dont la correspondance porte sur le tag, un bit par slot
  * @param redstone      condition d'activation
+ * @param handSizeLimit plafond d'items par prise, 0 pour « le maximum » (FIO-168)
+ * @param dropLane      voie visée sur un convoyeur (FIO-169)
  * @param filters       items fantômes des slots de filtre, dans l'ordre
  */
 public record InserterSettings(
@@ -37,6 +39,8 @@ public record InserterSettings(
         boolean whitelist,
         int tagFilterMask,
         InserterRedstoneCondition redstone,
+        int handSizeLimit,
+        InserterDropLane dropLane,
         List<ItemStack> filters) {
 
     private static final String TAG_ANIMATION = "animation";
@@ -45,6 +49,8 @@ public record InserterSettings(
     private static final String TAG_MODE = "redstoneMode";
     private static final String TAG_THRESHOLD = "redstoneThreshold";
     private static final String TAG_FILTERS = "filters";
+    private static final String TAG_HAND_SIZE = "handSize";
+    private static final String TAG_DROP_LANE = "dropLane";
 
     public InserterSettings {
         filters = List.copyOf(filters);
@@ -60,6 +66,8 @@ public record InserterSettings(
         tag.putInt(TAG_MASK, tagFilterMask);
         tag.putByte(TAG_MODE, (byte) redstone.mode().ordinal());
         tag.putByte(TAG_THRESHOLD, (byte) redstone.threshold());
+        tag.putByte(TAG_HAND_SIZE, (byte) handSizeLimit);
+        tag.putByte(TAG_DROP_LANE, (byte) dropLane.ordinal());
 
         ListTag list = new ListTag();
         // Les slots vides comptent : ils décrivent une position dans la liste, et la sauter
@@ -87,6 +95,10 @@ public record InserterSettings(
                 new InserterRedstoneCondition(
                         InserterRedstoneCondition.Mode.byOrdinal(tag.getByte(TAG_MODE)),
                         tag.getByte(TAG_THRESHOLD)),
+                // Absentes d'un configurateur rempli avant FIO-168/169 : zéro vaut « main au
+                // maximum » et « voie automatique », soit le comportement d'alors.
+                tag.getByte(TAG_HAND_SIZE),
+                InserterDropLane.byOrdinal(tag.getByte(TAG_DROP_LANE)),
                 filters);
     }
 

@@ -3,6 +3,7 @@ package com.drimoz.factoryio.core.network.packet;
 import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterContainer;
+import com.drimoz.factoryio.core.inserters.InserterDropLane;
 import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -42,7 +43,16 @@ public class C2SInserterSetting {
 		REDSTONE_THRESHOLD,
 
 		/** Mode d'animation. Valeur : l'ordinal du mode. */
-		ANIMATION;
+		ANIMATION,
+
+		/** Interrupteur manuel (FIO-167). Valeur : 1 allumé, 0 éteint. */
+		POWER,
+
+		/** Plafond d'items par prise (FIO-168). Valeur : 0 pour « le maximum », sinon 1 à 64. */
+		HAND_SIZE,
+
+		/** Voie de dépose sur un convoyeur (FIO-169). Valeur : l'ordinal de la voie. */
+		DROP_LANE;
 
 		private static final Setting[] VALUES = values();
 
@@ -129,6 +139,13 @@ public class C2SInserterSetting {
 
 			// Purement visuel : aucun effet sur le débit, les coûts ou les transferts.
 			case ANIMATION -> blockEntity.setAnimationMode(InserterAnimationMode.byOrdinal(value));
+
+			case POWER -> blockEntity.setSwitchedOn(value == 1);
+
+			// Borné par le block entity, comme le seuil redstone.
+			case HAND_SIZE -> blockEntity.setHandSizeLimit(value);
+
+			case DROP_LANE -> blockEntity.setDropLane(InserterDropLane.byOrdinal(value));
 		}
 	}
 }

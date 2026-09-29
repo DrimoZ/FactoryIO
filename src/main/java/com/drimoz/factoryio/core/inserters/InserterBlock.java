@@ -72,6 +72,11 @@ public class InserterBlock extends WaterloggedEntityBlock {
             return super.shouldBeEnabled(pLevel, pPos);
         }
 
+        // L'interrupteur d'abord (FIO-167) : éteint, rien ne rallume l'inserter. Allumé, la
+        // condition redstone décide — si ce type y est sensible.
+        if (!blockEntity.isSwitchedOn()) return false;
+        if (!isAffectedByRedstone()) return true;
+
         return blockEntity.getRedstoneCondition().allows(pLevel.getBestNeighborSignal(pPos));
     }
 

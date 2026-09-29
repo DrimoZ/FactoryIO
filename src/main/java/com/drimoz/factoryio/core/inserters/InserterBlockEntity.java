@@ -16,6 +16,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.util.Mth;
+import com.drimoz.factoryio.core.belts.BeltItemHandler;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.network.chat.Component;
 
@@ -124,6 +125,39 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
     /** Copie de la propriété {@code ENABLED}, cf. {@link #setBlockState}. */
     private boolean enabled;
+
+    /**
+     * Interrupteur manuel (FIO-167).
+     *
+     * <p>Il ne double pas la condition redstone, il la précède : éteint, l'inserter s'arrête
+     * quel que soit le signal ; allumé, c'est la condition qui décide. Les deux se résument
+     * dans la seule propriété {@code ENABLED} — le tick et le rendu n'en lisent pas d'autre.
+     */
+    private boolean switchedOn = true;
+
+    /**
+     * Plafond d'items par prise, choisi par le joueur (FIO-168). {@link #HAND_SIZE_MAX} veut
+     * dire « le maximum » : il suit alors la capacité, modules compris, au lieu de rester
+     * figé sur la valeur du moment où le réglage a été fait.
+     */
+    private int handSizeLimit = HAND_SIZE_MAX;
+
+    /** Voie visée sur un convoyeur (FIO-169). */
+    private InserterDropLane dropLane = InserterDropLane.AUTO;
+
+    /**
+     * Items livrés depuis le chargement du bloc, pour le débit mesuré de l'écran (FIO-170).
+     *
+     * <p>Un compteur, pas une moyenne : c'est l'écran qui échantillonne et divise. Il peut
+     * déborder sans conséquence, seules les différences sont lues.
+     */
+    private int itemsDelivered;
+
+    /** Valeur du plafond de main qui signifie « le maximum ». */
+    public static final int HAND_SIZE_MAX = 0;
+
+    /** Plafond le plus haut qu'on puisse régler : une pile. */
+    public static final int HAND_SIZE_CEILING = 64;
 
     /**
      * Interpolation du mouvement de tourelle, réglable par machine (FIO-161).
@@ -447,11 +481,58 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         return IS_ENERGY ? getEffectiveTuning().energyConsumption() : getEffectiveTuning().fuelConsumption();
     }
 
-    /** Débit effectif en items par seconde, améliorations comprises. */
+    /** Débit théorique en items par seconde : améliorations et taille de main réglée comprises. */
     public double getItemsPerSecond() {
-        InserterTuning tuning = getEffectiveTuning();
+        return 20.0D * getHandSize() / (2.0D * getTicksPerSwing());
+    }
 
-        return 20.0D * tuning.handSize() / (2.0D * tuning.ticksPerSwing());
+    /**
+     * Items saisis par prise : la capacité, ou moins si le joueur l'a plafonnée (FIO-168).
+     *
+     * <p>Le plafond ne relève jamais la capacité : il ne peut que la réduire. Réglé à 3 sur un
+     * inserter qui en prenait 4 grâce à un module, il reste à 3 ; module retiré, il tombe à ce
+     * que l'inserter sait encore prendre.
+     */
+    public int getHandSize() {
+        int capacity = getMaximumItemCountPerAction();
+
+        return this.handSizeLimit == HAND_SIZE_MAX ? capacity : Math.min(this.handSizeLimit, capacity);
+    }
+
+    /** @return le plafond réglé, ou {@link #HAND_SIZE_MAX} */
+    public int getHandSizeLimit() {
+        return this.handSizeLimit;
+    }
+
+    /**
+     * Borné, pas refusé : une valeur forgée hors du domaine y est ramenée, comme le seuil
+     * redstone. Une valeur au-delà de la capacité du moment est gardée telle quelle — un
+     * module de capacité posé plus tard la rendra effective.
+     */
+    public void setHandSizeLimit(int limit) {
+        int bounded = Mth.clamp(limit, HAND_SIZE_MAX, HAND_SIZE_CEILING);
+        if (this.handSizeLimit == bounded) return;
+
+        this.handSizeLimit = bounded;
+        wakeUp();
+        syncToClients();
+    }
+
+    public InserterDropLane getDropLane() {
+        return this.dropLane;
+    }
+
+    public void setDropLane(InserterDropLane lane) {
+        if (this.dropLane == lane) return;
+
+        this.dropLane = lane;
+        wakeUp();
+        syncToClients();
+    }
+
+    /** Compteur d'items livrés, lu par l'écran pour mesurer le débit réel. */
+    public int getItemsDelivered() {
+        return this.itemsDelivered;
     }
 
     /** Nombre d'items de carburant que l'inserter cherche à conserver en réserve. */
@@ -578,7 +659,8 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
             filters.add(this.itemStorage.getStackInSlot(LAYOUT.filter(i)).copy());
         }
 
-        return new InserterSettings(this.animationMode, this.isWhitelist, this.tagFilterMask, this.redstoneCondition, filters);
+        return new InserterSettings(this.animationMode, this.isWhitelist, this.tagFilterMask, this.redstoneCondition,
+                this.handSizeLimit, this.dropLane, filters);
     }
 
     /**
@@ -625,6 +707,17 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
         if (isAffectedByRedstone() && !this.redstoneCondition.equals(settings.redstone())) {
             setRedstoneCondition(settings.redstone());
+            changed = true;
+        }
+
+        int handSize = Mth.clamp(settings.handSizeLimit(), HAND_SIZE_MAX, HAND_SIZE_CEILING);
+        if (this.handSizeLimit != handSize) {
+            this.handSizeLimit = handSize;
+            changed = true;
+        }
+
+        if (this.dropLane != settings.dropLane()) {
+            this.dropLane = settings.dropLane();
             changed = true;
         }
 
@@ -687,6 +780,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         tag.putByte("inserterRedstoneMode", (byte) this.redstoneCondition.mode().ordinal());
         tag.putByte("inserterRedstoneThreshold", (byte) this.redstoneCondition.threshold());
         tag.putByte("inserterAnimation", (byte) this.animationMode.ordinal());
+        writeSettings(tag);
 
         // L'état du bras est persisté : un inserter bloqué doit se retrouver bloqué au
         // rechargement, pas remis au repos avec un item fantôme en main.
@@ -726,6 +820,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.tagFilterMask = tag.getInt("inserterTagFilters");
         this.redstoneCondition = readCondition(tag);
         this.animationMode = InserterAnimationMode.byOrdinal(tag.getByte("inserterAnimation"));
+        readSettings(tag);
 
         migrateLegacyUpgrades(tag);
 
@@ -812,6 +907,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         tag.putByte("inserterRedstoneMode", (byte) this.redstoneCondition.mode().ordinal());
         tag.putByte("inserterRedstoneThreshold", (byte) this.redstoneCondition.threshold());
         tag.putByte("inserterAnimation", (byte) this.animationMode.ordinal());
+        writeSettings(tag);
         tag.putByte("inserterState", (byte) this.state.ordinal());
         tag.putBoolean("inserterCarryingFuel", this.carryingFuel);
         tag.putLong("inserterSwingEnd", this.swingEndTick);
@@ -839,6 +935,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.tagFilterMask = tag.getInt("inserterTagFilters");
         this.redstoneCondition = readCondition(tag);
         this.animationMode = InserterAnimationMode.byOrdinal(tag.getByte("inserterAnimation"));
+        readSettings(tag);
         this.state = InserterState.byOrdinal(tag.getByte("inserterState"));
         this.carryingFuel = tag.getBoolean("inserterCarryingFuel");
         this.swingEndTick = tag.getLong("inserterSwingEnd");
@@ -848,6 +945,24 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
         this.upgrades = InserterUpgrades.load(tag.getCompound("inserterUpgrades"));
         invalidateEffectiveTuning();
+    }
+
+    /** Les réglages de FIO-167 à 169, communs à la sauvegarde et à la synchronisation. */
+    private void writeSettings(CompoundTag tag) {
+        tag.putBoolean("inserterSwitchedOn", this.switchedOn);
+        tag.putByte("inserterHandSize", (byte) this.handSizeLimit);
+        tag.putByte("inserterDropLane", (byte) this.dropLane.ordinal());
+    }
+
+    /**
+     * Un monde antérieur n'a aucune de ces clés, et chacune retombe sur le comportement
+     * d'avant : allumé (d'où le {@code contains}, {@code getBoolean} rendrait faux), main au
+     * maximum, voie laissée à la bande.
+     */
+    private void readSettings(CompoundTag tag) {
+        this.switchedOn = !tag.contains("inserterSwitchedOn") || tag.getBoolean("inserterSwitchedOn");
+        this.handSizeLimit = Mth.clamp(tag.getByte("inserterHandSize"), HAND_SIZE_MAX, HAND_SIZE_CEILING);
+        this.dropLane = InserterDropLane.byOrdinal(tag.getByte("inserterDropLane"));
     }
 
     @Nullable
@@ -1003,6 +1118,8 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     private boolean tryDrop() {
         ItemStack dropped = expelItems(this, getGrabDistance());
         if (dropped.isEmpty()) return false;
+
+        this.itemsDelivered += dropped.getCount();
 
         beginSwing(InserterState.RETURNING, ItemStack.EMPTY);
         return true;
@@ -1175,7 +1292,10 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         IItemHandler source = pEntity.neighbourHandler(true, facing.getOpposite(), pDistance, facing);
         if (source == null) return ItemStack.EMPTY;
 
-        return grabInto(pEntity, source, pEntity.LAYOUT.fuel(), stack -> stack.is(ModTags.Items.INSERTER_FUEL));
+        // La capacité entière, pas la main réglée : le plafond du joueur porte sur ce que
+        // l'inserter livre, pas sur ce qu'il prélève pour se nourrir.
+        return grabInto(pEntity, source, pEntity.LAYOUT.fuel(), pEntity.getMaximumItemCountPerAction(),
+                stack -> stack.is(ModTags.Items.INSERTER_FUEL));
     }
 
     /**
@@ -1362,11 +1482,30 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         this.redstoneCondition = condition;
         wakeUp();
         syncToClients();
+        reevaluateEnabled();
+    }
 
+    /** Recalcule la propriété {@code ENABLED} maintenant, sans attendre un changement de voisinage. */
+    private void reevaluateEnabled() {
         if (this.level != null && !this.level.isClientSide) {
             getBlockState().getBlock().neighborChanged(
                     getBlockState(), this.level, this.worldPosition, this.level.getBlockState(this.worldPosition).getBlock(), this.worldPosition, false);
         }
+    }
+
+    // Interface (Interrupteur, FIO-167)
+
+    public boolean isSwitchedOn() {
+        return this.switchedOn;
+    }
+
+    public void setSwitchedOn(boolean on) {
+        if (this.switchedOn == on) return;
+
+        this.switchedOn = on;
+        wakeUp();
+        syncToClients();
+        reevaluateEnabled();
     }
 
     /**
@@ -1795,8 +1934,8 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      * @return la pile prélevée, vide si rien n'a bougé
      */
     @Nonnull
-    private static ItemStack grabInto(InserterBlockEntity pEntity, IItemHandler source, int targetSlot, Predicate<ItemStack> accept) {
-        int wanted = pEntity.getMaximumItemCountPerAction();
+    private static ItemStack grabInto(
+            InserterBlockEntity pEntity, IItemHandler source, int targetSlot, int wanted, Predicate<ItemStack> accept) {
         int slots = source.getSlots();
 
         int startSlot = scanStart(pEntity.lastSourceSlot, slots);
@@ -1845,7 +1984,8 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         IItemHandler source = pEntity.neighbourHandler(true, facing.getOpposite(), pDistance, facing);
         if (source == null) return ItemStack.EMPTY;
 
-        return grabInto(pEntity, source, BUFFER_SLOT, stack -> matchesFilters(pEntity, stack, isWhitelist));
+        return grabInto(pEntity, source, BUFFER_SLOT, pEntity.getHandSize(),
+                stack -> matchesFilters(pEntity, stack, isWhitelist));
     }
 
     /** @return la pile déposée dans l'inventaire avant, vide si rien n'a bougé */
@@ -1861,7 +2001,9 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         IItemHandler target = pEntity.neighbourHandler(false, facing, pDistance, facing.getOpposite());
         if (target == null) return ItemStack.EMPTY;
 
-        int wanted = Math.min(buffer.getCount(), pEntity.getMaximumItemCountPerAction());
+        target = pEntity.onChosenLane(target);
+
+        int wanted = Math.min(buffer.getCount(), pEntity.getHandSize());
 
         ItemStack probe = pEntity.extractItemInternal(BUFFER_SLOT, wanted, true);
         if (probe.isEmpty()) return ItemStack.EMPTY;
@@ -1887,6 +2029,20 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
                 insertDistributed(target, taken, order),
                 rest -> pEntity.insertItemInternal(BUFFER_SLOT, rest, false));
         return taken;
+    }
+
+    /**
+     * Réduit un convoyeur à la voie choisie, s'il y en a une (FIO-169).
+     *
+     * <p>Le seul endroit où l'inserter sait qu'un convoyeur existe. Sans choix explicite, il
+     * continue de ne rien en savoir : c'est la bande qui range ses cases, lointaine d'abord.
+     */
+    private IItemHandler onChosenLane(IItemHandler target) {
+        if (this.dropLane == InserterDropLane.AUTO || !(target instanceof BeltItemHandler belt)) return target;
+
+        IItemHandler lane = belt.restrictedTo(this.dropLane == InserterDropLane.FAR);
+
+        return lane != null ? lane : target;
     }
 
     private void useFuelOrEnergy() {
