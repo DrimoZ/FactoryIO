@@ -99,17 +99,19 @@ public final class IconButton {
         GuiSprites.button(graphics, left, top, this.width, this.height, state);
 
         GuiSprites.Icon glyph = this.icon.get();
-        if (glyph != null) {
-            GuiSprites.icon(graphics, glyph,
-                    left + (this.width - GuiSprites.ICON_SIZE) / 2,
-                    top + (this.height - GuiSprites.ICON_SIZE) / 2);
-            return;
-        }
-
         Component text = this.label.get();
-        if (text != null) {
-            int colour = this.active.getAsBoolean() ? 0xFFFFFF : 0xA0A0A0;
-            graphics.drawCenteredString(font, text, left + this.width / 2, top + (this.height - 8) / 2, colour);
+        int colour = this.active.getAsBoolean() ? 0xFFFFFF : 0xA0A0A0;
+        int iconY = top + (this.height - GuiSprites.ICON_SIZE) / 2;
+        int textY = top + (this.height - 8) / 2;
+
+        // Icône seule : centrée. Libellé seul : centré. Les deux : l'icône mène, le texte suit.
+        if (glyph != null && text != null) {
+            GuiSprites.icon(graphics, glyph, left + 3, iconY);
+            graphics.drawString(font, text, left + 3 + GuiSprites.ICON_SIZE + 4, textY, colour, true);
+        } else if (glyph != null) {
+            GuiSprites.icon(graphics, glyph, left + (this.width - GuiSprites.ICON_SIZE) / 2, iconY);
+        } else if (text != null) {
+            graphics.drawCenteredString(font, text, left + this.width / 2, textY, colour);
         }
     }
 

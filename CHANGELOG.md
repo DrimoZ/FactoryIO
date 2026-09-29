@@ -7,10 +7,10 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 
 ### Added
 
-- **A new inserter screen.** It resizes to the model, and everything that is not the machine's
-  core job moved to side tabs: Information on the left, Upgrades, Redstone control and Settings
-  on the right.
-- **On/off button** on every inserter. Off wins over any redstone signal.
+- **A new inserter screen.** It resizes to the model and shows the blocks an inserter takes from
+  and drops into. Everything that is not the machine's core job moved to side tabs: Information
+  and Settings on the left, Upgrades and Control on the right.
+- **On/off switch** on every inserter, in the Control tab. Off wins over any redstone signal.
 - **Hand size cap**, per inserter: take fewer items per swing than the machine could.
 - **Drop lane choice**, per inserter: automatic, near or far, overriding
   `insert_on_far_lane_only` for that inserter.

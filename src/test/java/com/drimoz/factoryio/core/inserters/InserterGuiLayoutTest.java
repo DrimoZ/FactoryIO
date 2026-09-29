@@ -43,6 +43,8 @@ class InserterGuiLayoutTest {
         boxes.add(new Box("main", gui.handSocketX(), gui.handSocketY(), InserterGuiLayout.HAND_SOCKET, InserterGuiLayout.HAND_SOCKET));
         boxes.add(new Box("flèche entrante", gui.inArrowX(), gui.arrowY(), InserterGuiLayout.ARROW_WIDTH, InserterGuiLayout.ARROW_HEIGHT));
         boxes.add(new Box("flèche sortante", gui.outArrowX(), gui.arrowY(), InserterGuiLayout.ARROW_WIDTH, InserterGuiLayout.ARROW_HEIGHT));
+        boxes.add(new Box("source", gui.sourceSocketX(), gui.neighbourSocketY(), InserterGuiLayout.SLOT, InserterGuiLayout.SLOT));
+        boxes.add(new Box("cible", gui.targetSocketX(), gui.neighbourSocketY(), InserterGuiLayout.SLOT, InserterGuiLayout.SLOT));
 
         if (gui.usesEnergy()) {
             boxes.add(new Box("jauge", InserterGuiLayout.GAUGE_X, InserterGuiLayout.CONTENT_TOP, InserterGuiLayout.GAUGE_WIDTH, gui.gaugeHeight()));
@@ -55,6 +57,8 @@ class InserterGuiLayoutTest {
             for (int i = 0; i < InserterSlotLayout.FILTER_SLOT_COUNT; i++) {
                 boxes.add(socket("filtre " + i, gui.filterSlotX(i), gui.filterSlotY()));
             }
+            boxes.add(new Box("mode de liste", gui.listButtonX(), gui.listButtonY(),
+                    InserterGuiLayout.LIST_BUTTON_SIZE, InserterGuiLayout.LIST_BUTTON_SIZE));
         }
 
         for (int row = 0; row < 3; row++)
@@ -106,12 +110,6 @@ class InserterGuiLayoutTest {
             }
             assertTrue(bottom <= gui.inventoryLabelY() - 1, gui + " : le contenu descend jusqu'à " + bottom);
         }
-    }
-
-    @Test
-    @DisplayName("les bascules tiennent dans le bandeau")
-    void togglesFitInTheBand() {
-        assertTrue(InserterGuiLayout.TOGGLE_Y + InserterGuiLayout.TOGGLE_SIZE <= InserterGuiLayout.CONTENT_TOP);
     }
 
     @Test

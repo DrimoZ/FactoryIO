@@ -7,11 +7,11 @@ import com.drimoz.factoryio.client.gui.SideTabs;
 import com.drimoz.factoryio.core.generic.container.slots.InserterBufferSlot;
 import com.drimoz.factoryio.core.generic.container.slots.InserterUpgradeSlot;
 import com.drimoz.factoryio.core.init.ModNetworks;
-import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterContainer;
 import com.drimoz.factoryio.core.inserters.InserterFilterSlot;
 import com.drimoz.factoryio.core.inserters.InserterGuiLayout;
+import com.drimoz.factoryio.core.inserters.InserterState;
 import com.drimoz.factoryio.core.network.packet.C2SInserterSetting;
 import com.drimoz.factoryio.shared.ModUtils;
 import com.drimoz.factoryio.shared.StringHelper;
@@ -19,6 +19,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
@@ -36,10 +40,11 @@ import java.util.List;
  *
  * <ul>
  *   <li>une fenêtre étirable, à la taille que donne {@link InserterGuiLayout} ;</li>
- *   <li>dans la fenêtre, le travail de la machine — alimentation, main, filtres ;</li>
- *   <li>dans le bandeau, les bascules à deux ou trois positions — marche, animation, liste ;</li>
- *   <li>sur les côtés, des onglets pour tout le reste — informations à gauche, améliorations,
- *       condition redstone et réglages à droite.</li>
+ *   <li>dans la fenêtre, le travail de la machine seulement — alimentation, trajet de la main,
+ *       filtres et leur mode ;</li>
+ *   <li>sur les côtés, des onglets pour tout le reste — informations et réglages à gauche ;
+ *       améliorations et contrôle (marche et redstone) à droite. Deux par côté : aucune pile
+ *       ne dépasse la fenêtre.</li>
  * </ul>
  *
  * <p>Aucune coordonnée de slot n'est écrite ici : elles viennent du layout, que le menu lit
@@ -59,8 +64,8 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
     private static final int LABEL_COLOUR = 0x404040;
 
     private final InserterGuiLayout gui;
-    private final List<IconButton> toggles = new ArrayList<>();
     private final ThroughputMeter meter = new ThroughputMeter();
+    private IconButton listButton;
     private SideTabs tabs;
 
     public InserterScreen(InserterContainer menu, Inventory playerInventory, Component title) {
@@ -77,48 +82,13 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
     protected void init() {
         super.init();
 
-        this.toggles.clear();
+        this.listButton = null;
         this.tabs = new SideTabs(List.of(), null);
         if (!getMenu().isBacked()) return;
 
-        buildToggles();
-
-        List<SideTab> sideTabs = new ArrayList<>();
-        sideTabs.add(new InserterTabs.Info(this));
-        if (this.gui.hasAugmentTab()) sideTabs.add(new InserterTabs.Augments(this));
-        if (getMenu().isAffectedByRedstone()) sideTabs.add(new InserterTabs.Redstone(this));
-        sideTabs.add(new InserterTabs.Settings(this));
-
-        this.tabs = new SideTabs(sideTabs, this.gui.hasAugmentTab() ? InserterTabs.Augments.ID : null);
-    }
-
-    /**
-     * Bascules du bandeau, alignées à droite. Une bascule est un réglage à deux ou trois
-     * positions qu'on veut changer d'un clic : elle ne mérite pas un onglet.
-     */
-    private void buildToggles() {
-        int size = InserterGuiLayout.TOGGLE_SIZE;
-
-        this.toggles.add(new IconButton(0, 0, size, size)
-                .icon(() -> blockEntity().isSwitchedOn() ? GuiSprites.Icon.POWER_ON : GuiSprites.Icon.POWER_OFF)
-                .tooltip(() -> List.of(
-                        ModUtils.tooltipComponent(blockEntity().isSwitchedOn() ? "power_on" : "power_off")
-                                .withStyle(blockEntity().isSwitchedOn() ? ChatFormatting.GREEN : ChatFormatting.RED),
-                        ModUtils.tooltipComponent("power_help").withStyle(ChatFormatting.GRAY)))
-                .onPress(() -> send(C2SInserterSetting.Setting.POWER, blockEntity().isSwitchedOn() ? 0 : 1)));
-
-        this.toggles.add(new IconButton(0, 0, size, size)
-                .icon(() -> animationIcon(blockEntity().getAnimationMode()))
-                .tooltip(() -> List.of(
-                        ModUtils.tooltipComponent("animation",
-                                ModUtils.tooltipComponent(blockEntity().getAnimationMode().translationKey())
-                                        .withStyle(ChatFormatting.AQUA)),
-                        ModUtils.tooltipComponent("animation_help").withStyle(ChatFormatting.GRAY)))
-                .onPress(() -> send(C2SInserterSetting.Setting.ANIMATION,
-                        blockEntity().getAnimationMode().next().ordinal())));
-
         if (getMenu().isFilterable()) {
-            this.toggles.add(new IconButton(0, 0, size, size)
+            int size = InserterGuiLayout.LIST_BUTTON_SIZE;
+            this.listButton = new IconButton(this.gui.listButtonX(), this.gui.listButtonY(), size, size)
                     .icon(() -> blockEntity().isWhitelist() ? GuiSprites.Icon.WHITELIST : GuiSprites.Icon.BLACKLIST)
                     .tooltip(() -> {
                         boolean whitelist = blockEntity().isWhitelist();
@@ -129,24 +99,16 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
                                                         .withStyle(ChatFormatting.GOLD))
                                         .withStyle(ChatFormatting.GRAY));
                     })
-                    .onPress(() -> send(C2SInserterSetting.Setting.FILTER_MODE, blockEntity().isWhitelist() ? 0 : 1)));
+                    .onPress(() -> send(C2SInserterSetting.Setting.FILTER_MODE, blockEntity().isWhitelist() ? 0 : 1));
         }
 
-        // Alignée à droite : les positions ne se connaissent qu'une fois la rangée complète.
-        int step = size + 1;
-        int x = InserterGuiLayout.WIDTH - 7 - this.toggles.size() * step + 1;
-        for (IconButton toggle : this.toggles) {
-            toggle.movedTo(x, InserterGuiLayout.TOGGLE_Y);
-            x += step;
-        }
-    }
+        List<SideTab> sideTabs = new ArrayList<>();
+        sideTabs.add(new InserterTabs.Info(this));
+        if (this.gui.hasAugmentTab()) sideTabs.add(new InserterTabs.Augments(this));
+        sideTabs.add(new InserterTabs.Control(this));
+        sideTabs.add(new InserterTabs.Settings(this));
 
-    private static GuiSprites.Icon animationIcon(InserterAnimationMode mode) {
-        return switch (mode) {
-            case SMOOTH -> GuiSprites.Icon.ANIMATION_SMOOTH;
-            case SNAP -> GuiSprites.Icon.ANIMATION_SNAP;
-            case OFF -> GuiSprites.Icon.ANIMATION_OFF;
-        };
+        this.tabs = new SideTabs(sideTabs, this.gui.hasAugmentTab() ? InserterTabs.Augments.ID : null);
     }
 
     // Interface (pour les onglets)
@@ -227,7 +189,7 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         GuiSprites.panel(graphics, left, top, this.imageWidth, this.imageHeight);
 
         renderPower(graphics, left, top);
-        renderHand(graphics, left, top);
+        renderHand(graphics, left, top, partialTick);
 
         for (Slot slot : getMenu().slots) {
             // La main a son grand socle, et les slots d'onglet sont dessinés par l'onglet.
@@ -236,7 +198,7 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
             GuiSprites.slot(graphics, left + slot.x, top + slot.y);
         }
 
-        for (IconButton toggle : this.toggles) toggle.render(graphics, this.font, left, top, mouseX, mouseY);
+        if (this.listButton != null) this.listButton.render(graphics, this.font, left, top, mouseX, mouseY);
 
         this.tabs.renderForegrounds(graphics, this.font, mouseX, mouseY);
     }
@@ -254,28 +216,90 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         }
     }
 
-    /** Le trajet : ▶ main ▶. La main est le seul slot à grand socle — c'est ce qui bouge. */
-    private void renderHand(GuiGraphics graphics, int left, int top) {
-        GuiSprites.arrow(graphics, left + this.gui.inArrowX(), top + this.gui.arrowY());
+    /**
+     * Le trajet : ▶ main ▶. Les flèches suivent le bras — la première se remplit quand il
+     * revient chercher, la seconde quand il porte — et la main vide montre ce qui va là.
+     */
+    private void renderHand(GuiGraphics graphics, int left, int top, float partialTick) {
+        InserterBlockEntity be = blockEntity();
+        InserterState state = be.getState();
+        float progress = be.getArmProgress(partialTick);
+
+        float in = switch (state) {
+            case RETURNING -> progress;
+            case SWINGING, BLOCKED -> 1f;
+            case WAITING -> 0f;
+        };
+        float out = switch (state) {
+            case SWINGING -> progress;
+            case BLOCKED -> 1f;
+            case RETURNING, WAITING -> 0f;
+        };
+
+        GuiSprites.arrow(graphics, left + this.gui.inArrowX(), top + this.gui.arrowY(), in);
         GuiSprites.bigSlot(graphics, left + this.gui.handSocketX(), top + this.gui.handSocketY());
-        GuiSprites.arrow(graphics, left + this.gui.outArrowX(), top + this.gui.arrowY());
+        GuiSprites.arrow(graphics, left + this.gui.outArrowX(), top + this.gui.arrowY(), out);
+
+        renderNeighbour(graphics, left + this.gui.sourceSocketX(), top + this.gui.neighbourSocketY(), neighbour(true));
+        renderNeighbour(graphics, left + this.gui.targetSocketX(), top + this.gui.neighbourSocketY(), neighbour(false));
+
+        if (be.getHeldStack().isEmpty()) {
+            GuiSprites.faintIcon(graphics, GuiSprites.Icon.HAND,
+                    left + this.gui.handSocketX() + (InserterGuiLayout.HAND_SOCKET - GuiSprites.ICON_SIZE) / 2,
+                    top + this.gui.handSocketY() + (InserterGuiLayout.HAND_SOCKET - GuiSprites.ICON_SIZE) / 2);
+        }
+    }
+
+    /** Socle et icône du bloc visé ; vide s'il n'y a rien. */
+    private void renderNeighbour(GuiGraphics graphics, int x, int y, BlockState state) {
+        GuiSprites.inset(graphics, x, y, InserterGuiLayout.SLOT, InserterGuiLayout.SLOT);
+
+        ItemStack icon = iconOf(state);
+        if (!icon.isEmpty()) graphics.renderItem(icon, x + 1, y + 1);
     }
 
     /**
-     * Le titre cède la place aux bascules plutôt que de passer dessous : un nom trop long est
-     * coupé et suffixé d'une ellipse.
+     * Le bloc que l'inserter vise derrière ({@code source}) ou devant lui, à sa portée réelle —
+     * modules compris : un long inserter regarde à deux blocs.
      */
-    @Override
-    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        int room = InserterGuiLayout.WIDTH - this.titleLabelX - 10
-                - this.toggles.size() * (InserterGuiLayout.TOGGLE_SIZE + 1);
+    private BlockState neighbour(boolean source) {
+        InserterBlockEntity be = blockEntity();
+        if (be.getLevel() == null) return null;
 
-        String title = this.title.getString();
-        if (this.font.width(title) > room) {
-            title = this.font.plainSubstrByWidth(title, room - this.font.width("…")) + "…";
+        Direction facing = be.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING);
+        BlockPos pos = be.getBlockPos().relative(source ? facing.getOpposite() : facing, be.getGrabDistance());
+
+        return be.getLevel().getBlockState(pos);
+    }
+
+    private static ItemStack iconOf(BlockState state) {
+        if (state == null || state.isAir()) return ItemStack.EMPTY;
+
+        return new ItemStack(state.getBlock());
+    }
+
+    private List<Component> neighbourTooltip(double mouseX, double mouseY) {
+        double y = mouseY - this.topPos;
+        if (y < this.gui.neighbourSocketY() || y >= this.gui.neighbourSocketY() + InserterGuiLayout.SLOT) return List.of();
+
+        double x = mouseX - this.leftPos;
+        boolean source;
+        if (x >= this.gui.sourceSocketX() && x < this.gui.sourceSocketX() + InserterGuiLayout.SLOT) source = true;
+        else if (x >= this.gui.targetSocketX() && x < this.gui.targetSocketX() + InserterGuiLayout.SLOT) source = false;
+        else return List.of();
+
+        BlockState state = neighbour(source);
+        if (state == null || state.isAir()) {
+            return List.of(ModUtils.tooltipComponent(source ? "source_none" : "target_none").withStyle(ChatFormatting.GRAY));
         }
 
-        graphics.drawString(this.font, title, this.titleLabelX, this.titleLabelY, LABEL_COLOUR, false);
+        return List.of(ModUtils.tooltipComponent(source ? "source_block" : "target_block",
+                state.getBlock().getName().withStyle(ChatFormatting.AQUA)));
+    }
+
+    @Override
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        graphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, LABEL_COLOUR, false);
         graphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, LABEL_COLOUR, false);
     }
 
@@ -295,11 +319,11 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
 
         List<Component> lines = new ArrayList<>();
 
-        for (IconButton toggle : this.toggles) {
-            lines.addAll(toggle.tooltipAt(this.leftPos, this.topPos, mouseX, mouseY));
-        }
+        if (this.listButton != null) lines.addAll(this.listButton.tooltipAt(this.leftPos, this.topPos, mouseX, mouseY));
 
         if (lines.isEmpty()) lines.addAll(this.tabs.tooltipAt(mouseX, mouseY));
+
+        if (lines.isEmpty()) lines.addAll(neighbourTooltip(mouseX, mouseY));
 
         if (lines.isEmpty() && isOverPower(mouseX, mouseY)) {
             lines.add(getMenu().usesEnergy()
@@ -334,8 +358,8 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0 && getMenu().isBacked()) {
-            for (IconButton toggle : this.toggles) {
-                if (toggle.mouseClicked(this.leftPos, this.topPos, mouseX, mouseY)) return true;
+            if (this.listButton != null && this.listButton.mouseClicked(this.leftPos, this.topPos, mouseX, mouseY)) {
+                return true;
             }
 
             if (this.tabs.mouseClicked(mouseX, mouseY, button)) return true;

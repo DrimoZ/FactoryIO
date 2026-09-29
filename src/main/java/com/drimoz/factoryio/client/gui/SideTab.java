@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.client.gui;
 
 import com.drimoz.factoryio.core.inserters.InserterGuiLayout;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -116,9 +117,15 @@ public abstract class SideTab {
         return Math.round(Mth.lerp(eased(), InserterGuiLayout.TAB_HEADER, fullHeight()));
     }
 
+    /** Assez large pour le contenu, et pour le titre : il ne déborde jamais de son onglet. */
     private int fullWidth() {
-        return Math.max(InserterGuiLayout.TAB_HEADER, contentWidth() + 2 * InserterGuiLayout.TAB_PADDING);
+        int titled = TITLE_X + Minecraft.getInstance().font.width(title()) + InserterGuiLayout.TAB_PADDING;
+
+        return Math.max(titled, contentWidth() + 2 * InserterGuiLayout.TAB_PADDING);
     }
+
+    /** Abscisse du titre dans l'en-tête, après l'icône. */
+    private static final int TITLE_X = 24;
 
     private int fullHeight() {
         return InserterGuiLayout.TAB_HEADER + contentHeight() + InserterGuiLayout.TAB_PADDING;
@@ -179,7 +186,7 @@ public abstract class SideTab {
 
         if (!isFullyOpen()) return;
 
-        graphics.drawString(font, title(), iconX + 20, this.y + 7, 0xFFFFFF, true);
+        graphics.drawString(font, title(), left() + TITLE_X, this.y + 7, 0xFFFFFF, true);
         renderContent(graphics, font, contentX(), contentY(), mouseX, mouseY);
     }
 }

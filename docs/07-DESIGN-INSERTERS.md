@@ -395,16 +395,17 @@ sur un fond sans case libre. Il se compose désormais :
 - **Pièces, pas images.** Une planche 256×256 générée par `tools/gui-sprites.js` :
   cadres étirables (9-slice), slots, jauge, flamme, icônes. `GuiSprites` est la
   seule classe qui connaisse une coordonnée de texture.
-- **Fenêtre.** Alimentation à gauche, la main au centre entre deux flèches, les
-  filtres dessous, l'inventaire du joueur. Hauteur variable selon le type.
-- **Bandeau.** Les réglages à deux ou trois positions sont des bascules en icône :
-  marche/arrêt (FIO-167), animation, liste blanche/noire.
+- **Fenêtre.** Le travail de la machine seulement : l'alimentation à gauche, puis le
+  trajet — le bloc source, la main, le bloc cible, reliés par deux flèches qui se
+  remplissent au rythme du bras —, et dessous les filtres suivis de leur bouton liste
+  blanche / liste noire. Le bandeau ne porte que le titre. Hauteur variable selon le type.
 - **Onglets latéraux, à la Thermal.** Un seul ouvert par côté, animés, le dernier
-  ouvert mémorisé. À gauche ce qui renseigne : *Informations* (état, débit attendu
-  et mesuré, consommation — FIO-170). À droite ce qui se règle : *Améliorations*
-  (premier, ouvert par défaut : ses slots ont des coordonnées figées — FIO-162),
-  *Contrôle redstone* (mode, seuil, signal reçu), *Réglages* (taille de main —
-  FIO-168, voie de dépose — FIO-169).
+  ouvert mémorisé, chacun assez large pour son titre. À gauche : *Informations*
+  (état, débit attendu et mesuré, consommation — FIO-170) et *Réglages* (taille de
+  main — FIO-168, voie de dépose — FIO-169, animation). À droite : *Améliorations*
+  (premier, ouvert par défaut : ses slots ont des coordonnées figées — FIO-162) et
+  *Contrôle* (l'interrupteur — FIO-167 —, puis la condition redstone, son seuil et le
+  signal reçu). Deux onglets par côté : aucune pile ne dépasse la fenêtre.
 - **Slots d'onglet.** Les coordonnées d'un `Slot` étant figées, un slot d'onglet
   ne suit pas l'onglet : il est montré ou caché (`isActive`) selon que l'onglet
   est entièrement ouvert. `hasClickedOutside` exclut les onglets, sans quoi un

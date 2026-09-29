@@ -176,7 +176,7 @@ ascii(56, 16, FLAME, 14, 14);
 // Flamme éteinte : même dessin, en gris — la place vide garde sa forme.
 ascii(70, 16, FLAME, 14, 14, { ...PALETTE, r: 0x5c5c5c, R: 0x4a4a4a, o: 0x6e6e6e, y: 0x7c7c7c, w: 0x8a8a8a });
 
-ascii(84, 16, [
+const ARROW = [
     "..........d.....",
     "..........dd....",
     "..........dmd...",
@@ -188,7 +188,21 @@ ascii(84, 16, [
     "..........dmd...",
     "..........dd....",
     "..........d.....",
-], 16, 11);
+];
+ascii(84, 16, ARROW, 16, 11);
+// Flèche pleine, par-dessus la vide, découpée à l'avancement du bras.
+ascii(84, 28, ARROW, 16, 11, { ...PALETTE, d: 0x2f6b2f, m: 0x6fd46f });
+
+// Jauge vide : les mêmes segments, éteints. Une jauge vide doit se lire comme une jauge, pas
+// comme un slot.
+for (let y = 0; y < 48; y++) {
+    for (let x = 0; x < 12; x++) {
+        const centre = 1 - Math.abs(x - 5.5) / 6;
+        let v = 44 + Math.round(18 * centre);
+        if (y % 4 === 3) v = Math.round(v * 0.7);
+        set(100 + x, 16 + y, (Math.round(v * 1.25) << 16) | (v << 8) | v);
+    }
+}
 
 // Ligne 64 : icônes 12×12 -----------------------------------------------------------------
 

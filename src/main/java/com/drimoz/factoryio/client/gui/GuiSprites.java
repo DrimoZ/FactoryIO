@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.client.gui;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
@@ -76,6 +77,7 @@ public final class GuiSprites {
     }
 
     private static final int ENERGY_U = 44;
+    private static final int ENERGY_EMPTY_U = 100;
     private static final int ENERGY_V = 16;
     private static final int ENERGY_WIDTH = 12;
     private static final int ENERGY_HEIGHT = 48;
@@ -89,6 +91,12 @@ public final class GuiSprites {
         inset(graphics, x, y, width, height);
 
         int inner = height - 2;
+
+        // Segments éteints sur toute la hauteur : vide, la jauge reste lisible comme une jauge.
+        graphics.blit(SHEET, x + 1, y + 1, width - 2, inner,
+                ENERGY_EMPTY_U, ENERGY_V + ENERGY_HEIGHT - Math.min(inner, ENERGY_HEIGHT),
+                ENERGY_WIDTH, Math.min(inner, ENERGY_HEIGHT), 256, 256);
+
         int filled = Math.round(inner * Math.max(0f, Math.min(1f, fill)));
         if (filled <= 0) return;
 
@@ -114,8 +122,26 @@ public final class GuiSprites {
     public static final int ARROW_WIDTH = 16;
     public static final int ARROW_HEIGHT = 11;
 
-    public static void arrow(GuiGraphics graphics, int x, int y) {
+    /**
+     * Flèche de trajet, remplie de gauche à droite à hauteur de {@code progress} : elle suit le
+     * bras, comme la flèche de cuisson d'un four suit la cuisson.
+     */
+    public static void arrow(GuiGraphics graphics, int x, int y, float progress) {
         graphics.blit(SHEET, x, y, 84, 16, ARROW_WIDTH, ARROW_HEIGHT);
+
+        int filled = Math.round(ARROW_WIDTH * Math.max(0f, Math.min(1f, progress)));
+        if (filled <= 0) return;
+
+        graphics.blit(SHEET, x, y, 84, 28, filled, ARROW_HEIGHT);
+    }
+
+    /** Icône estompée : un rappel de ce qui va là, pas un contenu. */
+    public static void faintIcon(GuiGraphics graphics, Icon icon, int x, int y) {
+        RenderSystem.enableBlend();
+        graphics.setColor(1f, 1f, 1f, 0.3f);
+        icon(graphics, icon, x, y);
+        graphics.setColor(1f, 1f, 1f, 1f);
+        RenderSystem.disableBlend();
     }
 
     // Icônes 12×12

@@ -30,16 +30,17 @@ blocks, which lets it skip over a belt to take from what is behind it.
 
 Right-click an inserter to open it.
 
-- **The window** shows what the machine is doing: its power on the left, the item in its hand
-  in the middle, and the five filter slots underneath on filtering models.
-- **The top bar** holds three buttons: **on/off** — off wins over any redstone signal —,
-  **animation** (smooth, snap, off), and on filtering models **whitelist/blacklist**.
-- **Tabs** slide out of the sides. On the left, **Information**: what the inserter is doing
-  right now, the rate it should reach and the rate it actually reaches, and what a swing costs.
-  A measured rate well under the expected one means a starving or blocked inserter. On the
-  right, **Upgrades** (open by default), **Redstone control** and **Settings**.
-- **Settings** caps the **hand size** — how many items a swing takes, "Max" following capacity
-  modules — and picks the **drop lane** on a belt: automatic, near or far.
+- **The window** shows what the machine is doing: its power on the left, then the block it takes
+  from, the item in its hand and the block it drops into — the arrows fill as the arm moves. On
+  filtering models the five filter slots sit underneath, with the whitelist/blacklist button at
+  the end of the row. Hover the source or target to see what the inserter is actually aimed at.
+- **Tabs** slide out of the sides. On the left, **Information** — what the inserter is doing
+  right now, the rate it should reach and the rate it actually reaches, and what a swing costs;
+  a measured rate well under the expected one means a starving or blocked inserter — and
+  **Settings**: the **hand size** (how many items a swing takes, "Max" following capacity
+  modules), the **drop lane** on a belt (automatic, near or far) and the **animation**. On the
+  right, **Upgrades** (open by default) and **Control**: the **on/off** switch — off wins over
+  any redstone signal — and the redstone condition.
 
 ## Crafting
 

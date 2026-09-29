@@ -4,6 +4,7 @@ import com.drimoz.factoryio.client.gui.GuiSprites;
 import com.drimoz.factoryio.client.gui.IconButton;
 import com.drimoz.factoryio.client.gui.SideTab;
 import com.drimoz.factoryio.core.generic.container.slots.InserterFuelSlot;
+import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterDropLane;
 import com.drimoz.factoryio.core.inserters.InserterGuiLayout;
@@ -27,33 +28,50 @@ import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Les quatre onglets de l'écran d'inserter (FIO-071, FIO-162, FIO-167 à 170).
  *
- * <p>À gauche ce qui renseigne, à droite ce qui se règle — la convention de Thermal. Chaque
+ * <p>Deux onglets par côté, pour qu'aucune pile ne dépasse la fenêtre : informations et
+ * réglages à gauche, améliorations et contrôle à droite. Chaque
  * onglet relit le block entity à chaque image et n'applique rien lui-même : ses boutons envoient
  * un réglage au serveur, qui renvoie l'état.
+ *
+ * <p>Une seule charte de texte pour tous : intitulés en gris clair, valeurs en blanc, toutes
+ * deux ombrées. Les teintes d'onglet sont assez sombres pour que le blanc s'y lise.
  */
 final class InserterTabs {
 
     private InserterTabs() {}
 
     private static final int LINE = 10;
-    private static final int LABEL = 0x202020;
+    private static final int LABEL = 0xD8D8D8;
     private static final int VALUE = 0xFFFFFF;
-    private static final int MUTED = 0xA0A0A0;
+    private static final int MUTED = 0x9A9A9A;
+
+    private static final int INFO_COLOUR = 0xC89420;
+    private static final int AUGMENT_COLOUR = 0x3C6FC8;
+    private static final int CONTROL_COLOUR = 0xC03C2C;
+    private static final int SETTINGS_COLOUR = 0x7C7C94;
 
     private static void label(GuiGraphics graphics, Font font, Component text, int x, int y) {
-        graphics.drawString(font, text, x, y, LABEL, false);
+        graphics.drawString(font, text, x, y, LABEL, true);
     }
 
     private static void value(GuiGraphics graphics, Font font, Component text, int x, int y, int colour) {
         graphics.drawString(font, text, x, y, colour, true);
     }
 
+    /**
+     * Deux décimales, au format de la langue du <b>jeu</b> : celle du système affichait
+     * « 7,50 » dans une interface anglaise.
+     */
     private static Component number(double value) {
-        return Component.literal(String.format("%.2f", value));
+        String code = Minecraft.getInstance().getLanguageManager().getSelected();
+        Locale locale = Locale.forLanguageTag(code.replace('_', '-'));
+
+        return Component.literal(String.format(locale, "%.2f", value));
     }
 
     /** Onglet à boutons : rendu, clic et infobulle délégués à la liste. */
@@ -96,12 +114,12 @@ final class InserterTabs {
      */
     static final class Info extends SideTab {
 
-        private static final int ROW = 2 * LINE + 2;
+        private static final int ROW = 2 * LINE + 3;
 
         private final InserterScreen screen;
 
         Info(InserterScreen screen) {
-            super("info", Side.LEFT, 0xF0C040);
+            super("info", Side.LEFT, INFO_COLOUR);
             this.screen = screen;
         }
 
@@ -122,7 +140,7 @@ final class InserterTabs {
 
         @Override
         protected int contentHeight() {
-            return 4 * ROW - 2;
+            return 4 * ROW - 3;
         }
 
         @Override
@@ -142,7 +160,7 @@ final class InserterTabs {
             value(graphics, font, meter.isMeasuring()
                             ? ModUtils.tooltipComponent("info_measuring")
                             : ModUtils.tooltipComponent("value_items_per_second", number(meter.itemsPerSecond())),
-                    x, y + 2 * ROW + LINE, VALUE);
+                    x, y + 2 * ROW + LINE, meter.isMeasuring() ? MUTED : VALUE);
 
             label(graphics, font, ModUtils.tooltipComponent("info_consumption"), x, y + 3 * ROW);
             value(graphics, font, ModUtils.tooltipComponent(
@@ -152,12 +170,12 @@ final class InserterTabs {
         }
 
         private enum State {
-            OFF("state_off", 0xC0C0C0),
-            REDSTONE("state_redstone", 0xFF7070),
-            NO_POWER("state_no_power", 0xFF7070),
-            BLOCKED("state_blocked", 0xFFB040),
-            WORKING("state_working", 0x70FF70),
-            WAITING("state_waiting", 0xFFFF80);
+            OFF("state_off", 0xB8B8B8),
+            REDSTONE("state_redstone", 0xFF8A80),
+            NO_POWER("state_no_power", 0xFF8A80),
+            BLOCKED("state_blocked", 0xFFC060),
+            WORKING("state_working", 0x90FF90),
+            WAITING("state_waiting", 0xFFFFA0);
 
             final String key;
             final int colour;
@@ -211,7 +229,7 @@ final class InserterTabs {
         private final InserterScreen screen;
 
         Augments(InserterScreen screen) {
-            super(ID, Side.RIGHT, 0x5A8FE8);
+            super(ID, Side.RIGHT, AUGMENT_COLOUR);
             this.screen = screen;
         }
 
@@ -232,7 +250,7 @@ final class InserterTabs {
 
         @Override
         protected int contentHeight() {
-            return InserterGuiLayout.SLOT + 4 + 3 * LINE;
+            return InserterGuiLayout.SLOT + 5 + 3 * LINE;
         }
 
         @Override
@@ -247,11 +265,11 @@ final class InserterTabs {
             }
 
             InserterBlockEntity be = this.screen.blockEntity();
-            int text = y + InserterGuiLayout.SLOT + 4;
+            int text = y + InserterGuiLayout.SLOT + 5;
 
             if (be.getUpgrades().isEmpty()) {
                 for (FormattedCharSequence line : font.split(ModUtils.tooltipComponent("augment_empty"), contentWidth())) {
-                    graphics.drawString(font, line, x, text, LABEL, false);
+                    graphics.drawString(font, line, x, text, LABEL, true);
                     text += LINE;
                 }
                 return;
@@ -279,32 +297,50 @@ final class InserterTabs {
         }
     }
 
-    // Condition redstone (droite) ------------------------------------------------------------
+    // Contrôle (droite) ----------------------------------------------------------------------
 
     /**
-     * Le mode et le seuil de la condition redstone, sortis du bandeau où ils étaient posés à la
-     * main. Le signal reçu est affiché : c'est ce qui permet de comprendre pourquoi l'inserter est
-     * arrêté sans aller chercher un comparateur.
+     * Quand l'inserter travaille : l'interrupteur (FIO-167), puis la condition redstone si le
+     * type y est sensible.
+     *
+     * <p>Les deux vont ensemble parce qu'ils répondent à la même question, et se combinent en une
+     * seule propriété du bloc. L'interrupteur y est en tête : il l'emporte sur tout signal. Le
+     * signal reçu est affiché — c'est ce qui permet de comprendre pourquoi l'inserter est arrêté
+     * sans aller chercher un comparateur.
      */
-    static final class Redstone extends ButtonTab {
+    static final class Control extends ButtonTab {
 
-        private static final int WIDTH = 100;
+        private static final int WIDTH = 110;
         private static final int BUTTON = 14;
-        private static final int THRESHOLD_ROW = InserterRedstoneCondition.Mode.values().length * (BUTTON + 2) + 2;
+
+        private static final int POWER_HEIGHT = 16;
+        private static final int REDSTONE_LABEL = POWER_HEIGHT + 6;
+        private static final int MODES = REDSTONE_LABEL + LINE + 1;
+        private static final int THRESHOLD_ROW = MODES + InserterRedstoneCondition.Mode.values().length * (BUTTON + 2) + 2;
         private static final int SIGNAL_ROW = THRESHOLD_ROW + BUTTON + 4;
 
-        private static final ItemStack ICON = new ItemStack(Items.REDSTONE);
+        private static final ItemStack ICON = new ItemStack(Items.REDSTONE_TORCH);
 
         private final InserterScreen screen;
+        private final boolean redstone;
 
-        Redstone(InserterScreen screen) {
-            super("redstone", Side.RIGHT, 0xE0503C);
+        Control(InserterScreen screen) {
+            super("control", Side.RIGHT, CONTROL_COLOUR);
             this.screen = screen;
+            this.redstone = screen.getMenu().isAffectedByRedstone();
+
+            this.buttons.add(new IconButton(0, 0, WIDTH, POWER_HEIGHT)
+                    .icon(() -> be().isSwitchedOn() ? GuiSprites.Icon.POWER_ON : GuiSprites.Icon.POWER_OFF)
+                    .label(() -> ModUtils.tooltipComponent(be().isSwitchedOn() ? "power_on" : "power_off"))
+                    .tooltip(() -> List.of(ModUtils.tooltipComponent("power_help").withStyle(ChatFormatting.GRAY)))
+                    .onPress(() -> screen.send(C2SInserterSetting.Setting.POWER, be().isSwitchedOn() ? 0 : 1)));
+
+            if (!this.redstone) return;
 
             InserterRedstoneCondition.Mode[] modes = InserterRedstoneCondition.Mode.values();
             for (int i = 0; i < modes.length; i++) {
                 InserterRedstoneCondition.Mode mode = modes[i];
-                this.buttons.add(new IconButton(0, i * (BUTTON + 2), WIDTH, BUTTON)
+                this.buttons.add(new IconButton(0, MODES + i * (BUTTON + 2), WIDTH, BUTTON)
                         .label(() -> ModUtils.tooltipComponent(mode.translationKey()))
                         .pressed(() -> condition().mode() == mode)
                         .tooltip(() -> List.of(ModUtils.tooltipComponent("redstone_help").withStyle(ChatFormatting.GRAY)))
@@ -323,18 +359,21 @@ final class InserterTabs {
                             Screen.hasShiftDown() ? 15 : condition().threshold() + 1)));
         }
 
+        private InserterBlockEntity be() {
+            return this.screen.blockEntity();
+        }
+
         private InserterRedstoneCondition condition() {
-            return this.screen.blockEntity().getConfiguredRedstoneCondition();
+            return be().getConfiguredRedstoneCondition();
         }
 
         private boolean unlocked() {
-            return this.screen.blockEntity().getUpgrades()
-                    .unlocks(InserterUpgradeType.ADVANCED_REDSTONE, InserterUpgradeTunings.current());
+            return be().getUpgrades().unlocks(InserterUpgradeType.ADVANCED_REDSTONE, InserterUpgradeTunings.current());
         }
 
         @Override
         protected Component title() {
-            return ModUtils.tooltipComponent("tab_redstone");
+            return ModUtils.tooltipComponent("tab_control");
         }
 
         @Override
@@ -349,6 +388,8 @@ final class InserterTabs {
 
         @Override
         protected int contentHeight() {
+            if (!this.redstone) return POWER_HEIGHT;
+
             return SIGNAL_ROW + LINE + (unlocked() ? 0 : 2 * LINE + 4);
         }
 
@@ -356,44 +397,52 @@ final class InserterTabs {
         protected void renderContent(GuiGraphics graphics, Font font, int x, int y, int mouseX, int mouseY) {
             renderButtons(graphics, font, x, y, mouseX, mouseY);
 
+            if (!this.redstone) return;
+
+            label(graphics, font, ModUtils.tooltipComponent("redstone_condition"), x, y + REDSTONE_LABEL);
+
             graphics.drawCenteredString(font, ModUtils.tooltipComponent("redstone_threshold", condition().threshold()),
                     x + WIDTH / 2, y + THRESHOLD_ROW + 3, condition().usesThreshold() ? VALUE : MUTED);
 
             var level = Minecraft.getInstance().level;
-            int signal = level != null ? level.getBestNeighborSignal(this.screen.blockEntity().getBlockPos()) : 0;
+            int signal = level != null ? level.getBestNeighborSignal(be().getBlockPos()) : 0;
             label(graphics, font, ModUtils.tooltipComponent("redstone_signal", signal), x, y + SIGNAL_ROW);
 
             if (unlocked()) return;
 
-            // Sans module de redstone avancé, la condition réglée est mémorisée mais pas
+            // Sans module de redstone avancée, la condition réglée est mémorisée mais pas
             // appliquée : l'inserter s'arrête au premier signal. Le dire évite un réglage qui
             // semble ne rien faire.
             int line = y + SIGNAL_ROW + LINE + 4;
             GuiSprites.icon(graphics, GuiSprites.Icon.LOCK, x, line);
             for (FormattedCharSequence part : font.split(ModUtils.tooltipComponent("redstone_locked"), WIDTH - 16)) {
-                graphics.drawString(font, part, x + 16, line, LABEL, false);
+                graphics.drawString(font, part, x + 16, line, LABEL, true);
                 line += LINE;
             }
         }
     }
 
-    // Réglages (droite) ----------------------------------------------------------------------
+    // Réglages (gauche) ----------------------------------------------------------------------
 
-    /** Taille de main (FIO-168) et voie de dépose (FIO-169). */
+    /** Taille de main (FIO-168), voie de dépose (FIO-169) et animation (FIO-161). */
     static final class Settings extends ButtonTab {
 
         private static final int WIDTH = 100;
         private static final int BUTTON = 14;
+        private static final int CHOICE_WIDTH = 22;
+        private static final int CHOICE_HEIGHT = 16;
+        private static final int CHOICE_STEP = CHOICE_WIDTH + 3;
 
-        private static final int HAND_ROW = LINE;
+        private static final int HAND_ROW = LINE + 1;
         private static final int LANE_LABEL = HAND_ROW + BUTTON + 6;
-        private static final int LANE_ROW = LANE_LABEL + LINE;
-        private static final int LANE_VALUE = LANE_ROW + 16 + 4;
+        private static final int LANE_ROW = LANE_LABEL + LINE + 1;
+        private static final int ANIMATION_LABEL = LANE_ROW + CHOICE_HEIGHT + 6;
+        private static final int ANIMATION_ROW = ANIMATION_LABEL + LINE + 1;
 
         private final InserterScreen screen;
 
         Settings(InserterScreen screen) {
-            super("settings", Side.RIGHT, 0xA0A0B4);
+            super("settings", Side.LEFT, SETTINGS_COLOUR);
             this.screen = screen;
 
             this.buttons.add(new IconButton(0, HAND_ROW, BUTTON, BUTTON)
@@ -415,17 +464,32 @@ final class InserterTabs {
                     }));
 
             InserterDropLane[] lanes = InserterDropLane.values();
-            GuiSprites.Icon[] icons = { GuiSprites.Icon.LANE_AUTO, GuiSprites.Icon.LANE_NEAR, GuiSprites.Icon.LANE_FAR };
+            GuiSprites.Icon[] laneIcons = { GuiSprites.Icon.LANE_AUTO, GuiSprites.Icon.LANE_NEAR, GuiSprites.Icon.LANE_FAR };
             for (int i = 0; i < lanes.length; i++) {
                 InserterDropLane lane = lanes[i];
-                GuiSprites.Icon icon = icons[i];
-                this.buttons.add(new IconButton(i * 24, LANE_ROW, 20, 16)
+                GuiSprites.Icon icon = laneIcons[i];
+                this.buttons.add(new IconButton(i * CHOICE_STEP, LANE_ROW, CHOICE_WIDTH, CHOICE_HEIGHT)
                         .icon(() -> icon)
                         .pressed(() -> be().getDropLane() == lane)
                         .tooltip(() -> List.of(
                                 ModUtils.tooltipComponent(lane.translationKey()),
                                 ModUtils.tooltipComponent("lane_help").withStyle(ChatFormatting.GRAY)))
                         .onPress(() -> screen.send(C2SInserterSetting.Setting.DROP_LANE, lane.ordinal())));
+            }
+
+            InserterAnimationMode[] modes = InserterAnimationMode.values();
+            GuiSprites.Icon[] modeIcons = {
+                    GuiSprites.Icon.ANIMATION_SMOOTH, GuiSprites.Icon.ANIMATION_SNAP, GuiSprites.Icon.ANIMATION_OFF };
+            for (int i = 0; i < modes.length; i++) {
+                InserterAnimationMode mode = modes[i];
+                GuiSprites.Icon icon = modeIcons[i];
+                this.buttons.add(new IconButton(i * CHOICE_STEP, ANIMATION_ROW, CHOICE_WIDTH, CHOICE_HEIGHT)
+                        .icon(() -> icon)
+                        .pressed(() -> be().getAnimationMode() == mode)
+                        .tooltip(() -> List.of(
+                                ModUtils.tooltipComponent(mode.translationKey()),
+                                ModUtils.tooltipComponent("animation_help").withStyle(ChatFormatting.GRAY)))
+                        .onPress(() -> screen.send(C2SInserterSetting.Setting.ANIMATION, mode.ordinal())));
             }
         }
 
@@ -450,7 +514,7 @@ final class InserterTabs {
 
         @Override
         protected int contentHeight() {
-            return LANE_VALUE + LINE;
+            return ANIMATION_ROW + CHOICE_HEIGHT;
         }
 
         @Override
@@ -466,8 +530,7 @@ final class InserterTabs {
             graphics.drawCenteredString(font, hand, x + WIDTH / 2, y + HAND_ROW + 3, VALUE);
 
             label(graphics, font, ModUtils.tooltipComponent("drop_lane"), x, y + LANE_LABEL);
-            value(graphics, font, ModUtils.tooltipComponent(be().getDropLane().translationKey()),
-                    x, y + LANE_VALUE, VALUE);
+            label(graphics, font, ModUtils.tooltipComponent("animation_setting"), x, y + ANIMATION_LABEL);
         }
     }
 }

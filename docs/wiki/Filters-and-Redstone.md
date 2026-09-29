@@ -5,7 +5,7 @@
 The Filter and Stack Filter inserters carry **five filter slots**. Drop an item onto one to set
 it — the item is a ghost, it is not consumed and you get it straight back.
 
-The list button in the screen's top bar switches the whole panel between **whitelist** — only
+The list button at the end of the filter row switches the whole panel between **whitelist** — only
 these pass — and **blacklist** — these do not.
 
 ### Item or tag, per slot
@@ -33,11 +33,11 @@ The default reproduces the intuitive "redstone turns it off". The other two are 
 is for: an inserter that only runs when a chest is nearly empty, or only when it is nearly full,
 needs no additional circuit.
 
-Set it in the **Redstone control** tab, which also shows the signal the inserter currently
-receives — the quickest way to see why one is stopped.
+Set it in the **Control** tab, which also shows the signal the inserter currently receives — the
+quickest way to see why one is stopped.
 
-Independently of redstone, the **on/off** button in the top bar switches an inserter off. Off
-wins: no signal turns it back on.
+The same tab holds the **on/off** switch, above the condition. Off wins: no signal turns the
+inserter back on.
 
 A disabled inserter changes texture, so a stopped line is readable at a glance.
 

@@ -17,15 +17,16 @@ import com.drimoz.factoryio.core.model.Inserter;
  * <h2>Disposition</h2>
  *
  * <pre>
- *  ┌──────────────────────────────────────────┐  bandeau : titre + bascules
- *  │ ▌     ▶ [ main ] ▶                       │  alimentation à gauche, trajet au centre
- *  │ ▌   [f][f][f][f][f]                      │  filtres, s'il y en a
+ *  ┌──────────────────────────────────────────┐  bandeau : le titre seul
+ *  │ ▌  [s] ▶ [ main ] ▶ [c]                  │  alimentation à gauche, trajet au centre
+ *  │ ▌   [f][f][f][f][f] [≡]                  │  filtres et leur mode, s'il y en a
  *  │ inventaire du joueur                     │
  *  └──────────────────────────────────────────┘
  * </pre>
  *
- * <p>Tout ce qui n'est pas au cœur du travail de la machine — améliorations, condition
- * redstone, réglages, informations — vit dans des onglets latéraux, à la manière de Thermal.
+ * <p>Tout ce qui n'est pas au cœur du travail de la machine — améliorations, marche et
+ * condition redstone, réglages, informations — vit dans des onglets latéraux, à la manière de
+ * Thermal.
  * Les slots d'amélioration sont dans le premier onglet de droite, dont la position ne dépend
  * donc d'aucun autre : c'est ce qui permet de la fixer ici.
  *
@@ -39,11 +40,9 @@ public record InserterGuiLayout(
 
     public static final int WIDTH = 176;
 
-    /** Hauteur du bandeau : titre et rangée de bascules. */
-    public static final int CONTENT_TOP = 22;
+    /** Hauteur du bandeau, qui ne porte que le titre. */
+    public static final int CONTENT_TOP = 20;
     public static final int TITLE_Y = 7;
-    public static final int TOGGLE_Y = 3;
-    public static final int TOGGLE_SIZE = 16;
 
     public static final int SLOT = 18;
     public static final int HAND_SOCKET = 26;
@@ -152,6 +151,25 @@ public record InserterGuiLayout(
         return handSocketX() + HAND_SOCKET + 8;
     }
 
+    /**
+     * Socles de la source et de la cible, aux deux bouts du trajet : l'icône du bloc réellement
+     * visé. Des flèches qui ne pointent sur rien ne disent pas d'où l'inserter prend ni où il
+     * dépose — et c'est la première chose à vérifier devant un inserter qui ne fait rien.
+     *
+     * <p>Coordonnées du socle, pas d'un item : ce ne sont pas des slots.
+     */
+    public int sourceSocketX() {
+        return inArrowX() - 4 - SLOT;
+    }
+
+    public int targetSocketX() {
+        return outArrowX() + ARROW_WIDTH + 4;
+    }
+
+    public int neighbourSocketY() {
+        return handSocketY() + (HAND_SOCKET - SLOT) / 2;
+    }
+
     // Interface (Filtres)
 
     public int filterSlotX(int index) {
@@ -161,6 +179,20 @@ public record InserterGuiLayout(
 
     public int filterSlotY() {
         return handSocketY() + HAND_SOCKET + 4 + 1;
+    }
+
+    /**
+     * Bouton liste blanche / liste noire, au bout de la rangée de filtres : il règle ces
+     * filtres-là, il est donc à côté d'eux et non dans le bandeau.
+     */
+    public static final int LIST_BUTTON_SIZE = SLOT;
+
+    public int listButtonX() {
+        return filterSlotX(InserterSlotLayout.FILTER_SLOT_COUNT - 1) + 16 + 1 + 4;
+    }
+
+    public int listButtonY() {
+        return filterSlotY() - 1;
     }
 
     // Interface (Onglet des améliorations, premier à droite)
