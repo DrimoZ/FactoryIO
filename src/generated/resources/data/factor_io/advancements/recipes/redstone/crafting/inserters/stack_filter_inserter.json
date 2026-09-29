@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_stack_inserter": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "factor_io:stack_inserter"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "factor_io:crafting/inserters/stack_filter_inserter"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_stack_inserter",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "factor_io:crafting/inserters/stack_filter_inserter"
+    ]
+  },
+  "sends_telemetry_event": false
+}

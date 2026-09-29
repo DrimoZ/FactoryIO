@@ -1,10 +1,6 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " C ",
-    "CSC",
-    " C "
-  ],
+  "category": "redstone",
   "key": {
     "C": {
       "item": "minecraft:comparator"
@@ -13,7 +9,13 @@
       "item": "factor_io:stack_inserter"
     }
   },
+  "pattern": [
+    " C ",
+    "CSC",
+    " C "
+  ],
   "result": {
     "item": "factor_io:stack_filter_inserter"
-  }
+  },
+  "show_notification": true
 }

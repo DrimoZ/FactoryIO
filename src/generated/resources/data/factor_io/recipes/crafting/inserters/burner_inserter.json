@@ -1,9 +1,6 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " A ",
-    "DED",
-    "BCB"],
+  "category": "redstone",
   "key": {
     "A": {
       "item": "minecraft:hopper"
@@ -21,7 +18,13 @@
       "tag": "forge:dusts/redstone"
     }
   },
+  "pattern": [
+    " A ",
+    "DED",
+    "BCB"
+  ],
   "result": {
     "item": "factor_io:burner_inserter"
-  }
+  },
+  "show_notification": true
 }
