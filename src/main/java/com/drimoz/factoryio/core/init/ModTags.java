@@ -30,6 +30,21 @@ public class ModTags {
         public static final TagKey<Item> PLATES_COPPER = forgeTag("plates/copper");
         public static final TagKey<Item> PLATES_STEEL = forgeTag("plates/steel");
 
+        public static final TagKey<Item> GEARS = forgeTag("gears");
+        public static final TagKey<Item> GEARS_IRON = forgeTag("gears/iron");
+
+        public static final TagKey<Item> WIRES = forgeTag("wires");
+        public static final TagKey<Item> WIRES_COPPER = forgeTag("wires/copper");
+
+        /**
+         * Circuits par palier, selon la convention de Mekanism — la plus répandue : un circuit
+         * d'un autre mod qui s'y range sert aussi dans nos recettes, et réciproquement.
+         */
+        public static final TagKey<Item> CIRCUITS = forgeTag("circuits");
+        public static final TagKey<Item> CIRCUITS_BASIC = forgeTag("circuits/basic");
+        public static final TagKey<Item> CIRCUITS_ADVANCED = forgeTag("circuits/advanced");
+        public static final TagKey<Item> CIRCUITS_ELITE = forgeTag("circuits/elite");
+
 
         // Inner work
 

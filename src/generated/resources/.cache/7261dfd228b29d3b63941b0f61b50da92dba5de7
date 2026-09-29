@@ -1,9 +1,10 @@
-// 1.20.1	2026-08-22T12:20:35.6555144	Item Models: factor_io
+// 1.20.1	2026-09-29T22:11:58.0319438	Item Models: factor_io
 aff44f81c6fdbf4b7be31fb97f097d8a72eb141e assets/factor_io/models/item/advanced_circuit.json
 7d58f82e489e5c0b11b28a8e33697c92f6bb74a2 assets/factor_io/models/item/automation_science_pack.json
 ecce98e2f6981b8851902d8086c74b8fd600c58e assets/factor_io/models/item/burner_inserter.json
 1db8f4bb39cb89c36ac13c0d00be86ce068efe96 assets/factor_io/models/item/chemical_science_pack.json
 2b0b8a0d6b7fc4cc0479374689be9e6b2e731ce2 assets/factor_io/models/item/configurator.json
+dcb1d3565b3f87c3c5d63cc4e4471f1b1b30add6 assets/factor_io/models/item/copper_cable.json
 3fcd7e803f202242cdefe0074e7edcaa0033a6af assets/factor_io/models/item/copper_plate.json
 92b224bb8fce154d3a179b7bab9de0d2adda694f assets/factor_io/models/item/creative_energy_source.json
 4927c5fc080a7c1f647bb06a1359271e279038e0 assets/factor_io/models/item/efficiency_module.json
@@ -15,6 +16,7 @@ afdad8cb7f96a029cb3fc55c95207117f1dbd63a assets/factor_io/models/item/efficiency
 2b32b736c98a6e41950dd082078063b1464e573a assets/factor_io/models/item/filter_inserter.json
 a20db44a6ffc47c9cda820345376e78eb11e6cc2 assets/factor_io/models/item/flying_robot_frame.json
 9059ad91da7d267067adc5d920f1acf3be564b0c assets/factor_io/models/item/inserter.json
+57cd2b4b64a704b8b804d815143710b203ed2322 assets/factor_io/models/item/iron_gear_wheel.json
 b649c1888c6caebc812eebe206c4249f5a5402f1 assets/factor_io/models/item/iron_plate.json
 ee25a5a11784fcd0b04c815ca3279023fc6daaf7 assets/factor_io/models/item/logistic_science_pack.json
 1d3e68b8643bdddf271b8a4823f825b26723e79f assets/factor_io/models/item/long_handed_inserter.json

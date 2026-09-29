@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "tag": "forge:circuits/advanced"
+    },
+    "E": {
+      "tag": "forge:circuits/basic"
+    },
+    "G": {
+      "tag": "forge:gunpowder"
+    }
+  },
+  "pattern": [
+    "EAE",
+    "EGE",
+    " A "
+  ],
+  "result": {
+    "item": "factor_io:processing_unit"
+  },
+  "show_notification": true
+}

@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "tag": "forge:circuits/advanced"
+    },
+    "M": {
+      "item": "factor_io:productivity_module_2"
+    },
+    "P": {
+      "tag": "forge:circuits/elite"
+    },
+    "X": {
+      "item": "minecraft:shulker_shell"
+    }
+  },
+  "pattern": [
+    "PAP",
+    "MXM",
+    "APA"
+  ],
+  "result": {
+    "item": "factor_io:productivity_module_3"
+  },
+  "show_notification": true
+}

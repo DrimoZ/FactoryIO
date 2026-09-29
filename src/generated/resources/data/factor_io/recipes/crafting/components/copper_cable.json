@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "tag": "forge:plates/copper"
+    }
+  ],
+  "result": {
+    "count": 2,
+    "item": "factor_io:copper_cable"
+  }
+}

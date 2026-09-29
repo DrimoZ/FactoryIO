@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_previous_tier": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "factor_io:speed_module"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "factor_io:crafting/modules/speed_module_2"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_previous_tier",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "factor_io:crafting/modules/speed_module_2"
+    ]
+  },
+  "sends_telemetry_event": false
+}

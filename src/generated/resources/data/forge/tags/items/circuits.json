@@ -1,0 +1,7 @@
+{
+  "values": [
+    "#forge:circuits/basic",
+    "#forge:circuits/advanced",
+    "#forge:circuits/elite"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_copper_cable": {
+      "conditions": {
+        "items": [
+          {
+            "tag": "forge:wires/copper"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "factor_io:crafting/components/electronic_circuit"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_copper_cable",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "factor_io:crafting/components/electronic_circuit"
+    ]
+  },
+  "sends_telemetry_event": false
+}

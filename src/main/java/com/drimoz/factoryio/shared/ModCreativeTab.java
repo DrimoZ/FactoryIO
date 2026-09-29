@@ -28,7 +28,9 @@ public class ModCreativeTab {
                                 .forEach(inserter -> output.accept(inserter.getItem().get()));
 
                         ModBlocks.ENTRIES.forEach(block -> output.accept(block.get()));
-                        ModItems.ENTRIES.forEach(item -> output.accept(item.get()));
+                        ModItems.ENTRIES.stream()
+                                .filter(item -> !ModItems.HIDDEN.contains(item))
+                                .forEach(item -> output.accept(item.get()));
                     })
                     .build());
 
