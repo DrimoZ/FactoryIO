@@ -83,6 +83,7 @@ Sévérités :
 | [BUG-048](#bug-048) | ✅ S3 | Un carburant plus riche que la réserve est écrêté sans un mot | `inserter_fuel.json` |
 | [BUG-049](#bug-049) | ✅ S2 | L'éjection ouvre une pile de plus au lieu de compléter les entamées | `…InserterBlockEntity.java` |
 | [BUG-050](#bug-050) | ✅ S2 | Une boucle de convoyeurs saturée se bloque définitivement | `…BeltLane.java` |
+| [BUG-051](#bug-051) | ✅ S2 | Un tick perdu par cycle : débit réel inférieur au débit annoncé | `…InserterBlockEntity.java` |
 
 ---
 
@@ -1153,3 +1154,21 @@ et par tick au lieu d'un par bloc.
 `BeltChainTest.aSaturatedLoopKeepsTurning` échoue sans le tampon ;
 `aDeadEndStillCompresses` est son pendant, et échouerait si le tampon avalait les
 items d'un bout de ligne.
+
+## BUG-051 — Un tick perdu par cycle : débit réel inférieur au débit annoncé (S2) ✅
+
+**Fichier** : [`InserterBlockEntity.java`](../src/main/java/com/drimoz/factoryio/core/inserters/InserterBlockEntity.java) — `tickReturning`
+
+Révélé par le débit mesuré de l'onglet Informations (FIO-170), constamment sous le débit
+attendu : ×1,25 sur un inserter rapide, ×1,5 sur un empilable amélioré.
+
+La dépose enchaînait sur le retour **dans le même tick**, mais pas le retour sur la saisie :
+arrivé à la source, l'inserter passait en `WAITING` et ne saisissait qu'au tick suivant. Un
+cycle durait donc `2n + 1` ticks pour `n` par mouvement, et l'écart croissait à mesure que
+`n` rétrécit — précisément sur les modèles et les modules qui promettent de la vitesse.
+
+**Correctif** : `tickReturning` appelle `tickWaiting` sitôt l'état changé. Le débit réel
+rejoint le barème de Factorio, que la formule annonçait déjà.
+
+`InserterGameTests.aCycleLastsExactlyTwoSwings` mesure l'intervalle entre deux livraisons sur
+un inserter rapide : 9 ticks avant le correctif, 8 après.
