@@ -44,16 +44,22 @@ Right-click an inserter to open it.
 
 ## Crafting
 
-The seven form a chain, each built from the previous one:
+Factorio's recipes, fitted to a crafting grid — gears, plates and circuits (see
+[Upgrades](Upgrades) for how those are made):
 
-```
-burner_inserter ──▶ inserter ──┬──▶ long_handed_inserter
-                               ├──▶ fast_inserter ──▶ stack_inserter ──▶ stack_filter_inserter
-                               └──▶ filter_inserter
-```
+| Inserter | Recipe |
+|---|---|
+| Burner | 1 iron gear wheel + 1 iron plate |
+| Inserter | 1 electronic circuit + 1 gear + 1 iron plate |
+| Long Handed | 1 inserter + 1 gear + 1 iron plate |
+| Fast | 1 inserter + 2 electronic circuits + 2 iron plates |
+| Filter | 1 inserter + 4 electronic circuits |
+| Stack | 1 fast inserter + 4 gears + 3 electronic circuits + 1 advanced circuit |
+| Stack Filter | 1 stack inserter + 4 electronic circuits |
 
-The comparator is the brick of the filtering models — it is the vanilla part that reads and
-compares — and redstone paying for speed is why the fast line costs what it does.
+One departure from Factorio: the Filter inserter is built from the plain one, not the fast one —
+here it works at the plain inserter's speed, and paying for a speed it does not have would make
+no sense.
 
 ## Fuel, for the burner
 

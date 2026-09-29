@@ -1,11 +1,13 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_iron_gear": {
+    "has_fast_transport_belt": {
       "conditions": {
         "items": [
           {
-            "tag": "forge:gears/iron"
+            "items": [
+              "factor_io:fast_transport_belt"
+            ]
           }
         ]
       },
@@ -13,20 +15,20 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "factor_io:crafting/inserters/burner_inserter"
+        "recipe": "factor_io:crafting/belts/express_transport_belt"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_iron_gear",
+      "has_fast_transport_belt",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "factor_io:crafting/inserters/burner_inserter"
+      "factor_io:crafting/belts/express_transport_belt"
     ]
   },
   "sends_telemetry_event": false

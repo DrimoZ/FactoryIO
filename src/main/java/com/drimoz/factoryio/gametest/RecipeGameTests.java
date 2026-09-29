@@ -1,6 +1,8 @@
 package com.drimoz.factoryio.gametest;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.core.belts.BeltTier;
+import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.init.ModTags;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
@@ -36,6 +38,7 @@ public class RecipeGameTests {
     public static void everyUsefulItemCanBeCrafted(GameTestHelper helper) {
         List<Item> useful = new ArrayList<>();
         InserterRegistry.getInstance().getInserters().forEach(inserter -> useful.add(inserter.getItem().get()));
+        for (BeltTier tier : BeltTier.values()) useful.add(ModBlocks.belt(tier).get().asItem());
 
         for (RegistryObject<Item> item : List.of(
                 ModItems.IRON_PLATE, ModItems.COPPER_PLATE, ModItems.STEEL_PLATE,

@@ -9,6 +9,14 @@
 Each block holds **two lanes of four slots**, so eight items, as in Factorio. Speed is set in
 ticks per slot and is [configurable](Configuration).
 
+| Belt | Recipe |
+|---|---|
+| Transport Belt | 2 iron plates + 1 iron gear wheel → 4 |
+| Fast Transport Belt | 1 transport belt + 5 gears |
+| Express Transport Belt | 1 fast transport belt + 4 gears + 2 slimeballs |
+
+As in Factorio, each tier is built from the one below. The slimeball stands in for lubricant.
+
 ## Direction and shape
 
 A belt outputs in the direction you were facing when you placed it. It looks for inputs

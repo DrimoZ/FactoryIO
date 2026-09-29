@@ -2,17 +2,20 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "key": {
-    "A": {
-      "item": "factor_io:inserter"
+    "G": {
+      "tag": "forge:gears/iron"
     },
     "I": {
-      "tag": "forge:ingots/iron"
+      "item": "factor_io:inserter"
+    },
+    "P": {
+      "tag": "forge:plates/iron"
     }
   },
   "pattern": [
-    " I ",
-    " A ",
-    " I "
+    "P",
+    "I",
+    "G"
   ],
   "result": {
     "item": "factor_io:long_handed_inserter"

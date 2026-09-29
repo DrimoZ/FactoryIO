@@ -3,7 +3,7 @@
   "category": "redstone",
   "key": {
     "C": {
-      "item": "minecraft:comparator"
+      "tag": "forge:circuits/basic"
     },
     "S": {
       "item": "factor_io:stack_inserter"

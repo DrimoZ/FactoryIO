@@ -1,10 +1,7 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "redstone",
+  "category": "misc",
   "key": {
-    "C": {
-      "tag": "forge:circuits/basic"
-    },
     "G": {
       "tag": "forge:gears/iron"
     },
@@ -13,12 +10,11 @@
     }
   },
   "pattern": [
-    "C",
-    "G",
-    "P"
+    "PGP"
   ],
   "result": {
-    "item": "factor_io:inserter"
+    "count": 4,
+    "item": "factor_io:transport_belt"
   },
   "show_notification": true
 }

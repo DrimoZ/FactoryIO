@@ -23,6 +23,9 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
   electronic, advanced circuits and processing units. Ingredients are Forge tags, circuits
   included (`forge:circuits/basic|advanced|elite`).
 - **New item textures** in the Minecraft style for plates, circuits, modules and the configurator.
+- **Transport belts can be crafted.** Inserters and belts now follow Factorio's recipes — gears,
+  plates and circuits — instead of hoppers, comparators and redstone blocks.
+- The Information tab shows the **energy draw per tick** of an electric inserter.
 
 ### Removed
 
@@ -32,6 +35,8 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 ### Changed
 
 - Tooltips are translated as whole sentences; nothing is glued together from fragments anymore.
+- An inserter's item tooltip no longer ends with the long upgrade hint: the screen's Upgrades tab
+  says it.
 
 ## [0.3.0-beta] — 2026-08-16
 
