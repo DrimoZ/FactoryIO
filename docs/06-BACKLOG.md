@@ -153,16 +153,24 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | FIO-102 | P3 | M | Sons et particules | — |
 | 🟡 FIO-103 | P1 | M | **Rampes** — **faites le 30/09/2026**, à la place des ascenseurs (décision du mainteneur). Une par tier, dans la famille de la définition (`"ramp": true`) ; montée ou descente décidée à la pose. Toute la connexion tient dans `BeltFlow.target` : la sortie fait autorité, et ce qui sort dans le vide tombe sur une descente. Les diagonales, que Minecraft ne prévient pas, sont relayées par `BeltBlock.refreshDiagonals` ([`08`](08-DESIGN-BELTS.md) §11). **Reste** : modèles définitifs (l'art des convoyeurs), et la vérification à l'œil. | une colline — montée, palier, descente — posée dans n'importe quel ordre, sans perte : ✅ `anItemCrossesAHillBuiltInAnyOrder` |
 
-## Épic E — Machines et progression (Phase 4) — **ajourné**
+## Épic E — Machines et progression (Phase 4) — **rouvert partiellement**
 
-> Reporté le 16/08/2026, décision du mainteneur. Les tickets restent écrits et estimés ;
-> aucun n'est engagé. Voir [`05`](05-ROADMAP.md) §Phase 4.
+> Reporté le 16/08/2026, **rouvert partiellement le 30/09/2026** (décision du mainteneur) :
+> un cadre multibloc générique et le crafter, rien d'autre. Conception complète dans
+> [`12`](12-DESIGN-CRAFTER.md), ordre des tickets en §9. Four, foreuse, générateur et
+> arbre de recherche restent ajournés.
 
 | ID | P | Est. | Ticket |
 |---|---|---|---|
-| FIO-120 | P1 | L | `RecipeType` + `RecipeSerializer` custom, chargés par datapack |
+| FIO-175 | P1 | S | **Refonte préalable, sans changement de comportement** ([`12`](12-DESIGN-CRAFTER.md) §7) : hook dans `ModEntityBlock.neighborChanged`, `SideTabs` découplé d'`InserterGuiLayout`, helper des 6 validations C→S, `UpgradeSlot` / `OutputSlot`, `RECIPE_TYPES` / `RECIPE_SERIALIZERS`, `PackGenerator` ; correction de [`09`](09-CONVENTIONS.md) §1. Critère : build et GameTests inchangés. |
+| FIO-176 | P1 | L | **Cadre multibloc** (`content/multiblock`, [`12`](12-DESIGN-CRAFTER.md) §2) : pose unique centrée, parties qui délèguent les capabilities du maître, casse depuis n'importe quelle partie, chunk non chargé, contour de pose. Critère : GameTests — pose bloquée, casse depuis chaque partie, contenu lâché une fois, inserter branché sur une partie. |
+| FIO-120 | P1 | L | **Recette `factor_io:crafting`** ([`12`](12-DESIGN-CRAFTER.md) §3) : jusqu'à 9 ingrédients comptés (tags), 4 résultats avec `chance`, `time` en secondes, `minTier` optionnel ; codec borné qui refuse `fluid`. Recettes d'établi vanilla en option serveur, `false` par défaut. |
+| FIO-122 | P1 | L | **Crafter T1-T3** ([`12`](12-DESIGN-CRAFTER.md) §4) : troisième famille de définitions, tick, FE pendant le craft seulement, plafond `inputCrafts`, changement de recette qui rend les entrées, recette disparue sans perte, `WORKING` avec hystérésis. |
+| FIO-177 | P1 | M | **GUI du crafter** : sélecteur d'icônes avec recherche, recettes hors palier grisées, `C2SCrafterRecipe` (identifiant, 6 validations). Critère : une recette hors palier est refusée par le serveur. |
+| FIO-178 | P2 | S | **JEI du crafter** : catégorie `factor_io:crafting`, catalyseurs, bouton « + ». |
+| FIO-179 | P2 | L | Fluides du crafter — hors v1, conception déjà arrêtée ([`12`](12-DESIGN-CRAFTER.md) §8) |
+| FIO-180 | P3 | S | Configurateur générique : copier la recette d'un crafter à l'autre |
 | FIO-121 | P1 | L | Four (pierre / électrique) : minerai → plaque |
-| FIO-122 | P1 | XL | Assembleur T1-T3 : recettes multi-entrées, sélection de recette dans le GUI |
 | FIO-123 | P1 | L | Foreuse (burner / électrique) |
 | 🟡 FIO-124 | P1 | M | Générateur d'énergie minimal (vapeur) pour être jouable en standalone. **Partiellement adressé** : une source d'énergie *créative* existe (`creative_energy_source`, sans recette) et lève la dépendance à un mod tiers pour tester et jouer en créatif. Elle ne tranche pas la question du générateur de survie, qui reste ouverte. |
 | ~~FIO-125~~ | ✅ | M | Recettes des 7 inserters. Chaîne de progression : chaque modèle se construit à partir du précédent, le comparateur porte le filtrage et la redstone concentrée paie la vitesse. Vanilla et tags `forge:` uniquement — les plaques et circuits du mod restent à FIO-126, qui décidera de la chaîne complète. |

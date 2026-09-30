@@ -79,14 +79,14 @@ rechargement, déterminisme, budgets de perf.
 
 ## Documentation
 
-Les onze documents de `docs/` sont la source de vérité, en français.
+Les douze documents de `docs/` sont la source de vérité, en français.
 
 | | |
 |---|---|
 | [`01-ARCHITECTURE.md`](docs/01-ARCHITECTURE.md) | vue d'ensemble, cycle de démarrage, réseau, rendu |
 | [`03-BUGS.md`](docs/03-BUGS.md) | bugs référencés `BUG-xxx` |
 | [`06-BACKLOG.md`](docs/06-BACKLOG.md) | tickets `FIO-xxx`, priorité et critère d'acceptation |
-| [`07`](docs/07-DESIGN-INSERTERS.md) / [`08`](docs/08-DESIGN-BELTS.md) / [`11`](docs/11-DESIGN-ANIMATION.md) | conception inserters, convoyeurs, animation |
+| [`07`](docs/07-DESIGN-INSERTERS.md) / [`08`](docs/08-DESIGN-BELTS.md) / [`11`](docs/11-DESIGN-ANIMATION.md) / [`12`](docs/12-DESIGN-CRAFTER.md) | conception inserters, convoyeurs, animation, crafter et multiblocs |
 | [`09-CONVENTIONS.md`](docs/09-CONVENTIONS.md) | **conventions complètes** |
 | [`10-BENCHMARKS.md`](docs/10-BENCHMARKS.md) | budgets de perf versionnés |
 
