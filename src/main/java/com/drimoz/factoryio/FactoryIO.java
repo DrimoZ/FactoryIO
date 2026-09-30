@@ -1,6 +1,7 @@
 package com.drimoz.factoryio;
 
 import com.drimoz.factoryio.core.belts.BeltSettings;
+import com.drimoz.factoryio.content.crafter.CrafterMenu;
 import com.drimoz.factoryio.content.crafter.CrafterRecipes;
 import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.core.configs.CommonConfig;
@@ -65,6 +66,7 @@ public class FactoryIO
         ModItems.init();
         ModBlocks.init();
         CrafterRecipes.init();
+        CrafterMenu.TYPE.getId();
         ModCreativeTab.MOD_TAB.getId();
 
         // Le générateur du pack runtime est construit paresseusement, à l'ouverture du

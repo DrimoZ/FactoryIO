@@ -247,6 +247,14 @@ les paliers changent surtout vitesse et consommation. Le temps réel d'un craft 
   cliquable — et refusée par le serveur de toute façon.
 - `C2SCrafterRecipe` porte l'identifiant de la recette, jamais un indice (l'ordre de la
   liste n'est pas stable), avec les 6 validations dans l'ordre ([`09`](09-CONVENTIONS.md) §3).
+- **Tel qu'implémenté (FIO-177)** : le grand slot à gauche montre la recette ; clic, le
+  sélecteur s'ouvre par-dessus la machine (8 × 3 icônes, molette, recherche sur le nom
+  du résultat ou l'identifiant) ; clic droit, la recette est retirée. Dans un slot
+  d'entrée vide, l'ingrédient attendu apparaît en filigrane ; les slots sans ingrédient
+  sont assombris. La recette voyage avec l'ouverture du menu, et un choix fait depuis
+  l'écran s'y reporte **sans attendre le serveur** : l'écran ne propose rien que le
+  serveur refuserait. Un autre joueur qui change la recette pendant ce temps n'est vu
+  qu'à la réouverture — limite assumée, qui éviterait sinon un paquet de plus.
 - **JEI** : catégorie `factor_io:crafting` (pourcentages affichés), crafters en
   catalyseurs, bouton « + » qui choisit la recette.
 

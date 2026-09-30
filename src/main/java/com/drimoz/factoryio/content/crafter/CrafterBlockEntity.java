@@ -6,7 +6,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.Containers;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -51,7 +55,7 @@ import java.util.List;
  * {@link CrafterRecipes#generation()} a bougé. Une sortie pleine n'est réessayée que quand
  * une sortie a changé. Le tick ordinaire n'alloue rien.
  */
-public class CrafterBlockEntity extends BlockEntity {
+public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
 
     public static final int INPUT_SLOTS = 9;
     public static final int OUTPUT_SLOTS = 4;
@@ -382,6 +386,16 @@ public class CrafterBlockEntity extends BlockEntity {
     }
 
     // Interface (Écran)
+
+    @Override
+    public Component getDisplayName() {
+        return getBlockState().getBlock().getName();
+    }
+
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+        return new CrafterMenu(containerId, inventory, this);
+    }
 
     /** Inventaire complet, pour le menu : le joueur peut aussi reprendre des entrées. */
     public ItemStackHandler getItems() {
