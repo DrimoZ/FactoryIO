@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.inserters;
 
+import com.drimoz.factoryio.shared.SideTabMetrics;
 import com.drimoz.factoryio.core.model.Inserter;
 
 /**
@@ -53,15 +54,6 @@ public record InserterGuiLayout(
      * l'inventaire du joueur ; un inserter sans filtres laisse simplement la rangée vide.
      */
     private static final int CONTENT_HEIGHT = 48;
-
-    // Onglets latéraux
-
-    /** Ordonnée du premier onglet, de chaque côté. */
-    public static final int TAB_TOP = 4;
-    /** Côté d'un onglet fermé, et hauteur de son en-tête une fois ouvert. */
-    public static final int TAB_HEADER = 22;
-    public static final int TAB_PADDING = 6;
-    public static final int TAB_GAP = 2;
 
     public static InserterGuiLayout of(Inserter inserter) {
         return new InserterGuiLayout(
@@ -206,11 +198,11 @@ public record InserterGuiLayout(
     }
 
     public static int augmentSlotX(int index) {
-        return WIDTH + TAB_PADDING + 1 + index * SLOT;
+        return WIDTH + SideTabMetrics.PADDING + 1 + index * SLOT;
     }
 
     public static int augmentSlotY() {
-        return TAB_TOP + TAB_HEADER + 1;
+        return SideTabMetrics.TOP + SideTabMetrics.HEADER + 1;
     }
 
     /** Largeur de l'onglet ouvert : de quoi loger quatre modules et leur effet. */

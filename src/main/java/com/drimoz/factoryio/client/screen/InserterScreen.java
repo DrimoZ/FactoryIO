@@ -83,7 +83,7 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         super.init();
 
         this.listButton = null;
-        this.tabs = new SideTabs(List.of(), null);
+        this.tabs = new SideTabs(List.of(), InserterGuiLayout.WIDTH, null);
         if (!getMenu().isBacked()) return;
 
         if (getMenu().isFilterable()) {
@@ -108,7 +108,7 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         sideTabs.add(new InserterTabs.Control(this));
         sideTabs.add(new InserterTabs.Settings(this));
 
-        this.tabs = new SideTabs(sideTabs, this.gui.hasAugmentTab() ? InserterTabs.Augments.ID : null);
+        this.tabs = new SideTabs(sideTabs, InserterGuiLayout.WIDTH, this.gui.hasAugmentTab() ? InserterTabs.Augments.ID : null);
     }
 
     // Interface (pour les onglets)

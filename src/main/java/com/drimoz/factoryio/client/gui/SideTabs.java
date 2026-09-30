@@ -1,6 +1,6 @@
 package com.drimoz.factoryio.client.gui;
 
-import com.drimoz.factoryio.core.inserters.InserterGuiLayout;
+import com.drimoz.factoryio.shared.SideTabMetrics;
 import net.minecraft.Util;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -26,13 +26,16 @@ public final class SideTabs {
     private static final Map<SideTab.Side, String> REMEMBERED = new EnumMap<>(SideTab.Side.class);
 
     private final List<SideTab> tabs = new ArrayList<>();
+    private final int guiWidth;
     private long lastFrame = Util.getMillis();
 
     /**
+     * @param guiWidth     largeur de la fenêtre, contre laquelle s'adossent les onglets de droite
      * @param defaultRight onglet de droite à ouvrir quand rien n'est encore mémorisé, ou
      *                     {@code null}
      */
-    public SideTabs(List<SideTab> tabs, String defaultRight) {
+    public SideTabs(List<SideTab> tabs, int guiWidth, String defaultRight) {
+        this.guiWidth = guiWidth;
         this.tabs.addAll(tabs);
 
         if (!REMEMBERED.containsKey(SideTab.Side.RIGHT) && defaultRight != null) {
@@ -131,18 +134,18 @@ public final class SideTabs {
 
     /** Empile les onglets de chaque côté, en tenant compte de la taille courante de chacun. */
     private void layout(int guiLeft, int guiTop) {
-        int left = guiTop + InserterGuiLayout.TAB_TOP;
-        int right = guiTop + InserterGuiLayout.TAB_TOP;
+        int left = guiTop + SideTabMetrics.TOP;
+        int right = guiTop + SideTabMetrics.TOP;
 
         for (SideTab tab : this.tabs) {
             if (tab.side() == SideTab.Side.RIGHT) {
-                tab.x = guiLeft + InserterGuiLayout.WIDTH;
+                tab.x = guiLeft + this.guiWidth;
                 tab.y = right;
-                right += tab.height() + InserterGuiLayout.TAB_GAP;
+                right += tab.height() + SideTabMetrics.GAP;
             } else {
                 tab.x = guiLeft;
                 tab.y = left;
-                left += tab.height() + InserterGuiLayout.TAB_GAP;
+                left += tab.height() + SideTabMetrics.GAP;
             }
         }
     }
