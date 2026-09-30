@@ -25,10 +25,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Fabrique en mémoire les assets des inserters définis par l'utilisateur (FIO-039).
@@ -92,7 +92,10 @@ public class PackGenerator {
      * @return les fichiers du pack, indexés par chemin ({@code assets/…} ou {@code data/…})
      */
     public static Map<String, byte[]> generate() {
-        Map<String, byte[]> files = new HashMap<>();
+        // Concurrente : les générateurs de Forge écrivent depuis l'exécuteur de fond, plusieurs
+        // fichiers à la fois. Une HashMap en perdait au hasard — un blockstate manquant d'un
+        // lancement à l'autre, et le bloc s'affichait en damier.
+        Map<String, byte[]> files = new ConcurrentHashMap<>();
 
         // Toujours écrit, même sur un pack vide : sans lui, Pack.readMetaAndCreate renvoie
         // null et le pack ne peut pas être créé. Le cas se présentait pour *tout le monde*,
