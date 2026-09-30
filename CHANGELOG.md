@@ -37,6 +37,9 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 - Tooltips are translated as whole sentences; nothing is glued together from fragments anymore.
 - An inserter's item tooltip no longer ends with the long upgrade hint: the screen's Upgrades tab
   says it.
+- Moving belts resend their state every 10 s, so a line watched in multiplayer no longer drifts
+  away from the server's. About 3.3 KB/s per player for 500 moving items; idle and stopped belts
+  send nothing.
 
 ## [0.3.0-beta] — 2026-08-16
 

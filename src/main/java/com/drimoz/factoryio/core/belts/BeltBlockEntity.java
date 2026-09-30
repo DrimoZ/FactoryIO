@@ -81,6 +81,32 @@ public class BeltBlockEntity extends BlockEntity {
     /** Génération de configuration à laquelle la cadence a été fixée. Voir {@link #refreshSpeed}. */
     private int speedGeneration;
 
+    /**
+     * Intervalle de réconciliation, en ticks : 10 s.
+     *
+     * <p>Le haut de la fourchette de [`08`](../../../../../../../docs/08-DESIGN-BELTS.md) §6. Une
+     * bande pleine pèse 524 octets de tag (mesuré) ; 500 items en mouvement, soit une
+     * soixantaine de bandes, coûtent donc 3,3 Ko/s par joueur avant compression — sous les
+     * 5 Ko/s de FIO-090c.
+     */
+    public static final int RECONCILE_PERIOD = 200;
+
+    /**
+     * Tick de la période où ce convoyeur se réconcilie, tiré de sa position.
+     *
+     * <p>Sans ce décalage, toutes les bandes d'une usine enverraient leur état au même tick :
+     * une rafale toutes les 10 s au lieu d'un filet continu.
+     */
+    private final int reconcilePhase;
+
+    /**
+     * Quelque chose a bougé depuis le dernier envoi.
+     *
+     * <p>Seul ce qui bouge peut dériver. Une bande vide ou arrêtée — la majorité — a le même
+     * contenu des deux côtés depuis son dernier paquet, et n'envoie rien.
+     */
+    private boolean movedSinceSync;
+
     public BeltBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlocks.BELT_ENTITY.get(), pos, state);
 
@@ -88,6 +114,7 @@ public class BeltBlockEntity extends BlockEntity {
                 ticksPerSlotOf(state), BeltLane.DEFAULT_CAPACITY);
 
         this.speedGeneration = BeltSettings.generation();
+        this.reconcilePhase = Math.floorMod(pos.hashCode(), RECONCILE_PERIOD);
         this.lazyItems = newHandlers();
     }
 
@@ -155,7 +182,38 @@ public class BeltBlockEntity extends BlockEntity {
     public static void tick(Level level, BlockPos pos, BlockState state, BeltBlockEntity belt) {
         // Le temps du monde date le pas. C'est lui qui empêche un item déposé par le bloc
         // amont d'avancer une seconde fois dans le même tick — voir BeltLane#advance.
-        belt.tickAt(level.getGameTime());
+        long now = level.getGameTime();
+
+        belt.tickAt(now);
+
+        if (!level.isClientSide) belt.reconcile(now);
+    }
+
+    /**
+     * Renvoie de temps en temps l'état complet d'un convoyeur qui bouge.
+     *
+     * <p>Le client rejoue la simulation au lieu de la recevoir, et le résultat ne dépend plus de
+     * l'ordre de tick (§3). Il diverge quand même, pour deux raisons que rien côté client ne
+     * peut corriger :
+     *
+     * <ul>
+     *   <li><b>Son horloge saute.</b> Le client avance son temps de monde à 20 tps, et le
+     *   serveur le recale chaque seconde. Un serveur qui rame le fait reculer, et les pas
+     *   datés de ces ticks sont rejoués ; un client qui rame le fait avancer, et des pas
+     *   manquent.</li>
+     *   <li><b>Il ne voit pas tout.</b> Une bande qui déverse dans un chunk qu'il n'a pas
+     *   chargé bloque chez lui et passe sur le serveur.</li>
+     * </ul>
+     *
+     * <p>Une réconciliation par convoyeur, toutes les {@link #RECONCILE_PERIOD} ticks et
+     * seulement s'il a bougé, borne la dérive à cette durée. {@link #load} conserve les
+     * glissements en cours : un état resté juste ne fait rien bouger à l'écran.
+     */
+    private void reconcile(long now) {
+        if (!this.movedSinceSync) return;
+        if (Math.floorMod(now, RECONCILE_PERIOD) != this.reconcilePhase) return;
+
+        sync();
     }
 
     /**
@@ -175,7 +233,9 @@ public class BeltBlockEntity extends BlockEntity {
         // ensuite ne fasse pas un demi-pas à l'instant de son arrivée.
         if (this.transport.canSleep()) return;
 
-        this.transport.tick((lane, item) -> handOff(lane, item, stamp), stamp);
+        if (this.transport.tick((lane, item) -> handOff(lane, item, stamp), stamp)) {
+            this.movedSinceSync = true;
+        }
     }
 
     /**
@@ -191,14 +251,18 @@ public class BeltBlockEntity extends BlockEntity {
         BeltLane<ItemStack> track = target.transport.lane(lane);
 
         // Cas courant : l'aval a déjà libéré son entrée.
-        if (track.receive(item, stamp)) return true;
+        boolean taken = track.receive(item, stamp);
 
         // Sinon le tampon, mais seulement si l'aval bougera pour de bon : y déposer devant un
         // mur reviendrait à avaler des items dans un trou.
-        if (track.isStaged()) return false;
-        if (!willMove(target, lane, stamp)) return false;
+        if (!taken && !track.isStaged() && willMove(target, lane, stamp)) {
+            taken = track.stage(item, stamp);
+        }
 
-        return track.stage(item, stamp);
+        // L'aval a changé de contenu sans avoir forcément bougé lui-même : il peut dériver aussi.
+        if (taken) target.movedSinceSync = true;
+
+        return taken;
     }
 
     /**
@@ -635,15 +699,13 @@ public class BeltBlockEntity extends BlockEntity {
      * [`08`](../../../../../../../docs/08-DESIGN-BELTS.md) §1. Entre deux événements, le client
      * fait tourner la même boucle que le serveur et retrouve les mêmes positions.
      *
-     * <p><b>Ce qui n'est pas encore là.</b> Les deux simulations peuvent diverger : l'ordre de
-     * tick des block entities n'est pas le même de part et d'autre, et un transfert entre deux
-     * blocs peut donc réussir ici et être remis d'un pas là-bas. La réconciliation périodique
-     * de §6 reste à écrire (jalon 3.6) ; sans elle, une ligne longtemps observée finira par
-     * afficher des positions décalées d'un cran.
+     * <p>Les deux simulations dérivent malgré tout : {@link #reconcile} rattrape ce qu'aucun
+     * événement ne corrige.
      */
     private void sync() {
         if (this.level == null || this.level.isClientSide) return;
 
+        this.movedSinceSync = false;
         this.level.sendBlockUpdated(
                 this.worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
     }
