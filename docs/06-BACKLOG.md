@@ -129,6 +129,7 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | ~~FIO-081~~ | ✅ | S | **Audit du 31/07/2026** : 7 anomalies corrigées (BUG-042 à BUG-048), code mort résiduel supprimé, `01-ARCHITECTURE.md` et `README.md` réécrits — ils décrivaient encore le code d'avant la Phase 1 | build vert, 21 GameTests, docs conformes au code |
 | ~~FIO-074~~ | ✅ | S | Face correcte passée à la capability en éjection ([BUG-023](03-BUGS.md)) | — |
 | ~~FIO-075~~ | ✅ | S | Carburant : `shrink(1)`, `getCraftingRemainingItem`, comparaison `<=` ([BUG-024](03-BUGS.md)) | un seau de lave rend un seau |
+| FIO-182 | **P1** | S–M | **Prise « intelligente » : ne prendre que ce que la cible acceptera.** Aujourd'hui l'inserter saisit le premier item de sa source sans regarder sa cible ; devant une machine à plusieurs entrées (le crafter), il prend un ingrédient déjà plein, reste `BLOCKED` avec lui en main et ne livre plus jamais les autres. Au moment de la prise, parcourir les slots de la source et ne retenir que la première pile dont une **insertion simulée** dans la cible réussit (convoyeur : la voie visée a de la place). Coût borné au moment de la prise, pas au tick ; rien à mettre en cache. **Prochaine chose à faire sur les inserters** (décision du mainteneur, 30/09/2026). | GameTest : un coffre de pavés et de redstone alimente un crafter à deux entrées dont les pavés sont pleins — la redstone passe quand même |
 
 ## Épic D — Convoyeurs (Phase 3)
 
