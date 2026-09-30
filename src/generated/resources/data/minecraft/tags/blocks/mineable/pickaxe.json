@@ -14,6 +14,9 @@
     "factor_io:fast_transport_belt_ramp",
     "factor_io:transport_belt",
     "factor_io:transport_belt_ramp",
+    "factor_io:crafter_mk1",
+    "factor_io:crafter_mk2",
+    "factor_io:crafter_mk3",
     "factor_io:multiblock_part"
   ]
 }

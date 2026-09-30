@@ -1,5 +1,7 @@
 package com.drimoz.factoryio.core.resourcepack;
 
+import com.drimoz.factoryio.content.crafter.Crafter;
+import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.datagen.generator.*;
 import com.drimoz.factoryio.core.model.Inserter;
@@ -110,7 +112,8 @@ public class PackGenerator {
 
         List<Inserter> userDefined = InserterRegistry.getInstance().getUserDefinedInserters();
         List<Belt> userBelts = BeltRegistry.userDefined();
-        if (userDefined.isEmpty() && userBelts.isEmpty()) return files;
+        List<Crafter> userCrafters = CrafterRegistry.userDefined();
+        if (userDefined.isEmpty() && userBelts.isEmpty() && userCrafters.isEmpty()) return files;
 
         try {
             CachedOutput output = capturingOutput(files);
@@ -121,10 +124,11 @@ public class PackGenerator {
 
             // En info et non en debug : c est le seul retour dont dispose quelqu un qui
             // vient d ajouter un JSON pour savoir si ses assets ont bien ete fabriques.
-            FactoryIO.LOGGER.info("{} fichier(s) générés en mémoire pour le contenu utilisateur : inserters {}, convoyeurs {}",
+            FactoryIO.LOGGER.info("{} fichier(s) générés en mémoire pour le contenu utilisateur : inserters {}, convoyeurs {}, crafters {}",
                     files.size(),
                     userDefined.stream().map(Inserter::getName).toList(),
-                    userBelts.stream().map(Belt::getName).toList());
+                    userBelts.stream().map(Belt::getName).toList(),
+                    userCrafters.stream().map(Crafter::getName).toList());
         } catch (Exception e) {
             FactoryIO.LOGGER.error("Génération des assets d'inserter impossible", e);
         }

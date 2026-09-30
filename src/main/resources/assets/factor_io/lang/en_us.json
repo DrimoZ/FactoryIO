@@ -1,6 +1,9 @@
 {
   "block.factor_io.belt_ramp": "%s Ramp",
   "block.factor_io.burner_inserter": "Burner Inserter",
+  "block.factor_io.crafter_mk1": "Crafter Mk1",
+  "block.factor_io.crafter_mk2": "Crafter Mk2",
+  "block.factor_io.crafter_mk3": "Crafter Mk3",
   "block.factor_io.creative_energy_source": "Creative Energy Source",
   "block.factor_io.express_transport_belt": "Express Transport Belt",
   "block.factor_io.fast_inserter": "Fast Inserter",
@@ -8,6 +11,7 @@
   "block.factor_io.filter_inserter": "Filter Inserter",
   "block.factor_io.inserter": "Inserter",
   "block.factor_io.long_handed_inserter": "Long Handed Inserter",
+  "block.factor_io.multiblock_part": "Machine Part",
   "block.factor_io.stack_filter_inserter": "Stack Filter Inserter",
   "block.factor_io.stack_inserter": "Stack Inserter",
   "block.factor_io.transport_belt": "Transport Belt",

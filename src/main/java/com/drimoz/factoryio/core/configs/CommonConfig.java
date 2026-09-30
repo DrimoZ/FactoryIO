@@ -1,5 +1,7 @@
 package com.drimoz.factoryio.core.configs;
 
+import com.drimoz.factoryio.content.crafter.Crafter;
+import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.model.Belt;
 import com.drimoz.factoryio.core.model.BeltDefaults;
@@ -84,6 +86,17 @@ public class CommonConfig {
                         "as a fault to anyone who does not know Factorio.")
                 .define("insert_on_far_lane_only", false);
 
+        BUILDER.pop();
+
+        BUILDER.push(CrafterRegistry.TOGGLE_SECTION);
+        BUILDER.comment(
+                "Choose here whether the shipped crafters should be created. Read before Forge loads this",
+                "file, so a change only takes effect on the NEXT game launch. Speed and energy are set by",
+                "datapack: data/<namespace>/factor_io/crafters/<crafter>.json, { \"tier\": 1, \"craftingSpeed\": 1.0 }.");
+        for (Crafter crafter : CrafterRegistry.defaults()) {
+            BUILDER.comment("Should create default " + crafter.getName())
+                    .define(crafter.getName(), true);
+        }
         BUILDER.pop();
 
         BUILDER.pop();

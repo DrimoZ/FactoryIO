@@ -1,0 +1,6 @@
+{
+  "parent": "factor_io:block/crafter",
+  "textures": {
+    "front": "minecraft:block/blast_furnace_front_on"
+  }
+}
