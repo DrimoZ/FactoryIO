@@ -105,7 +105,7 @@ public final class CrafterRecipes {
     // Inner work
 
     /** Lu à la demande : la valeur n'existe qu'une fois un monde chargé. */
-    private static boolean vanillaAllowed() {
+    public static boolean vanillaAllowed() {
         return ServerConfig.SPEC.isLoaded() && ServerConfig.CRAFTER_VANILLA_RECIPES.get();
     }
 

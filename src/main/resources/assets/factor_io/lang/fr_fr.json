@@ -85,6 +85,8 @@
   "tooltip.factor_io.crafter_choose": "Clic : choisir une recette · Clic droit : la retirer",
   "tooltip.factor_io.crafter_choose_title": "Choisir une recette",
   "tooltip.factor_io.crafter_energy": "%s / %s FE",
+  "tooltip.factor_io.crafter_jei_tier": "Palier %s+",
+  "tooltip.factor_io.crafter_jei_title": "Crafter",
   "tooltip.factor_io.crafter_no_recipe": "Aucune recette choisie",
   "tooltip.factor_io.crafter_none_found": "Aucune recette ne correspond",
   "tooltip.factor_io.crafter_recipe_missing": "Recette introuvable",
