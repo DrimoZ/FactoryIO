@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.belts;
 
+import com.drimoz.factoryio.core.model.BeltDefaults;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -149,7 +150,7 @@ class BeltChainTest {
     @Test
     @DisplayName("un item avance d'une case par pas, même tické de l'amont vers l'aval")
     void oneSlotPerStepWhateverTheOrder() {
-        Chain chain = new Chain(4, BeltTier.EXPRESS.ticksPerSlot());
+        Chain chain = new Chain(4, BeltDefaults.EXPRESS_TICKS);
 
         chain.currentStamp = 0;
         assertTrue(chain.belts.get(0).offer(BeltTransport.LEFT, "item", 0));
@@ -165,8 +166,8 @@ class BeltChainTest {
     @DisplayName("les deux ordres de tick donnent la même position")
     void bothOrdersAgree() {
         for (int ticks = 1; ticks <= 8; ticks++) {
-            Chain upstream = new Chain(4, BeltTier.EXPRESS.ticksPerSlot());
-            Chain downstream = new Chain(4, BeltTier.EXPRESS.ticksPerSlot());
+            Chain upstream = new Chain(4, BeltDefaults.EXPRESS_TICKS);
+            Chain downstream = new Chain(4, BeltDefaults.EXPRESS_TICKS);
 
             upstream.currentStamp = 0;
             downstream.currentStamp = 0;
@@ -190,7 +191,7 @@ class BeltChainTest {
     @Test
     @DisplayName("traverser quatre blocs coûte seize pas")
     void crossingCostsOneStepPerSlot() {
-        Chain chain = new Chain(4, BeltTier.EXPRESS.ticksPerSlot());
+        Chain chain = new Chain(4, BeltDefaults.EXPRESS_TICKS);
 
         chain.currentStamp = 0;
         chain.belts.get(0).offer(BeltTransport.LEFT, "item", 0);
@@ -270,7 +271,7 @@ class BeltChainTest {
     @Test
     @DisplayName("Une ligne bouchée comprime encore, sans rien avaler")
     void aDeadEndStillCompresses() {
-        Chain chain = new Chain(3, BeltTier.EXPRESS.ticksPerSlot());
+        Chain chain = new Chain(3, BeltDefaults.EXPRESS_TICKS);
         chain.deadEnd = true;
 
         int placed = 0;
@@ -291,7 +292,7 @@ class BeltChainTest {
 
     /** Une boucle pleine, avec un item repérable pour suivre la rotation. */
     private static Chain saturatedLoop(int length) {
-        Chain loop = new Chain(length, BeltTier.EXPRESS.ticksPerSlot());
+        Chain loop = new Chain(length, BeltDefaults.EXPRESS_TICKS);
         loop.looped = true;
 
         for (int index = 0; index < length; index++) {
@@ -316,7 +317,7 @@ class BeltChainTest {
     @Test
     @DisplayName("un convoyeur lent avance d'une case tous les ticksPerSlot")
     void slowBeltKeepsItsCadence() {
-        int ticksPerSlot = BeltTier.TRANSPORT.ticksPerSlot();
+        int ticksPerSlot = BeltDefaults.TRANSPORT_TICKS;
 
         Chain chain = new Chain(4, ticksPerSlot);
 

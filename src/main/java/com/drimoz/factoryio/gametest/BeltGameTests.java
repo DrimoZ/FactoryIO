@@ -5,7 +5,10 @@ import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
 import com.drimoz.factoryio.core.belts.BeltLane;
 import com.drimoz.factoryio.core.belts.BeltSettings;
-import com.drimoz.factoryio.core.belts.BeltTier;
+import com.drimoz.factoryio.core.belts.BeltLane;
+import com.drimoz.factoryio.core.model.Belt;
+import com.drimoz.factoryio.core.model.BeltDefaults;
+import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.belts.BeltTransport;
 import com.drimoz.factoryio.core.configs.CommonConfig;
 import com.drimoz.factoryio.core.init.ModBlocks;
@@ -92,7 +95,7 @@ public class BeltGameTests {
                     helper.assertTrue(total(helper) == placed,
                             "Des items ont disparu devant le mur : " + total(helper) + " au lieu de " + placed);
 
-                    helper.assertTrue(count(helper, THIRD) == BeltTier.SLOTS_PER_LANE,
+                    helper.assertTrue(count(helper, THIRD) == BeltLane.DEFAULT_CAPACITY,
                             "Le bout de ligne ne s'est pas rempli");
                 })
                 .thenSucceed();
@@ -254,43 +257,25 @@ public class BeltGameTests {
     // Tests (Configuration)
 
     /**
-     * Le barème livré et la valeur par défaut de la configuration sont la même chose.
-     *
-     * <p>Deux endroits décrivent la vitesse : l'énumération, qui sert de repli tant que la
-     * configuration n'est pas chargée, et le fichier TOML. Qu'ils divergent ferait accélérer
-     * ou ralentir les convoyeurs au moment précis où la configuration devient disponible —
-     * un changement de comportement sans cause visible.
-     */
-    @GameTest(template = TEMPLATE, timeoutTicks = 20)
-    public static void shippedSpeedsMatchTheConfigDefaults(GameTestHelper helper) {
-        for (BeltTier tier : BeltTier.values()) {
-            helper.assertTrue(BeltSettings.ticksPerSlot(tier) == tier.ticksPerSlot(),
-                    "Le barème et la configuration divergent pour " + tier + " : "
-                            + tier.ticksPerSlot() + " contre " + BeltSettings.ticksPerSlot(tier));
-        }
-
-        helper.succeed();
-    }
-
-    /**
-     * Un convoyeur <b>déjà posé</b> suit un changement de configuration.
+     * Un convoyeur <b>déjà posé</b> suit un changement de vitesse apporté par datapack.
      *
      * <p>Sans cela il garderait pour toujours la vitesse en vigueur au moment de sa
-     * construction, et modifier le fichier n'aurait d'effet que sur les convoyeurs posés
-     * ensuite — le défaut de BUG-047, sur une autre valeur dérivée.
+     * construction, et un {@code /reload} n'aurait d'effet que sur les convoyeurs posés
+     * ensuite — le défaut de BUG-047, sur une autre valeur dérivée. On fait ici ce que fait
+     * {@code BeltReloadListener} : changer la définition, puis invalider.
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 100)
-    public static void aPlacedBeltFollowsAConfigChange(GameTestHelper helper) {
-        helper.setBlock(FIRST, ModBlocks.belt(BeltTier.TRANSPORT).get().defaultBlockState()
+    public static void aPlacedBeltFollowsASpeedChange(GameTestHelper helper) {
+        helper.setBlock(FIRST, BeltRegistry.block(BeltDefaults.TRANSPORT).defaultBlockState()
                 .setValue(BeltBlock.FACING, Direction.EAST));
 
         // Un item, sinon le convoyeur se rendort et ne tique plus.
         belt(helper, FIRST).accept(BeltTransport.LEFT, new ItemStack(Items.COBBLESTONE));
 
-        int shipped = BeltTier.TRANSPORT.ticksPerSlot();
-        int changed = shipped + 3;
+        Belt definition = BeltRegistry.get(BeltDefaults.TRANSPORT);
+        int changed = definition.getDefaultTicksPerSlot() + 3;
 
-        CommonConfig.BELT_COOLDOWN.set(changed);
+        definition.setTicksPerSlot(changed);
         BeltSettings.invalidate();
 
         helper.startSequence()
@@ -298,9 +283,9 @@ public class BeltGameTests {
                 .thenExecute(() -> {
                     int actual = belt(helper, FIRST).transport().ticksPerSlot();
 
-                    // Remis avant toute assertion : un échec ne doit pas laisser la
-                    // configuration modifiée pour les tests suivants.
-                    CommonConfig.BELT_COOLDOWN.set(shipped);
+                    // Remis avant toute assertion : un échec ne doit pas laisser la vitesse
+                    // modifiée pour les tests suivants.
+                    definition.resetTicksPerSlot();
                     BeltSettings.invalidate();
 
                     helper.assertTrue(actual == changed,
@@ -358,7 +343,7 @@ public class BeltGameTests {
 
         IItemHandler handler = handler(helper, FIRST);
 
-        helper.assertTrue(handler.getSlots() == BeltTransport.LANES * BeltTier.SLOTS_PER_LANE,
+        helper.assertTrue(handler.getSlots() == BeltTransport.LANES * BeltLane.DEFAULT_CAPACITY,
                 "Le convoyeur n'expose pas une case par emplacement : " + handler.getSlots());
 
         ItemStack remainder = handler.insertItem(0, new ItemStack(Items.COBBLESTONE, 64), false);
@@ -402,7 +387,7 @@ public class BeltGameTests {
     // Inner work
 
     private static BlockState belted(Direction facing) {
-        return ModBlocks.belt(BeltTier.EXPRESS).get().defaultBlockState()
+        return BeltRegistry.block(BeltDefaults.EXPRESS).defaultBlockState()
                 .setValue(BeltBlock.FACING, facing);
     }
 

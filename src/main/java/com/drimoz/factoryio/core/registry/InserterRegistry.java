@@ -7,7 +7,6 @@ import com.drimoz.factoryio.core.inserters.InserterContainer;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
 import com.drimoz.factoryio.core.inserters.InserterItem;
 import com.drimoz.factoryio.core.model.Inserter;
-import com.drimoz.factoryio.core.model.InserterDefaults;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Blocks;
@@ -16,8 +15,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.registries.RegistryObject;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
 
 public class InserterRegistry {
 
@@ -25,9 +23,7 @@ public class InserterRegistry {
 
     private static final InserterRegistry INSTANCE = new InserterRegistry();
 
-    private Map<ResourceLocation, Inserter> inserters = new LinkedHashMap<>();
-
-    private boolean allowRegistration = false;
+    private final DefinitionRegistry<Inserter> inserters = new DefinitionRegistry<>("inserters");
 
     // Lifecycle
 
@@ -39,32 +35,15 @@ public class InserterRegistry {
         return INSTANCE;
     }
 
-    public void onCommonSetup() {
-        FactoryIO.LOGGER.info("Loaded {} inserters", this.inserters.size());
-    }
-
-    public void setAllowRegistration(boolean allowed) {
-        this.allowRegistration = allowed;
-    }
-
     // Interface ( Inserters )
 
-    public void registerInserter (Inserter inserter) {
-        if (this.allowRegistration) {
-            if (this.inserters.values().stream().noneMatch((i) -> {
-                return i.getName().equals(inserter.getName());
-            })) {
-                this.inserters.put(inserter.getId(), inserter);
-            } else {
-                FactoryIO.LOGGER.info("{} tried to register a duplicate inserter with name {}, skipping", inserter.getModId(), inserter.getName());
-            }
-        } else {
-            FactoryIO.LOGGER.error("{} tried to register inserter {} outside of registration valid zone, skipping", inserter.getModId(), inserter.getName());
-        }
+    /** Le registre à remplir, une seule fois, par {@link InserterLoader}. */
+    DefinitionRegistry<Inserter> definitions() {
+        return this.inserters;
     }
 
     public List<Inserter> getInserters() {
-        return List.copyOf(this.inserters.values());
+        return this.inserters.all();
     }
 
     public Inserter getInserterById(ResourceLocation id) {
@@ -80,17 +59,12 @@ public class InserterRegistry {
      * (cf. FIO-039).
      */
     public List<Inserter> getUserDefinedInserters() {
-        Set<ResourceLocation> shipped = InserterDefaults.all().stream()
-                .map(Inserter::getId)
-                .collect(Collectors.toSet());
-
-        return this.inserters.values().stream()
-                .filter(inserter -> !shipped.contains(inserter.getId()))
-                .toList();
+        return this.inserters.userDefined();
     }
 
+    /** Un inserter de ce mod, par son nom de registre. */
     public Inserter getInserterByName(String name) {
-        return this.inserters.values().stream().filter((i) -> name.equals(i.getName())).findFirst().orElse(null);
+        return this.inserters.get(new ResourceLocation(FactoryIO.MOD_ID, name));
     }
 
     /**
@@ -102,9 +76,7 @@ public class InserterRegistry {
      * croisées (l'item a besoin du bloc, le block entity aussi).
      */
     public void registerAll() {
-        this.inserters = this.getSortedInsertersMap(this.inserters.values());
-
-        this.inserters.values().forEach(this::registerInserterContent);
+        this.inserters.all().forEach(this::registerInserterContent);
     }
 
     // L'enregistrement des renderers et des écrans vit dans com.drimoz.factoryio.client.
@@ -153,13 +125,4 @@ public class InserterRegistry {
                                 data.readBlockPos()))));
     }
 
-    private Map<ResourceLocation, Inserter> getSortedInsertersMap(Collection<Inserter> inserterCollection) {
-        LinkedHashMap<ResourceLocation, Inserter> sorted = new LinkedHashMap<>();
-
-        inserterCollection.stream().sorted(Comparator.comparing(Inserter::getName)).forEach((c) -> {
-            sorted.put(c.getId(), c);
-        });
-
-        return sorted;
-    }
 }

@@ -3,6 +3,8 @@ package com.drimoz.factoryio.core.resourcepack;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.datagen.generator.*;
 import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.model.Belt;
+import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
 import com.drimoz.factoryio.core.registry.Translations;
 import com.google.common.collect.ImmutableList;
@@ -104,7 +106,8 @@ public class PackGenerator {
         reportLegacyDirectory();
 
         List<Inserter> userDefined = InserterRegistry.getInstance().getUserDefinedInserters();
-        if (userDefined.isEmpty()) return files;
+        List<Belt> userBelts = BeltRegistry.userDefined();
+        if (userDefined.isEmpty() && userBelts.isEmpty()) return files;
 
         try {
             CachedOutput output = capturingOutput(files);
@@ -115,9 +118,10 @@ public class PackGenerator {
 
             // En info et non en debug : c est le seul retour dont dispose quelqu un qui
             // vient d ajouter un JSON pour savoir si ses assets ont bien ete fabriques.
-            FactoryIO.LOGGER.info("{} fichier(s) générés en mémoire pour {} inserter(s) utilisateur : {}",
-                    files.size(), userDefined.size(),
-                    userDefined.stream().map(Inserter::getName).toList());
+            FactoryIO.LOGGER.info("{} fichier(s) générés en mémoire pour le contenu utilisateur : inserters {}, convoyeurs {}",
+                    files.size(),
+                    userDefined.stream().map(Inserter::getName).toList(),
+                    userBelts.stream().map(Belt::getName).toList());
         } catch (Exception e) {
             FactoryIO.LOGGER.error("Génération des assets d'inserter impossible", e);
         }

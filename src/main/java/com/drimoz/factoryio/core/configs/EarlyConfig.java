@@ -30,7 +30,6 @@ public final class EarlyConfig {
     // Private properties
 
     private static final String CONFIG_FILE = "factor_io/factor_io-common.toml";
-    private static final String INSERTERS_PREFIX = FactoryIO.MOD_ID + ".Inserters.";
 
     private static CommentedFileConfig config;
     private static boolean loaded = false;
@@ -62,7 +61,7 @@ public final class EarlyConfig {
         }
     }
 
-    /** Libère le fichier. À appeler une fois les inserters construits. */
+    /** Libère le fichier. À appeler une fois toutes les familles de contenu chargées. */
     public static void close() {
         if (config != null) {
             config.close();
@@ -71,11 +70,12 @@ public final class EarlyConfig {
     }
 
     /**
-     * @param name identifiant de l'inserter par défaut, ex. {@code burner_inserter}
-     * @return {@code true} si cet inserter doit être créé
+     * @param section section de la config, ex. {@code Inserters}
+     * @param name    contenu livré, ex. {@code burner_inserter}
+     * @return {@code true} si ce contenu doit être créé
      */
-    public static boolean shouldGenerateInserter(String name) {
-        return getBoolean(INSERTERS_PREFIX + name, true);
+    public static boolean isEnabled(String section, String name) {
+        return getBoolean(FactoryIO.MOD_ID + "." + section + "." + name, true);
     }
 
     // Inner work

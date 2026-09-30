@@ -1,5 +1,8 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
+import com.drimoz.factoryio.core.belts.BeltBlock;
+import com.drimoz.factoryio.core.model.Belt;
+import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
@@ -20,6 +23,7 @@ public class ModBlockModelGenerator extends BlockStateProvider {
     protected void registerStatesAndModels() {
         // Un cube ordinaire : la source n'a ni orientation ni état.
         ModBlocks.MODELLED.forEach(block -> simpleBlock(block.get()));
+        registerUserBelts();
 
         InserterRegistry.getInstance().getInserters().forEach((inserter) -> {
             InserterBlock block = inserter.getBlock().get();
@@ -50,6 +54,35 @@ public class ModBlockModelGenerator extends BlockStateProvider {
                     });
         });
     }
+
+    /**
+     * Les convoyeurs ajoutés par un modpack : les modèles du convoyeur de base, texture remplacée.
+     *
+     * <p>Les livrés ont leurs assets écrits à la main ; seuls les ajoutés passent par ici. Un
+     * modèle par valeur de {@code connected}, dans l'ordre de {@link BeltShape}.
+     */
+    private void registerUserBelts() {
+        for (Belt belt : BeltRegistry.userDefined()) {
+            ModelFile[] models = new ModelFile[BELT_VARIANTS.length];
+
+            for (int connected = 0; connected < BELT_VARIANTS.length; connected++) {
+                models[connected] = models()
+                        .withExistingParent("block/transport_belts/" + belt.getName() + "/" + belt.getName() + BELT_VARIANTS[connected],
+                                modLoc("block/transport_belts/transport_belt/transport_belt" + BELT_VARIANTS[connected]))
+                        .texture("0", belt.getTexture())
+                        .texture("particle", belt.getTexture());
+            }
+
+            getVariantBuilder(belt.getBlock().get()).forAllStatesExcept(state -> ConfiguredModel.builder()
+                    .modelFile(models[state.getValue(BeltBlock.CONNECTED)])
+                    .rotationY(getYRotation(state.getValue(BeltBlock.FACING)))
+                    .build(), BeltBlock.WATERLOGGED);
+        }
+    }
+
+    /** Suffixe du modèle pour chaque valeur de {@code connected}. */
+    private static final String[] BELT_VARIANTS = {
+            "", "_ct", "_ct_output", "_ct_input", "_left_ct_input", "_left_ct", "_right_ct_input", "_right_ct"};
 
     private int getYRotation(Direction facing) {
         return switch (facing) {

@@ -4,7 +4,10 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
 import com.drimoz.factoryio.core.belts.BeltLane;
-import com.drimoz.factoryio.core.belts.BeltTier;
+import com.drimoz.factoryio.core.belts.BeltLane;
+import com.drimoz.factoryio.core.model.Belt;
+import com.drimoz.factoryio.core.model.BeltDefaults;
+import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.belts.BeltTransport;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import net.minecraft.core.BlockPos;
@@ -210,7 +213,7 @@ public class BeltBenchmarks {
     }
 
     private static BeltBlockEntity place(GameTestHelper helper, BlockPos pos, Direction facing) {
-        helper.setBlock(pos, ModBlocks.belt(BeltTier.EXPRESS).get().defaultBlockState()
+        helper.setBlock(pos, BeltRegistry.block(BeltDefaults.EXPRESS).defaultBlockState()
                 .setValue(BeltBlock.FACING, facing));
 
         return (BeltBlockEntity) helper.getBlockEntity(pos);

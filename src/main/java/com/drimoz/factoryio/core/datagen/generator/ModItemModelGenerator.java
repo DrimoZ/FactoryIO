@@ -2,6 +2,7 @@ package com.drimoz.factoryio.core.datagen.generator;
 
 import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
+import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
 import net.minecraft.data.PackOutput;
 import net.minecraftforge.client.model.generators.ItemModelProvider;
@@ -22,6 +23,10 @@ public class ModItemModelGenerator extends ItemModelProvider {
         //
         // MODELLED et non ENTRIES : les convoyeurs ont déjà leur modèle d'item écrit à la
         // main, et en générer un second le mettrait en concurrence avec celui du dépôt.
+        // Les convoyeurs ajoutés : leur item montre le modèle droit, sans raccord.
+        BeltRegistry.userDefined().forEach(belt -> withExistingParent("item/" + belt.getName(),
+                modLoc("block/transport_belts/" + belt.getName() + "/" + belt.getName())));
+
         ModBlocks.MODELLED.forEach(block -> {
             String name = block.getId().getPath();
             withExistingParent("item/" + name, modLoc("block/" + name));

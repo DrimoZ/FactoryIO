@@ -3,7 +3,8 @@ package com.drimoz.factoryio.core.init;
 import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
 import com.drimoz.factoryio.core.belts.BeltFlow;
-import com.drimoz.factoryio.core.belts.BeltTier;
+import com.drimoz.factoryio.core.belts.BeltItem;
+import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.power.CreativeEnergySourceBlock;
 import com.drimoz.factoryio.core.power.CreativeEnergySourceBlockEntity;
 import com.drimoz.factoryio.core.power.CreativeEnergySourceItem;
@@ -64,38 +65,27 @@ public final class ModBlocks {
                             .build(null));
 
     /**
-     * Les trois convoyeurs.
+     * Un bloc par définition de convoyeur ({@link BeltRegistry}), livrée ou ajoutée par un
+     * modpack.
      *
-     * <p>Un bloc par tier, tous horizontaux pour l'instant : les modèles d'ascenseur n'existent
-     * pas encore. Le sens étant un trait du bloc et non une propriété d'état, les ajouter se
-     * fera ici même, sans toucher aux blockstates (cf. {@link BeltBlock}).
-     *
-     * <p>Les blockstates, modèles et textures des trois tiers sont dans le dépôt depuis
-     * longtemps et n'attendaient que ces déclarations.
+     * <p>Les assets des trois livrés sont écrits à la main ; ceux d'un convoyeur ajouté sont
+     * générés en mémoire ({@code PackGenerator}).
      */
-    public static final List<RegistryObject<Block>> BELTS =
-            Arrays.stream(BeltTier.values())
-                    .map(tier -> registerWithHandwrittenAssets(
-                            tier.id(),
-                            () -> new BeltBlock(tier, BeltFlow.HORIZONTAL,
-                                    BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                                            // Une bande n'est pas un bloc plein : elle ne doit
-                                            // ni obstruer la lumière ni faire disparaître les
-                                            // faces des blocs qu'elle touche.
-                                            .noOcclusion()),
-                            block -> new BlockItem(block, new Item.Properties())))
-                    .toList();
-
-    /**
-     * Le convoyeur d'un tier donné.
-     *
-     * <p>{@link #BELTS} est construit en parcourant {@code BeltTier.values()}, donc l'ordre
-     * des deux coïncide — mais s'appuyer sur cette coïncidence à chaque appel la rendrait
-     * fragile.
-     */
-    public static RegistryObject<Block> belt(BeltTier tier) {
-        return BELTS.get(tier.ordinal());
-    }
+    public static final List<RegistryObject<Block>> BELTS = BeltRegistry.all().stream()
+            .map(belt -> {
+                RegistryObject<Block> block = registerWithHandwrittenAssets(
+                        belt.getName(),
+                        () -> new BeltBlock(belt, BeltFlow.HORIZONTAL,
+                                BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                                        // Une bande n'est pas un bloc plein : elle ne doit ni
+                                        // obstruer la lumière ni faire disparaître les faces des
+                                        // blocs qu'elle touche.
+                                        .noOcclusion()),
+                        registered -> new BeltItem(registered, belt, new Item.Properties()));
+                belt.setBlock(block);
+                return block;
+            })
+            .toList();
 
     /**
      * Un seul type de block entity pour les trois tiers.

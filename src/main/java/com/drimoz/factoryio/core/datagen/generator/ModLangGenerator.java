@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
 import com.drimoz.factoryio.core.model.TranslationCode;
+import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
 import net.minecraft.data.PackOutput;
 import net.minecraftforge.common.data.LanguageProvider;
@@ -33,6 +34,13 @@ public class ModLangGenerator extends LanguageProvider {
             if (translation == null) return;
 
             addBlock(inserter.getBlock(), translation);
+        });
+
+        BeltRegistry.all().forEach(belt -> {
+            String translation = belt.getTranslation().getTranslation(translationCode);
+            if (translation == null) return;
+
+            addBlock(belt.getBlock(), translation);
         });
     }
 }
