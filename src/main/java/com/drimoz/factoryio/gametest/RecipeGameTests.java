@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.gametest;
 
+import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.belts.BeltLane;
 import com.drimoz.factoryio.core.model.Belt;
@@ -42,6 +43,7 @@ public class RecipeGameTests {
         List<Item> useful = new ArrayList<>();
         InserterRegistry.getInstance().getInserters().forEach(inserter -> useful.add(inserter.getItem().get()));
         for (Belt belt : BeltDefaults.all()) useful.add(BeltRegistry.block(belt.getId()).asItem());
+        CrafterRegistry.all().forEach(crafter -> useful.add(crafter.getBlock().get().asItem()));
 
         for (RegistryObject<Item> item : List.of(
                 ModItems.IRON_PLATE, ModItems.COPPER_PLATE, ModItems.STEEL_PLATE,

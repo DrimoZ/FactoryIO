@@ -4,6 +4,7 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.content.crafter.CrafterRecipe;
 import com.drimoz.factoryio.content.crafter.CrafterRecipeSerializer;
 import com.drimoz.factoryio.content.crafter.CrafterRecipes;
+import com.drimoz.factoryio.core.init.ModItems;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
@@ -128,6 +129,29 @@ public class CrafterRecipeGameTests {
         helper.assertTrue(CrafterRecipes.byId(helper.getLevel(), chest.getId()).isEmpty(),
                 "Les recettes vanilla sont désactivées par défaut");
         helper.assertTrue(manager.getAllRecipesFor(RecipeType.CRAFTING).size() > 0, "Pas de recettes vanilla chargées");
+        helper.succeed();
+    }
+
+    /**
+     * Circuit avancé et processeur ne se font qu'au crafter (FIO-126, docs/12 §6), et le
+     * processeur demande un palier 2.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void advancedCircuitsOnlyComeFromTheCrafter(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var manager = level.getRecipeManager();
+
+        for (var item : List.of(ModItems.ADVANCED_CIRCUIT.get(), ModItems.PROCESSING_UNIT.get())) {
+            helper.assertTrue(manager.getAllRecipesFor(RecipeType.CRAFTING).stream()
+                    .noneMatch(recipe -> recipe.getResultItem(level.registryAccess()).is(item)), item + " se fait encore à l'établi");
+            helper.assertTrue(manager.getAllRecipesFor(CrafterRecipes.TYPE.get()).stream()
+                    .anyMatch(recipe -> recipe.getResultItem(level.registryAccess()).is(item)), item + " n'a pas de recette de crafter");
+        }
+
+        CrafterRecipe processingUnit = CrafterRecipes.byId(level, new ResourceLocation(FactoryIO.MOD_ID, "crafter/processing_unit"))
+                .orElseThrow();
+        helper.assertTrue(processingUnit.minTier() == 2 && processingUnit.inputs().get(0).count() == 20,
+                "Le processeur n'a pas les quantités ni le palier de Factorio");
         helper.succeed();
     }
 

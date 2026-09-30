@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "M": {
+      "item": "factor_io:crafter_mk2"
+    },
+    "U": {
+      "tag": "forge:circuits/elite"
+    },
+    "V": {
+      "item": "factor_io:speed_module"
+    }
+  },
+  "pattern": [
+    "UVU",
+    "VMV",
+    "UVU"
+  ],
+  "result": {
+    "item": "factor_io:crafter_mk3"
+  },
+  "show_notification": true
+}

@@ -1,11 +1,13 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_electronic_circuit": {
+    "has_crafter_mk2": {
       "conditions": {
         "items": [
           {
-            "tag": "forge:circuits/basic"
+            "items": [
+              "factor_io:crafter_mk2"
+            ]
           }
         ]
       },
@@ -13,20 +15,20 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "factor_io:crafting/components/advanced_circuit"
+        "recipe": "factor_io:crafting/crafters/crafter_mk3"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_electronic_circuit",
+      "has_crafter_mk2",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "factor_io:crafting/components/advanced_circuit"
+      "factor_io:crafting/crafters/crafter_mk3"
     ]
   },
   "sends_telemetry_event": false

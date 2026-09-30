@@ -1,0 +1,33 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_electronic_circuit": {
+      "conditions": {
+        "items": [
+          {
+            "tag": "forge:circuits/basic"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "factor_io:crafting/crafters/crafter_mk1"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_electronic_circuit",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "factor_io:crafting/crafters/crafter_mk1"
+    ]
+  },
+  "sends_telemetry_event": false
+}

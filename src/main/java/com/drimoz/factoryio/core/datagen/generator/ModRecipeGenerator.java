@@ -22,6 +22,10 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
+import com.drimoz.factoryio.content.crafter.Crafter;
+import com.drimoz.factoryio.content.crafter.CrafterRegistry;
+import javax.annotation.Nullable;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.common.Tags;
@@ -58,6 +62,8 @@ public class ModRecipeGenerator extends RecipeProvider {
         belts(writer);
         materials(writer);
         circuits(writer);
+        crafterRecipes(writer);
+        crafters(writer);
         modules(writer);
         tools(writer);
     }
@@ -108,27 +114,101 @@ public class ModRecipeGenerator extends RecipeProvider {
                 .unlockedBy("has_copper_cable", has(ModTags.Items.WIRES_COPPER))
                 .save(writer, recipe("crafting/components/electronic_circuit"));
 
-        // Factorio : 2 circuits électroniques + 2 plastiques + 4 câbles.
-        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, ModItems.ADVANCED_CIRCUIT.get())
-                .pattern("CKC")
-                .pattern("E E")
-                .pattern("CKC")
-                .define('C', ModTags.Items.WIRES_COPPER)
-                .define('K', Items.DRIED_KELP)
-                .define('E', ModTags.Items.CIRCUITS_BASIC)
-                .unlockedBy("has_electronic_circuit", has(ModTags.Items.CIRCUITS_BASIC))
-                .save(writer, recipe("crafting/components/advanced_circuit"));
+        // Circuit avancé et processeur ne se font plus qu'au crafter (docs/12 §6) : la grille
+        // 3×3 trichait sur leurs quantités, la machine les rend à Factorio.
+    }
 
-        // Factorio : 20 électroniques + 2 avancés + acide sulfurique, ramenés à la grille.
-        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, ModItems.PROCESSING_UNIT.get())
-                .pattern("EAE")
-                .pattern("EGE")
-                .pattern(" A ")
-                .define('E', ModTags.Items.CIRCUITS_BASIC)
-                .define('A', ModTags.Items.CIRCUITS_ADVANCED)
-                .define('G', Tags.Items.GUNPOWDER)
-                .unlockedBy("has_advanced_circuit", has(ModTags.Items.CIRCUITS_ADVANCED))
-                .save(writer, recipe("crafting/components/processing_unit"));
+    // Crafter (FIO-126)
+
+    /**
+     * Les recettes du crafter, aux quantités et temps de Factorio.
+     *
+     * <p>Les intermédiaires simples existent aussi à l'établi : le crafter les automatise.
+     * Circuit avancé et processeur n'existent qu'ici — le processeur au palier 2, comme
+     * dans Factorio où l'acide sulfurique exige un assembleur 2. Sans fluides, la poudre à
+     * canon tient lieu d'acide.
+     */
+    private void crafterRecipes(Consumer<FinishedRecipe> writer) {
+        CrafterRecipeBuilder.crafting(ModItems.IRON_GEAR_WHEEL.get(), 1, 0.5F)
+                .requires(ModTags.Items.PLATES_IRON, 2)
+                .save(writer, recipe("crafter/iron_gear_wheel"));
+
+        CrafterRecipeBuilder.crafting(ModItems.COPPER_CABLE.get(), 2, 0.5F)
+                .requires(ModTags.Items.PLATES_COPPER, 1)
+                .save(writer, recipe("crafter/copper_cable"));
+
+        CrafterRecipeBuilder.crafting(ModItems.ELECTRONIC_CIRCUIT.get(), 1, 0.5F)
+                .requires(ModTags.Items.PLATES_IRON, 1)
+                .requires(ModTags.Items.WIRES_COPPER, 3)
+                .save(writer, recipe("crafter/electronic_circuit"));
+
+        // Le varech séché tient lieu de plastique, comme dans la recette d'établi d'avant.
+        CrafterRecipeBuilder.crafting(ModItems.ADVANCED_CIRCUIT.get(), 1, 6.0F)
+                .requires(ModTags.Items.CIRCUITS_BASIC, 2)
+                .requires(Items.DRIED_KELP, 2)
+                .requires(ModTags.Items.WIRES_COPPER, 4)
+                .save(writer, recipe("crafter/advanced_circuit"));
+
+        CrafterRecipeBuilder.crafting(ModItems.PROCESSING_UNIT.get(), 1, 10.0F)
+                .requires(ModTags.Items.CIRCUITS_BASIC, 20)
+                .requires(ModTags.Items.CIRCUITS_ADVANCED, 2)
+                .requires(Tags.Items.GUNPOWDER, 5)
+                .minTier(2)
+                .save(writer, recipe("crafter/processing_unit"));
+    }
+
+    /**
+     * Les crafters eux-mêmes, à l'établi, chacun à partir du précédent : le Mk1 en fer,
+     * engrenages et circuits, le Mk2 y ajoute des circuits avancés, le Mk3 des processeurs et
+     * des modules de vitesse — comme les assembleurs de Factorio.
+     */
+    private void crafters(Consumer<FinishedRecipe> writer) {
+        Block mk1 = crafterBlock("crafter_mk1");
+        Block mk2 = crafterBlock("crafter_mk2");
+        Block mk3 = crafterBlock("crafter_mk3");
+
+        if (mk1 != null) {
+            ShapedRecipeBuilder.shaped(RecipeCategory.MISC, mk1)
+                    .pattern("PCP")
+                    .pattern("GTG")
+                    .pattern("PGP")
+                    .define('P', ModTags.Items.PLATES_IRON)
+                    .define('C', ModTags.Items.CIRCUITS_BASIC)
+                    .define('G', ModTags.Items.GEARS_IRON)
+                    .define('T', Items.CRAFTING_TABLE)
+                    .unlockedBy("has_electronic_circuit", has(ModTags.Items.CIRCUITS_BASIC))
+                    .save(writer, recipe("crafting/crafters/crafter_mk1"));
+        }
+        if (mk1 != null && mk2 != null) {
+            ShapedRecipeBuilder.shaped(RecipeCategory.MISC, mk2)
+                    .pattern("SAS")
+                    .pattern("GMG")
+                    .pattern("SAS")
+                    .define('S', ModTags.Items.PLATES_STEEL)
+                    .define('A', ModTags.Items.CIRCUITS_ADVANCED)
+                    .define('G', ModTags.Items.GEARS_IRON)
+                    .define('M', mk1)
+                    .unlockedBy("has_crafter_mk1", has(mk1))
+                    .save(writer, recipe("crafting/crafters/crafter_mk2"));
+        }
+        if (mk2 != null && mk3 != null) {
+            ShapedRecipeBuilder.shaped(RecipeCategory.MISC, mk3)
+                    .pattern("UVU")
+                    .pattern("VMV")
+                    .pattern("UVU")
+                    .define('U', ModTags.Items.CIRCUITS_ELITE)
+                    .define('V', ModItems.SPEED_MODULE_1.get())
+                    .define('M', mk2)
+                    .unlockedBy("has_crafter_mk2", has(mk2))
+                    .save(writer, recipe("crafting/crafters/crafter_mk3"));
+        }
+    }
+
+    /** Un crafter livré, ou {@code null} s'il a été désactivé dans la config. */
+    @Nullable
+    private static Block crafterBlock(String name) {
+        Crafter crafter = CrafterRegistry.get(new ResourceLocation(FactoryIO.MOD_ID, name));
+        return crafter != null ? crafter.getBlock().get() : null;
     }
 
     // Modules

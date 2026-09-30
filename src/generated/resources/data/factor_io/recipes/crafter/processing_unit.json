@@ -1,0 +1,30 @@
+{
+  "type": "factor_io:crafting",
+  "ingredients": [
+    {
+      "count": 20,
+      "ingredient": {
+        "tag": "forge:circuits/basic"
+      }
+    },
+    {
+      "count": 2,
+      "ingredient": {
+        "tag": "forge:circuits/advanced"
+      }
+    },
+    {
+      "count": 5,
+      "ingredient": {
+        "tag": "forge:gunpowder"
+      }
+    }
+  ],
+  "minTier": 2,
+  "results": [
+    {
+      "item": "factor_io:processing_unit"
+    }
+  ],
+  "time": 10.0
+}
