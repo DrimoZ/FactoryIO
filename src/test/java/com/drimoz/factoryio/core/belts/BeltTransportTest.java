@@ -74,7 +74,7 @@ class BeltTransportTest {
         belt.setTicksPerSlot(1);
 
         assertEquals(0, belt.subTick(), "le sous-tick a survécu à une cadence plus courte");
-        assertTrue(belt.progress(BeltTransport.LEFT, 0, 1f, true) <= 1f,
+        assertTrue(belt.progress(BeltTransport.LEFT, 0, 1f) <= 1f,
                 "l'item déborde de son bloc");
     }
 
@@ -267,28 +267,25 @@ class BeltTransportTest {
     // Rendu
 
     @Test
-    @DisplayName("La progression tient compte du sous-tick et du partialTick")
-    void progressUsesTheClock() {
-        BeltTransport<String> belt = new BeltTransport<>(4);
-        belt.offerAt(BeltTransport.LEFT, 0, "a");
+    @DisplayName("Daté, le pas tombe au même tick pour tous les convoyeurs d'une vitesse")
+    void datedStepsShareOnePhase() {
+        BeltTransport<String> early = new BeltTransport<>(4);
+        BeltTransport<String> late = new BeltTransport<>(4);
+        early.offer(BeltTransport.LEFT, "a");
 
-        float atRest = belt.progress(BeltTransport.LEFT, 0, 0f, true);
-        float halfway = belt.progress(BeltTransport.LEFT, 0, 2f, true);
+        // L'un tique depuis le tick 0, l'autre ne commence qu'au tick 2 : ils doivent pourtant
+        // faire leur pas ensemble, au tick 3.
+        early.tick(new Recorder(), 0L);
+        early.tick(new Recorder(), 1L);
+        late.offer(BeltTransport.LEFT, "b");
+
+        for (long time = 2L; time <= 3L; time++) {
+            early.tick(new Recorder(), time);
+            late.tick(new Recorder(), time);
+        }
 
         assertAll(
-                () -> assertEquals(0f, atRest, 1e-6f),
-                () -> assertTrue(halfway > atRest, "le partialTick doit faire avancer l'affichage"));
-    }
-
-    @Test
-    @DisplayName("Un item bloqué ne glisse pas, quel que soit le sous-tick")
-    void aBlockedItemHoldsItsPosition() {
-        BeltTransport<String> belt = new BeltTransport<>(4);
-        int exit = belt.lane(BeltTransport.LEFT).exitSlot();
-        belt.offerAt(BeltTransport.LEFT, exit, "a");
-
-        assertEquals(
-                belt.progress(BeltTransport.LEFT, exit, 0f, false),
-                belt.progress(BeltTransport.LEFT, exit, 3.9f, false));
+                () -> assertEquals("a", early.lane(BeltTransport.LEFT).get(1)),
+                () -> assertEquals("b", late.lane(BeltTransport.LEFT).get(1)));
     }
 }

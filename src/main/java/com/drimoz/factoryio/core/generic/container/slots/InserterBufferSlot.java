@@ -1,15 +1,15 @@
 package com.drimoz.factoryio.core.generic.container.slots;
 
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
 
 /**
- * La « main » de l'inserter, affichée mais intouchable.
+ * La « main » de l'inserter : on peut la vider, pas la remplir.
  *
- * <p>Ni dépôt ni retrait : son contenu appartient au mouvement en cours. Le laisser
- * manipuler ferait disparaître un item que la machine à états croit tenir.
+ * <p>Le retrait est sans risque : l'inserter qui arrive pour déposer une main vide repart
+ * simplement (voir {@code InserterBlockEntity#tryDrop}). Le dépôt, lui, reste interdit — un
+ * item posé à la main serait livré sans avoir été saisi.
  */
 public class InserterBufferSlot extends SlotItemHandler {
 
@@ -19,16 +19,6 @@ public class InserterBufferSlot extends SlotItemHandler {
 
     @Override
     public boolean mayPlace(ItemStack stack) {
-        return false;
-    }
-
-    @Override
-    public int getMaxStackSize() {
-        return 1;
-    }
-
-    @Override
-    public boolean mayPickup(Player playerIn) {
         return false;
     }
 }

@@ -190,14 +190,14 @@ public class BeltBlockEntity extends BlockEntity {
         BeltLane<ItemStack> track = target.transport.lane(lane);
 
         // Cas courant : l'aval a déjà libéré son entrée.
-        if (track.offer(item, stamp)) return true;
+        if (track.receive(item, stamp)) return true;
 
         // Sinon le tampon, mais seulement si l'aval bougera pour de bon : y déposer devant un
         // mur reviendrait à avaler des items dans un trou.
         if (track.isStaged()) return false;
         if (!willMove(target, lane, stamp)) return false;
 
-        return track.stage(item);
+        return track.stage(item, stamp);
     }
 
     /**
@@ -273,13 +273,6 @@ public class BeltBlockEntity extends BlockEntity {
         }
 
         return result;
-    }
-
-    /** @return {@code true} si l'aval prendrait la tête de cette voie — pour le rendu */
-    public boolean isExitOpen(int lane) {
-        BeltBlockEntity target = resolveDownstream();
-
-        return target != null && !target.transport.lane(lane).isOccupied(target.transport.lane(lane).entrySlot());
     }
 
     /**
@@ -537,6 +530,13 @@ public class BeltBlockEntity extends BlockEntity {
         // chargement d'un monde — tout est vide — mais pas à la réception d'un paquet : sans
         // cela, une case déjà occupée refuserait le dépôt et le client garderait un item que
         // le serveur n'a plus.
+        //
+        // Les glissements en cours sont relevés avant et rendus après : un paquet part à chaque
+        // dépôt d'inserter, et remettre alors tous les items du bloc au repos les ferait
+        // reculer d'un coup sous les yeux du joueur.
+        long[][] motion = new long[BeltTransport.LANES][];
+        for (int lane = 0; lane < BeltTransport.LANES; lane++) motion[lane] = this.transport.lane(lane).motion();
+
         this.transport.clear();
 
         ListTag lanes = tag.getList(TAG_LANES, Tag.TAG_COMPOUND);
@@ -558,6 +558,8 @@ public class BeltBlockEntity extends BlockEntity {
             if (slot == STAGED_SLOT) this.transport.lane(lane).stage(item);
             else this.transport.offerAt(lane, slot, item);
         }
+
+        for (int lane = 0; lane < BeltTransport.LANES; lane++) this.transport.lane(lane).keepMotion(motion[lane]);
 
         this.transport.restoreSubTick(tag.getByte(TAG_SUB_TICK));
     }

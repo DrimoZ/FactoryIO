@@ -1125,6 +1125,13 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      * @return {@code true} si la dépose a abouti
      */
     private boolean tryDrop() {
+        // Le joueur a pu vider la main depuis l'écran : il n'y a plus rien à déposer, le bras
+        // repart. Sans cela, il resterait tendu indéfiniment à tenter une dépose sans objet.
+        if (this.itemStorage.getStackInSlot(BUFFER_SLOT).isEmpty()) {
+            beginSwing(InserterState.RETURNING, ItemStack.EMPTY);
+            return true;
+        }
+
         ItemStack dropped = expelItems(this, getGrabDistance());
         if (dropped.isEmpty()) return false;
 

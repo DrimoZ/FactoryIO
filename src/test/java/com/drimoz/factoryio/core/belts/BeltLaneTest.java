@@ -215,57 +215,19 @@ class BeltLaneTest {
     // Rendu
 
     /**
-     * Un item bloqué ne glisse pas.
+     * Un item posé ou bloqué reste sur sa case.
      *
-     * <p>Sans cette garde, il avancerait visuellement au fil du sous-tick puis reviendrait en
-     * arrière d'un coup au moment du pas. Sur une file compressée — le cas le plus fréquent
-     * d'une usine — toute la bande tremblerait.
+     * <p>Le rendu ne montre que les glissements qui ont eu lieu : un item qui n'a pas bougé au
+     * dernier pas ne doit pas avancer au fil du sous-tick.
      */
     @Test
-    @DisplayName("La position d'un item bloqué ne bouge pas avec le sous-tick")
-    void aBlockedItemDoesNotCreep() {
+    @DisplayName("La position d'un item qui n'a pas glissé ne bouge pas avec le temps")
+    void anItemAtRestStaysOnItsSlot() {
         BeltLane<String> lane = laneOf(null, null, "a", "b");
 
-        // « a » est bloqué par « b », et « b » par l'aval.
         assertAll(
-                () -> assertEquals(lane.progressOf(2, 0f, 4, false), lane.progressOf(2, 3f, 4, false)),
-                () -> assertEquals(lane.progressOf(3, 0f, 4, false), lane.progressOf(3, 3f, 4, false)));
+                () -> assertEquals(0.5f, lane.progressOf(2, 100L, 0f, 4), 1e-6f),
+                () -> assertEquals(0.75f, lane.progressOf(3, 100L, 0.9f, 4), 1e-6f));
     }
 
-    @Test
-    @DisplayName("Un item libre glisse continûment d'une case à la suivante")
-    void aFreeItemCreepsContinuously() {
-        BeltLane<String> lane = laneOf("a", null, null, null);
-
-        float atStart = lane.progressOf(0, 0f, 4, true);
-        float almostThere = lane.progressOf(0, 4f, 4, true);
-
-        // À la fin du sous-tick, l'item doit être exactement là où la case suivante commence :
-        // sans cela il sauterait d'un pixel à chaque pas.
-        assertAll(
-                () -> assertEquals(0f, atStart, 1e-6f),
-                () -> assertEquals(0.25f, almostThere, 1e-6f, "continuité avec la case suivante"),
-                () -> assertTrue(lane.progressOf(0, 2f, 4, true) > atStart));
-    }
-
-    @Test
-    @DisplayName("La tête glisse si et seulement si l'aval la prendra")
-    void theHeadCreepsOnlyWhenTheExitIsOpen() {
-        BeltLane<String> lane = laneOf(null, null, null, "a");
-
-        assertAll(
-                () -> assertTrue(lane.canCreep(3, true), "aval ouvert"),
-                () -> assertFalse(lane.canCreep(3, false), "aval bouché"),
-                () -> assertFalse(lane.canCreep(0, true), "une case vide ne glisse pas"));
-    }
-
-    @Test
-    @DisplayName("La progression couvre tout le bloc, de l'entrée à la sortie")
-    void progressSpansTheWholeBlock() {
-        BeltLane<String> lane = laneOf("a", null, null, "d");
-
-        assertAll(
-                () -> assertEquals(0f, lane.progressOf(0, 0f, 4, true), 1e-6f),
-                () -> assertEquals(1f, lane.progressOf(3, 4f, 4, true), 1e-6f));
-    }
 }

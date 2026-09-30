@@ -113,26 +113,47 @@ public class BeltGameTests {
     public static void aSaturatedLoopKeepsTurning(GameTestHelper helper) {
         List<BlockPos> loop = loop(helper);
 
-        int placed = fill(helper, loop);
+        int placed = fill(helper, loop, BeltTransport.LANES);
 
         // Un item unique, posé à la place d'un autre, pour suivre la rotation.
         BeltLane<ItemStack> start = belt(helper, loop.get(0)).transport().lane(BeltTransport.LEFT);
         start.take(0);
         start.offerAt(0, new ItemStack(Items.DIAMOND));
 
-        helper.startSequence()
-                .thenIdle(40)
-                .thenExecute(() -> {
-                    helper.assertTrue(total(helper, loop) == placed,
-                            "La boucle a perdu ou dupliqué des items : " + total(helper, loop));
+        // Le repère doit avancer à chaque relevé, pas seulement quitter sa case une fois : une
+        // boucle qui fait un pas puis se fige passait l'ancienne assertion.
+        String[] last = {where(helper, loop)};
 
-                    ItemStack atStart = belt(helper, loop.get(0))
-                            .transport().lane(BeltTransport.LEFT).get(0);
+        var sequence = helper.startSequence();
+        for (int check = 0; check < 4; check++) {
+            sequence = sequence.thenIdle(20).thenExecute(() -> {
+                helper.assertTrue(total(helper, loop) == placed,
+                        "La boucle a perdu ou dupliqué des items : " + total(helper, loop));
 
-                    helper.assertTrue(atStart == null || !atStart.is(Items.DIAMOND),
-                            "Le repère n'a pas bougé : la boucle saturée est bloquée");
-                })
-                .thenSucceed();
+                String now = where(helper, loop);
+                helper.assertFalse(now.equals(last[0]),
+                        "Le repère est resté en " + now + " : la boucle saturée est bloquée");
+                last[0] = now;
+            });
+        }
+        sequence.thenSucceed();
+    }
+
+    /** Position du diamant repère dans la boucle, « bloc:voie:case ». */
+    private static String where(GameTestHelper helper, List<BlockPos> loop) {
+        for (int index = 0; index < loop.size(); index++) {
+            BeltTransport<ItemStack> transport = belt(helper, loop.get(index)).transport();
+            for (int lane = 0; lane < BeltTransport.LANES; lane++) {
+                BeltLane<ItemStack> track = transport.lane(lane);
+                for (int slot = 0; slot < track.capacity(); slot++) {
+                    ItemStack item = track.get(slot);
+                    if (item != null && item.is(Items.DIAMOND)) return index + ":" + lane + ":" + slot;
+                }
+                ItemStack staged = track.staged();
+                if (staged != null && staged.is(Items.DIAMOND)) return index + ":" + lane + ":staged";
+            }
+        }
+        return "perdu";
     }
 
     /**
@@ -410,14 +431,21 @@ public class BeltGameTests {
 
     /** Sature la voie gauche de chaque convoyeur. @return le nombre d'items posés */
     private static int fill(GameTestHelper helper, List<BlockPos> positions) {
+        return fill(helper, positions, 1);
+    }
+
+    /** Sature les {@code lanes} premières voies de chaque convoyeur. */
+    private static int fill(GameTestHelper helper, List<BlockPos> positions, int lanes) {
         int placed = 0;
 
         for (BlockPos pos : positions) {
-            BeltLane<ItemStack> lane = belt(helper, pos).transport().lane(BeltTransport.LEFT);
+            for (int index = 0; index < lanes; index++) {
+                BeltLane<ItemStack> lane = belt(helper, pos).transport().lane(index);
 
-            for (int slot = 0; slot < lane.capacity(); slot++) {
-                lane.offerAt(slot, new ItemStack(Items.COBBLESTONE));
-                placed++;
+                for (int slot = 0; slot < lane.capacity(); slot++) {
+                    lane.offerAt(slot, new ItemStack(Items.COBBLESTONE));
+                    placed++;
+                }
             }
         }
 

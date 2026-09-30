@@ -106,16 +106,12 @@ public class BeltItemRenderer implements BlockEntityRenderer<BeltBlockEntity> {
         for (int lane = 0; lane < BeltTransport.LANES; lane++) {
             BeltLane<ItemStack> track = transport.lane(lane);
 
-            // Une seule question par voie, et non par item : elle traverse le monde pour
-            // trouver l'aval, et la réponse est la même pour toutes les cases.
-            boolean exitOpen = belt.isExitOpen(lane);
-
-            // Le tampon est à cheval sur la frontière amont : on le dessine à l'entrée, là où
-            // il se trouve réellement. Sans cela l'item disparaîtrait le temps d'un pas.
+            // Le tampon est à cheval sur la frontière amont : il la franchit encore. Sans lui
+            // l'item disparaîtrait le temps d'un pas.
             ItemStack staged = track.staged();
 
             if (staged != null && !staged.isEmpty()) {
-                renderItem(staged, BeltPath.positionOf(0D, facing, entry, lane, BeltPath.SURFACE + LIFT_OFF),
+                renderItem(staged, BeltPath.positionOf(transport.stagedProgress(lane, partialTick), facing, entry, lane, BeltPath.SURFACE + LIFT_OFF),
                         itemLight, overlay, pose, buffers, level, pos.hashCode() + lane);
             }
 
@@ -125,7 +121,7 @@ public class BeltItemRenderer implements BlockEntityRenderer<BeltBlockEntity> {
 
                 if (!detailed && (slot & 1) == 1) continue;
 
-                float progress = transport.progress(lane, slot, partialTick, exitOpen);
+                float progress = transport.progress(lane, slot, partialTick);
 
                 Vec3 position = BeltPath.positionOf(
                         progress, facing, entry, lane, BeltPath.SURFACE + LIFT_OFF);
