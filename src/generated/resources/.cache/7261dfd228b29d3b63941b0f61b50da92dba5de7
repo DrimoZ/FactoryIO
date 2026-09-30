@@ -1,5 +1,6 @@
-// 1.20.1	2026-09-29T22:11:58.0319438	Item Models: factor_io
+// 1.20.1	2026-09-30T09:41:59.4679544	Item Models: factor_io
 aff44f81c6fdbf4b7be31fb97f097d8a72eb141e assets/factor_io/models/item/advanced_circuit.json
+059ed81bc71b4550a5272713afef9946997df4d7 assets/factor_io/models/item/advanced_redstone_module.json
 7d58f82e489e5c0b11b28a8e33697c92f6bb74a2 assets/factor_io/models/item/automation_science_pack.json
 ecce98e2f6981b8851902d8086c74b8fd600c58e assets/factor_io/models/item/burner_inserter.json
 1db8f4bb39cb89c36ac13c0d00be86ce068efe96 assets/factor_io/models/item/chemical_science_pack.json

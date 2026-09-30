@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.shared;
 
 import com.drimoz.factoryio.client.ClientInput;
+import com.drimoz.factoryio.client.ClientLocale;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -9,6 +10,7 @@ import net.minecraftforge.fml.DistExecutor;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Locale;
 
 public final class StringHelper {
 
@@ -22,6 +24,18 @@ public final class StringHelper {
         return ModUtils.tooltipComponent("energy_stored",
                 Component.literal(normalize(format.format(energy))).withStyle(ChatFormatting.GOLD),
                 Component.literal(normalize(format.format(capacity))).withStyle(ChatFormatting.RED));
+    }
+
+    /**
+     * Deux décimales, au format de la langue du jeu ; neutre (point) hors du client.
+     *
+     * <p>{@code String.format} sans locale prenait celle du système : « 0,59 » dans une
+     * interface anglaise.
+     */
+    public static String decimal(double value) {
+        Locale locale = DistExecutor.unsafeCallWhenOn(Dist.CLIENT, () -> ClientLocale::current);
+
+        return String.format(locale != null ? locale : Locale.ROOT, "%.2f", value);
     }
 
     // Interface (Tooltips)

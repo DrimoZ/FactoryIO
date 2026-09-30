@@ -47,6 +47,7 @@ public class RecipeGameTests {
                 ModItems.SPEED_MODULE_1, ModItems.SPEED_MODULE_2, ModItems.SPEED_MODULE_3,
                 ModItems.PRODUCTIVITY_MODULE_1, ModItems.PRODUCTIVITY_MODULE_2, ModItems.PRODUCTIVITY_MODULE_3,
                 ModItems.EFFICIENCY_MODULE_1, ModItems.EFFICIENCY_MODULE_2, ModItems.EFFICIENCY_MODULE_3,
+                ModItems.ADVANCED_REDSTONE_MODULE,
                 ModItems.CONFIGURATOR)) {
             useful.add(item.get());
         }

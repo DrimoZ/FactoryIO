@@ -73,14 +73,13 @@ public record InserterUpgradeTuning(
      * <p>Les facteurs reproduisent exactement le comportement d'avant la configurabilité :
      * un monde existant ne bouge pas tant qu'aucun datapack ne s'en mêle.
      *
-     * <p><b>Aucune nature n'est verrouillée pour l'instant, et c'est volontaire.</b>
-     * {@link InserterUpgradeType#ADVANCED_REDSTONE} n'a encore ni item ni tag peuplé :
-     * l'inscrire ici retirerait la condition analogique à tout le monde <b>sans laisser
-     * aucun moyen de la débloquer</b>. Le verrou se pose le jour où le module se fabrique,
-     * pas avant.
+     * <p>{@link InserterUpgradeType#ADVANCED_REDSTONE} est verrouillée (FIO-172) : sans son
+     * module, un inserter garde l'interrupteur et la réaction native — un signal le coupe —
+     * mais pas les modes ni le seuil. Un datapack qui préfère l'ancien comportement écrit
+     * {@code "requiresModule": []}.
      */
     public static final InserterUpgradeTuning DEFAULT = new InserterUpgradeTuning(
-            0.75D, 0.75D, 1, DEFAULT_MAX_LEVEL, EnumSet.noneOf(InserterUpgradeType.class));
+            0.75D, 0.75D, 1, DEFAULT_MAX_LEVEL, EnumSet.of(InserterUpgradeType.ADVANCED_REDSTONE));
 
     public InserterUpgradeTuning {
         // Un facteur hors de ]0, 1] n'a pas de sens : au-dessus de 1 une « amélioration »
@@ -164,7 +163,7 @@ public record InserterUpgradeTuning(
                     .forGetter(InserterUpgradeTuning::capacityBonus),
             StrictCodecs.optional(ExtraCodecs.NON_NEGATIVE_INT, "maxLevel", DEFAULT.maxLevel())
                     .forGetter(InserterUpgradeTuning::maxLevel),
-            StrictCodecs.optional(TYPE_CODEC.listOf(), "requiresModule", List.<InserterUpgradeType>of())
+            StrictCodecs.optional(TYPE_CODEC.listOf(), "requiresModule", List.copyOf(DEFAULT.gated()))
                     .forGetter(tuning -> List.copyOf(tuning.gated()))
     ).apply(instance, (speed, efficiency, capacity, max, gated) ->
             new InserterUpgradeTuning(speed, efficiency, capacity, max, Set.copyOf(gated))));

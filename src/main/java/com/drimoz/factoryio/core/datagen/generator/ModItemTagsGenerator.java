@@ -55,7 +55,7 @@ public class ModItemTagsGenerator extends ItemTagsProvider {
     }
 
     /**
-     * Peuple les neuf tags de paliers d'amélioration avec les modules livrés.
+     * Peuple les tags de paliers d'amélioration avec les modules livrés.
      *
      * <p>Les trois familles de modules existaient déjà comme items, sans aucun usage. Les
      * brancher ici leur donne exactement le rôle que leur nom annonce, et laisse la porte
@@ -71,6 +71,8 @@ public class ModItemTagsGenerator extends ItemTagsProvider {
 
         addTier(InserterUpgradeType.EFFICIENCY,
                 ModItems.EFFICIENCY_MODULE_1, ModItems.EFFICIENCY_MODULE_2, ModItems.EFFICIENCY_MODULE_3);
+
+        addTier(InserterUpgradeType.ADVANCED_REDSTONE, ModItems.ADVANCED_REDSTONE_MODULE);
     }
 
     @SafeVarargs
