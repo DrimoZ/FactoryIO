@@ -42,6 +42,9 @@ public final class BeltTransport<T> {
     /** Sous-ticks écoulés depuis le dernier pas, de 0 à {@code ticksPerSlot}. */
     private int subTick;
 
+    /** Instant du dernier tick, pour dater les glissements que le rendu interpole. */
+    private long clock;
+
     @SuppressWarnings("unchecked")
     public BeltTransport(int ticksPerSlot) {
         this(ticksPerSlot, BeltLane.DEFAULT_CAPACITY);
@@ -132,23 +135,41 @@ public final class BeltTransport<T> {
      *              lui ferait traverser plusieurs blocs d'un coup. Voir {@link BeltLane#advance}
      */
     public boolean tick(BeltSink<T> downstream, long stamp) {
-        this.subTick++;
+        // Daté, le pas suit le temps du monde : tous les convoyeurs d'une même vitesse le font
+        // au même tick, côté serveur comme côté client. Chacun gardait auparavant sa propre
+        // phase, née de l'arrivée de son premier item ; deux blocs voisins avançaient alors à
+        // des instants différents, et un item passait deux ticks sur l'un, quatre sur l'autre —
+        // une saccade à chaque frontière.
+        if (stamp == BeltLane.NO_STAMP) {
+            this.clock++;
+            this.subTick++;
+        } else {
+            this.clock = stamp;
+            this.subTick = (int) Math.floorMod(stamp + 1, (long) this.ticksPerSlot);
+            if (this.subTick == 0) this.subTick = this.ticksPerSlot;
+        }
 
         if (this.subTick < this.ticksPerSlot) return false;
 
         this.subTick = 0;
 
         boolean moved = false;
+        long now = this.clock;
 
         // Chaque voie interroge l'aval pour son propre compte : une voie bouchée ne doit pas
         // arrêter l'autre.
         for (int lane = 0; lane < LANES; lane++) {
             int index = lane;
 
-            moved |= this.lanes[lane].advance(item -> downstream.accept(index, item), stamp);
+            moved |= this.lanes[lane].advance(item -> downstream.accept(index, item), stamp, now);
         }
 
         return moved;
+    }
+
+    /** Instant du dernier tick — le temps du monde, ou un compteur hors du monde. */
+    public long clock() {
+        return this.clock;
     }
 
     /**
@@ -210,15 +231,18 @@ public final class BeltTransport<T> {
     // Interface (Rendu)
 
     /**
-     * Position d'un item le long du bloc, de 0 à 1.
+     * Position d'un item le long du bloc, de 0 à 1 — un pas de retard sur la simulation, voir
+     * {@link BeltLane#progressOf}.
      *
-     * @param exitOpen {@code true} si l'aval accepterait la tête de cette voie — un item
-     *                 bloqué ne doit pas glisser, faute de quoi toute une file compressée
-     *                 tremblerait
      * @param partialTick fraction de tick écoulée, pour un rendu fluide entre deux ticks
      */
-    public float progress(int lane, int slot, float partialTick, boolean exitOpen) {
-        return this.lanes[lane].progressOf(slot, this.subTick + partialTick, this.ticksPerSlot, exitOpen);
+    public float progress(int lane, int slot, float partialTick) {
+        return this.lanes[lane].progressOf(slot, this.clock, partialTick, this.ticksPerSlot);
+    }
+
+    /** Position de l'item du tampon d'une voie, légèrement en deçà de l'entrée. */
+    public float stagedProgress(int lane, float partialTick) {
+        return this.lanes[lane].stagedProgress(this.clock, partialTick, this.ticksPerSlot);
     }
 
     // Interface (Persistance)

@@ -64,6 +64,11 @@ public final class BeltPath {
         Vec3 start = centre.subtract(vector(entry).scale(0.5D)).add(sideOffset(lane, entry));
         Vec3 end = centre.add(vector(facing).scale(0.5D)).add(sideOffset(lane, facing));
 
+        // En deçà de 0, l'item franchit encore la frontière amont (rendu à un pas de retard) :
+        // il vient en ligne droite, dans l'axe d'entrée. Prolonger la Bézier d'un virage le
+        // ferait arriver de travers.
+        if (progress < 0D) return start.add(vector(entry).scale(progress));
+
         if (entry == facing) return start.lerp(end, progress);
 
         Vec3 direction = vector(entry);

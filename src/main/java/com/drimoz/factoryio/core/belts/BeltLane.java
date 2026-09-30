@@ -49,6 +49,19 @@ public final class BeltLane<T> {
     /** Pas auquel chaque case a été remplie <b>de l'extérieur</b>. Voir {@link #advance}. */
     private final long[] arrived;
 
+    /**
+     * Instant où l'item de chaque case y a <b>glissé</b>, ou {@link #NO_STAMP} s'il y a été posé.
+     *
+     * <p>Le rendu dessine avec un pas de retard : un item qui vient de glisser va de la case
+     * précédente à la sienne pendant le pas qui suit. On ne montre ainsi que ce qui s'est
+     * réellement passé — aucune prédiction, donc aucun saut quand elle se tromperait. Voir
+     * {@link #progressOf}.
+     */
+    private final long[] slidAt;
+
+    /** Instant où l'item du tampon a quitté l'amont. */
+    private long stagedAt = NO_STAMP;
+
     /** Cases occupées, tampon exclu. Tenu à jour : voir {@link #isEmpty}. */
     private int occupied;
 
@@ -73,8 +86,10 @@ public final class BeltLane<T> {
 
         this.slots = new Object[capacity];
         this.arrived = new long[capacity];
+        this.slidAt = new long[capacity];
 
         Arrays.fill(this.arrived, NO_STAMP);
+        Arrays.fill(this.slidAt, NO_STAMP);
     }
 
     // Interface (Lecture)
@@ -145,10 +160,20 @@ public final class BeltLane<T> {
      * @return {@code false} s'il est déjà pris — l'appelant garde son item
      */
     public boolean stage(T item) {
+        return stage(item, NO_STAMP);
+    }
+
+    /**
+     * Dépose dans le tampon un item qui arrive de l'amont.
+     *
+     * @param at instant de son départ — il glisse vers l'entrée à partir de là
+     */
+    public boolean stage(T item, long at) {
         if (item == null) throw new IllegalArgumentException("Un item nul n'occupe rien");
         if (this.staged != null) return false;
 
         this.staged = item;
+        this.stagedAt = at;
 
         return true;
     }
@@ -167,6 +192,20 @@ public final class BeltLane<T> {
     /** Dépose sur la case d'entrée, en marquant le pas d'arrivée (voir {@link #advance}). */
     public boolean offer(T item, long stamp) {
         return offerAt(entrySlot(), item, stamp);
+    }
+
+    /**
+     * Reçoit l'item de tête du bloc amont, sur la case d'entrée.
+     *
+     * <p>À la différence d'un dépôt, l'item <b>glisse</b> : il franchit la frontière pendant le
+     * pas qui suit, au lieu d'apparaître à l'entrée.
+     */
+    public boolean receive(T item, long stamp) {
+        if (!offerAt(entrySlot(), item, stamp)) return false;
+
+        this.slidAt[entrySlot()] = stamp;
+
+        return true;
     }
 
     /**
@@ -192,6 +231,7 @@ public final class BeltLane<T> {
 
         this.slots[slot] = item;
         this.arrived[slot] = stamp;
+        this.slidAt[slot] = NO_STAMP;
         this.occupied++;
 
         return true;
@@ -205,6 +245,7 @@ public final class BeltLane<T> {
 
         this.slots[slot] = null;
         this.arrived[slot] = NO_STAMP;
+        this.slidAt[slot] = NO_STAMP;
 
         return item;
     }
@@ -265,6 +306,16 @@ public final class BeltLane<T> {
      * @param stamp pas courant — le temps du monde suffit ; {@link #NO_STAMP} ne bloque rien
      */
     public boolean advance(Predicate<T> sink, long stamp) {
+        return advance(sink, stamp, stamp);
+    }
+
+    /**
+     * Comme {@link #advance(Predicate, long)}, en datant les glissements pour le rendu.
+     *
+     * @param now instant du pas, noté sur chaque item qui glisse — distinct de {@code stamp},
+     *            qui peut valoir {@link #NO_STAMP} quand l'ordre de tick est hors de propos
+     */
+    public boolean advance(Predicate<T> sink, long stamp, long now) {
         boolean moved = false;
 
         int exit = exitSlot();
@@ -272,6 +323,7 @@ public final class BeltLane<T> {
         if (this.slots[exit] != null && !justArrived(exit, stamp) && sink.test(get(exit))) {
             this.slots[exit] = null;
             this.arrived[exit] = NO_STAMP;
+            this.slidAt[exit] = NO_STAMP;
             this.occupied--;
             moved = true;
         }
@@ -284,18 +336,24 @@ public final class BeltLane<T> {
 
             this.slots[slot + 1] = this.slots[slot];
             this.arrived[slot + 1] = this.arrived[slot];
+            this.slidAt[slot + 1] = now;
             this.slots[slot] = null;
             this.arrived[slot] = NO_STAMP;
+            this.slidAt[slot] = NO_STAMP;
             moved = true;
         }
 
-        // Le tampon en dernier, une fois l'entrée libérée par le décalage.
+        // Le tampon en dernier, une fois l'entrée libérée par le décalage. L'item garde
+        // l'instant de son départ de l'amont : il poursuit le glissement commencé au lieu de le
+        // reprendre à zéro.
         int entry = entrySlot();
 
         if (this.staged != null && this.slots[entry] == null) {
             this.slots[entry] = this.staged;
             this.arrived[entry] = stamp;
+            this.slidAt[entry] = this.stagedAt;
             this.staged = null;
+            this.stagedAt = NO_STAMP;
             this.occupied++;
             moved = true;
         }
@@ -312,42 +370,73 @@ public final class BeltLane<T> {
     public void clear() {
         Arrays.fill(this.slots, null);
         Arrays.fill(this.arrived, NO_STAMP);
+        Arrays.fill(this.slidAt, NO_STAMP);
 
         this.staged = null;
+        this.stagedAt = NO_STAMP;
         this.occupied = 0;
     }
 
     // Interface (Rendu)
 
     /**
-     * Position d'un item le long du bloc, de 0 à 1.
+     * Position d'un item le long du bloc, de 0 à 1 — en deçà de 0 pour celui qui franchit
+     * encore la frontière amont.
      *
-     * <p><b>Un item bloqué ne glisse pas.</b> Sans cette garde, un item arrêté continuerait
-     * d'avancer visuellement au fil du sous-tick puis reviendrait en arrière d'un coup au
-     * moment du pas — un tremblement sur toute une file compressée, c'est-à-dire sur le cas le
-     * plus fréquent d'une usine.
+     * <h3>Un pas de retard, pas de prédiction</h3>
      *
-     * <p>Ce qui décide n'est pas l'état de la voie seule : la case de tête ne peut glisser que
-     * si l'aval la prendra. D'où {@code exitOpen}, que seul le bloc connaît.
+     * <p>Un item au repos est dessiné sur sa case. Un item qui vient de glisser va de la case
+     * précédente à la sienne pendant le pas suivant. On ne dessine donc que ce qui s'est
+     * <b>réellement</b> passé.
      *
-     * @param subTick       sous-tick écoulé, de 0 à {@code ticksPerSlot}
-     * @param ticksPerSlot  durée d'un pas, en ticks
-     * @param exitOpen      {@code true} si l'aval accepterait l'item de tête
+     * <p>La version précédente devinait : un item glissait si la case devant lui était
+     * <i>déjà</i> libre. Sur une bande saturée qui avance — le régime normal d'une usine — elle
+     * ne l'est jamais : chaque item restait figé puis sautait d'une case entière à chaque pas.
+     * Deviner mieux aurait demandé d'interroger toute la ligne en aval à chaque image, et la
+     * moindre erreur aurait produit un saut. Le retard, lui, est d'un pas au plus, invisible.
+     *
+     * @param clock        instant du dernier tick
+     * @param partialTick  fraction écoulée depuis, de 0 à 1
+     * @param ticksPerSlot durée d'un pas, en ticks
      */
-    public float progressOf(int slot, float subTick, int ticksPerSlot, boolean exitOpen) {
-        float base = (float) slot / capacity();
-
-        if (!canCreep(slot, exitOpen)) return base;
-
-        float step = Math.min(subTick / ticksPerSlot, 1f) / capacity();
-
-        return base + step;
+    public float progressOf(int slot, long clock, float partialTick, int ticksPerSlot) {
+        return (slot + slide(this.slidAt[slot], clock, partialTick, ticksPerSlot)) / capacity();
     }
 
-    /** @return {@code true} si cet item a devant lui la place d'avancer */
-    public boolean canCreep(int slot, boolean exitOpen) {
-        if (this.slots[slot] == null) return false;
+    /** Position de l'item du tampon : il franchit la frontière amont, de -1/capacité à 0. */
+    public float stagedProgress(long clock, float partialTick, int ticksPerSlot) {
+        return (entrySlot() + slide(this.stagedAt, clock, partialTick, ticksPerSlot)) / capacity();
+    }
 
-        return slot == exitSlot() ? exitOpen : this.slots[slot + 1] == null;
+    /**
+     * Retard sur la case, de -1 (le glissement commence) à 0 (arrivé).
+     *
+     * <p>La soustraction se fait en {@code long} : le temps du monde se compte en millions de
+     * ticks, et un {@code float} n'y distingue plus deux ticks voisins, encore moins une
+     * fraction d'image.
+     */
+    private static float slide(long at, long clock, float partialTick, int ticksPerSlot) {
+        if (at == NO_STAMP) return 0f;
+
+        float elapsed = ((clock - at) + partialTick) / ticksPerSlot;
+
+        return elapsed >= 1f ? 0f : Math.max(elapsed, 0f) - 1f;
+    }
+
+    /**
+     * Copie des instants de glissement, à rendre à {@link #keepMotion} après une relecture.
+     *
+     * <p>Une resynchronisation réécrit la voie entière ; sans cela, chaque paquet remettrait au
+     * repos tous les items du bloc — un recul visible à chaque dépôt d'un inserter.
+     */
+    public long[] motion() {
+        return this.slidAt.clone();
+    }
+
+    /** Rend les instants relevés par {@link #motion}, pour les cases occupées des deux côtés. */
+    public void keepMotion(long[] previous) {
+        for (int slot = 0; slot < this.slots.length && slot < previous.length; slot++) {
+            if (this.slots[slot] != null) this.slidAt[slot] = previous[slot];
+        }
     }
 }

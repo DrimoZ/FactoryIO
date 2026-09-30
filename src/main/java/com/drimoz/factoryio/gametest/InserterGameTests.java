@@ -256,15 +256,14 @@ public class InserterGameTests {
     }
 
     /**
-     * Le shift-clic doit respecter les slots qui refusent d'être vidés (BUG-036).
+     * Le joueur peut vider la main d'un inserter bloqué, et l'inserter repart.
      *
-     * <p>Le buffer déclare {@code mayPickup() == false} — l'item est en transit, il
-     * n'appartient pas au joueur. Mais {@code quickMoveStack} ne testait que la présence
-     * d'un item : un shift-clic contournait la garde. Les filtres, eux, sont des items
-     * fantômes et doivent s'effacer sans rien remettre au joueur.
+     * <p>La main était intouchable (BUG-036) : un bras arrivé pour déposer une main vide
+     * restait tendu indéfiniment. Il repart désormais en chercher une autre — c'est ce qui
+     * rend le retrait sûr, et c'est ce que ce test vérifie après le shift-clic.
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 600)
-    public static void shiftClickRespectsProtectedSlots(GameTestHelper helper) {
+    public static void emptyingTheHandFreesABlockedInserter(GameTestHelper helper) {
         setupChain(helper, "burner_inserter");
         fuelInserter(helper);
 
@@ -292,11 +291,13 @@ public class InserterGameTests {
 
                     menu.quickMoveStack(player, menuSlotOf(menu, buffer));
 
-                    helper.assertTrue(handler.getStackInSlot(buffer).getCount() == held,
-                            "Le shift-clic a vidé le buffer, que mayPickup interdit de prendre");
-                    helper.assertTrue(player.getInventory().isEmpty(),
-                            "Le shift-clic a donné au joueur un item en transit");
+                    helper.assertTrue(handler.getStackInSlot(buffer).isEmpty(), "Le shift-clic n'a pas vidé la main");
+                    helper.assertTrue(player.getInventory().countItem(Items.COBBLESTONE) == held,
+                            "L'item retiré n'est pas arrivé entier chez le joueur");
                 })
+                .thenWaitUntil(() -> helper.assertTrue(
+                        !inserterHandler(helper).getStackInSlot(InserterBlockEntity.BUFFER_SLOT).isEmpty(),
+                        "Main vidée : l'inserter est resté figé au lieu de repartir"))
                 .thenSucceed();
     }
 
