@@ -1,6 +1,8 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
 import com.drimoz.factoryio.core.belts.BeltBlock;
+import com.drimoz.factoryio.core.belts.BeltFlow;
+import com.drimoz.factoryio.core.belts.BeltRampBlock;
 import com.drimoz.factoryio.core.model.Belt;
 import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.init.ModBlocks;
@@ -24,6 +26,7 @@ public class ModBlockModelGenerator extends BlockStateProvider {
         // Un cube ordinaire : la source n'a ni orientation ni état.
         ModBlocks.MODELLED.forEach(block -> simpleBlock(block.get()));
         registerUserBelts();
+        registerRamps();
 
         InserterRegistry.getInstance().getInserters().forEach((inserter) -> {
             InserterBlock block = inserter.getBlock().get();
@@ -77,6 +80,31 @@ public class ModBlockModelGenerator extends BlockStateProvider {
                     .modelFile(models[state.getValue(BeltBlock.CONNECTED)])
                     .rotationY(getYRotation(state.getValue(BeltBlock.FACING)))
                     .build(), BeltBlock.WATERLOGGED);
+        }
+    }
+
+    /**
+     * Les rampes de tous les convoyeurs, livrés ou ajoutés : un modèle provisoire par sens, la
+     * texture du tier par-dessus.
+     *
+     * <p>Générées pour tous, contrairement aux bandes, parce qu'aucune n'a de modèle définitif :
+     * le jour où il arrive, il remplace les deux gabarits et rien d'autre.
+     */
+    private void registerRamps() {
+        for (Belt belt : BeltRegistry.all()) {
+            if (belt.getRampBlock() == null) continue;
+
+            String folder = "block/transport_belts/" + belt.getName() + "/" + belt.getName() + "_ramp";
+
+            ModelFile up = models().withExistingParent(folder + "_up", modLoc("block/transport_belts/ramp_up"))
+                    .texture("0", belt.getTexture());
+            ModelFile down = models().withExistingParent(folder + "_down", modLoc("block/transport_belts/ramp_down"))
+                    .texture("0", belt.getTexture());
+
+            getVariantBuilder(belt.getRampBlock().get()).forAllStatesExcept(state -> ConfiguredModel.builder()
+                    .modelFile(state.getValue(BeltRampBlock.FLOW) == BeltFlow.RAMP_UP ? up : down)
+                    .rotationY(getYRotation(state.getValue(BeltBlock.FACING)))
+                    .build(), BeltBlock.CONNECTED, BeltBlock.WATERLOGGED);
         }
     }
 

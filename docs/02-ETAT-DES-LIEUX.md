@@ -103,8 +103,8 @@ doit faire en connaissance de cause.
 | Rendu des items | ✅ `BeltItemRenderer` |
 | Capability `IItemHandler` sur toutes les faces | ✅ hoppers et inserters peuvent prendre et déposer |
 | Pose et retrait à la main (clic droit) | ✅ voie et case déduites du point cliqué |
-| Réconciliation client/serveur | ⬜ **manquante** — dérive non rattrapée, cf. [`08`](08-DESIGN-BELTS.md) §6 |
-| Ascenseurs verticaux | ⬜ le code les prévoit (`BeltFlow`), **les modèles n'existent pas** |
+| Réconciliation client/serveur | ✅ toutes les 10 s pour ce qui bouge, cf. [`08`](08-DESIGN-BELTS.md) §6 |
+| Rampes | ✅ une par tier (`BeltRampBlock`), montée ou descente décidée à la pose ; **modèles provisoires** |
 | Alimentation automatique par l'inserter | ✅ dépôt sur la voie lointaine, décidé par le convoyeur |
 
 Une implémentation antérieure (`FactoryIOConvoyerBlockEntity`, `FactoryIOConvoyerEntityBlock`)
@@ -113,8 +113,8 @@ qu'une coquille abstraite vide.
 
 **La boucle Factorio existe** : coffre → inserter → convoyeur → inserter → coffre
 fonctionne, et l'inserter dépose sur la voie lointaine. Ce qui manque désormais
-relève de la finition — réconciliation client/serveur, budget de rendu, modèles
-d'ascenseur — et non plus de la mécanique.
+relève de la finition — budget de rendu, modèles
+définitifs des rampes — et non plus de la mécanique.
 Spécification : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).
 
 ## 4. Items et progression

@@ -16,6 +16,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Quaternionf;
 
 /**
  * Les items posés sur un convoyeur.
@@ -59,6 +61,9 @@ public class BeltItemRenderer implements BlockEntityRenderer<BeltBlockEntity> {
 
     private static final float ITEM_SCALE = 0.5f;
 
+    /** Pente d'une rampe : un cran de montée sur un bloc de long. */
+    private static final float RAMP_DEGREES = 45f;
+
     private final BlockEntityRenderDispatcher dispatcher;
     private final ItemRenderer items;
 
@@ -97,6 +102,12 @@ public class BeltItemRenderer implements BlockEntityRenderer<BeltBlockEntity> {
 
         Direction entry = shape.entryTravel(facing);
 
+        // Sur une rampe, l'item monte avec la pente et s'y couche. Calculé une fois par bloc.
+        BeltFlow flow = state.getBlock() instanceof BeltBlock block ? block.flowOf(state) : BeltFlow.HORIZONTAL;
+        Quaternionf tilt = flow.isRamp()
+                ? Axis.of(BeltShape.rightOf(facing).step()).rotationDegrees(flow == BeltFlow.RAMP_UP ? RAMP_DEGREES : -RAMP_DEGREES)
+                : null;
+
         // La lumière du bloc au-dessus : celle du convoyeur lui-même est celle d'un solide, et
         // rendrait tous les items noirs en surface.
         int itemLight = LevelRenderer.getLightColor(level, pos.above());
@@ -111,7 +122,9 @@ public class BeltItemRenderer implements BlockEntityRenderer<BeltBlockEntity> {
             ItemStack staged = track.staged();
 
             if (staged != null && !staged.isEmpty()) {
-                renderItem(staged, BeltPath.positionOf(transport.stagedProgress(lane, partialTick), facing, entry, lane, BeltPath.SURFACE + LIFT_OFF),
+                float progress = transport.stagedProgress(lane, partialTick);
+
+                renderItem(staged, positionOf(progress, flow, facing, entry, lane), tiltAt(progress, tilt),
                         itemLight, overlay, pose, buffers, level, pos.hashCode() + lane);
             }
 
@@ -123,10 +136,8 @@ public class BeltItemRenderer implements BlockEntityRenderer<BeltBlockEntity> {
 
                 float progress = transport.progress(lane, slot, partialTick);
 
-                Vec3 position = BeltPath.positionOf(
-                        progress, facing, entry, lane, BeltPath.SURFACE + LIFT_OFF);
-
-                renderItem(item, position, itemLight, overlay,
+                renderItem(item, positionOf(progress, flow, facing, entry, lane), tiltAt(progress, tilt),
+                        itemLight, overlay,
                         pose, buffers, level, pos.hashCode() + lane * track.capacity() + slot);
             }
         }
@@ -140,12 +151,24 @@ public class BeltItemRenderer implements BlockEntityRenderer<BeltBlockEntity> {
         return camera.distanceToSqr(Vec3.atCenterOf(pos)) < (double) DETAIL_DISTANCE * DETAIL_DISTANCE;
     }
 
+    /** Position d'un item, rampe comprise : la surface monte d'un cran sur la longueur du bloc. */
+    private static Vec3 positionOf(float progress, BeltFlow flow, Direction facing, Direction entry, int lane) {
+        return BeltPath.positionOf(progress, facing, entry, lane, BeltPath.SURFACE + LIFT_OFF + flow.rise(progress));
+    }
+
+    /** L'inclinaison ne vaut que sur la pente : en deçà, l'item franchit encore le bord d'entrée, à plat. */
+    @Nullable
+    private static Quaternionf tiltAt(float progress, @Nullable Quaternionf tilt) {
+        return progress < 0f ? null : tilt;
+    }
+
     private void renderItem(
-            ItemStack item, Vec3 position, int light, int overlay,
+            ItemStack item, Vec3 position, @Nullable Quaternionf tilt, int light, int overlay,
             PoseStack pose, MultiBufferSource buffers, Level level, int seed) {
 
         pose.pushPose();
         pose.translate(position.x, position.y, position.z);
+        if (tilt != null) pose.mulPose(tilt);
 
         // Couché sur la bande : les items plats se verraient par la tranche autrement, et les
         // items en volume tiendraient debout sur un convoyeur, ce qu'on ne veut ni l'un ni

@@ -2,7 +2,7 @@ package com.drimoz.factoryio.core.init;
 
 import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
-import com.drimoz.factoryio.core.belts.BeltFlow;
+import com.drimoz.factoryio.core.belts.BeltRampBlock;
 import com.drimoz.factoryio.core.belts.BeltItem;
 import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.power.CreativeEnergySourceBlock;
@@ -72,20 +72,34 @@ public final class ModBlocks {
      * générés en mémoire ({@code PackGenerator}).
      */
     public static final List<RegistryObject<Block>> BELTS = BeltRegistry.all().stream()
-            .map(belt -> {
+            .<RegistryObject<Block>>mapMulti((belt, family) -> {
                 RegistryObject<Block> block = registerWithHandwrittenAssets(
                         belt.getName(),
-                        () -> new BeltBlock(belt, BeltFlow.HORIZONTAL,
-                                BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                                        // Une bande n'est pas un bloc plein : elle ne doit ni
-                                        // obstruer la lumière ni faire disparaître les faces des
-                                        // blocs qu'elle touche.
-                                        .noOcclusion()),
+                        () -> new BeltBlock(belt, beltProperties()),
                         registered -> new BeltItem(registered, belt, new Item.Properties()));
                 belt.setBlock(block);
-                return block;
+                family.accept(block);
+
+                // La famille d'un convoyeur : sa rampe, et demain son séparateur. Mêmes vitesse
+                // et block entity ; les assets sont générés, faute de modèle définitif.
+                if (belt.hasRamp()) {
+                    RegistryObject<Block> ramp = registerWithHandwrittenAssets(
+                            belt.getName() + "_ramp",
+                            () -> new BeltRampBlock(belt, block, beltProperties()),
+                            registered -> new BeltItem(registered, belt, new Item.Properties()));
+                    belt.setRampBlock(ramp);
+                    family.accept(ramp);
+                }
             })
             .toList();
+
+    /**
+     * Une bande n'est pas un bloc plein : elle ne doit ni obstruer la lumière ni faire
+     * disparaître les faces des blocs qu'elle touche.
+     */
+    private static BlockBehaviour.Properties beltProperties() {
+        return BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion();
+    }
 
     /**
      * Un seul type de block entity pour les trois tiers.

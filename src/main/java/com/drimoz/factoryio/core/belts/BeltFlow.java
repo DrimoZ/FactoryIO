@@ -3,48 +3,54 @@ package com.drimoz.factoryio.core.belts;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.StringRepresentable;
-
-import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Sens dans lequel un convoyeur déverse : à plat, ou <b>tout droit vers le haut ou le bas</b>.
+ * Sens dans lequel un convoyeur fait circuler ses items : à plat, ou sur une rampe qui monte
+ * ou descend d'un cran.
  *
- * <h2>Des ascenseurs, pas des rampes</h2>
+ * <h2>La géométrie d'une rampe</h2>
  *
- * <p>Une première conception passait par des rampes à 45°, comme les rails vanilla. Elle a été
- * écartée au profit d'ascenseurs verticaux, qu'on empile — et ce choix <b>simplifie</b> le
- * problème au lieu de le compliquer.
+ * <p>Une rampe tient dans un bloc et relie deux surfaces de bande distantes d'un cran : son
+ * bord bas est à la hauteur d'une bande posée à côté d'elle, son bord haut à celle d'une bande
+ * posée un cran plus haut. D'où deux situations, et deux seulement :
  *
- * <p>Une rampe débouche sur un voisin <b>diagonal</b> : en avant et un cran plus haut. Aucun
- * bloc ne touche alors sa sortie par une face, si bien que celui qui reçoit ne peut pas
- * trouver son amont parmi ses voisins immédiats. Il fallait examiner trois candidats à trois
- * hauteurs, et ne pas se tromper.
+ * <ul>
+ *   <li><b>une rampe montante</b> entre de face et sort en diagonale — devant, un cran plus
+ *   haut ;</li>
+ *   <li><b>une rampe descendante</b> sort de face, mais son entrée est en diagonale : ce qui
+ *   l'alimente est derrière et un cran plus haut, et déverse donc au-dessus d'elle, dans le
+ *   vide.</li>
+ * </ul>
  *
- * <p>Un ascenseur débouche toujours sur un voisin <b>de face</b>. Toute la résolution tient
- * alors en une phrase, valable pour les trois sens :
+ * <h2>Toute la résolution tient dans {@link #target}</h2>
  *
- * <blockquote><b>Un voisin m'alimente si sa sortie est ma position.</b></blockquote>
+ * <p>Deux règles, et aucune liste de cas par forme :
  *
- * <p>Plus de liste de candidats par forme, plus de hauteurs à croiser : les six faces, et un
- * seul test. C'est {@link #feeds} et rien d'autre.
+ * <ol>
+ *   <li><b>La sortie fait autorité.</b> Un convoyeur sait où il déverse ; il ne devine jamais
+ *   qui l'alimente d'après sa propre forme. Chercher ses entrées revient à demander à chaque
+ *   voisin où il déverse.</li>
+ *   <li><b>Ce qui sort dans le vide tombe d'un cran</b>, sur une rampe descendante orientée
+ *   dans le même sens. C'est l'unique façon d'entrer dans une rampe descendante, et elle
+ *   couvre d'un coup le haut d'une descente, deux descentes enchaînées et le sommet entre une
+ *   montée et une descente.</li>
+ * </ol>
  *
- * <h2>La sortie fait autorité</h2>
- *
- * <p>C'est la propriété qui rend la phrase ci-dessus suffisante. Un convoyeur sait où il
- * déverse ; il ne devine jamais qui l'alimente à partir de sa propre forme. Sans cela, un
- * ascenseur et la bande qu'il alimente auraient chacun leur idée de la connexion, et il
- * suffirait qu'elles divergent pour couper la ligne — sans rien casser de visible.
+ * <p>Le bloc et le block entity posent la même question à la même fonction : la forme visible
+ * et le transport ne peuvent pas diverger. Et comme elle ne voit le monde qu'à travers
+ * {@link World}, elle se teste en JUnit.
  */
 public enum BeltFlow implements StringRepresentable {
 
-    /** À plat : déverse devant, dans la direction du bloc. */
+    /** À plat : déverse devant, à la même hauteur. */
     HORIZONTAL("horizontal"),
 
-    /** Ascenseur montant : déverse dans le bloc au-dessus. */
-    LIFT_UP("lift_up"),
+    /** Rampe montante : déverse devant et un cran plus haut. */
+    RAMP_UP("ramp_up"),
 
-    /** Ascenseur descendant : déverse dans le bloc en dessous. */
-    LIFT_DOWN("lift_down");
+    /** Rampe descendante : reçoit de derrière et d'un cran plus haut, déverse devant. */
+    RAMP_DOWN("ramp_down");
 
     private final String name;
 
@@ -59,69 +65,116 @@ public enum BeltFlow implements StringRepresentable {
         return this.name;
     }
 
-    public boolean isHorizontal() {
-        return this == HORIZONTAL;
-    }
-
-    public boolean isLift() {
-        return !isHorizontal();
+    public boolean isRamp() {
+        return this != HORIZONTAL;
     }
 
     /**
      * Un virage n'a de sens qu'à plat.
      *
-     * <p>Un ascenseur ne tourne pas : il monte. Et il n'existe de toute façon aucun modèle
-     * qui combine les deux.
+     * <p>Une rampe ne tourne pas : elle monte. Et il n'existe aucun modèle qui combine les deux.
      */
     public boolean allowsCurve() {
-        return isHorizontal();
+        return this == HORIZONTAL;
     }
 
     /**
-     * Position du bloc que ce convoyeur alimente.
+     * Position vers laquelle ce convoyeur déverse, avant toute chute.
      *
-     * <p>Toujours un voisin <b>de face</b>, quel que soit le sens — c'est ce qui rend la
-     * résolution des connexions uniforme.
+     * <p>La direction de circulation, elle, est toujours {@code facing} : un item qui quitte une
+     * rampe avance à l'horizontale, comme partout ailleurs.
      */
     public BlockPos exit(BlockPos pos, Direction facing) {
-        return switch (this) {
-            case HORIZONTAL -> pos.relative(facing);
-            case LIFT_UP -> pos.above();
-            case LIFT_DOWN -> pos.below();
-        };
-    }
+        BlockPos ahead = pos.relative(facing);
 
-    /** Direction vers laquelle ce convoyeur déverse. */
-    public Direction exitDirection(Direction facing) {
-        return switch (this) {
-            case HORIZONTAL -> facing;
-            case LIFT_UP -> Direction.UP;
-            case LIFT_DOWN -> Direction.DOWN;
-        };
-    }
-
-    // Interface (Statique)
-
-    /**
-     * Ce convoyeur alimente-t-il {@code target} ?
-     *
-     * <p>La seule question qui établisse une connexion, et elle ne dépend que de l'amont.
-     * Occuper une position voisine ne suffit pas : un convoyeur perpendiculaire est bien à
-     * côté de nous, mais il déverse ailleurs.
-     */
-    public static boolean feeds(BlockPos from, BeltFlow flow, Direction facing, BlockPos target) {
-        return flow.exit(from, facing).equals(target);
+        return this == RAMP_UP ? ahead.above() : ahead;
     }
 
     /**
-     * Les six voisins susceptibles d'alimenter {@code pos}.
+     * Hauteur gagnée sur le bloc, de 0 à 1, pour une avance donnée.
      *
-     * <p>Les six faces, sans distinction de forme : c'est tout le bénéfice des ascenseurs
-     * verticaux. À chacun de répondre, par {@link #feeds}, s'il déverse réellement ici.
+     * <p>Bornée : en deçà de 0 l'item franchit encore la frontière amont, où la surface est à
+     * la hauteur du bord d'entrée.
      */
-    public static List<BlockPos> neighbours(BlockPos pos) {
-        return List.of(
-                pos.north(), pos.south(), pos.east(), pos.west(), pos.above(), pos.below());
+    public double rise(double progress) {
+        double along = Math.max(0D, Math.min(progress, 1D));
+
+        return switch (this) {
+            case HORIZONTAL -> 0D;
+            case RAMP_UP -> along;
+            case RAMP_DOWN -> 1D - along;
+        };
+    }
+
+    // Interface (Connexions)
+
+    /** Un convoyeur tel que le monde le montre : son sens et son orientation. */
+    public record Placed(BeltFlow flow, Direction facing) {}
+
+    /** Ce que la résolution a besoin de savoir du monde. */
+    @FunctionalInterface
+    public interface World {
+
+        /** Le convoyeur à cette position, ou {@code null} s'il n'y en a pas — ou si on l'ignore. */
+        @Nullable
+        Placed at(BlockPos pos);
+    }
+
+    /**
+     * Le convoyeur dans lequel celui-ci déverse, ou {@code null} s'il bute.
+     *
+     * <p>La seule question qui établisse une connexion. Chercher qui alimente une position,
+     * c'est la poser à chacun des candidats de {@link #sources}.
+     */
+    @Nullable
+    public static BlockPos target(BlockPos from, BeltFlow flow, Direction facing, World world) {
+        BlockPos exit = flow.exit(from, facing);
+
+        Placed there = world.at(exit);
+        if (there != null) return accepts(there, facing) ? exit : null;
+
+        // Rien devant : l'item tombe d'un cran, mais seulement sur une rampe qui descend dans son
+        // sens. Sur autre chose, il bute.
+        BlockPos below = exit.below();
+        Placed under = world.at(below);
+
+        return under != null && under.flow() == RAMP_DOWN && under.facing() == facing ? below : null;
+    }
+
+    /**
+     * Ce convoyeur prend-il un item qui arrive de face en circulant vers {@code travel} ?
+     *
+     * <ul>
+     *   <li>Jamais <b>à contre-sens</b> : deux convoyeurs face à face se renverraient leurs
+     *   items, et la détection de boucle y verrait un circuit.</li>
+     *   <li>Une <b>rampe descendante</b>, jamais : son bord d'entrée est un cran plus haut, et on
+     *   n'y entre qu'en tombant.</li>
+     *   <li>Une <b>rampe montante</b>, seulement par l'arrière : on n'aborde pas une pente par le
+     *   flanc.</li>
+     *   <li>Une bande à plat, de l'arrière ou des côtés.</li>
+     * </ul>
+     */
+    public static boolean accepts(Placed target, Direction travel) {
+        if (target.facing() == travel.getOpposite()) return false;
+
+        return switch (target.flow()) {
+            case HORIZONTAL -> true;
+            case RAMP_UP -> target.facing() == travel;
+            case RAMP_DOWN -> false;
+        };
+    }
+
+    /**
+     * Les positions d'où un convoyeur peut alimenter {@code pos} depuis le côté {@code side}.
+     *
+     * <p>À la même hauteur, un cran plus bas — une rampe montante qui arrive — et un cran plus
+     * haut — ce qui tombe sur une rampe descendante. À chacun de dire, par {@link #target}, s'il
+     * déverse réellement ici.
+     */
+    public static BlockPos[] sources(BlockPos pos, Direction side) {
+        BlockPos beside = pos.relative(side);
+
+        return new BlockPos[] {beside, beside.below(), beside.above()};
     }
 
     public static BeltFlow byName(String name) {

@@ -611,55 +611,89 @@ sinon un hopper. Le jalon 3.7 reste le seuil.
 
 ---
 
-## 11. Monter et descendre : des ascenseurs, pas des rampes
+## 11. Monter et descendre : des rampes
 
-> Décision du mainteneur, 01/08/2026 : *« je veux pas de slope mais un truc qui monte en
-> vertical direct, comme les chutes de Create. Empiler des blocs. »*
+> Décision du mainteneur, 30/09/2026, qui revient sur celle du 01/08 : **des rampes plutôt
+> que des ascenseurs**, « c'est mieux après réflexion ». Et elles font **partie de la famille
+> du convoyeur** : chaque définition produit sa bande, sa rampe, et plus tard son séparateur.
 
-Une première rédaction de cette section décrivait des rampes à 45°, sur le modèle des rails
-vanilla. Elle est remplacée — et le choix retenu **simplifie** le problème.
+### 11.1 La famille d'un convoyeur
 
-### 11.1 Pourquoi c'est plus simple, et pas seulement différent
+Une définition (`config/factor_io/belts/*.json`) décrit un tier ; `"ramp": true` — la valeur
+par défaut — lui ajoute `<nom>_ramp`. La rampe est un `BeltRampBlock`, sous-classe de
+`BeltBlock` : même vitesse, même block entity, donc même transport, persistance,
+synchronisation et capability. Elle n'en diffère que par son **sens de circulation**,
+`BeltFlow.RAMP_UP` ou `RAMP_DOWN`, porté par la propriété d'état `flow`.
 
-Une rampe débouche sur un voisin **diagonal** : en avant et un cran plus haut. Aucun bloc ne
-touche donc sa sortie par une face, et celui qui reçoit ne peut pas trouver son amont parmi
-ses voisins immédiats. Il fallait examiner **trois candidats à trois hauteurs**, et ne pas se
-tromper — au sommet de chaque rampe, une erreur coupait la ligne sans rien casser de visible.
+Un seul item par tier. **Monter ou descendre se décide à la pose** : la rampe descend si un
+convoyeur, derrière et un cran plus haut, y tomberait — le geste de qui prolonge une ligne vers
+le bas. Sinon elle monte.
 
-Un ascenseur débouche toujours sur un voisin **de face**. Toute la résolution tient alors en
-une phrase, valable pour les trois sens :
+Nom : `block.factor_io.belt_ramp` compose « Rampe » avec le nom du tier (« %s Ramp »,
+« %s (rampe) »), ce qui couvre aussi les tiers d'un modpack, qui n'ont pas de clé à eux.
+Recette : le convoyeur et une plaque de fer.
 
-> **Un voisin m'alimente si sa sortie est ma position.**
+### 11.2 La géométrie, et pourquoi la première rédaction l'avait écartée
 
-Six faces, un seul test, aucune liste de candidats par forme. C'est `BeltFlow.feeds` et rien
-d'autre.
+Une rampe relie deux surfaces de bande distantes d'un cran : son bord bas est à la hauteur
+d'une bande posée à côté d'elle, son bord haut à celle d'une bande posée un cran plus haut.
 
-### 11.2 La sortie fait autorité
+- **Une montée** entre de face et sort **en diagonale** — devant, un cran plus haut.
+- **Une descente** sort de face, mais ce qui l'alimente est derrière et un cran plus haut : il
+  déverse **au-dessus d'elle**, dans le vide.
 
-C'est la propriété qui rend cette phrase suffisante. Un convoyeur sait où il déverse ; il ne
-devine jamais qui l'alimente à partir de sa propre forme.
+La rédaction du 01/08 y voyait trois candidats à trois hauteurs pour chaque bloc, et une ligne
+coupée au sommet de chaque rampe au moindre écart. Le problème se réduit en fait à deux règles.
 
-Sans cela, un ascenseur et la bande qu'il alimente auraient chacun leur idée de la connexion,
-et il suffirait qu'elles divergent pour couper la ligne.
+### 11.3 Deux règles, une seule fonction
 
-### 11.3 Les extrémités d'une colonne
+`BeltFlow.target` répond à « dans quoi ce convoyeur déverse-t-il ? », et c'est la seule
+question qui établisse une connexion — pour la forme visible (`BeltBlock.connectedFor`) comme
+pour le transport (`BeltBlockEntity.resolve`), qui ne peuvent donc pas diverger.
 
-Toutes découlent de la règle unique, sans code particulier :
+1. **La sortie fait autorité.** Un convoyeur sait où il déverse ; chercher qui l'alimente,
+   c'est poser la question à chaque voisin — même hauteur, un cran plus bas, un cran plus haut
+   (`BeltFlow.sources`).
+2. **Ce qui sort dans le vide tombe d'un cran**, sur une descente orientée dans le même sens.
+   C'est l'unique entrée d'une descente.
+
+`BeltFlow.accepts` complète : rien ne passe à contre-sens, une montée ne se prend que par
+l'arrière, une descente jamais de plain-pied.
 
 | Situation | Ce qui se passe |
 |---|---|
-| **pied** — une bande bute sur un ascenseur | sa sortie est la position de l'ascenseur : il l'alimente |
-| **empilement** — ascenseurs superposés | chacun déverse dans celui du dessus ; leurs orientations n'ont pas à concorder |
-| **sommet** — une bande posée au-dessus | elle trouve l'ascenseur parmi ses six voisins, sans règle « accepter par le dessous » |
-| **descente** | symétrique en tout point |
-| **colonne vers le vide** | la sortie ne trouve rien → blocage → compression, chemin déjà écrit |
-| **montée surmontée d'une descente** | les deux se nourrissent mutuellement. Ni blocage ni duplication : les items circulent. C'est un puits sans fond, pas un défaut |
+| **pied de montée** | la bande déverse de face dans la montée |
+| **haut de montée** | la montée déverse en diagonale sur le palier |
+| **haut de descente** | le palier déverse dans le vide, l'item tombe sur la descente |
+| **sommet** — montée puis descente | la montée déverse dans le vide, l'item tombe sur la descente |
+| **creux** — descente puis montée | la descente déverse de face dans la montée |
+| **rampes enchaînées** | montée dans montée en diagonale ; descente dans descente par chute |
+| **montée vers le vide** | rien à recevoir → blocage → compression, chemin déjà écrit |
 
-### 11.4 Ce qui reste à décider
+`BeltFlowTest` balaie chacune de ces lignes.
 
-| Point | Proposition |
-|---|---|
-| **Deux voies ou une** | **deux**, comme une bande. Une seule voie ferait de tout ascenseur un goulot d'étranglement de moitié, et les joueurs les éviteraient |
-| **Vitesse** | celle du tier, sans correction. Un bloc traversé est un bloc traversé, qu'il soit horizontal ou vertical |
-| **Virage** | interdit sur un ascenseur : il monte, il ne tourne pas — et aucun modèle ne combine les deux |
-| **Modèles** | à dessiner : un ascenseur par tier. Aucun asset vertical n'existe, mais c'était déjà vrai des rampes |
+### 11.4 Le piège des diagonales
+
+Minecraft ne prévient que les **six faces** d'un changement (`updateShape`,
+`neighborChanged`). Or une montée déverse en diagonale, et la chute d'un palier sur une descente
+aussi. Poser le palier *après* la montée laissait celle-ci convaincue de buter : aval mémorisé
+à « aucun », forme sans raccord, et l'item arrêté en haut sans rien de visible.
+
+`BeltBlock.refreshDiagonals` relaie donc chaque pose, retrait ou changement d'état aux huit
+diagonales verticales : aval mémorisé oublié, forme recalculée. Le client suit sans code à lui :
+un changement d'aval change toujours `connected`, donc l'état du bloc, et le cache d'aval y est
+indexé. `anItemCrossesAHillBuiltInAnyOrder` verrouille le cas — avec un délai serré, parce
+qu'un réveil venu d'ailleurs finit par débloquer l'item une centaine de ticks plus tard.
+
+### 11.5 Rendu et forme
+
+- L'item monte avec la pente (`BeltFlow.rise`) et s'y incline de 45°. La vitesse est celle du
+  tier, sans correction : le trajet est plus long d'un facteur √2, l'item y paraît plus rapide.
+- Collision : une demi-dalle, plus la moitié haute du bloc côté haut — une rampe se gravit à
+  pied, par pas d'un demi-bloc.
+- **Modèles provisoires** : une bande inclinée à 45° (`models/block/transport_belts/ramp_up`
+  et `ramp_down`), texture du tier par-dessus, générée par le datagen pour tous les tiers. Les
+  modèles définitifs viendront avec l'art des convoyeurs ; ils remplacent les deux gabarits et
+  rien d'autre. Aucun raccord d'entrée ou de sortie n'est dessiné : le blockstate ignore
+  `connected`.
+- Pas de virage : une rampe monte, elle ne tourne pas.

@@ -1,4 +1,5 @@
 {
+  "block.factor_io.belt_ramp": "%s Ramp",
   "block.factor_io.burner_inserter": "Burner Inserter",
   "block.factor_io.creative_energy_source": "Creative Energy Source",
   "block.factor_io.express_transport_belt": "Express Transport Belt",

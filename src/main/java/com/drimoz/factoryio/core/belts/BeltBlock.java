@@ -47,12 +47,11 @@ import java.util.List;
  *
  * <h2>Tier et sens sont des traits du bloc, pas des propriétés d'état</h2>
  *
- * <p>Trois tiers et trois sens de circulation auraient multiplié par neuf les 32 variantes de
- * blockstate, pour une information qui ne change jamais sur un bloc donné. Ils sont donc portés
- * par la classe, comme le fait déjà {@code InserterBlock} pour les traits de son type.
- *
- * <p>Conséquence pratique : le jour où les modèles d'ascenseur existeront, il suffira
- * d'enregistrer cette même classe avec {@link BeltFlow#LIFT_UP}. Aucun blockstate à toucher.
+ * <p>Plusieurs tiers auraient multiplié les 32 variantes de blockstate, pour une information
+ * qui ne change jamais sur un bloc donné. Le tier est donc porté par la classe, comme le fait
+ * déjà {@code InserterBlock} pour les traits de son type. Seule la <b>rampe</b>
+ * ({@link BeltRampBlock}) ajoute un état — monter ou descendre — parce qu'elle le décide à la
+ * pose.
  *
  * <h2>Les connexions se calculent au placement, jamais au tick</h2>
  *
@@ -73,13 +72,11 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 8, 16);
 
     private final Belt belt;
-    private final BeltFlow flow;
 
-    public BeltBlock(Belt belt, BeltFlow flow, Properties properties) {
+    public BeltBlock(Belt belt, Properties properties) {
         super(properties);
 
         this.belt = belt;
-        this.flow = flow;
 
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
@@ -94,8 +91,34 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
         return this.belt;
     }
 
-    public BeltFlow flow() {
-        return this.flow;
+    /** Sens de circulation sous cet état. À plat, toujours, sauf sur une rampe. */
+    public BeltFlow flowOf(BlockState state) {
+        return BeltFlow.HORIZONTAL;
+    }
+
+    /**
+     * Le convoyeur à cette position, tel que {@link BeltFlow#target} le demande.
+     *
+     * <p>Un chunk non chargé répond « rien » : {@code getBlockState} le chargerait, et une ligne
+     * qui y pointe le ferait charger à chaque résolution, de proche en proche (08 §9).
+     */
+    @Nullable
+    public static BeltFlow.Placed placedAt(LevelReader level, BlockPos pos) {
+        if (!level.hasChunkAt(pos)) return null;
+
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof BeltBlock block) || !state.hasProperty(FACING)) return null;
+
+        return new BeltFlow.Placed(block.flowOf(state), state.getValue(FACING));
+    }
+
+    /** Position dans laquelle le convoyeur posé en {@code pos} déverse, ou {@code null}. */
+    @Nullable
+    public static BlockPos targetOf(LevelReader level, BlockPos pos) {
+        BeltFlow.Placed self = placedAt(level, pos);
+        if (self == null) return null;
+
+        return BeltFlow.target(pos, self.flow(), self.facing(), at -> placedAt(level, at));
     }
 
     // Interface (État)
@@ -145,11 +168,16 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
         // le long, ce qui est le geste attendu.
         Direction facing = context.getHorizontalDirection();
 
-        BlockState state = defaultBlockState()
+        BlockState state = orient(level, pos, defaultBlockState()
                 .setValue(FACING, facing)
-                .setValue(WATERLOGGED, level.getFluidState(pos).getType() == Fluids.WATER);
+                .setValue(WATERLOGGED, level.getFluidState(pos).getType() == Fluids.WATER));
 
-        return state.setValue(CONNECTED, connectedFor(level, pos, facing));
+        return state.setValue(CONNECTED, connectedFor(level, pos, state));
+    }
+
+    /** Ce qu'une rampe décide à la pose — monter ou descendre. Rien, sur une bande à plat. */
+    protected BlockState orient(LevelReader level, BlockPos pos, BlockState state) {
+        return state;
     }
 
     @NotNull
@@ -162,7 +190,7 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
             level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         }
 
-        return state.setValue(CONNECTED, connectedFor(level, pos, state.getValue(FACING)));
+        return state.setValue(CONNECTED, connectedFor(level, pos, state));
     }
 
     @Override
@@ -195,46 +223,90 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
      * <p>Toute la décision est dans {@link BeltShape}, qui se teste sans le monde. Ici, on ne
      * fait que lire.
      */
-    private int connectedFor(LevelReader level, BlockPos pos, Direction facing) {
-        boolean fromBack = fedFrom(level, pos, pos.relative(facing.getOpposite()));
-        boolean fromLeft = fedFrom(level, pos, pos.relative(BeltShape.leftOf(facing)));
-        boolean fromRight = fedFrom(level, pos, pos.relative(BeltShape.rightOf(facing)));
+    protected int connectedFor(LevelReader level, BlockPos pos, BlockState state) {
+        Direction facing = state.getValue(FACING);
+        BeltFlow flow = flowOf(state);
 
-        return BeltShape.connectedOf(
-                fromBack, fromLeft, fromRight, hasOutput(level, pos, facing), this.flow.allowsCurve());
+        // Le monde, tel qu'il sera une fois cet état posé : à la pose, la position est encore
+        // vide, et un voisin qui y déverse n'y trouverait rien.
+        BeltFlow.World world = worldWith(level, pos, new BeltFlow.Placed(flow, facing));
+
+        boolean fromBack = fedFrom(world, pos, facing.getOpposite());
+        boolean fromLeft = fedFrom(world, pos, BeltShape.leftOf(facing));
+        boolean fromRight = fedFrom(world, pos, BeltShape.rightOf(facing));
+
+        // Deux bandes face à face ne se passent rien, et ne doivent donc pas afficher de
+        // raccord : c'est BeltFlow.accepts qui les refuse, pour la forme comme pour le transport.
+        boolean hasOutput = BeltFlow.target(pos, flow, facing, world) != null;
+
+        return BeltShape.connectedOf(fromBack, fromLeft, fromRight, hasOutput, flow.allowsCurve());
+    }
+
+    /** Le monde, où {@code pos} porterait {@code self}. */
+    protected static BeltFlow.World worldWith(LevelReader level, BlockPos pos, BeltFlow.Placed self) {
+        return at -> at.equals(pos) ? self : placedAt(level, at);
     }
 
     /**
-     * Y a-t-il un convoyeur devant, et peut-il recevoir ?
-     *
-     * <p>Deux bandes face à face ne se passent rien — leurs sorties sont sur la même face — et
-     * ne doivent donc pas afficher de raccord. Sans cette condition, la forme visible
-     * annoncerait une liaison que le transport refuse.
-     */
-    private boolean hasOutput(LevelReader level, BlockPos pos, Direction facing) {
-        BlockPos exit = this.flow.exit(pos, facing);
-
-        if (!(level.getBlockState(exit).getBlock() instanceof BeltBlock target)) return false;
-
-        BlockState state = level.getBlockState(exit);
-        if (!state.hasProperty(FACING)) return false;
-
-        return !target.flow.exit(exit, state.getValue(FACING)).equals(pos);
-    }
-
-    /**
-     * Ce voisin déverse-t-il ici ?
+     * Un voisin de ce côté déverse-t-il ici ?
      *
      * <p>Occuper la place ne suffit pas : un convoyeur perpendiculaire est bien à côté, mais il
-     * déverse ailleurs. Seule sa <b>sortie</b> tranche — voir {@link BeltFlow#feeds}.
+     * déverse ailleurs. Seule sa <b>sortie</b> tranche — voir {@link BeltFlow#target}.
      */
-    private static boolean fedFrom(LevelReader level, BlockPos pos, BlockPos candidate) {
-        BlockState state = level.getBlockState(candidate);
+    private static boolean fedFrom(BeltFlow.World world, BlockPos pos, Direction side) {
+        for (BlockPos candidate : BeltFlow.sources(pos, side)) {
+            BeltFlow.Placed placed = world.at(candidate);
+            if (placed == null) continue;
 
-        if (!(state.getBlock() instanceof BeltBlock belt)) return false;
-        if (!state.hasProperty(FACING)) return false;
+            if (pos.equals(BeltFlow.target(candidate, placed.flow(), placed.facing(), world))) return true;
+        }
 
-        return BeltFlow.feeds(candidate, belt.flow(), state.getValue(FACING), pos);
+        return false;
+    }
+
+    /**
+     * Les connexions d'une rampe passent par des voisins <b>en diagonale</b>, que Minecraft ne
+     * prévient jamais d'un changement.
+     *
+     * <p>{@code updateShape} et {@code neighborChanged} ne concernent que les six faces. Or une
+     * rampe montante déverse devant et un cran plus haut, et ce qui tombe sur une rampe
+     * descendante vient de derrière et d'un cran plus haut. Sans ce relais, poser le convoyeur
+     * du sommet laisserait la rampe convaincue de buter — la ligne coupée sans rien de visible,
+     * le défaut exact que 08 §11 redoutait.
+     *
+     * <p>Appelé à chaque changement d'état, pose et retrait compris ; les huit diagonales
+     * verticales, et elles seules. La propagation s'arrête d'elle-même : un voisin dont la forme
+     * ne change pas n'est pas réécrit.
+     */
+    private static void refreshDiagonals(Level level, BlockPos pos) {
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            BlockPos beside = pos.relative(side);
+
+            refresh(level, beside.above());
+            refresh(level, beside.below());
+        }
+    }
+
+    private static void refresh(Level level, BlockPos pos) {
+        if (!level.isLoaded(pos)) return;
+
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof BeltBlock belt)) return;
+
+        if (level.getBlockEntity(pos) instanceof BeltBlockEntity entity) entity.onNeighbourChanged();
+
+        BlockState updated = state.setValue(CONNECTED, belt.connectedFor(level, pos, state));
+        if (updated != state) level.setBlock(pos, updated, Block.UPDATE_CLIENTS);
+    }
+
+    @Override
+    public void onPlace(
+            @NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+            @NotNull BlockState old, boolean moving) {
+
+        super.onPlace(state, level, pos, old, moving);
+
+        if (!level.isClientSide) refreshDiagonals(level, pos);
     }
 
     // Interface (Pose à la main)
@@ -344,5 +416,7 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
         }
 
         super.onRemove(state, level, pos, newState, moving);
+
+        if (!state.is(newState.getBlock()) && !level.isClientSide) refreshDiagonals(level, pos);
     }
 }

@@ -27,6 +27,11 @@ public class ModItemModelGenerator extends ItemModelProvider {
         BeltRegistry.userDefined().forEach(belt -> withExistingParent("item/" + belt.getName(),
                 modLoc("block/transport_belts/" + belt.getName() + "/" + belt.getName())));
 
+        // Les rampes, livrées comprises : leur modèle est généré, leur item aussi.
+        BeltRegistry.all().stream().filter(belt -> belt.getRampBlock() != null).forEach(belt ->
+                withExistingParent("item/" + belt.getName() + "_ramp",
+                        modLoc("block/transport_belts/" + belt.getName() + "/" + belt.getName() + "_ramp_up")));
+
         ModBlocks.MODELLED.forEach(block -> {
             String name = block.getId().getPath();
             withExistingParent("item/" + name, modLoc("block/" + name));

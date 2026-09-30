@@ -4,195 +4,147 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * Connexions entre convoyeurs, ascenseurs verticaux compris.
+ * Connexions entre convoyeurs, rampes comprises.
  *
  * <p>Une connexion mal résolue ne casse rien de visible : elle coupe la ligne. Les items
- * s'accumulent, le joueur voit un bouchon et en cherche la cause ailleurs. C'est le genre de
- * défaut qu'il faut verrouiller ici plutôt que constater en jeu.
- *
- * <p>Ce que ces tests établissent surtout, c'est que la règle est <b>unique</b> : un voisin
- * m'alimente si sa sortie est ma position. Aucune forme n'a de traitement particulier.
+ * s'accumulent, le joueur voit un bouchon et en cherche la cause ailleurs. Au sommet d'une rampe,
+ * c'est le défaut que 08 §11 redoutait — d'où ces tests, qui balaient chaque raccord d'une ligne
+ * qui monte et redescend.
  */
 class BeltFlowTest {
 
     private static final BlockPos ORIGIN = new BlockPos(0, 64, 0);
+    private static final Direction EAST = Direction.EAST;
 
-    // La sortie
+    /** Un monde réduit à quelques convoyeurs. */
+    private final Map<BlockPos, BeltFlow.Placed> world = new HashMap<>();
 
-    @ParameterizedTest
-    @EnumSource(value = Direction.class, names = {"NORTH", "SOUTH", "EAST", "WEST"})
-    @DisplayName("À plat, un convoyeur déverse devant lui")
-    void horizontalExitsForward(Direction facing) {
-        assertEquals(ORIGIN.relative(facing), BeltFlow.HORIZONTAL.exit(ORIGIN, facing));
+    private BlockPos put(BlockPos pos, BeltFlow flow, Direction facing) {
+        this.world.put(pos, new BeltFlow.Placed(flow, facing));
+        return pos;
     }
 
-    @ParameterizedTest
-    @EnumSource(value = Direction.class, names = {"NORTH", "SOUTH", "EAST", "WEST"})
-    @DisplayName("Un ascenseur déverse au-dessus ou en dessous, sans regarder son orientation")
-    void liftsIgnoreFacing(Direction facing) {
+    private BlockPos target(BlockPos from) {
+        BeltFlow.Placed self = this.world.get(from);
+
+        return BeltFlow.target(from, self.flow(), self.facing(), this.world::get);
+    }
+
+    // Lignes complètes
+
+    @Test
+    @DisplayName("Une ligne qui monte, passe un palier et redescend ne se coupe nulle part")
+    void aHillIsConnectedEndToEnd() {
+        // Au sol, montée, palier un cran plus haut, sommet, descente, retour au sol.
+        BlockPos ground = put(ORIGIN, BeltFlow.HORIZONTAL, EAST);
+        BlockPos up = put(ORIGIN.east(), BeltFlow.RAMP_UP, EAST);
+        BlockPos landing = put(ORIGIN.east(2).above(), BeltFlow.HORIZONTAL, EAST);
+        BlockPos down = put(ORIGIN.east(3), BeltFlow.RAMP_DOWN, EAST);
+        BlockPos after = put(ORIGIN.east(4), BeltFlow.HORIZONTAL, EAST);
+
         assertAll(
-                () -> assertEquals(ORIGIN.above(), BeltFlow.LIFT_UP.exit(ORIGIN, facing)),
-                () -> assertEquals(ORIGIN.below(), BeltFlow.LIFT_DOWN.exit(ORIGIN, facing)));
-    }
-
-    /**
-     * Le bénéfice de l'ascenseur sur la rampe, énoncé comme un test.
-     *
-     * <p>Une rampe à 45° débouche en diagonale — en avant et un cran plus haut — donc son
-     * bloc de sortie ne la touche par aucune face. Celui qui reçoit ne pouvait pas la trouver
-     * parmi ses voisins immédiats, et il fallait examiner trois candidats à trois hauteurs.
-     * Toutes les sorties étant désormais des faces, une seule liste suffit.
-     */
-    @ParameterizedTest
-    @EnumSource(BeltFlow.class)
-    @DisplayName("Toute sortie est un voisin de face, jamais une diagonale")
-    void everyExitIsAFaceNeighbour(BeltFlow flow) {
-        BlockPos exit = flow.exit(ORIGIN, Direction.EAST);
-
-        assertTrue(BeltFlow.neighbours(ORIGIN).contains(exit),
-                "sortie en " + exit + ", hors des six faces");
+                () -> assertEquals(up, target(ground), "le sol alimente la montée"),
+                () -> assertEquals(landing, target(up), "la montée sort devant et un cran plus haut"),
+                () -> assertEquals(down, target(landing), "le palier tombe sur la descente"),
+                () -> assertEquals(after, target(down), "la descente ressort au sol"));
     }
 
     @Test
-    @DisplayName("Les six faces sont distinctes")
-    void theSixNeighboursAreDistinct() {
-        List<BlockPos> neighbours = BeltFlow.neighbours(ORIGIN);
+    @DisplayName("Deux montées, puis deux descentes enchaînées, sans palier")
+    void rampsChainWithoutLanding() {
+        BlockPos first = put(ORIGIN, BeltFlow.RAMP_UP, EAST);
+        BlockPos second = put(ORIGIN.east().above(), BeltFlow.RAMP_UP, EAST);
+
+        // Le sommet : la seconde montée sort deux crans plus haut, dans le vide, et tombe sur la
+        // descente d'un cran plus bas — ni palier ni cas particulier.
+        BlockPos peak = put(ORIGIN.east(2).above(), BeltFlow.RAMP_DOWN, EAST);
+        BlockPos lower = put(ORIGIN.east(3), BeltFlow.RAMP_DOWN, EAST);
+        BlockPos bottom = put(ORIGIN.east(4), BeltFlow.RAMP_UP, EAST);
 
         assertAll(
-                () -> assertEquals(6, neighbours.size()),
-                () -> assertEquals(6, neighbours.stream().distinct().count()));
+                () -> assertEquals(second, target(first)),
+                () -> assertEquals(peak, target(second), "sommet"),
+                () -> assertEquals(lower, target(peak), "descente enchaînée"),
+                () -> assertEquals(bottom, target(lower), "creux : la descente alimente une montée"));
     }
 
-    // Les extrémités d'une colonne
-
-    /**
-     * Le pied d'une colonne.
-     *
-     * <p>Une bande horizontale qui bute sur un ascenseur l'alimente sans rien de particulier :
-     * sa sortie est la position de l'ascenseur, donc la règle unique suffit.
-     */
-    @Test
-    @DisplayName("Pied de colonne : une bande alimente l'ascenseur qu'elle touche")
-    void aBeltFeedsTheFootOfALift() {
-        Direction east = Direction.EAST;
-        BlockPos lift = ORIGIN.relative(east);
-
-        assertAll(
-                () -> assertTrue(BeltFlow.feeds(ORIGIN, BeltFlow.HORIZONTAL, east, lift)),
-                () -> assertTrue(BeltFlow.neighbours(lift).contains(ORIGIN)));
-    }
+    // Refus
 
     @Test
-    @DisplayName("Les ascenseurs s'empilent : chacun alimente celui du dessus")
-    void liftsStack() {
-        BlockPos bottom = ORIGIN;
-        BlockPos middle = bottom.above();
-        BlockPos top = middle.above();
+    @DisplayName("Une descente ne se prend pas de plain-pied : son entrée est un cran plus haut")
+    void aDownRampIsNotEnteredFromTheSameLevel() {
+        BlockPos flat = put(ORIGIN, BeltFlow.HORIZONTAL, EAST);
+        put(ORIGIN.east(), BeltFlow.RAMP_DOWN, EAST);
 
-        assertAll(
-                () -> assertTrue(BeltFlow.feeds(bottom, BeltFlow.LIFT_UP, Direction.EAST, middle)),
-                () -> assertTrue(BeltFlow.feeds(middle, BeltFlow.LIFT_UP, Direction.NORTH, top),
-                        "l'orientation des blocs empilés n'a pas à concorder"));
-    }
-
-    /**
-     * Le sommet d'une colonne.
-     *
-     * <p>L'ascenseur déverse dans le bloc au-dessus. Une bande horizontale posée là le trouve
-     * parmi ses six voisins — elle n'a pas besoin d'une règle « accepter par le dessous », la
-     * règle unique la couvre déjà.
-     */
-    @Test
-    @DisplayName("Sommet de colonne : la bande du dessus trouve l'ascenseur sous elle")
-    void theBeltAboveFindsTheLift() {
-        BlockPos lift = ORIGIN;
-        BlockPos belt = lift.above();
-
-        assertAll(
-                () -> assertTrue(BeltFlow.feeds(lift, BeltFlow.LIFT_UP, Direction.EAST, belt)),
-                () -> assertTrue(BeltFlow.neighbours(belt).contains(lift)));
+        assertNull(target(flat));
     }
 
     @Test
-    @DisplayName("Une descente est le symétrique exact d'une montée")
-    void descentMirrorsAscent() {
-        assertAll(
-                () -> assertTrue(BeltFlow.feeds(ORIGIN, BeltFlow.LIFT_DOWN, Direction.EAST, ORIGIN.below())),
-                () -> assertTrue(BeltFlow.neighbours(ORIGIN.below()).contains(ORIGIN)));
-    }
+    @DisplayName("On ne tombe que sur une descente orientée dans son sens")
+    void fallingNeedsARampFacingTheSameWay() {
+        BlockPos flat = put(ORIGIN.above(), BeltFlow.HORIZONTAL, EAST);
 
-    // Ce qu'il ne faut pas connecter
+        put(ORIGIN.east(), BeltFlow.RAMP_DOWN, Direction.WEST);
+        assertNull(target(flat), "à contre-sens");
 
-    @Test
-    @DisplayName("Un voisin qui déverse ailleurs n'alimente pas, même adjacent")
-    void anAdjacentBeltPointingElsewhereDoesNotFeed() {
-        BlockPos behind = ORIGIN.west();
+        put(ORIGIN.east(), BeltFlow.RAMP_UP, EAST);
+        assertNull(target(flat), "une montée ne reçoit pas ce qui tombe");
 
-        assertAll(
-                () -> assertTrue(BeltFlow.neighbours(ORIGIN).contains(behind), "il est bien voisin"),
-                () -> assertFalse(BeltFlow.feeds(behind, BeltFlow.HORIZONTAL, Direction.NORTH, ORIGIN),
-                        "mais il déverse au nord"));
+        put(ORIGIN.east(), BeltFlow.HORIZONTAL, EAST);
+        assertNull(target(flat), "une bande non plus");
     }
 
     @Test
-    @DisplayName("Un ascenseur ne déverse pas sur le voisin de plain-pied")
-    void aLiftIgnoresItsLevelNeighbours() {
-        assertFalse(BeltFlow.feeds(ORIGIN, BeltFlow.LIFT_UP, Direction.EAST, ORIGIN.east()));
+    @DisplayName("Une montée ne se prend pas par le flanc")
+    void aRampRefusesSideEntry() {
+        BlockPos side = put(ORIGIN.north(), BeltFlow.HORIZONTAL, Direction.SOUTH);
+        put(ORIGIN, BeltFlow.RAMP_UP, EAST);
+
+        assertNull(target(side));
     }
 
-    /**
-     * Deux ascenseurs opposés se renvoient la balle.
-     *
-     * <p>Configuration que rien n'interdit au joueur de construire. Elle ne doit ni bloquer
-     * ni dupliquer : chacun alimente l'autre, les items circulent. C'est un puits sans fond,
-     * pas un défaut.
-     */
     @Test
-    @DisplayName("Une montée et une descente empilées se nourrissent mutuellement")
-    void opposedLiftsFormALoop() {
-        BlockPos lower = ORIGIN;
-        BlockPos upper = ORIGIN.above();
+    @DisplayName("Rien ne passe à contre-sens, rampe ou pas")
+    void faceToFaceNeverConnects() {
+        BlockPos up = put(ORIGIN, BeltFlow.RAMP_UP, EAST);
+        BlockPos back = put(ORIGIN.east().above(), BeltFlow.HORIZONTAL, Direction.WEST);
+
+        BlockPos a = put(ORIGIN.south(5), BeltFlow.HORIZONTAL, EAST);
+        BlockPos b = put(ORIGIN.south(5).east(), BeltFlow.HORIZONTAL, Direction.WEST);
 
         assertAll(
-                () -> assertTrue(BeltFlow.feeds(lower, BeltFlow.LIFT_UP, Direction.EAST, upper)),
-                () -> assertTrue(BeltFlow.feeds(upper, BeltFlow.LIFT_DOWN, Direction.EAST, lower)));
+                () -> assertNull(target(up), "la montée bute contre la bande qui revient"),
+                () -> assertNull(target(back)),
+                () -> assertNull(target(a)),
+                () -> assertNull(target(b)));
     }
 
-    // Formes
-
-    @ParameterizedTest
-    @EnumSource(BeltFlow.class)
-    @DisplayName("Seul le plat autorise un virage")
-    void onlyHorizontalBeltsCurve(BeltFlow flow) {
-        assertEquals(flow.isHorizontal(), flow.allowsCurve());
+    @Test
+    @DisplayName("Le vide ne reçoit rien : la ligne bute et comprime")
+    void theVoidReceivesNothing() {
+        assertNull(target(put(ORIGIN, BeltFlow.RAMP_UP, EAST)));
     }
 
-    @ParameterizedTest
-    @EnumSource(BeltFlow.class)
-    @DisplayName("La direction de sortie est cohérente avec la position de sortie")
-    void exitDirectionMatchesExitPosition(BeltFlow flow) {
-        Direction facing = Direction.SOUTH;
+    // Hauteur
 
-        assertEquals(flow.exit(ORIGIN, facing), ORIGIN.relative(flow.exitDirection(facing)));
-    }
-
-    @ParameterizedTest
-    @EnumSource(BeltFlow.class)
-    @DisplayName("Un nom inconnu retombe sur le plat plutôt que d'échouer")
-    void nameRoundTrip(BeltFlow flow) {
+    @Test
+    @DisplayName("La surface monte d'un cran sur une montée, en descend un sur une descente")
+    void riseFollowsTheSlope() {
         assertAll(
-                () -> assertEquals(flow, BeltFlow.byName(flow.getSerializedName())),
-                () -> assertEquals(BeltFlow.HORIZONTAL, BeltFlow.byName("rampe")));
+                () -> assertEquals(0D, BeltFlow.HORIZONTAL.rise(0.5D)),
+                () -> assertEquals(0.5D, BeltFlow.RAMP_UP.rise(0.5D)),
+                () -> assertEquals(1D, BeltFlow.RAMP_UP.rise(1D)),
+                () -> assertEquals(1D, BeltFlow.RAMP_DOWN.rise(0D)),
+                () -> assertEquals(0D, BeltFlow.RAMP_UP.rise(-0.25D), "en deçà du bord, à la hauteur d'entrée"),
+                () -> assertEquals(1D, BeltFlow.RAMP_DOWN.rise(-0.25D)));
     }
 }

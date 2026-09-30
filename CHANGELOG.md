@@ -18,6 +18,9 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
   state and the cost of a swing.
 - The configurator also copies hand size and drop lane.
 - JEI no longer draws over the screen's tabs.
+- **Belt ramps**, one per belt tier, to climb or descend one block. A ramp placed below the end of
+  a belt goes down, otherwise it goes up. Crafted from the belt and an iron plate. The models are
+  placeholders.
 - **Recipes for the modules and the configurator**, through the Factorio component chain: plates
   (stonecutter), steel (blast furnace), the new **iron gear wheel** and **copper cable**, then
   electronic, advanced circuits and processing units. Ingredients are Forge tags, circuits

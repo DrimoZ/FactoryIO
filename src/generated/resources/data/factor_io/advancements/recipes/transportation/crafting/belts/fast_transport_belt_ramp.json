@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_fast_transport_belt": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "factor_io:fast_transport_belt"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "factor_io:crafting/belts/fast_transport_belt_ramp"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_fast_transport_belt",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "factor_io:crafting/belts/fast_transport_belt_ramp"
+    ]
+  },
+  "sends_telemetry_event": false
+}

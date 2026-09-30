@@ -3,6 +3,8 @@ package com.drimoz.factoryio.gametest;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
+import com.drimoz.factoryio.core.belts.BeltFlow;
+import com.drimoz.factoryio.core.belts.BeltRampBlock;
 import com.drimoz.factoryio.core.belts.BeltLane;
 import com.drimoz.factoryio.core.belts.BeltSettings;
 import com.drimoz.factoryio.core.belts.BeltLane;
@@ -257,6 +259,49 @@ public class BeltGameTests {
         helper.succeed();
     }
 
+    // Tests (Rampes)
+
+    /**
+     * Un item franchit une colline — montée, palier, descente — sans se perdre, et le palier posé
+     * <b>après coup</b> est bien pris en compte.
+     *
+     * <p>C'est le défaut que 08 §11 redoutait : la montée déverse en diagonale, là où Minecraft
+     * ne prévient d'aucun changement. Sans le relais de {@code BeltBlock.refreshDiagonals}, la
+     * montée garderait son aval mémorisé — aucun — et l'item y attendrait sans rien de visible.
+     *
+     * <p>Le délai est serré à dessein : l'item arrive vers le 50<sup>e</sup> tick. Sans le relais,
+     * un réveil venu d'ailleurs finit par le débloquer, mais vers le 130<sup>e</sup> — une fenêtre
+     * large l'aurait pris pour le relais, et c'est ce qui s'est produit à la première écriture.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 70)
+    public static void anItemCrossesAHillBuiltInAnyOrder(GameTestHelper helper) {
+        BlockPos start = new BlockPos(0, 1, 1);
+        BlockPos landing = new BlockPos(2, 2, 1);
+        BlockPos end = new BlockPos(4, 1, 1);
+
+        helper.setBlock(start, belted(Direction.EAST));
+        helper.setBlock(new BlockPos(1, 1, 1), ramp(Direction.EAST, BeltFlow.RAMP_UP));
+        helper.setBlock(new BlockPos(3, 1, 1), ramp(Direction.EAST, BeltFlow.RAMP_DOWN));
+        helper.setBlock(end, belted(Direction.EAST));
+
+        belt(helper, start).accept(BeltTransport.LEFT, new ItemStack(Items.COBBLESTONE));
+
+        List<BlockPos> hill = List.of(start, new BlockPos(1, 1, 1), landing, new BlockPos(3, 1, 1), end);
+
+        // L'item a eu le temps de buter en haut de la montée — la montée a donc mémorisé qu'elle
+        // n'avait pas d'aval. Le palier arrive seulement là.
+        helper.runAtTickTime(40, () -> {
+            helper.assertTrue(count(helper, new BlockPos(1, 1, 1)) == 1, "L'item devait attendre en haut de la montée");
+
+            helper.setBlock(landing, belted(Direction.EAST));
+        });
+
+        helper.succeedWhen(() -> {
+            helper.assertTrue(count(helper, end) == 1, "L'item n'a pas franchi la colline");
+            helper.assertTrue(total(helper, hill) == 1, "L'item a été dupliqué ou perdu : " + total(helper, hill));
+        });
+    }
+
     // Tests (Réseau)
 
     /**
@@ -428,6 +473,12 @@ public class BeltGameTests {
     private static BlockState belted(Direction facing) {
         return BeltRegistry.block(BeltDefaults.EXPRESS).defaultBlockState()
                 .setValue(BeltBlock.FACING, facing);
+    }
+
+    private static BlockState ramp(Direction facing, BeltFlow flow) {
+        return BeltRegistry.get(BeltDefaults.EXPRESS).getRampBlock().get().defaultBlockState()
+                .setValue(BeltBlock.FACING, facing)
+                .setValue(BeltRampBlock.FLOW, flow);
     }
 
     /** Trois convoyeurs alignés, sans rien au bout. */

@@ -162,10 +162,6 @@ public class BeltBlockEntity extends BlockEntity {
         return state.getBlock() instanceof BeltBlock belt ? belt.belt().getTicksPerSlot() : BeltCodec.DEFAULT_TICKS_PER_SLOT;
     }
 
-    private BeltFlow flow() {
-        return getBlockState().getBlock() instanceof BeltBlock belt ? belt.flow() : BeltFlow.HORIZONTAL;
-    }
-
     /** Direction dans laquelle la bande déverse. Lue à chaque appel : une rotation la change. */
     public Direction facing() {
         BlockState state = getBlockState();
@@ -364,42 +360,27 @@ public class BeltBlockEntity extends BlockEntity {
             return this.downstream;
         }
 
-        this.downstream = resolve(this.level, this.worldPosition, flow().exit(this.worldPosition, facing()));
+        this.downstream = resolve(this.level, this.worldPosition);
         this.downstreamAt = state;
 
         return this.downstream;
     }
 
     /**
-     * Le convoyeur situé à {@code exit}, s'il peut réellement recevoir.
+     * Le convoyeur qui reçoit ce que celui-ci déverse.
      *
-     * <h3>Ne jamais charger le chunk d'en face</h3>
-     *
-     * <p>{@code Level.getBlockEntity} passe par {@code getChunkAt}, qui <b>charge le chunk</b>
-     * s'il ne l'est pas. Une ligne qui pointe vers un chunk déchargé le ferait donc charger à
-     * chaque tick, et de proche en proche — un convoyeur posé au bord du monde chargé
-     * entraînerait le suivant, puis le suivant. La garde de chargement est la première ligne du
-     * §9 de [`08`](../../../../../../../docs/08-DESIGN-BELTS.md) : l'amont doit <b>bloquer et
-     * comprimer</b>, sans rien perdre.
-     *
-     * <h3>Deux convoyeurs face à face ne se passent rien</h3>
-     *
-     * <p>Sinon chacun serait l'aval de l'autre, et l'item de tête de l'un traverserait le bloc
-     * entier pour ressortir à l'extrémité opposée de l'autre — les deux sorties sont sur la
-     * <b>même</b> face, donc rien ne peut y circuler sans se croiser. Pire, la détection de
-     * boucle y verrait un circuit et les ferait « tourner » indéfiniment.
-     *
-     * <p>C'est aussi ce que dit déjà la forme visible : un convoyeur ne cherche ses entrées que
-     * derrière et sur les côtés, jamais devant. Sans cette garde, le transport contredirait le
-     * rendu.
+     * <p>La même question que pose la forme visible, à la même fonction —
+     * {@link BeltBlock#targetOf} : le transport ne peut pas contredire le rendu. C'est elle qui
+     * refuse deux convoyeurs face à face, qui fait tomber un item sur une rampe descendante, et
+     * qui ne charge jamais le chunk d'en face — l'amont doit alors <b>bloquer et
+     * comprimer</b>, sans rien perdre (08 §9).
      */
     @Nullable
-    private static BeltBlockEntity resolve(Level level, BlockPos from, BlockPos exit) {
-        if (!level.isLoaded(exit)) return null;
+    private static BeltBlockEntity resolve(Level level, BlockPos from) {
+        BlockPos target = BeltBlock.targetOf(level, from);
+        if (target == null) return null;
 
-        if (!(level.getBlockEntity(exit) instanceof BeltBlockEntity target)) return null;
-
-        return target.flow().exit(exit, target.facing()).equals(from) ? null : target;
+        return level.getBlockEntity(target) instanceof BeltBlockEntity belt ? belt : null;
     }
 
     /** Le voisinage a changé : l'aval mémorisé n'est plus digne de confiance. */

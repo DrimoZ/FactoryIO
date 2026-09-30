@@ -32,6 +32,8 @@ public class Belt implements Definition {
 
     private int ticksPerSlot;
     private Supplier<Block> block;
+    @Nullable
+    private Supplier<Block> rampBlock;
 
     /**
      * @param ticksPerSlot durée d'un pas : 1 = 40 items/s, 2 = 20, 4 = 10
@@ -108,6 +110,16 @@ public class Belt implements Definition {
 
     public void setBlock(Supplier<Block> block) {
         this.block = block;
+    }
+
+    /** La rampe de la famille, ou {@code null} si la définition n'en veut pas. */
+    @Nullable
+    public Supplier<Block> getRampBlock() {
+        return this.rampBlock;
+    }
+
+    public void setRampBlock(Supplier<Block> rampBlock) {
+        this.rampBlock = rampBlock;
     }
 
     @Override
