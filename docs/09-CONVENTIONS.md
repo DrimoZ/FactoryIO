@@ -13,13 +13,16 @@ Cible (après la refonte de Phase 1) :
 com.drimoz.factoryio
 ├── FactoryIO.java              point d'entrée @Mod, rien d'autre
 ├── registry/                   DeferredRegister, tags, creative tabs
-├── data/                       définitions, codecs, chargement datapack
+├── data/                       mécanisme générique : DefinitionRegistry, loader, StrictCodecs
 ├── network/                    canal + paquets
-├── content/
-│   ├── inserter/               Block, BlockEntity, Menu, Screen, Renderer, Item
+├── content/                    code commun uniquement
+│   ├── inserter/               Block, BlockEntity, Menu, Item, définition, codec
 │   ├── belt/
-│   └── machine/
-├── client/                     tout ce qui est Dist.CLIENT (rendu, GUI, widgets)
+│   ├── multiblock/             cadre multibloc, réutilisé par les machines
+│   └── crafter/                une machine = une feature, avec sa recette
+├── client/                     tout ce qui est Dist.CLIENT
+│   ├── gui/                    widgets partagés
+│   └── <feature>/              Screen, Renderer, GeoModel de la feature
 ├── datagen/                    providers GatherDataEvent
 └── util/                       helpers sans dépendance sur le contenu
 ```
@@ -27,8 +30,15 @@ com.drimoz.factoryio
 Règles :
 
 - **`client/` ne doit jamais être importé depuis un package commun.** C'est la
-  meilleure protection contre les crashs serveur dédié.
-- Une feature = un package sous `content/`, contenant tout ce qui la concerne.
+  meilleure protection contre les crashs serveur dédié. Une feature est donc coupée en
+  deux : sa partie commune sous `content/<feature>/`, son écran et son rendu sous
+  `client/<feature>/`. La version précédente de ce schéma rangeait `Screen` et
+  `Renderer` sous `content/` et se contredisait elle-même.
+- Une feature = un package sous `content/`, contenant tout ce qui la concerne côté
+  commun — **y compris sa définition et son codec**. `data/` ne garde que le mécanisme
+  partagé par toutes les familles.
+- Pas de `content/machine/` fourre-tout : chaque machine est sa propre feature.
+- Le code neuf va directement dans la cible ; l'existant n'est pas déplacé en passant.
 - `util/` ne dépend de rien du mod. Si un helper a besoin de connaître une
   feature, il appartient à cette feature.
 
