@@ -5,6 +5,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -42,6 +44,12 @@ public final class ModRegistries {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, FactoryIO.MOD_ID);
 
+    public static final DeferredRegister<RecipeType<?>> RECIPE_TYPES =
+            DeferredRegister.create(ForgeRegistries.RECIPE_TYPES, FactoryIO.MOD_ID);
+
+    public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
+            DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, FactoryIO.MOD_ID);
+
     // Life cycle
 
     private ModRegistries() {}
@@ -54,5 +62,7 @@ public final class ModRegistries {
         BLOCK_ENTITIES.register(modEventBus);
         MENUS.register(modEventBus);
         CREATIVE_TABS.register(modEventBus);
+        RECIPE_TYPES.register(modEventBus);
+        RECIPE_SERIALIZERS.register(modEventBus);
     }
 }

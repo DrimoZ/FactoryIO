@@ -142,7 +142,7 @@ GameTests couvrent `chance = 1.0` et `chance = 0.0`, jamais une statistique.
 
 ### 3.4 Recettes vanilla, en option
 
-`CommonConfig` : `crafter.vanillaRecipes = false` par défaut, `crafter.vanillaTime = 0.5`.
+`ServerConfig` (`factor_io-server.toml`, par monde) : `crafter.vanillaRecipes = false` par défaut, `crafter.vanillaTime = 0.5`. Configuration **serveur** et non commune : Forge l'envoie aux clients, dont le sélecteur doit proposer la liste même que le serveur accepte.
 Activées, seules les `ShapedRecipe` / `ShapelessRecipe` **non spéciales** passent
 (feux d'artifice, teintures, copie de carte dépendent du NBT d'entrée). Elles suivent les
 recettes du mod dans le sélecteur.
@@ -313,7 +313,7 @@ Une branche par ticket, dans cet ordre ; FIO-176 et FIO-120 sont indépendants.
 |---|---|---|
 | FIO-175 | refonte préalable (§7) | `./gradlew build` et GameTests inchangés |
 | FIO-176 | cadre multibloc, bloc de test vide | pose, casse depuis chaque partie, contenu lâché une fois, inserter branché sur une partie |
-| FIO-120 | `factor_io:crafting`, codec, option vanilla | JUnit : champs hors bornes et `fluid` refusés |
+| FIO-120 | `factor_io:crafting`, codec, option vanilla | GameTest (lire un ingrédient demande les registres) : champs hors bornes et `fluid` refusés, aller-retour réseau, conversion vanilla |
 | FIO-122 | crafter : définitions, tick, énergie, plafond, changement et disparition de recette | GameTests : conservation, rechargement, plafond `inputCrafts` respecté par un inserter |
 | FIO-177 | GUI, sélecteur, `C2SCrafterRecipe` | une recette hors palier est refusée par le serveur |
 | FIO-178 | JEI : catégorie, catalyseurs, « + » | le « + » fixe la recette |
