@@ -13,6 +13,7 @@
     "factor_io:fast_transport_belt",
     "factor_io:fast_transport_belt_ramp",
     "factor_io:transport_belt",
-    "factor_io:transport_belt_ramp"
+    "factor_io:transport_belt_ramp",
+    "factor_io:multiblock_part"
   ]
 }

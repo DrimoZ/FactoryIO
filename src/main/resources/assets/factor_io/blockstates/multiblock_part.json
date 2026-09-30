@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "factor_io:block/multiblock_part" }
+  }
+}

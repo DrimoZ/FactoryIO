@@ -69,6 +69,30 @@ le bloc qu'elles occupent.
   une frontière de chunk.
 - Explosions, `/setblock` sur une partie : même règle, le volume entier disparaît.
 
+### 2.4 Tel qu'implémenté (FIO-176)
+
+| Classe | Rôle |
+|---|---|
+| `MultiblockShape` | le volume : positions et boîte englobante selon la face ; largeur et profondeur impaires |
+| `MultiblockBlock` | maître abstrait, sur `ModEntityBlock` : refuse la pose (`getStateForPlacement` → `null`), pose les parties, les retire, lit la redstone sur tout le volume |
+| `MultiblockPartBlock` | **un seul bloc `multiblock_part` pour tous les multiblocs**, invisible, sans item ni loot ; transmet casse et voisinage au maître |
+| `MultiblockPartBlockEntity` | décalage **relatif** vers le maître, capabilities déléguées, synchronisé une fois pour le *pick block* |
+| `client/multiblock/MultiblockPlacementPreview` | contour de pose, verdict par `canPlace` — la méthode même qui décide de la pose |
+
+Choix faits en cours de route :
+
+- **Contour de sélection par bloc**, pas du volume entier. Une forme qui déborde de sa
+  case perturbe le lancer de rayon et la collision ; le contour de pose suffit à lire le
+  volume.
+- **En créatif**, casser une partie retire le maître sans rien lâcher, comme vanilla.
+- **Partie orpheline** : un maître retiré alors qu'une partie est dans un chunk non chargé
+  la laisse en place plutôt que de forcer le chargement. Elle ne renvoie plus rien et se
+  casse normalement. Ce cas n'est pas couvert par un GameTest, faute de pouvoir décharger
+  un chunk proprement.
+- **`TestMultiblock`** éprouve le cadre en attendant le crafter. Il vit dans `gametest/`,
+  exclu du jar : il existe en développement (GameTests, `runClient`) et jamais en version
+  publiée.
+
 ---
 
 ## 3. Recettes — `factor_io:crafting`
