@@ -1,4 +1,4 @@
-// 1.20.1	2026-09-30T09:41:59.4679544	Item Models: factor_io
+// 1.20.1	2026-09-30T15:15:42.1401342	Item Models: factor_io
 aff44f81c6fdbf4b7be31fb97f097d8a72eb141e assets/factor_io/models/item/advanced_circuit.json
 059ed81bc71b4550a5272713afef9946997df4d7 assets/factor_io/models/item/advanced_redstone_module.json
 7d58f82e489e5c0b11b28a8e33697c92f6bb74a2 assets/factor_io/models/item/automation_science_pack.json
@@ -13,7 +13,9 @@ afdad8cb7f96a029cb3fc55c95207117f1dbd63a assets/factor_io/models/item/efficiency
 3a66b9ec589810e443d0d6b55b5d7cd86cf489e8 assets/factor_io/models/item/efficiency_module_3.json
 10e3f275324eaaf0f3518dd797dff6b0d54a3ec1 assets/factor_io/models/item/electronic_circuit.json
 08ddc70c3fd9242ba3d177bcf85df77ccf2a333f assets/factor_io/models/item/explosives.json
+46d9d2d7e1a017cd1cebbc46fb2b2e00230ceabf assets/factor_io/models/item/express_transport_belt_ramp.json
 49196628027caf910ca13b16c65b7dce3e0f85ee assets/factor_io/models/item/fast_inserter.json
+f46fd5c9fed0ebe516f3d8c2a1cfa8c13c0651f3 assets/factor_io/models/item/fast_transport_belt_ramp.json
 2b32b736c98a6e41950dd082078063b1464e573a assets/factor_io/models/item/filter_inserter.json
 a20db44a6ffc47c9cda820345376e78eb11e6cc2 assets/factor_io/models/item/flying_robot_frame.json
 9059ad91da7d267067adc5d920f1acf3be564b0c assets/factor_io/models/item/inserter.json
@@ -42,6 +44,7 @@ ff4e6934fe44ef4f79470eb03d0b5451b3695253 assets/factor_io/models/item/stack_filt
 ce2eaed28f6722c6f5601a4241fd5ad83d4653b6 assets/factor_io/models/item/steel_plate.json
 3ff5082b843d3943e77b6a64803642ded338209a assets/factor_io/models/item/stone.json
 dfea3876cbda530105371e396b058f4cb0775daf assets/factor_io/models/item/stone_brick.json
+010378829db386c33594cfe71675676c5629e7df assets/factor_io/models/item/transport_belt_ramp.json
 a0ceb8bcd085d93398bd1786f0cd78b6d4231da0 assets/factor_io/models/item/uranium_235.json
 34276c590ee4a8d0524622a7cccc6252ef36e79e assets/factor_io/models/item/uranium_238.json
 7ba485688c27d5db7437deb0256d88141982542f assets/factor_io/models/item/uranium_fuel_cell.json

@@ -26,6 +26,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.common.Tags;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -337,6 +338,21 @@ public class ModRecipeGenerator extends RecipeProvider {
                 .define('B', fast)
                 .unlockedBy("has_fast_transport_belt", has(fast))
                 .save(writer, recipe("crafting/belts/express_transport_belt"));
+
+        // Factorio n'a pas de rampe : une bande et la plaque qui la soutient, sans surcoût qui
+        // détournerait de monter d'un étage.
+        for (ResourceLocation id : List.of(BeltDefaults.TRANSPORT, BeltDefaults.FAST, BeltDefaults.EXPRESS)) {
+            Belt belt = BeltRegistry.get(id);
+            if (belt.getRampBlock() == null) continue;
+
+            Item item = belt.getBlock().get().asItem();
+
+            ShapelessRecipeBuilder.shapeless(RecipeCategory.TRANSPORTATION, belt.getRampBlock().get())
+                    .requires(item)
+                    .requires(ModTags.Items.PLATES_IRON)
+                    .unlockedBy("has_" + belt.getName(), has(item))
+                    .save(writer, recipe("crafting/belts/" + belt.getName() + "_ramp"));
+        }
     }
 
     // Inner work

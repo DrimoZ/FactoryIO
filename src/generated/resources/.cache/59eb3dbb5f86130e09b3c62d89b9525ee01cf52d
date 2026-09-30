@@ -1,12 +1,15 @@
-// 1.20.1	2026-08-22T12:20:35.6524849	Loot Tables
+// 1.20.1	2026-09-30T15:15:42.1361463	Loot Tables
 8de712da096d82537dcf2ff1bb798603ac43c2b2 data/factor_io/loot_tables/blocks/burner_inserter.json
 0c0ffe4fc3c68b50a2d501c8874a106c48b4475d data/factor_io/loot_tables/blocks/creative_energy_source.json
 d9c9f8c9b66bb8896f91556e3045d8099fd26999 data/factor_io/loot_tables/blocks/express_transport_belt.json
+e879f7b972e44c20c095ba046e8adb825897c631 data/factor_io/loot_tables/blocks/express_transport_belt_ramp.json
 54276a5798326b3ccab86c7b9be4916853289500 data/factor_io/loot_tables/blocks/fast_inserter.json
 d5210bcc85827fc7e53f9904b83ede3f36326df6 data/factor_io/loot_tables/blocks/fast_transport_belt.json
+821a4b6f415ba4abbb63d8590ea8fe3725185055 data/factor_io/loot_tables/blocks/fast_transport_belt_ramp.json
 8b5c65e2a15a36b961adea0ecccac757877a119d data/factor_io/loot_tables/blocks/filter_inserter.json
 2d9ca345fc33f67969bc7e6403f12f0e1ceeb452 data/factor_io/loot_tables/blocks/inserter.json
 94d5ea92728d8aa53db06fe209efd88129631914 data/factor_io/loot_tables/blocks/long_handed_inserter.json
 00cc1d014395627d99f0dcc87a198c9f46c2412d data/factor_io/loot_tables/blocks/stack_filter_inserter.json
 d78189943a98bfa5bbf71a47d73833ac12e2d064 data/factor_io/loot_tables/blocks/stack_inserter.json
 566ab379979ddd81528e065ff4e303fc29b5cc78 data/factor_io/loot_tables/blocks/transport_belt.json
+dfb24c972ae5f10cae9f2ebda1a20540b40093fb data/factor_io/loot_tables/blocks/transport_belt_ramp.json

@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=east,flow=ramp_down": {
+      "model": "factor_io:block/transport_belts/transport_belt/transport_belt_ramp_down",
+      "y": 90
+    },
+    "facing=east,flow=ramp_up": {
+      "model": "factor_io:block/transport_belts/transport_belt/transport_belt_ramp_up",
+      "y": 90
+    },
+    "facing=north,flow=ramp_down": {
+      "model": "factor_io:block/transport_belts/transport_belt/transport_belt_ramp_down"
+    },
+    "facing=north,flow=ramp_up": {
+      "model": "factor_io:block/transport_belts/transport_belt/transport_belt_ramp_up"
+    },
+    "facing=south,flow=ramp_down": {
+      "model": "factor_io:block/transport_belts/transport_belt/transport_belt_ramp_down",
+      "y": 180
+    },
+    "facing=south,flow=ramp_up": {
+      "model": "factor_io:block/transport_belts/transport_belt/transport_belt_ramp_up",
+      "y": 180
+    },
+    "facing=west,flow=ramp_down": {
+      "model": "factor_io:block/transport_belts/transport_belt/transport_belt_ramp_down",
+      "y": 270
+    },
+    "facing=west,flow=ramp_up": {
+      "model": "factor_io:block/transport_belts/transport_belt/transport_belt_ramp_up",
+      "y": 270
+    }
+  }
+}

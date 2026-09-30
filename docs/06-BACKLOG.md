@@ -151,7 +151,7 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | FIO-100 | P2 | M | Frontières de chunk et chunks déchargés | pas de perte d'item à la frontière |
 | FIO-101 | P2 | M | Sauvegarde/chargement des lignes en NBT | 500 items conservés au rechargement |
 | FIO-102 | P3 | M | Sons et particules | — |
-| FIO-103 | P3 | M | Convoyeurs latéraux / rampes (si le périmètre le justifie) | — |
+| 🟡 FIO-103 | P1 | M | **Rampes** — **faites le 30/09/2026**, à la place des ascenseurs (décision du mainteneur). Une par tier, dans la famille de la définition (`"ramp": true`) ; montée ou descente décidée à la pose. Toute la connexion tient dans `BeltFlow.target` : la sortie fait autorité, et ce qui sort dans le vide tombe sur une descente. Les diagonales, que Minecraft ne prévient pas, sont relayées par `BeltBlock.refreshDiagonals` ([`08`](08-DESIGN-BELTS.md) §11). **Reste** : modèles définitifs (l'art des convoyeurs), et la vérification à l'œil. | une colline — montée, palier, descente — posée dans n'importe quel ordre, sans perte : ✅ `anItemCrossesAHillBuiltInAnyOrder` |
 
 ## Épic E — Machines et progression (Phase 4) — **ajourné**
 

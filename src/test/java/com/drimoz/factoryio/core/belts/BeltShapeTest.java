@@ -121,12 +121,12 @@ class BeltShapeTest {
     }
 
     @Test
-    @DisplayName("Un ascenseur interdit le virage, et la forme le reflète")
+    @DisplayName("Une rampe interdit le virage, et la forme le reflète")
     void flowAndShapeAgree() {
         for (BeltFlow flow : BeltFlow.values()) {
             BeltShape shape = BeltShape.of(false, true, false, flow.allowsCurve());
 
-            assertEquals(flow.isHorizontal() ? BeltShape.CURVE_LEFT : BeltShape.STRAIGHT, shape,
+            assertEquals(!flow.isRamp() ? BeltShape.CURVE_LEFT : BeltShape.STRAIGHT, shape,
                     "sens " + flow.getSerializedName());
         }
     }

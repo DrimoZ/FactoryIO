@@ -24,6 +24,12 @@ public class BeltItem extends BlockItem {
         this.belt = belt;
     }
 
+    /** Le nom du bloc : c'est lui qui compose celui d'une rampe, voir {@link BeltRampBlock#getName}. */
+    @Override
+    public Component getName(ItemStack stack) {
+        return getBlock().getName();
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         Component rate = ModUtils.tooltipComponent("value_items_per_second", StringHelper.decimal(this.belt.getItemsPerSecond()))

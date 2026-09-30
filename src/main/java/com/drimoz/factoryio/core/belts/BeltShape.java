@@ -117,7 +117,7 @@ public enum BeltShape {
      * seul {@link BeltFlow#feeds} établit. Un voisin qui se contente d'occuper la place n'y
      * change rien.
      *
-     * @param canCurve {@code false} sur un ascenseur : il monte, il ne tourne pas. Un élément de
+     * @param canCurve {@code false} sur une rampe : elle monte, elle ne tourne pas. Un élément de
      *                 modèle n'admet de toute façon qu'une rotation, et le virage a pris la sienne
      */
     public static BeltShape of(boolean fromBack, boolean fromLeft, boolean fromRight, boolean canCurve) {

@@ -9,7 +9,10 @@
     "factor_io:stack_inserter",
     "factor_io:creative_energy_source",
     "factor_io:express_transport_belt",
+    "factor_io:express_transport_belt_ramp",
     "factor_io:fast_transport_belt",
-    "factor_io:transport_belt"
+    "factor_io:fast_transport_belt_ramp",
+    "factor_io:transport_belt",
+    "factor_io:transport_belt_ramp"
   ]
 }
