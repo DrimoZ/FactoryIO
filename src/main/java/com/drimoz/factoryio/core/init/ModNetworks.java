@@ -2,6 +2,7 @@ package com.drimoz.factoryio.core.init;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.network.packet.C2SInserterSetting;
+import com.drimoz.factoryio.core.network.packet.S2CBeltSpeeds;
 import com.drimoz.factoryio.core.network.packet.S2CInserterTunings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -53,6 +54,12 @@ public class ModNetworks {
                 .decoder(S2CInserterTunings::new)
                 .encoder(S2CInserterTunings::toBytes)
                 .consumerMainThread(S2CInserterTunings::handle)
+                .add();
+
+        net.messageBuilder(S2CBeltSpeeds.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(S2CBeltSpeeds::new)
+                .encoder(S2CBeltSpeeds::toBytes)
+                .consumerMainThread(S2CBeltSpeeds::handle)
                 .add();
     }
 

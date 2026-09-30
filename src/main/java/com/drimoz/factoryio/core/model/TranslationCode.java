@@ -22,8 +22,13 @@ public class TranslationCode {
         return countryCode;
     }
 
+    /**
+     * Code en minuscules, {@code en_us} : c'est le nom du fichier de langue que Minecraft lit
+     * depuis 1.13. Écrit {@code en_US}, le fichier généré était ignoré et les noms des
+     * contenus ajoutés par un modpack restaient des clés brutes.
+     */
     public String getFullCode() {
-        return languageCode + "_" + countryCode;
+        return (languageCode + "_" + countryCode).toLowerCase(java.util.Locale.ROOT);
     }
 
     // Static method to validate a code

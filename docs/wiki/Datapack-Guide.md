@@ -1,15 +1,22 @@
 # Datapack Guide
 
-Two separate mechanisms, easy to confuse:
+Inserters and belts work the same way. Four jobs, four places:
 
-| Where | What it does |
-|---|---|
-| `config/factor_io/inserters/<name>.json` | **creates** an inserter — read once at startup |
-| `data/<namespace>/factor_io/inserters/<name>.json` | **retunes** an existing one — applied on `/reload` |
+| I want to… | Where | Applies |
+|---|---|---|
+| **create** an inserter or a belt | `config/factor_io/<inserters|belts>/<name>.json` | next launch |
+| **retune** an existing one | `data/<namespace>/factor_io/<inserters|belts>/<name>.json` | `/reload` |
+| **remove** a shipped one | `config/factor_io/factor_io-common.toml` | next launch |
+| **dress** it | a resource pack providing the texture | resource reload |
 
-A datapack tunes; it cannot create, delete or rename. The list of inserters is a config
-question, because which blocks exist has to be known before registration, long before any
-datapack is read.
+**Only the `config/` file creates anything.** A texture is appearance, a datapack is tuning:
+which blocks exist has to be known before registration, long before any datapack is read. A
+missing texture gives the purple-and-black checkerboard, never a missing block; a datapack naming
+something unknown logs a warning pointing to `config/`.
+
+> **Multiplayer:** `config/factor_io/` must be **identical on the server and every client**, since
+> it defines which blocks exist. Ship it with your modpack; a mismatch is refused at login with a
+> registry error.
 
 ## The name is the file name
 
@@ -139,3 +146,50 @@ Nothing the mod recognises is hardcoded:
 
 Adding another mod's wrench to `factor_io:wrench` makes it rotate inserters. No Java, and the
 two mods never need to know about each other.
+
+## Belts
+
+### Fields
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `ticksPerSlot` | int, 1 to 200 | 4 | ticks for an item to advance one slot; **the only field describing speed** |
+| `ramp` | bool | true | whether this belt gets a ramp variant |
+| `next` | resource location | — | the tier above, for in-place upgrade and JEI |
+| `texture` | resource location | `<namespace>:block/<name>` | texture of the belt surface |
+| `translations` | map | — | display names per language code |
+
+Rate is derived: `items/s = 2 lanes × 20 / ticksPerSlot`, so 4 gives 10 items/s, 2 gives 20, 1
+gives 40 — the fastest Minecraft allows, one slot per tick.
+
+### Creating a belt
+
+`config/factor_io/belts/turbo_belt.json`:
+
+```json
+{
+  "ticksPerSlot": 1,
+  "next": "factor_io:express_transport_belt",
+  "texture": "mypack:block/belts/turbo",
+  "translations": { "en_us": "Turbo Belt", "fr_fr": "Convoyeur turbo" }
+}
+```
+
+Its block, item, blockstate and models (the shipped belt shapes with your texture), loot table,
+tags and names are generated in memory. Provide `assets/mypack/textures/block/belts/turbo.png` in a
+resource pack, and a recipe in a datapack like any other item.
+
+A file named after a shipped belt (`transport_belt.json`) **replaces** it, keeping its shipped
+assets.
+
+### Retuning a belt
+
+`data/mypack/factor_io/belts/transport_belt.json`:
+
+```json
+{ "ticksPerSlot": 3 }
+```
+
+`/reload` applies it to belts already placed, and sends it to connected players, whose clients
+replay the belt simulation. Only the speed is taken from a datapack; appearance, ramp and next
+tier are fixed at launch.

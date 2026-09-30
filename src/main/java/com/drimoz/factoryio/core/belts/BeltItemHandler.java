@@ -111,7 +111,7 @@ public class BeltItemHandler implements IItemHandler {
             return this.farView;
         }
 
-        if (this.nearView == null) this.nearView = new LaneView(BeltTier.SLOTS_PER_LANE);
+        if (this.nearView == null) this.nearView = new LaneView(BeltLane.DEFAULT_CAPACITY);
         return this.nearView;
     }
 
@@ -119,7 +119,7 @@ public class BeltItemHandler implements IItemHandler {
 
     @Override
     public int getSlots() {
-        return BeltTransport.LANES * BeltTier.SLOTS_PER_LANE;
+        return BeltTransport.LANES * BeltLane.DEFAULT_CAPACITY;
     }
 
     @Override
@@ -190,7 +190,7 @@ public class BeltItemHandler implements IItemHandler {
     private int laneOf(int slot) {
         int first = farLane();
 
-        return slot < BeltTier.SLOTS_PER_LANE ? first : other(first);
+        return slot < BeltLane.DEFAULT_CAPACITY ? first : other(first);
     }
 
     /**
@@ -226,7 +226,7 @@ public class BeltItemHandler implements IItemHandler {
      * reste permis : Factorio interdit d'y poser, pas d'y prendre.
      */
     private boolean isNearLane(int slot) {
-        return slot >= BeltTier.SLOTS_PER_LANE && arrivesFromASide();
+        return slot >= BeltLane.DEFAULT_CAPACITY && arrivesFromASide();
     }
 
     /** La demande touche-t-elle la bande par l'un de ses côtés, donc près d'une voie ? */
@@ -246,7 +246,7 @@ public class BeltItemHandler implements IItemHandler {
      * de la classe.
      */
     private static int position(int slot) {
-        return BeltTier.SLOTS_PER_LANE - 1 - (slot % BeltTier.SLOTS_PER_LANE);
+        return BeltLane.DEFAULT_CAPACITY - 1 - (slot % BeltLane.DEFAULT_CAPACITY);
     }
 
     private BeltLane<ItemStack> lane(int slot) {
@@ -254,7 +254,7 @@ public class BeltItemHandler implements IItemHandler {
     }
 
     /**
-     * Une voie de la bande, vue comme un inventaire de {@value BeltTier#SLOTS_PER_LANE} cases.
+     * Une voie de la bande, vue comme un inventaire de {@value BeltLane#DEFAULT_CAPACITY} cases.
      *
      * <p>Les index sont ceux du handler complet, décalés : la voie lointaine en occupe la
      * première moitié, la proche la seconde. Le rangement « l'avant d'abord » est donc conservé.
@@ -269,7 +269,7 @@ public class BeltItemHandler implements IItemHandler {
 
         @Override
         public int getSlots() {
-            return BeltTier.SLOTS_PER_LANE;
+            return BeltLane.DEFAULT_CAPACITY;
         }
 
         @Override

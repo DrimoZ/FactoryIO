@@ -7,7 +7,7 @@
 | Express Transport Belt | 40 | 1 | 8 items |
 
 Each block holds **two lanes of four slots**, so eight items, as in Factorio. Speed is set in
-ticks per slot and is [configurable](Configuration).
+ticks per slot, per belt, [by datapack](Datapack-Guide#belts), and modpacks can [add their own belts](Datapack-Guide#creating-a-belt).
 
 | Belt | Recipe |
 |---|---|

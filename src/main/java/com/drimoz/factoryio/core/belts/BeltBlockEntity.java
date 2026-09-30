@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.belts;
 
+import com.drimoz.factoryio.core.model.BeltCodec;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -84,7 +85,7 @@ public class BeltBlockEntity extends BlockEntity {
         super(ModBlocks.BELT_ENTITY.get(), pos, state);
 
         this.transport = new BeltTransport<>(
-                BeltSettings.ticksPerSlot(tierOf(state)), BeltTier.SLOTS_PER_LANE);
+                ticksPerSlotOf(state), BeltLane.DEFAULT_CAPACITY);
 
         this.speedGeneration = BeltSettings.generation();
         this.lazyItems = newHandlers();
@@ -102,7 +103,7 @@ public class BeltBlockEntity extends BlockEntity {
         if (generation == this.speedGeneration) return;
 
         this.speedGeneration = generation;
-        this.transport.setTicksPerSlot(BeltSettings.ticksPerSlot(tierOf(getBlockState())));
+        this.transport.setTicksPerSlot(ticksPerSlotOf(getBlockState()));
     }
 
     @SuppressWarnings("unchecked")
@@ -127,11 +128,11 @@ public class BeltBlockEntity extends BlockEntity {
     /**
      * Le tier et le sens viennent du <b>bloc</b>, pas d'une propriété d'état.
      *
-     * <p>Trois tiers et trois sens auraient multiplié par neuf les variantes de blockstate,
+     * <p>Plusieurs vitesses et trois sens auraient multiplié par neuf les variantes de blockstate,
      * pour une information qui ne change jamais sur un bloc donné.
      */
-    private static BeltTier tierOf(BlockState state) {
-        return state.getBlock() instanceof BeltBlock belt ? belt.tier() : BeltTier.TRANSPORT;
+    private static int ticksPerSlotOf(BlockState state) {
+        return state.getBlock() instanceof BeltBlock belt ? belt.belt().getTicksPerSlot() : BeltCodec.DEFAULT_TICKS_PER_SLOT;
     }
 
     private BeltFlow flow() {

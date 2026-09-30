@@ -7,8 +7,14 @@ import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.init.ModNetworks;
 import com.drimoz.factoryio.core.init.ModRegistries;
+import com.drimoz.factoryio.core.network.packet.S2CBeltSpeeds;
 import com.drimoz.factoryio.core.network.packet.S2CInserterTunings;
+import net.minecraft.server.level.ServerPlayer;
+import java.util.List;
 import com.drimoz.factoryio.core.registry.InserterLoader;
+import com.drimoz.factoryio.core.configs.EarlyConfig;
+import com.drimoz.factoryio.core.registry.BeltRegistry;
+import com.drimoz.factoryio.core.registry.BeltReloadListener;
 import com.drimoz.factoryio.core.registry.InserterReloadListener;
 import com.drimoz.factoryio.core.registry.UpgradeReloadListener;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
@@ -44,7 +50,11 @@ public class FactoryIO
     {
         // Doit précéder ModRegistries.register() : la liste des inserters
         // détermine les blocs, items, block entities et menus à déclarer.
+        EarlyConfig.load();
         InserterLoader.setup();
+        BeltRegistry.load();
+        EarlyConfig.close();
+
         InserterRegistry.getInstance().registerAll();
 
         // Déclenche l'initialisation statique des deux classes, donc leurs register().
@@ -113,7 +123,6 @@ public class FactoryIO
     {
         // Ne PAS ré-appeler ModNetworks.init() ici : NetworkRegistry lève une
         // IllegalArgumentException si le canal factor_io:messages est déjà enregistré.
-        InserterRegistry.getInstance().onCommonSetup();
     }
 
     /**
@@ -125,6 +134,7 @@ public class FactoryIO
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
         event.addListener(new InserterReloadListener());
+        event.addListener(new BeltReloadListener());
         event.addListener(new UpgradeReloadListener());
     }
 
@@ -136,15 +146,17 @@ public class FactoryIO
      */
     @SubscribeEvent
     public void onDatapackSync(OnDatapackSyncEvent event) {
-        S2CInserterTunings message = S2CInserterTunings.current();
+        S2CInserterTunings inserters = S2CInserterTunings.current();
+        S2CBeltSpeeds belts = S2CBeltSpeeds.current();
 
-        if (event.getPlayer() != null) {
-            ModNetworks.sendToPlayer(message, event.getPlayer());
-            return;
+        List<ServerPlayer> players = event.getPlayer() != null
+                ? List.of(event.getPlayer())
+                : event.getPlayerList().getPlayers();
+
+        for (ServerPlayer player : players) {
+            ModNetworks.sendToPlayer(inserters, player);
+            ModNetworks.sendToPlayer(belts, player);
         }
-
-        event.getPlayerList().getPlayers()
-                .forEach(player -> ModNetworks.sendToPlayer(message, player));
     }
 
     // L'enregistrement des écrans et des renderers vit dans ClientEvents,

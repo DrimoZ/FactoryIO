@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.belts;
 
+import com.drimoz.factoryio.core.model.Belt;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -71,13 +72,13 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     /** Une bande est une demi-dalle : huit unités, comme les modèles du dépôt. */
     private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 8, 16);
 
-    private final BeltTier tier;
+    private final Belt belt;
     private final BeltFlow flow;
 
-    public BeltBlock(BeltTier tier, BeltFlow flow, Properties properties) {
+    public BeltBlock(Belt belt, BeltFlow flow, Properties properties) {
         super(properties);
 
-        this.tier = tier;
+        this.belt = belt;
         this.flow = flow;
 
         this.registerDefaultState(this.stateDefinition.any()
@@ -88,8 +89,9 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 
     // Interface (Traits)
 
-    public BeltTier tier() {
-        return this.tier;
+    /** La définition de ce convoyeur : vitesse, apparence, tier suivant. */
+    public Belt belt() {
+        return this.belt;
     }
 
     public BeltFlow flow() {
@@ -261,7 +263,7 @@ public class BeltBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
                 ? BeltTransport.LEFT
                 : BeltTransport.RIGHT;
 
-        int slot = slotAt(local.dot(BeltPath.vector(facing)), BeltTier.SLOTS_PER_LANE);
+        int slot = slotAt(local.dot(BeltPath.vector(facing)), BeltLane.DEFAULT_CAPACITY);
 
         ItemStack held = player.getItemInHand(hand);
 

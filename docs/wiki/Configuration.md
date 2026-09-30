@@ -22,25 +22,22 @@ Everything lives in `config/factor_io/factor_io-common.toml`, written by Forge o
 Setting one to `false` removes it entirely — no block, no item, no recipe. Useful for a pack that
 wants a shorter progression.
 
-## Belt speed
+## Which belts exist
 
 ```toml
-[factor_io.TRANSPORT_BELTS.transport_belt]
-    ticks_per_slot = 4
-[factor_io.TRANSPORT_BELTS.fast_transport_belt]
-    ticks_per_slot = 2
-[factor_io.TRANSPORT_BELTS.express_transport_belt]
-    ticks_per_slot = 1
+[factor_io.TRANSPORT_BELTS]
+    transport_belt = true
+    fast_transport_belt = true
+    express_transport_belt = true
 ```
 
-Ticks for an item to advance **one slot**. Four slots per lane, so a block takes four times this.
-Lower is faster, and `1` is the fastest Minecraft allows — a belt cannot move more than one slot
-per tick without giving up smooth interpolation.
+Same as inserters: `false` removes the belt entirely, effective on the next launch.
 
-Changes apply to belts **already placed**, not only to new ones.
+## Belt speed
 
-> These keys were once called `duration` and held values in a unit that no longer exists. If you
-> have an old config, the old keys are inert and can be deleted.
+Belt speed is **no longer in this file**: it is set by datapack, and applies on `/reload` to belts
+already placed. See [Datapack Guide](Datapack-Guide#belts). The old `ticks_per_slot` keys are inert
+and can be deleted.
 
 ## Far lane
 

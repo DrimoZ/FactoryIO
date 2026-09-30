@@ -28,7 +28,7 @@ import java.util.function.Supplier;
  * <p>Seules les références runtime (bloc, item, block entity, menu) restent mutables :
  * elles sont renseignées pendant l'enregistrement, une fois par type.
  */
-public class Inserter {
+public class Inserter implements Definition {
 
     // Private Properties
 

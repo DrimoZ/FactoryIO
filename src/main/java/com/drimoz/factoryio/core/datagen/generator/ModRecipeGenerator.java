@@ -1,7 +1,10 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.belts.BeltTier;
+import com.drimoz.factoryio.core.belts.BeltLane;
+import com.drimoz.factoryio.core.model.Belt;
+import com.drimoz.factoryio.core.model.BeltDefaults;
+import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.init.ModTags;
@@ -306,9 +309,9 @@ public class ModRecipeGenerator extends RecipeProvider {
      * 10 engrenages et du lubrifiant, que la boule de slime remplace faute de chimie.
      */
     private void belts(Consumer<FinishedRecipe> writer) {
-        Item transport = ModBlocks.belt(BeltTier.TRANSPORT).get().asItem();
-        Item fast = ModBlocks.belt(BeltTier.FAST).get().asItem();
-        Item express = ModBlocks.belt(BeltTier.EXPRESS).get().asItem();
+        Item transport = BeltRegistry.block(BeltDefaults.TRANSPORT).asItem();
+        Item fast = BeltRegistry.block(BeltDefaults.FAST).asItem();
+        Item express = BeltRegistry.block(BeltDefaults.EXPRESS).asItem();
 
         ShapedRecipeBuilder.shaped(RecipeCategory.TRANSPORTATION, transport, 4)
                 .pattern("PGP")

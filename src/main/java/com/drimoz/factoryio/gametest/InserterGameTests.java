@@ -4,7 +4,10 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
 import com.drimoz.factoryio.core.belts.BeltSettings;
-import com.drimoz.factoryio.core.belts.BeltTier;
+import com.drimoz.factoryio.core.belts.BeltLane;
+import com.drimoz.factoryio.core.model.Belt;
+import com.drimoz.factoryio.core.model.BeltDefaults;
+import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.belts.BeltTransport;
 import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
@@ -521,7 +524,7 @@ public class InserterGameTests {
     @GameTest(template = TEMPLATE, timeoutTicks = 600)
     public static void anInserterDropsOnTheFarLaneOfABelt(GameTestHelper helper) {
         helper.setBlock(SOURCE, Blocks.CHEST);
-        helper.setBlock(TARGET, ModBlocks.belt(BeltTier.TRANSPORT).get().defaultBlockState()
+        helper.setBlock(TARGET, BeltRegistry.block(BeltDefaults.TRANSPORT).defaultBlockState()
                 .setValue(BeltBlock.FACING, Direction.NORTH));
 
         helper.setBlock(INSERTER, definitionOf("burner_inserter").getBlock().get().defaultBlockState()
@@ -529,7 +532,7 @@ public class InserterGameTests {
 
         fuelInserter(helper);
 
-        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, BeltTier.SLOTS_PER_LANE));
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, BeltLane.DEFAULT_CAPACITY));
 
         helper.succeedWhen(() -> {
             BeltBlockEntity belt = (BeltBlockEntity) helper.getBlockEntity(TARGET);
@@ -555,7 +558,7 @@ public class InserterGameTests {
     @GameTest(template = TEMPLATE, timeoutTicks = 900)
     public static void strictParityLeavesTheNearLaneAlone(GameTestHelper helper) {
         helper.setBlock(SOURCE, Blocks.CHEST);
-        helper.setBlock(TARGET, ModBlocks.belt(BeltTier.TRANSPORT).get().defaultBlockState()
+        helper.setBlock(TARGET, BeltRegistry.block(BeltDefaults.TRANSPORT).defaultBlockState()
                 .setValue(BeltBlock.FACING, Direction.NORTH));
 
         helper.setBlock(INSERTER, definitionOf("burner_inserter").getBlock().get().defaultBlockState()
@@ -571,7 +574,7 @@ public class InserterGameTests {
         helper.startSequence()
                 // La voie lointaine se remplit d'abord, comme sans le réglage.
                 .thenWaitUntil(() -> helper.assertTrue(
-                        beltLane(helper, BeltTransport.RIGHT) == BeltTier.SLOTS_PER_LANE,
+                        beltLane(helper, BeltTransport.RIGHT) == BeltLane.DEFAULT_CAPACITY,
                         "La voie lointaine n'est pas saturée"))
                 // Puis rien ne doit passer sur la proche, quel que soit le temps laissé.
                 .thenIdle(120)
@@ -597,7 +600,7 @@ public class InserterGameTests {
     @GameTest(template = TEMPLATE, timeoutTicks = 900)
     public static void rotatingTheBeltSwapsTheFarLane(GameTestHelper helper) {
         helper.setBlock(SOURCE, Blocks.CHEST);
-        helper.setBlock(TARGET, ModBlocks.belt(BeltTier.TRANSPORT).get().defaultBlockState()
+        helper.setBlock(TARGET, BeltRegistry.block(BeltDefaults.TRANSPORT).defaultBlockState()
                 .setValue(BeltBlock.FACING, Direction.NORTH));
 
         helper.setBlock(INSERTER, definitionOf("burner_inserter").getBlock().get().defaultBlockState()
@@ -605,7 +608,7 @@ public class InserterGameTests {
 
         fuelInserter(helper);
 
-        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, BeltTier.SLOTS_PER_LANE));
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, BeltLane.DEFAULT_CAPACITY));
 
         helper.startSequence()
                 // Faire d'abord travailler l'inserter : c'est ce premier dépôt qui peuplerait
@@ -1113,7 +1116,7 @@ public class InserterGameTests {
     @GameTest(template = TEMPLATE, timeoutTicks = 600)
     public static void aChosenNearLaneIsUsedAlone(GameTestHelper helper) {
         helper.setBlock(SOURCE, Blocks.CHEST);
-        helper.setBlock(TARGET, ModBlocks.belt(BeltTier.TRANSPORT).get().defaultBlockState()
+        helper.setBlock(TARGET, BeltRegistry.block(BeltDefaults.TRANSPORT).defaultBlockState()
                 .setValue(BeltBlock.FACING, Direction.NORTH));
 
         helper.setBlock(INSERTER, definitionOf("burner_inserter").getBlock().get().defaultBlockState()
@@ -1122,7 +1125,7 @@ public class InserterGameTests {
         fuelInserter(helper);
         inserter(helper).setDropLane(InserterDropLane.NEAR);
 
-        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, BeltTier.SLOTS_PER_LANE));
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, BeltLane.DEFAULT_CAPACITY));
 
         helper.succeedWhen(() -> {
             helper.assertTrue(beltLane(helper, BeltTransport.LEFT) > 0, "Rien n'est arrivé sur la voie proche");
