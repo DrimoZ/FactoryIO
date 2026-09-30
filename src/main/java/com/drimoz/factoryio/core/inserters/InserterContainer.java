@@ -3,9 +3,9 @@ package com.drimoz.factoryio.core.inserters;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.container.BaseMenu;
 import com.drimoz.factoryio.core.generic.container.slots.GhostSlot;
-import com.drimoz.factoryio.core.generic.container.slots.InserterBufferSlot;
+import com.drimoz.factoryio.core.generic.container.slots.OutputSlot;
 import com.drimoz.factoryio.core.generic.container.slots.InserterFuelSlot;
-import com.drimoz.factoryio.core.generic.container.slots.InserterUpgradeSlot;
+import com.drimoz.factoryio.core.generic.container.slots.UpgradeSlot;
 import com.drimoz.factoryio.core.model.Inserter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
@@ -155,7 +155,7 @@ public class InserterContainer extends BaseMenu {
 
         // Index : InserterSlotLayout. Positions : InserterGuiLayout. Plus une coordonnée
         // écrite ici (cf. DT-03, FIO-071).
-        this.addSlot(new InserterBufferSlot(handler, InserterBlockEntity.BUFFER_SLOT, GUI.handSlotX(), GUI.handSlotY()));
+        this.addSlot(new OutputSlot(handler, InserterBlockEntity.BUFFER_SLOT, GUI.handSlotX(), GUI.handSlotY()));
 
         if (LAYOUT.hasFuelSlot()) {
             this.addSlot(new InserterFuelSlot(this.BLOCK_ENTITY, handler, LAYOUT.fuel(), GUI.fuelSlotX(), GUI.fuelSlotY()));
@@ -169,7 +169,7 @@ public class InserterContainer extends BaseMenu {
         // shift-clic balaie [premier slot machine, premier + LAYOUT.size()[ — et l'écran ne
         // fait que les montrer ou les cacher avec l'onglet.
         for (int i = 0; i < LAYOUT.upgradeCount(); i++) {
-            this.addSlot(new InserterUpgradeSlot(handler, LAYOUT.upgrade(i),
+            this.addSlot(new UpgradeSlot(handler, LAYOUT.upgrade(i),
                     InserterGuiLayout.augmentSlotX(i), InserterGuiLayout.augmentSlotY()));
         }
 

@@ -4,8 +4,8 @@ import com.drimoz.factoryio.client.gui.GuiSprites;
 import com.drimoz.factoryio.client.gui.IconButton;
 import com.drimoz.factoryio.client.gui.SideTab;
 import com.drimoz.factoryio.client.gui.SideTabs;
-import com.drimoz.factoryio.core.generic.container.slots.InserterBufferSlot;
-import com.drimoz.factoryio.core.generic.container.slots.InserterUpgradeSlot;
+import com.drimoz.factoryio.core.generic.container.slots.OutputSlot;
+import com.drimoz.factoryio.core.generic.container.slots.UpgradeSlot;
 import com.drimoz.factoryio.core.init.ModNetworks;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterContainer;
@@ -138,7 +138,7 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
     /** Montre ou cache les slots d'amélioration avec l'onglet qui les porte. */
     void showUpgradeSlots(boolean shown) {
         for (Slot slot : getMenu().slots) {
-            if (slot instanceof InserterUpgradeSlot upgrade) upgrade.setShown(shown);
+            if (slot instanceof UpgradeSlot upgrade) upgrade.setShown(shown);
         }
     }
 
@@ -193,7 +193,7 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
 
         for (Slot slot : getMenu().slots) {
             // La main a son grand socle, et les slots d'onglet sont dessinés par l'onglet.
-            if (slot instanceof InserterBufferSlot || slot instanceof InserterUpgradeSlot) continue;
+            if (slot instanceof OutputSlot || slot instanceof UpgradeSlot) continue;
 
             GuiSprites.slot(graphics, left + slot.x, top + slot.y);
         }

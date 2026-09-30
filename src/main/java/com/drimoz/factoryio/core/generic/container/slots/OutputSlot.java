@@ -11,9 +11,9 @@ import net.minecraftforge.items.SlotItemHandler;
  * simplement (voir {@code InserterBlockEntity#tryDrop}). Le dépôt, lui, reste interdit — un
  * item posé à la main serait livré sans avoir été saisi.
  */
-public class InserterBufferSlot extends SlotItemHandler {
+public class OutputSlot extends SlotItemHandler {
 
-    public InserterBufferSlot(IItemHandler itemHandler, int index, int x, int y) {
+    public OutputSlot(IItemHandler itemHandler, int index, int x, int y) {
         super(itemHandler, index, x, y);
     }
 

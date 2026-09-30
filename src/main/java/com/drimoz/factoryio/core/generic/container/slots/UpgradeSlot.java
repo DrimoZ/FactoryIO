@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
  * cumul passe par <b>plusieurs slots</b>, ce qui le rend visible dans l'interface plutôt
  * que caché dans une quantité.
  */
-public class InserterUpgradeSlot extends SlotItemHandler {
+public class UpgradeSlot extends SlotItemHandler {
 
     /**
      * Vrai tant que l'onglet qui le porte est ouvert.
@@ -31,7 +31,7 @@ public class InserterUpgradeSlot extends SlotItemHandler {
      */
     private boolean shown = true;
 
-    public InserterUpgradeSlot(IItemHandler handler, int index, int x, int y) {
+    public UpgradeSlot(IItemHandler handler, int index, int x, int y) {
         super(handler, index, x, y);
     }
 
