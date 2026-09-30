@@ -36,6 +36,7 @@ const RAMP = {
     speed:      { out: 0x10284a, dark: 0x1f4e8a, mid: 0x2f6cc0, light: 0x4a8ae0, hi: 0x7ab0ff },
     prod:       { out: 0x4a1a08, dark: 0x8a3010, mid: 0xc04a1a, light: 0xe06a30, hi: 0xff9a60 },
     eff:        { out: 0x103a10, dark: 0x1f6a1f, mid: 0x2f9a2f, light: 0x4ac04a, hi: 0x80e080 },
+    redstone:   { out: 0x3a0808, dark: 0x7a1010, mid: 0xb01818, light: 0xe02a2a, hi: 0xff6a5a },
     wood:       { out: 0x3a2812, dark: 0x6b4a24, mid: 0x8f6532, light: 0xa87c44, hi: 0xc49a5e },
 };
 
@@ -196,6 +197,8 @@ const GLYPHS = {
     prod: [[7, 3], [6, 4], [7, 4], [8, 4], [5, 5], [7, 5], [9, 5], [7, 6], [7, 7], [7, 8]],
     // Goutte : moins d'énergie par mouvement.
     eff: [[7, 3], [7, 4], [6, 5], [8, 5], [5, 6], [9, 6], [5, 7], [9, 7], [6, 8], [7, 8], [8, 8]],
+    // Éclair : réagir au signal.
+    redstone: [[9, 3], [8, 4], [7, 5], [6, 6], [7, 6], [8, 6], [9, 6], [8, 7], [7, 8], [6, 9]],
 };
 
 function module(family, tier) {
@@ -204,7 +207,7 @@ function module(family, tier) {
     shape(c, rect(3, 2, 12, 10, 1), RAMP[family]);
     for (const [x, y] of GLYPHS[family]) put(c, x, y, GLYPH);
 
-    const dots = { 1: [7], 2: [5, 9], 3: [4, 7, 10] }[tier];
+    const dots = { 0: [], 1: [7], 2: [5, 9], 3: [4, 7, 10] }[tier];
     for (const x of dots) {
         put(c, x, 12, DOT); put(c, x + 1, 12, DOT);
         put(c, x, 13, DOT_SHADOW); put(c, x + 1, 13, DOT_SHADOW);
@@ -242,6 +245,8 @@ const ITEMS = {
     efficiency_module: module("eff", 1),
     efficiency_module_2: module("eff", 2),
     efficiency_module_3: module("eff", 3),
+    // Palier 0 : un module qui débloque n'a pas de niveau à afficher.
+    advanced_redstone_module: module("redstone", 0),
     configurator: configurator(),
 };
 

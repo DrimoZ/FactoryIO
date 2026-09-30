@@ -146,6 +146,18 @@ public class ModRecipeGenerator extends RecipeProvider {
         moduleLine(writer, "efficiency",
                 ModItems.EFFICIENCY_MODULE_1.get(), ModItems.EFFICIENCY_MODULE_2.get(), ModItems.EFFICIENCY_MODULE_3.get(),
                 Ingredient.of(Tags.Items.GEMS_LAPIS), Ingredient.of(Tags.Items.GEMS_AMETHYST), Ingredient.of(Items.ECHO_SHARD));
+
+        // Sans équivalent dans Factorio, où la condition de circuit est gratuite : un module
+        // au prix d'électroniques seulement, autour d'un comparateur.
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, ModItems.ADVANCED_REDSTONE_MODULE.get())
+                .pattern("ERE")
+                .pattern("RCR")
+                .pattern("ERE")
+                .define('E', ModTags.Items.CIRCUITS_BASIC)
+                .define('R', Tags.Items.DUSTS_REDSTONE)
+                .define('C', Items.COMPARATOR)
+                .unlockedBy("has_basic_circuit", has(ModTags.Items.CIRCUITS_BASIC))
+                .save(writer, recipe("crafting/modules/advanced_redstone_module"));
     }
 
     /**

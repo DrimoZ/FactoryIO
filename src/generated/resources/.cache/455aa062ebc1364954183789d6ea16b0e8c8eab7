@@ -1,6 +1,7 @@
-// 1.20.1	2026-09-29T22:11:58.037972	Factor'I/O Item Tags
+// 1.20.1	2026-09-30T09:41:59.4704912	Factor'I/O Item Tags
 bb671767b65201fe930b4013d64d9a823a044eae data/factor_io/tags/items/configurators.json
 004ca1aec6ba4e6f018bc11ad2813170461edc01 data/factor_io/tags/items/inserters.json
+1a0da2dc2b1b062eee38b11281b542dc6c2f6238 data/factor_io/tags/items/upgrades/advanced_redstone.json
 f04ea331715336833bce9a0e46e4854911ee6753 data/factor_io/tags/items/upgrades/capacity/1.json
 14a882aae787450404c9a9a54bc6f3a1cfe8923d data/factor_io/tags/items/upgrades/capacity/2.json
 e201048ea6f36fae265375a528988fc038861b34 data/factor_io/tags/items/upgrades/capacity/3.json

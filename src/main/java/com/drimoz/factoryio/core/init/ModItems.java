@@ -57,6 +57,9 @@ public class ModItems {
     public static final RegistryObject<Item> SPEED_MODULE_2 = register("speed_module_2");
     public static final RegistryObject<Item> SPEED_MODULE_3 = register("speed_module_3");
 
+    // Débloque les modes et le seuil de la condition redstone (FIO-172).
+    public static final RegistryObject<Item> ADVANCED_REDSTONE_MODULE = register("advanced_redstone_module");
+
     public static final RegistryObject<Item> EXPLOSIVES = registerHidden("explosives");
     public static final RegistryObject<Item> FLYING_ROBOT_FRAME = registerHidden("flying_robot_frame");
     public static final RegistryObject<Item> LOW_DENSITY_STRUCTURE = registerHidden("low_density_structure");

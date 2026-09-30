@@ -1,10 +1,11 @@
-// 1.20.1	2026-09-29T22:55:25.7669234	Recipes
+// 1.20.1	2026-09-30T09:41:59.4639545	Recipes
 63409fdb2379f49d36cf9ca75a22f0e7360cd00e data/factor_io/advancements/recipes/misc/blasting/steel_plate.json
 3f739a74ea559b1bbb69d90dd21769786d5a1cef data/factor_io/advancements/recipes/misc/crafting/components/advanced_circuit.json
 a4123990e1393024c73a8ebccd7d472a00dc524c data/factor_io/advancements/recipes/misc/crafting/components/copper_cable.json
 11ee1c9f939be31e1ef2269fcc58c7a6046cfc60 data/factor_io/advancements/recipes/misc/crafting/components/electronic_circuit.json
 5aa9034d5819546d6b309b47b3a071b2cf9e52b9 data/factor_io/advancements/recipes/misc/crafting/components/iron_gear_wheel.json
 974a84e32235d9c0860dbc3e88201f53c01b8bac data/factor_io/advancements/recipes/misc/crafting/components/processing_unit.json
+884f830b1054e272a97b3572826d760855917ca5 data/factor_io/advancements/recipes/misc/crafting/modules/advanced_redstone_module.json
 8dad9cf06f4640baf0b7815533a2f6a7a696788e data/factor_io/advancements/recipes/misc/crafting/modules/efficiency_module.json
 e61898f4d5fc8213d5c804cd51802eb732d5d36a data/factor_io/advancements/recipes/misc/crafting/modules/efficiency_module_2.json
 e4ef1f1ab71903fd717c772aa1cca5c6d72a2c30 data/factor_io/advancements/recipes/misc/crafting/modules/efficiency_module_3.json
@@ -43,6 +44,7 @@ df148add8215cf9cb4e6264d4f0f9fd457de1e63 data/factor_io/recipes/crafting/compone
 ac7abb1e1c7faf5f5bfeae0661f6abd293365d5c data/factor_io/recipes/crafting/inserters/long_handed_inserter.json
 d578674f64fbe6f8b551d124e2629b71f74e4383 data/factor_io/recipes/crafting/inserters/stack_filter_inserter.json
 d8d9467c7e45c435df2ae4144de1cb74a6ac7032 data/factor_io/recipes/crafting/inserters/stack_inserter.json
+332dd42896a819fcb425279332a8eb1fba2fdb2f data/factor_io/recipes/crafting/modules/advanced_redstone_module.json
 084980554a7f005adb02087e7aa1fd0e4cf3b2b8 data/factor_io/recipes/crafting/modules/efficiency_module.json
 e06ad1e8f882af9582121d5525b66990e36534bb data/factor_io/recipes/crafting/modules/efficiency_module_2.json
 7fae3d55a158415a0a8d0d12c2713796190628b8 data/factor_io/recipes/crafting/modules/efficiency_module_3.json

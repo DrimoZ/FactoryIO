@@ -94,7 +94,7 @@ untouched. Naming an inserter that does not exist logs a warning telling you to 
   "efficiencyFactor": 0.75,
   "capacityBonus": 1,
   "maxLevel": 6,
-  "requiresModule": []
+  "requiresModule": ["advanced_redstone"]
 }
 ```
 
@@ -104,7 +104,7 @@ untouched. Naming an inserter that does not exist logs a warning telling you to 
 | `efficiencyFactor` | cost per swing multiplied by this, per Efficiency tier — in ]0, 1] | 0.75 |
 | `capacityBonus` | items added per swing, per Productivity tier | 1 |
 | `maxLevel` | ceiling on the summed tiers of one axis | 6 |
-| `requiresModule` | abilities that need a module to work, e.g. `["advanced_redstone"]` | none |
+| `requiresModule` | abilities that need a module to work; `[]` makes them free for everyone | `["advanced_redstone"]` |
 
 Every field is optional. `/reload` applies it to modules already installed, and removing the
 datapack restores the shipped values. A factor of `2` is **refused**, not clamped: it multiplies a

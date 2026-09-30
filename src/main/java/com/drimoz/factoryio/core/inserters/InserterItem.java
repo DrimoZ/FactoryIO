@@ -87,7 +87,7 @@ public class InserterItem extends ModBlockItem implements GeoItem {
         // dimensionne une usine. Le compte d'items par mouvement n'en disait rien, et
         // omettait qu'un item coûte deux mouvements (cf. BUG-038).
         tooltip.add(labelled("speed", ModUtils.tooltipComponent("value_items_per_second",
-                String.format("%.2f", inserter.getItemsPerSecond()))));
+                StringHelper.decimal(inserter.getItemsPerSecond()))));
 
         if (inserter.getPreferredItemCountPerAction() > 1) {
             tooltip.add(labelled("hand_size",

@@ -256,14 +256,20 @@ class InserterUpgradeEffectsTest {
     }
 
     @Test
-    @DisplayName("le barème livré ne verrouille rien tant que le module n'existe pas")
-    void shippedTuningLocksNothing() {
-        // Verrouiller une nature dont aucun item ne peut ouvrir la serrure retirerait la
-        // capacité à tout le monde, sans recours. Ce test tombera le jour où le module de
-        // redstone avancé se fabriquera — et c'est précisément ce jour-là qu'il faudra
-        // décider de poser le verrou.
+    @DisplayName("le barème livré réserve la redstone avancée à son module (FIO-172)")
+    void shippedTuningLocksAdvancedRedstone() {
+        assertAll(
+                () -> assertFalse(InserterUpgradeEffects.unlocked(
+                        InserterUpgradeType.ADVANCED_REDSTONE, 0, InserterUpgradeTuning.DEFAULT)),
+                () -> assertTrue(InserterUpgradeEffects.unlocked(
+                        InserterUpgradeType.ADVANCED_REDSTONE, 1, InserterUpgradeTuning.DEFAULT)));
+    }
+
+    @Test
+    @DisplayName("un datapack peut rendre la redstone avancée gratuite avec une liste vide")
+    void emptyListFreesEveryNature() {
         assertTrue(InserterUpgradeEffects.unlocked(
-                InserterUpgradeType.ADVANCED_REDSTONE, 0, InserterUpgradeTuning.DEFAULT));
+                InserterUpgradeType.ADVANCED_REDSTONE, 0, parse("{\"requiresModule\": []}")));
     }
 
     // Lecture par datapack

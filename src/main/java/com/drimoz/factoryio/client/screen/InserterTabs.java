@@ -15,6 +15,7 @@ import com.drimoz.factoryio.core.network.packet.C2SInserterSetting;
 import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
 import com.drimoz.factoryio.core.upgrade.InserterUpgradeTunings;
 import com.drimoz.factoryio.shared.ModUtils;
+import com.drimoz.factoryio.shared.StringHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -28,7 +29,6 @@ import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Les quatre onglets de l'écran d'inserter (FIO-071, FIO-162, FIO-167 à 170).
@@ -63,15 +63,8 @@ final class InserterTabs {
         graphics.drawString(font, text, x, y, colour, true);
     }
 
-    /**
-     * Deux décimales, au format de la langue du <b>jeu</b> : celle du système affichait
-     * « 7,50 » dans une interface anglaise.
-     */
     private static Component number(double value) {
-        String code = Minecraft.getInstance().getLanguageManager().getSelected();
-        Locale locale = Locale.forLanguageTag(code.replace('_', '-'));
-
-        return Component.literal(String.format(locale, "%.2f", value));
+        return Component.literal(StringHelper.decimal(value));
     }
 
     /** Onglet à boutons : rendu, clic et infobulle délégués à la liste. */
@@ -354,17 +347,20 @@ final class InserterTabs {
                 this.buttons.add(new IconButton(0, MODES + i * (BUTTON + 2), WIDTH, BUTTON)
                         .label(() -> ModUtils.tooltipComponent(mode.translationKey()))
                         .pressed(() -> condition().mode() == mode)
+                        .visible(this::unlocked)
                         .tooltip(() -> List.of(ModUtils.tooltipComponent("redstone_help").withStyle(ChatFormatting.GRAY)))
                         .onPress(() -> screen.send(C2SInserterSetting.Setting.REDSTONE_MODE, mode.ordinal())));
             }
 
             this.buttons.add(new IconButton(0, THRESHOLD_ROW, BUTTON, BUTTON)
                     .icon(() -> GuiSprites.Icon.MINUS)
+                    .visible(this::unlocked)
                     .active(() -> condition().usesThreshold() && condition().threshold() > 0)
                     .onPress(() -> screen.send(C2SInserterSetting.Setting.REDSTONE_THRESHOLD,
                             Screen.hasShiftDown() ? 0 : condition().threshold() - 1)));
             this.buttons.add(new IconButton(WIDTH - BUTTON, THRESHOLD_ROW, BUTTON, BUTTON)
                     .icon(() -> GuiSprites.Icon.PLUS)
+                    .visible(this::unlocked)
                     .active(() -> condition().usesThreshold() && condition().threshold() < 15)
                     .onPress(() -> screen.send(C2SInserterSetting.Setting.REDSTONE_THRESHOLD,
                             Screen.hasShiftDown() ? 15 : condition().threshold() + 1)));
@@ -401,7 +397,11 @@ final class InserterTabs {
         protected int contentHeight() {
             if (!this.redstone) return POWER_HEIGHT;
 
-            return SIGNAL_ROW + LINE + (unlocked() ? 0 : 2 * LINE + 4);
+            if (unlocked()) return SIGNAL_ROW + LINE;
+
+            // Sans module : le signal, puis l'indication, sur autant de lignes qu'elle en occupe.
+            int lines = Minecraft.getInstance().font.split(ModUtils.tooltipComponent("redstone_locked"), WIDTH - 16).size();
+            return REDSTONE_LABEL + LINE + 4 + lines * LINE;
         }
 
         @Override
@@ -410,21 +410,22 @@ final class InserterTabs {
 
             if (!this.redstone) return;
 
-            label(graphics, font, ModUtils.tooltipComponent("redstone_condition"), x, y + REDSTONE_LABEL);
-
-            graphics.drawCenteredString(font, ModUtils.tooltipComponent("redstone_threshold", condition().threshold()),
-                    x + WIDTH / 2, y + THRESHOLD_ROW + 3, condition().usesThreshold() ? VALUE : MUTED);
-
             var level = Minecraft.getInstance().level;
             int signal = level != null ? level.getBestNeighborSignal(be().getBlockPos()) : 0;
-            label(graphics, font, ModUtils.tooltipComponent("redstone_signal", signal), x, y + SIGNAL_ROW);
+            Component received = ModUtils.tooltipComponent("redstone_signal", signal);
 
-            if (unlocked()) return;
+            if (unlocked()) {
+                label(graphics, font, ModUtils.tooltipComponent("redstone_condition"), x, y + REDSTONE_LABEL);
+                graphics.drawCenteredString(font, ModUtils.tooltipComponent("redstone_threshold", condition().threshold()),
+                        x + WIDTH / 2, y + THRESHOLD_ROW + 3, condition().usesThreshold() ? VALUE : MUTED);
+                label(graphics, font, received, x, y + SIGNAL_ROW);
+                return;
+            }
 
-            // Sans module de redstone avancée, la condition réglée est mémorisée mais pas
-            // appliquée : l'inserter s'arrête au premier signal. Le dire évite un réglage qui
-            // semble ne rien faire.
-            int line = y + SIGNAL_ROW + LINE + 4;
+            // Sans module de redstone avancée, modes et seuil sont cachés : seule la réaction
+            // native s'applique. Le signal reste affiché, c'est lui qui explique un arrêt.
+            label(graphics, font, received, x, y + REDSTONE_LABEL);
+            int line = y + REDSTONE_LABEL + LINE + 4;
             GuiSprites.icon(graphics, GuiSprites.Icon.LOCK, x, line);
             for (FormattedCharSequence part : font.split(ModUtils.tooltipComponent("redstone_locked"), WIDTH - 16)) {
                 graphics.drawString(font, part, x + 16, line, LABEL, true);

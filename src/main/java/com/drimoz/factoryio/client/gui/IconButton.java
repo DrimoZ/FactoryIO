@@ -34,6 +34,7 @@ public final class IconButton {
     private Supplier<Component> label = () -> null;
     private BooleanSupplier pressed = () -> false;
     private BooleanSupplier active = () -> true;
+    private BooleanSupplier visible = () -> true;
     private Supplier<List<Component>> tooltip = List::of;
     private Runnable action = () -> {};
 
@@ -74,6 +75,12 @@ public final class IconButton {
         return this;
     }
 
+    /** Un bouton caché n'est ni dessiné, ni cliquable, ni survolable. */
+    public IconButton visible(BooleanSupplier visible) {
+        this.visible = visible;
+        return this;
+    }
+
     public IconButton tooltip(Supplier<List<Component>> tooltip) {
         this.tooltip = tooltip;
         return this;
@@ -87,6 +94,8 @@ public final class IconButton {
     // Interface
 
     public void render(GuiGraphics graphics, Font font, int originX, int originY, int mouseX, int mouseY) {
+        if (!this.visible.getAsBoolean()) return;
+
         int left = originX + this.x;
         int top = originY + this.y;
 
@@ -116,6 +125,8 @@ public final class IconButton {
     }
 
     public boolean isOver(int originX, int originY, double mouseX, double mouseY) {
+        if (!this.visible.getAsBoolean()) return false;
+
         int left = originX + this.x;
         int top = originY + this.y;
 

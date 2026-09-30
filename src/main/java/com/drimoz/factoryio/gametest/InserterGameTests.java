@@ -170,6 +170,7 @@ public class InserterGameTests {
     public static void redstoneConditionInvertsBehaviour(GameTestHelper helper) {
         setupChain(helper, "burner_inserter");
         fuelInserter(helper);
+        installAdvancedRedstone(helper);
 
         // Signal maximal : 15.
         helper.setBlock(INSERTER.above(), Blocks.REDSTONE_BLOCK);
@@ -189,6 +190,36 @@ public class InserterGameTests {
                 .thenWaitUntil(() -> helper.assertBlockProperty(
                         INSERTER, InserterBlock.ENABLED, true))
                 .thenSucceed();
+    }
+
+    /**
+     * Sans module de redstone avancé, seule la réaction native s'applique (FIO-172).
+     *
+     * <p>Le réglage « signal ≥ 5 » est mémorisé mais ignoré : le signal coupe l'inserter. Poser
+     * le module l'applique <b>aussitôt</b>, sans attendre un changement de voisinage.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void advancedRedstoneNeedsItsModule(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        helper.setBlock(INSERTER.above(), Blocks.REDSTONE_BLOCK);
+
+        helper.startSequence()
+                .thenExecute(() -> inserter(helper).setRedstoneCondition(
+                        new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 5)))
+                .thenIdle(5)
+                .thenExecute(() -> helper.assertBlockProperty(INSERTER, InserterBlock.ENABLED, false))
+                .thenExecute(() -> installAdvancedRedstone(helper))
+                .thenWaitUntil(() -> helper.assertBlockProperty(INSERTER, InserterBlock.ENABLED, true))
+                .thenSucceed();
+    }
+
+    private static void installAdvancedRedstone(GameTestHelper helper) {
+        ItemStack rest = inserter(helper).installUpgrade(InserterUpgradeType.ADVANCED_REDSTONE,
+                new ItemStack(ModItems.ADVANCED_REDSTONE_MODULE.get()));
+
+        helper.assertTrue(rest != null && rest.isEmpty(), "Le module de redstone avancé a été refusé");
     }
 
     /**
@@ -1029,6 +1060,7 @@ public class InserterGameTests {
     public static void switchingOffWinsOverRedstone(GameTestHelper helper) {
         setupChain(helper, "burner_inserter");
         fuelInserter(helper);
+        installAdvancedRedstone(helper);
 
         helper.setBlock(INSERTER.above(), Blocks.REDSTONE_BLOCK);
         inserter(helper).setRedstoneCondition(

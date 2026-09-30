@@ -640,6 +640,9 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
         wakeUp();
         syncToClients();
+        // Le module de redstone avancé change la condition qui s'applique : sans cela, la
+        // pose ou le retrait n'aurait d'effet qu'au prochain changement de voisinage.
+        reevaluateEnabled();
     }
 
     /** Force le recalcul des réglages effectifs au prochain accès. */
