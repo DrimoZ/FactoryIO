@@ -7,6 +7,7 @@ import com.drimoz.factoryio.core.generic.container.slots.OutputSlot;
 import com.drimoz.factoryio.core.generic.container.slots.InserterFuelSlot;
 import com.drimoz.factoryio.core.generic.container.slots.UpgradeSlot;
 import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -170,7 +171,8 @@ public class InserterContainer extends BaseMenu {
         // fait que les montrer ou les cacher avec l'onglet.
         for (int i = 0; i < LAYOUT.upgradeCount(); i++) {
             this.addSlot(new UpgradeSlot(handler, LAYOUT.upgrade(i),
-                    InserterGuiLayout.augmentSlotX(i), InserterGuiLayout.augmentSlotY()));
+                    InserterGuiLayout.augmentSlotX(i), InserterGuiLayout.augmentSlotY(),
+                    stack -> InserterUpgradeType.of(stack) != null));
         }
 
         this.addDataSlots(this.powerData);

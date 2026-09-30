@@ -1,18 +1,20 @@
 package com.drimoz.factoryio.core.generic.container.slots;
 
-import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Predicate;
+
 /**
  * Slot recevant un module d'amélioration.
  *
- * <p>Ce qu'un module est n'est pas décidé ici mais par les <b>tags</b>
- * ({@link InserterUpgradeType}) : n'importe quel item, y compris d'un autre mod, devient
- * posable en rejoignant le tag du palier voulu. Le slot ne connaît donc aucun item par son
- * nom, et il n'y a rien à modifier pour en accepter un nouveau.
+ * <p>Ce qu'un module est n'est pas décidé ici mais par la machine, qui passe son prédicat —
+ * pour l'inserter, les <b>tags</b> de {@code InserterUpgradeType}. N'importe quel item, y
+ * compris d'un autre mod, devient posable en rejoignant le tag du palier voulu. Le slot ne
+ * connaît donc aucun item par son nom, et il n'y a rien à modifier pour en accepter un
+ * nouveau.
  *
  * <p>Un seul exemplaire par slot. Empiler dans un slot ferait compter le même module
  * plusieurs fois, ou obligerait à décider laquelle des deux lectures est la bonne ; le
@@ -31,8 +33,12 @@ public class UpgradeSlot extends SlotItemHandler {
      */
     private boolean shown = true;
 
-    public UpgradeSlot(IItemHandler handler, int index, int x, int y) {
+    private final Predicate<ItemStack> accepts;
+
+    public UpgradeSlot(IItemHandler handler, int index, int x, int y, Predicate<ItemStack> accepts) {
         super(handler, index, x, y);
+
+        this.accepts = accepts;
     }
 
     public void setShown(boolean shown) {
@@ -46,7 +52,7 @@ public class UpgradeSlot extends SlotItemHandler {
 
     @Override
     public boolean mayPlace(@NotNull ItemStack stack) {
-        return InserterUpgradeType.of(stack) != null;
+        return this.accepts.test(stack);
     }
 
     @Override
