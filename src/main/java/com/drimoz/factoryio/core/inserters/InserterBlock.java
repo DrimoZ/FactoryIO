@@ -80,6 +80,13 @@ public class InserterBlock extends WaterloggedEntityBlock {
         return blockEntity.getRedstoneCondition().allows(pLevel.getBestNeighborSignal(pPos));
     }
 
+    @Override
+    protected void onNeighbourChanged(Level pLevel, BlockPos pPos) {
+        if (pLevel.getBlockEntity(pPos) instanceof InserterBlockEntity blockEntity) {
+            blockEntity.onNeighbourChanged();
+        }
+    }
+
     // Interface (Shape)
 
 
