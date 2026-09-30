@@ -14,6 +14,7 @@ import com.drimoz.factoryio.core.configs.CommonConfig;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
@@ -26,6 +27,8 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.items.IItemHandler;
+
+import io.netty.buffer.Unpooled;
 
 import java.util.List;
 
@@ -250,6 +253,42 @@ public class BeltGameTests {
 
         helper.assertTrue(after.transport().lane(BeltTransport.RIGHT).isStaged(),
                 "Le tampon n'a pas survécu à la sérialisation");
+
+        helper.succeed();
+    }
+
+    // Tests (Réseau)
+
+    /**
+     * La réconciliation tient dans le budget réseau de FIO-090c.
+     *
+     * <p>5 Ko/s par joueur pour 500 items, soit une soixantaine de bandes pleines qui se
+     * réconcilient chacune une fois par période : chacune dispose de
+     * {@code 5 000 × période / 20 / 62,5} octets. Un tag qui grossit — un champ ajouté à la
+     * sauvegarde, une période raccourcie — casse ce test avant de saturer une connexion.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void aFullBeltReconcilesWithinTheNetworkBudget(GameTestHelper helper) {
+        helper.setBlock(FIRST, belted(Direction.EAST));
+
+        BeltBlockEntity belt = belt(helper, FIRST);
+
+        for (int lane = 0; lane < BeltTransport.LANES; lane++) {
+            BeltLane<ItemStack> track = belt.transport().lane(lane);
+
+            for (int slot = 0; slot < track.capacity(); slot++) {
+                track.offerAt(slot, new ItemStack(Items.IRON_INGOT));
+            }
+        }
+
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        buffer.writeNbt(belt.getUpdateTag());
+
+        int size = buffer.readableBytes();
+        int budget = 5_000 * BeltBlockEntity.RECONCILE_PERIOD / 20 * 8 / 500;
+
+        helper.assertTrue(size <= budget,
+                "Une bande pleine pèse " + size + " octets, pour " + budget + " disponibles");
 
         helper.succeed();
     }

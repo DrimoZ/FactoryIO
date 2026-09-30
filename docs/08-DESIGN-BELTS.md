@@ -201,8 +201,7 @@ Complexité : 8 opérations par bloc, uniquement tous les `ticksPerSlot` ticks.
 >
 > **Ce qui reste.** Qu'un transfert entre deux blocs passe par l'entrée ou par le
 > tampon dépend encore de l'ordre de tick, mais le résultat, lui, n'en dépend plus.
-> Subsiste la dérive client/serveur de §6, pour laquelle la réconciliation reste à
-> écrire.
+> La dérive client/serveur qui subsiste a d'autres causes, et §6 la réconcilie.
 
 **Mise en sommeil** : un convoyeur entièrement vide et dont l'amont est vide ne
 tick pas du tout. Réveil sur insertion ou `neighborChanged`. Sur une usine
@@ -402,16 +401,34 @@ Architecture recommandée :
 4. tout paquet est **par chunk**, pas par bloc, et envoyé uniquement aux joueurs
    qui suivent ce chunk (`PacketDistributor.TRACKING_CHUNK`).
 
-> **État : 1 et 2 écrits, 3 et 4 non.** Le ticker est enregistré des deux côtés,
-> et `getUpdateTag` / `getUpdatePacket` poussent l'état complet sur événement
-> — dépôt à la main, insertion ou retrait par capability. Aucun paquet n'est
-> émis sur un pas de convoyeur.
+> **État : 1, 2 et 3 écrits (FIO-096) ; 4 par bloc et non par chunk.** Le ticker est
+> enregistré des deux côtés, et `getUpdateTag` / `getUpdatePacket` poussent l'état
+> complet sur événement — dépôt à la main, insertion ou retrait par capability. Aucun
+> paquet n'est émis sur un pas de convoyeur.
 >
-> **La dérive est réelle et non corrigée.** L'ordre de tick des block entities
-> n'est pas le même des deux côtés, et un transfert entre deux blocs peut donc
-> réussir sur le serveur et être remis d'un pas sur le client (§3). Rien ne le
-> rattrape aujourd'hui : une ligne longtemps observée finira décalée d'un cran.
-> C'est le jalon 3.6, et le point 3 en est le cœur.
+> **D'où vient la dérive.** Plus de l'ordre de tick : depuis BUG-050, le résultat n'en
+> dépend plus (§3). Restent deux causes que le client ne peut pas corriger seul :
+>
+> - **son horloge saute.** Il avance son temps de monde à 20 tps et le serveur le recale
+>   chaque seconde. Un serveur qui rame le fait reculer et des pas sont rejoués ; un
+>   client qui rame le fait avancer et des pas manquent ;
+> - **il ne voit pas tout** : une bande qui déverse dans un chunk qu'il n'a pas chargé
+>   bloque chez lui et passe sur le serveur.
+>
+> **La réconciliation.** `BeltBlockEntity.reconcile` renvoie l'état d'un convoyeur toutes
+> les 10 s (200 ticks), **seulement s'il a bougé** depuis son dernier envoi — une bande
+> vide ou arrêtée a le même contenu des deux côtés et n'envoie rien. Chaque bloc a sa
+> phase, tirée de sa position : un filet continu plutôt qu'une rafale. Le paquet est
+> celui de `sendBlockUpdated`, donc reçu des seuls joueurs qui suivent le chunk ; `load`
+> conserve les glissements, donc un état resté juste ne fait rien bouger à l'écran.
+>
+> **Coût.** Une bande pleine pèse 524 octets de tag (mesuré). 500 items en mouvement —
+> une soixantaine de bandes — coûtent 3,3 Ko/s par joueur avant compression, sous les
+> 5 Ko/s de FIO-090c. `aFullBeltReconcilesWithinTheNetworkBudget` casse si le tag grossit.
+>
+> **Limite.** La dérive est bornée, pas supprimée : jusqu'à 10 s d'écart, puis une
+> correction d'un cran visible. Sur un serveur à 20 tps et une zone entièrement chargée,
+> il n'y a rien à corriger.
 
 Ce point est l'exact opposé de ce que fait le code actuel des inserters
 ([BUG-004](03-BUGS.md)) : il faut poser la bonne pratique dès le départ ici.
