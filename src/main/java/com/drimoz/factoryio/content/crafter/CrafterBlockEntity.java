@@ -3,6 +3,7 @@ package com.drimoz.factoryio.content.crafter;
 import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.core.generic.container.energy.EnergyContainer;
 import com.drimoz.factoryio.core.init.ModBlocks;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -60,7 +61,12 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
 
     public static final int INPUT_SLOTS = 9;
     public static final int OUTPUT_SLOTS = 4;
+    /** Entrées et sorties : tout ce que voient inserters et convoyeurs. */
     public static final int SLOTS = INPUT_SLOTS + OUTPUT_SLOTS;
+    /** Slots de module, après les autres et invisibles de l'extérieur (FIO-127). Le palier dit combien servent. */
+    public static final int MODULE_SLOTS = 4;
+    public static final int MODULE_FIRST = SLOTS;
+    public static final int TOTAL_SLOTS = SLOTS + MODULE_SLOTS;
 
     /** Ticks sans travail avant d'éteindre {@link CrafterBlock#WORKING} : pas de clignotement entre deux crafts. */
     private static final int WORKING_GRACE_TICKS = 20;
@@ -68,9 +74,22 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     /** Ce que la machine fait, pour l'écran. L'ordre est celui du réseau ({@code ContainerData}). */
     public enum Status { NO_RECIPE, RECIPE_MISSING, TIER_TOO_LOW, SWITCHED_OFF, DISABLED, NO_ENERGY, NO_INPUTS, OUTPUT_FULL, WORKING }
 
-    private final ItemStackHandler items = new ItemStackHandler(SLOTS) {
+    private final ItemStackHandler items = new ItemStackHandler(TOTAL_SLOTS) {
+        /**
+         * La taille sauvegardée ne fait pas foi : {@code deserializeNBT} redimensionnerait
+         * l'inventaire à celle d'une sauvegarde antérieure (13 slots avant les modules), et le
+         * premier accès à un slot de module planterait le serveur.
+         */
+        @Override
+        public void deserializeNBT(CompoundTag nbt) {
+            CompoundTag current = nbt.copy();
+            current.putInt("Size", TOTAL_SLOTS);
+            super.deserializeNBT(current);
+        }
+
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            if (slot >= MODULE_FIRST) return slot - MODULE_FIRST < getCrafter().getModuleSlots() && moduleKind(stack) != null;
             if (slot >= INPUT_SLOTS) return false;
 
             CrafterRecipe recipe = CrafterBlockEntity.this.recipe;
@@ -79,6 +98,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
 
         @Override
         public int getSlotLimit(int slot) {
+            if (slot >= MODULE_FIRST) return 1;
             CrafterRecipe recipe = CrafterBlockEntity.this.recipe;
             if (slot >= INPUT_SLOTS || recipe == null || slot >= recipe.inputs().size()) return 64;
 
@@ -88,7 +108,8 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
-            if (slot >= INPUT_SLOTS) CrafterBlockEntity.this.outputsChanged = true;
+            if (slot >= MODULE_FIRST) CrafterBlockEntity.this.modules = readModules();
+            else if (slot >= INPUT_SLOTS) CrafterBlockEntity.this.outputsChanged = true;
         }
     };
 
@@ -148,6 +169,11 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     /** Crafts achevés depuis le chargement : l'écran en tire un rythme mesuré, par différence. */
     private int craftsCompleted;
 
+    /** Effet des modules posés, relu quand un slot de module change — jamais au tick. */
+    private CrafterModules modules = CrafterModules.NONE;
+    /** Avancement de la productivité : à 1, un jeu de résultats en plus (FIO-127). */
+    private float productivityProgress;
+
     // Réserve de simulation des sorties, allouée une fois.
     private final ItemStack[] simulatedItems = new ItemStack[OUTPUT_SLOTS];
     private final int[] simulatedCounts = new int[OUTPUT_SLOTS];
@@ -197,10 +223,11 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         if (!hasInputs(recipe)) return Status.NO_INPUTS;
 
         if (this.progress < recipe.ticks()) {
-            if (this.energy.getCurrentEnergy() < tuning.energyPerTick()) return Status.NO_ENERGY;
+            int energyPerTick = this.modules.energyPerTick(tuning.energyPerTick());
+            if (this.energy.getCurrentEnergy() < energyPerTick) return Status.NO_ENERGY;
 
-            this.energy.consumeInternal(tuning.energyPerTick());
-            this.progress += tuning.craftingSpeed();
+            this.energy.consumeInternal(energyPerTick);
+            this.progress += this.modules.speed(tuning.craftingSpeed());
             if (this.progress < recipe.ticks()) return Status.WORKING;
         }
 
@@ -246,8 +273,13 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
      * non : un tirage heureux ne doit jamais se perdre.
      */
     private boolean finish(Level level, CrafterRecipe recipe) {
-        List<ItemStack> produced = new ArrayList<>(recipe.outputs().size() + recipe.inputs().size());
+        // La productivité qui déborde ce craft rend un jeu de résultats de plus : sa place aussi
+        // est réservée d'avance.
+        boolean bonus = this.productivityProgress + this.modules.productivity() >= 1.0F;
+
+        List<ItemStack> produced = new ArrayList<>(2 * recipe.outputs().size() + recipe.inputs().size());
         for (CrafterRecipe.Output output : recipe.outputs()) produced.add(output.stack());
+        if (bonus) for (CrafterRecipe.Output output : recipe.outputs()) produced.add(output.stack());
 
         List<ItemStack> remainders = remainders(recipe);
         produced.addAll(remainders);
@@ -256,10 +288,16 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         for (int i = 0; i < recipe.inputs().size(); i++) {
             this.items.extractItem(i, recipe.inputs().get(i).count(), false);
         }
-        for (CrafterRecipe.Output output : recipe.outputs()) {
-            if (output.isCertain() || level.random.nextFloat() < output.chance()) addOutput(output.stack().copy());
+        int sets = bonus ? 2 : 1;
+        for (int set = 0; set < sets; set++) {
+            for (CrafterRecipe.Output output : recipe.outputs()) {
+                if (output.isCertain() || level.random.nextFloat() < output.chance()) addOutput(output.stack().copy());
+            }
         }
         remainders.forEach(this::addOutput);
+
+        this.productivityProgress += this.modules.productivity();
+        if (bonus) this.productivityProgress -= 1.0F;
         this.craftsCompleted++;
         return true;
     }
@@ -387,7 +425,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     public void dropContents() {
         if (this.level == null) return;
 
-        for (int slot = 0; slot < SLOTS; slot++) {
+        for (int slot = 0; slot < TOTAL_SLOTS; slot++) {
             Containers.dropItemStack(this.level, this.worldPosition.getX(), this.worldPosition.getY(),
                     this.worldPosition.getZ(), this.items.getStackInSlot(slot));
         }
@@ -448,6 +486,58 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         return this.craftsCompleted;
     }
 
+    public CrafterModules getModules() {
+        return this.modules;
+    }
+
+    public float getProductivityProgress() {
+        return this.productivityProgress;
+    }
+
+    /** Vitesse de fabrication avec les modules. */
+    public float getEffectiveSpeed() {
+        return this.modules.speed(getCrafter().getTuning().craftingSpeed());
+    }
+
+    /** FE par tick de travail avec les modules. */
+    public int getEffectiveEnergyPerTick() {
+        return this.modules.energyPerTick(getCrafter().getTuning().energyPerTick());
+    }
+
+    /**
+     * La nature d'un module, par les tags des inserters ; {@code null} si ce n'en est pas un
+     * qui sert au crafter. Le tag {@code capacity} porte les modules de productivité.
+     */
+    @Nullable
+    public static CrafterModules.Kind moduleKind(ItemStack stack) {
+        if (InserterUpgradeType.SPEED.levelOf(stack) > 0) return CrafterModules.Kind.SPEED;
+        if (InserterUpgradeType.CAPACITY.levelOf(stack) > 0) return CrafterModules.Kind.PRODUCTIVITY;
+        if (InserterUpgradeType.EFFICIENCY.levelOf(stack) > 0) return CrafterModules.Kind.EFFICIENCY;
+        return null;
+    }
+
+    private static int moduleTier(CrafterModules.Kind kind, ItemStack stack) {
+        return switch (kind) {
+            case SPEED -> InserterUpgradeType.SPEED.levelOf(stack);
+            case PRODUCTIVITY -> InserterUpgradeType.CAPACITY.levelOf(stack);
+            case EFFICIENCY -> InserterUpgradeType.EFFICIENCY.levelOf(stack);
+        };
+    }
+
+    /** Les modules des slots actifs : un slot au-delà du palier ne compte pas. */
+    private CrafterModules readModules() {
+        int[][] counts = new int[CrafterModules.Kind.values().length][CrafterModules.MAX_TIER];
+        int active = Math.min(MODULE_SLOTS, getCrafter().getModuleSlots());
+        for (int i = 0; i < active; i++) {
+            ItemStack stack = this.items.getStackInSlot(MODULE_FIRST + i);
+            CrafterModules.Kind kind = moduleKind(stack);
+            if (kind == null) continue;
+            int tier = Math.min(CrafterModules.MAX_TIER, moduleTier(kind, stack));
+            if (tier > 0) counts[kind.ordinal()][tier - 1]++;
+        }
+        return CrafterModules.of(counts);
+    }
+
     public Status getStatus() {
         return this.status;
     }
@@ -498,6 +588,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         tag.putFloat("progress", this.progress);
         if (this.recipeId != null) tag.putString("recipe", this.recipeId.toString());
         tag.putBoolean("switchedOn", this.switchedOn);
+        tag.putFloat("productivity", this.productivityProgress);
         tag.putByte("redstoneMode", (byte) this.redstoneCondition.mode().ordinal());
         tag.putByte("redstoneThreshold", (byte) this.redstoneCondition.threshold());
     }
@@ -513,6 +604,8 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
 
         // contains et non getBoolean : une machine posée avant FIO-183 reste allumée.
         this.switchedOn = !tag.contains("switchedOn") || tag.getBoolean("switchedOn");
+        this.productivityProgress = tag.getFloat("productivity");
+        this.modules = readModules();
         this.redstoneCondition = tag.contains("redstoneMode")
                 ? new RedstoneCondition(RedstoneCondition.Mode.byOrdinal(tag.getByte("redstoneMode")), tag.getByte("redstoneThreshold"))
                 : RedstoneCondition.DEFAULT;

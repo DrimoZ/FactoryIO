@@ -178,7 +178,7 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | 🟡 FIO-124 | P1 | M | Générateur d'énergie minimal (vapeur) pour être jouable en standalone. **Partiellement adressé** : une source d'énergie *créative* existe (`creative_energy_source`, sans recette) et lève la dépendance à un mod tiers pour tester et jouer en créatif. Elle ne tranche pas la question du générateur de survie, qui reste ouverte. |
 | ~~FIO-125~~ | ✅ | M | Recettes des 7 inserters. Chaîne de progression : chaque modèle se construit à partir du précédent, le comparateur porte le filtrage et la redstone concentrée paie la vitesse. Vanilla et tags `forge:` uniquement — les plaques et circuits du mod restent à FIO-126, qui décidera de la chaîne complète. |
 | ~~FIO-126~~ | ✅ | M | **Recettes du crafter** — **faites** ([`12`](12-DESIGN-CRAFTER.md) §6) : intermédiaires aux ratios Factorio ; circuit avancé et processeur exclusifs au crafter ; crafters Mk1 → Mk3 en chaîne. Le processeur demande un crafter Mk2 (l'acide de Factorio exige un assembleur 2) ; poudre à canon et varech séché tiennent lieu d'acide et de plastique. Test : `advancedCircuitsOnlyComeFromTheCrafter`. |
-| FIO-127 | P2 | L | Effet réel des 9 modules (vitesse / conso / productivité) |
+| ~~FIO-127~~ | ✅ | L | **Modules du crafter** — **faits** ([`12`](12-DESIGN-CRAFTER.md) §4.4 bis) : slots par palier (0/2/4), effets de Factorio additionnés (`CrafterModules`), productivité en barre. Les modules des inserters restent ceux de FIO-165. |
 | FIO-128 | P2 | L | Arbre de recherche + usage des 7 science packs (ou suppression) |
 | FIO-129 | P2 | S | Supprimer ou tager `stone`/`stone_brick` qui dupliquent le vanilla |
 | FIO-130 | P2 | S | Résoudre les textures orphelines ([BUG-033](03-BUGS.md)) |

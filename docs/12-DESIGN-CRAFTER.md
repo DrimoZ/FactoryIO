@@ -227,6 +227,26 @@ les paliers changent surtout vitesse et consommation. Le temps réel d'un craft 
 - **Restes** : ce que laisse un ingrédient consommé (le seau d'un seau de lait) va dans les
   sorties. Les quatre sorties sont une réserve commune, pas un slot par résultat.
 
+### 4.4 bis Modules (FIO-127)
+
+- **Slots** : `moduleSlots` dans la définition, structurel comme le palier — Mk1 0, Mk2 2,
+  Mk3 4, comme les assembleurs de Factorio. Ils vivent après les 13 slots de travail et ne
+  sont **pas** visibles des inserters ni des convoyeurs ; l'écran les montre dans l'onglet
+  « Modules », premier à droite, comme les améliorations d'un inserter.
+- **Mêmes items, mêmes tags** que les inserters (`factor_io:upgrades/…`) : `speed`,
+  `efficiency`, et `capacity` — qui porte les modules de productivité et vaut
+  productivité sur un crafter.
+- **Effets de Factorio**, additionnés puis appliqués une fois (`CrafterModules`, testé en
+  JUnit) : vitesse +20/30/50 % et consommation +50/60/70 % ; productivité +4/6/10 %, vitesse
+  −5/10/15 %, consommation +40/60/80 % ; efficacité −30/40/50 % de consommation. Vitesse et
+  consommation ne descendent pas sous 20 %.
+- **Productivité** : une barre qui avance à chaque craft ; à 100 %, le craft rend un jeu de
+  résultats de plus. Sa place est réservée d'avance, comme celle des résultats aléatoires.
+- **Condition redstone** : toujours réglable sans module (le module de redstone avancée
+  n'entre pas dans un crafter) — changer cela retirerait un réglage aux machines posées.
+- Une sauvegarde d'avant les modules (13 slots) se recharge à 17 : la taille enregistrée ne
+  fait pas foi, sans quoi le premier accès à un slot de module plantait le serveur.
+
 ### 4.5 État visuel et synchronisation
 
 - `WORKING` dans le `BlockState` du maître, **avec hystérésis** (20 ticks) : il ne retombe
@@ -328,7 +348,6 @@ directement dans la cible ; l'existant n'est pas déplacé en passant.
 | Sujet | Décision déjà prise | Ticket |
 |---|---|---|
 | Fluides | ≤ 2 en entrée, ≤ 2 en sortie ; réservoirs dans la définition ; capability sur les 18 blocs ; seau cliquable sur la jauge du GUI | FIO-179 |
-| Modules | extraire le comptage d'`InserterUpgrades` ; vitesse et efficacité sur le temps et le FE/tick | FIO-127 |
 | Configurateur | `ConfiguratorItem` générique : `CompoundTag` brut + type de machine | FIO-180 |
 | Jade / The One Probe | — | FIO-151 |
 | Sons | — | FIO-153 |

@@ -132,6 +132,8 @@ public final class GuiPreview {
         step(40, mc -> use(mc, ORIGIN.offset(3, 0, 15)));
         step(5, mc -> hover(mc, 0.0, 0.0));
         step(30, mc -> shot("crafter_mk3"));
+        step(5, mc -> clickGui(mc, 176 + 11, 4 + 11));
+        step(15, mc -> shot("crafter_modules"));
         step(5, mc -> mc.setScreen(null));
 
         step(10, Minecraft::stop);
