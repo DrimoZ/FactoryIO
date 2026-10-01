@@ -101,7 +101,8 @@ public class CrafterMenu extends BaseMenu {
     private static final int PRODUCTIVITY = 16;
     private static final int PRODUCTIVITY_PROGRESS = 17;
     /** Par réservoir : fluide (indice du registre, +1 ; 0 = vide), quantité, capacité. */
-    private static final int TANKS = 18;
+    private static final int CONDITION_UNLOCKED = 18;
+    private static final int TANKS = 19;
     private static final int DATA_COUNT = TANKS + 3 * CrafterTanks.TANKS;
 
     /** Slots de module : dans l'onglet « Modules », premier à droite, comme les améliorations d'un inserter. */
@@ -159,7 +160,7 @@ public class CrafterMenu extends BaseMenu {
         int modules = blockEntity != null ? Math.min(CrafterBlockEntity.MODULE_SLOTS, blockEntity.getCrafter().getModuleSlots()) : 0;
         for (int i = 0; i < modules; i++) {
             addSlot(new UpgradeSlot(items, CrafterBlockEntity.MODULE_FIRST + i, moduleSlotX(i), moduleSlotY(),
-                    stack -> CrafterBlockEntity.moduleKind(stack) != null));
+                    CrafterBlockEntity::isModule));
         }
 
         addDataSlots(data);
@@ -187,8 +188,9 @@ public class CrafterMenu extends BaseMenu {
                     case PRODUCTIVITY -> Math.round(blockEntity.getModules().productivity() * RATIO_SCALE);
                     case PRODUCTIVITY_PROGRESS -> Math.round(blockEntity.getProductivityProgress() * RATIO_SCALE);
                     case SWITCHED_ON -> blockEntity.isSwitchedOn() ? 1 : 0;
-                    case REDSTONE_MODE -> blockEntity.getRedstoneCondition().mode().ordinal();
-                    case REDSTONE_THRESHOLD -> blockEntity.getRedstoneCondition().threshold();
+                    case REDSTONE_MODE -> blockEntity.getConfiguredRedstoneCondition().mode().ordinal();
+                    case REDSTONE_THRESHOLD -> blockEntity.getConfiguredRedstoneCondition().threshold();
+                    case CONDITION_UNLOCKED -> blockEntity.isConditionUnlocked() ? 1 : 0;
                     default -> index >= TANKS ? tankData(blockEntity, index - TANKS) : 0;
                 };
             }
@@ -299,6 +301,11 @@ public class CrafterMenu extends BaseMenu {
         return this.data.get(TANKS + 3 * tank + 2) & 0xFFFF;
     }
 
+    /** Modes et seuil réglables : le module de redstone avancée est posé. */
+    public boolean isConditionUnlocked() {
+        return this.data.get(CONDITION_UNLOCKED) != 0;
+    }
+
     public boolean isSwitchedOn() {
         return this.data.get(SWITCHED_ON) != 0;
     }
@@ -332,7 +339,7 @@ public class CrafterMenu extends BaseMenu {
         // Depuis l'inventaire : un module va d'abord dans les slots de module, le reste aux entrées.
         int moduleFirst = MACHINE_FIRST_SLOT + CrafterBlockEntity.SLOTS;
         boolean moved = index < MACHINE_FIRST_SLOT
-                ? (CrafterBlockEntity.moduleKind(stack) != null && moveItemStackTo(stack, moduleFirst, this.slots.size(), false))
+                ? (CrafterBlockEntity.isModule(stack) && moveItemStackTo(stack, moduleFirst, this.slots.size(), false))
                         || moveItemStackTo(stack, MACHINE_FIRST_SLOT, MACHINE_FIRST_SLOT + CrafterBlockEntity.INPUT_SLOTS, false)
                 : moveItemStackTo(stack, VANILLA_FIRST_SLOT_INDEX, VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT, true);
         if (!moved) return ItemStack.EMPTY;

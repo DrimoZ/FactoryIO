@@ -419,6 +419,7 @@ public class CrafterGameTests {
         CrafterRecipe recipe = inject(helper, "condition", 1);
         CrafterBlockEntity crafter = place(helper, "crafter_mk3");
         crafter.selectRecipe(recipe.getId(), null);
+        crafter.getItems().insertItem(CrafterBlockEntity.MODULE_FIRST, new ItemStack(ModItems.ADVANCED_REDSTONE_MODULE.get()), false);
         helper.setBlock(MASTER.offset(0, 2, 0), ModBlocks.CREATIVE_ENERGY_SOURCE.get());
 
         ServerPlayer player = openedBy(helper, crafter);
@@ -437,6 +438,22 @@ public class CrafterGameTests {
                 .thenSucceed();
     }
 
+    /**
+     * Sans module de redstone avancée, la condition réglée est ignorée : seule la réaction
+     * native s'applique — un signal arrête la machine, comme un inserter (FIO-185).
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void withoutTheModuleOnlyTheNativeReactionApplies(GameTestHelper helper) {
+        CrafterBlockEntity crafter = place(helper, "crafter_mk3");
+        crafter.setRedstoneCondition(new RedstoneCondition(RedstoneCondition.Mode.ALWAYS, 0));
+
+        helper.assertFalse(crafter.isConditionUnlocked(), "Condition débloquée sans module");
+        helper.assertTrue(crafter.getRedstoneCondition().equals(RedstoneCondition.DEFAULT), "La condition réglée s'applique sans module");
+
+        helper.setBlock(MASTER.offset(2, 1, 1), Blocks.REDSTONE_BLOCK);
+        helper.succeedWhen(() -> helper.assertBlockProperty(MASTER, CrafterBlock.ENABLED, false));
+    }
+
     /** Recette, contenu, énergie et avancement survivent à une sauvegarde. */
     @GameTest(template = TEMPLATE)
     public static void stateSurvivesSaveAndLoad(GameTestHelper helper) {
@@ -453,8 +470,8 @@ public class CrafterGameTests {
         helper.assertTrue(recipe.getId().equals(copy.getRecipeId()), "Recette perdue");
         helper.assertTrue(copy.getItems().getStackInSlot(0).getCount() == 3, "Entrées perdues");
         helper.assertTrue(!copy.isSwitchedOn(), "Interrupteur perdu");
-        helper.assertTrue(copy.getRedstoneCondition().equals(new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 7)),
-                "Condition redstone perdue : " + copy.getRedstoneCondition());
+        helper.assertTrue(copy.getConfiguredRedstoneCondition().equals(new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 7)),
+                "Condition redstone perdue : " + copy.getConfiguredRedstoneCondition());
         helper.succeed();
     }
 

@@ -79,6 +79,10 @@ final class CrafterModulesTab extends SideTab {
         float productivity = this.menu.getProductivity();
 
         if (speed == 1.0F && energy == 1.0F && productivity == 0.0F) {
+            if (this.menu.isConditionUnlocked()) {
+                GuiTheme.tabLabel(graphics, font, ModUtils.tooltipComponent("crafter_module_redstone"), x, text);
+                return;
+            }
             for (FormattedCharSequence line : font.split(ModUtils.tooltipComponent("crafter_modules_empty"), WIDTH)) {
                 graphics.drawString(font, line, x, text, GuiTheme.TAB_LABEL, true);
                 text += LINE;

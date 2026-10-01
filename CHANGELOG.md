@@ -7,6 +7,8 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 
 ### Added
 
+- **The advanced redstone module works the same on crafters as on inserters**: put it in a module
+  slot to unlock redstone modes and threshold. Without it, any signal stops the machine.
 - **Fluids in crafter recipes**: up to two fluid ingredients and two fluid results
   (`fluidIngredients`, `fluidResults`). Pipes from other mods connect to any block of the machine;
   without pipes, click a tank with a bucket to pour or fill it. No shipped recipe uses fluids yet.

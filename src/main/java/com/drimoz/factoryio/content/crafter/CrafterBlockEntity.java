@@ -3,7 +3,9 @@ package com.drimoz.factoryio.content.crafter;
 import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.core.generic.container.energy.EnergyContainer;
 import com.drimoz.factoryio.core.init.ModBlocks;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeEffects;
 import com.drimoz.factoryio.core.upgrade.InserterUpgradeType;
+import com.drimoz.factoryio.core.upgrade.InserterUpgradeTunings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -90,7 +92,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
 
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack stack) {
-            if (slot >= MODULE_FIRST) return slot - MODULE_FIRST < getCrafter().getModuleSlots() && moduleKind(stack) != null;
+            if (slot >= MODULE_FIRST) return slot - MODULE_FIRST < getCrafter().getModuleSlots() && isModule(stack);
             if (slot >= INPUT_SLOTS) return false;
 
             CrafterRecipe recipe = CrafterBlockEntity.this.recipe;
@@ -109,7 +111,10 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
-            if (slot >= MODULE_FIRST) CrafterBlockEntity.this.modules = readModules();
+            if (slot >= MODULE_FIRST) {
+                CrafterBlockEntity.this.modules = readModules();
+                reevaluateEnabled();
+            }
             else if (slot >= INPUT_SLOTS) CrafterBlockEntity.this.outputsChanged = true;
         }
     };
@@ -455,8 +460,31 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         reevaluateEnabled();
     }
 
+    /**
+     * La condition en vigueur : celle réglée si le module de redstone avancée est posé, la
+     * réaction native sinon — exactement comme un inserter (FIO-172, FIO-185).
+     */
     public RedstoneCondition getRedstoneCondition() {
+        return isConditionUnlocked() ? this.redstoneCondition : RedstoneCondition.DEFAULT;
+    }
+
+    /** La condition telle que le joueur l'a réglée, module ou non : l'écran l'affiche. */
+    public RedstoneCondition getConfiguredRedstoneCondition() {
         return this.redstoneCondition;
+    }
+
+    /** Le module de redstone avancée est posé — ou le barème des datapacks ne l'exige pas. */
+    public boolean isConditionUnlocked() {
+        return InserterUpgradeEffects.unlocked(InserterUpgradeType.ADVANCED_REDSTONE,
+                hasAdvancedRedstone() ? 1 : 0, InserterUpgradeTunings.current());
+    }
+
+    private boolean hasAdvancedRedstone() {
+        int active = Math.min(MODULE_SLOTS, getCrafter().getModuleSlots());
+        for (int i = 0; i < active; i++) {
+            if (InserterUpgradeType.ADVANCED_REDSTONE.levelOf(this.items.getStackInSlot(MODULE_FIRST + i)) > 0) return true;
+        }
+        return false;
     }
 
     public void setRedstoneCondition(RedstoneCondition condition) {
@@ -523,6 +551,11 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
      * La nature d'un module, par les tags des inserters ; {@code null} si ce n'en est pas un
      * qui sert au crafter. Le tag {@code capacity} porte les modules de productivité.
      */
+    /** Ce qu'un slot de module accepte : un module d'effet, ou celui de redstone avancée. */
+    public static boolean isModule(ItemStack stack) {
+        return moduleKind(stack) != null || InserterUpgradeType.ADVANCED_REDSTONE.levelOf(stack) > 0;
+    }
+
     @Nullable
     public static CrafterModules.Kind moduleKind(ItemStack stack) {
         if (InserterUpgradeType.SPEED.levelOf(stack) > 0) return CrafterModules.Kind.SPEED;

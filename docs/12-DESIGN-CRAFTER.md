@@ -212,9 +212,11 @@ les paliers changent surtout vitesse et consommation. Le temps réel d'un craft 
   tout signal, et une **condition redstone** (toujours / si signal < seuil / si signal ≥
   seuil), lue sur le plus fort signal reçu par **n'importe quelle partie** du volume. Le
   défaut — « si signal < 1 » — est la réaction native : un signal met la machine en pause.
-  L'onglet de contrôle est celui des inserters (`client/gui/ControlTab`). La condition se
-  règle sans module : le crafter n'a pas encore de slots d'amélioration ; FIO-127 dira s'il
-  faut l'y verrouiller derrière le module de redstone avancée, comme sur les inserters.
+  L'onglet de contrôle est celui des inserters (`client/gui/ControlTab`). **Comme sur les
+  inserters** (FIO-185), modes et seuil ne s'appliquent qu'avec le **module de redstone
+  avancée** posé dans un slot de module ; sans lui, la condition réglée est gardée mais seule
+  la réaction native joue. Le barème des datapacks (`requiresModule`) vaut pour les deux
+  machines. Le Mk1, sans slot de module, n'a donc que l'interrupteur et la réaction native.
 - **Changement de recette** : les entrées et les ingrédients du craft en cours sont
   rendus au joueur, le surplus tombe au sol ; la sortie déjà produite reste.
 - **Chemin chaud** : `tick()` sans allocation ni `stream()` ; la recette résolue est
@@ -244,8 +246,8 @@ les paliers changent surtout vitesse et consommation. Le temps réel d'un craft 
   consommation ne descendent pas sous 20 %.
 - **Productivité** : une barre qui avance à chaque craft ; à 100 %, le craft rend un jeu de
   résultats de plus. Sa place est réservée d'avance, comme celle des résultats aléatoires.
-- **Condition redstone** : toujours réglable sans module (le module de redstone avancée
-  n'entre pas dans un crafter) — changer cela retirerait un réglage aux machines posées.
+- **Redstone avancée** : le module se pose aussi dans un slot de module, où il débloque la
+  condition redstone (§4.4) sans autre effet.
 - Une sauvegarde d'avant les modules (13 slots) se recharge à 17 : la taille enregistrée ne
   fait pas foi, sans quoi le premier accès à un slot de module plantait le serveur.
 
