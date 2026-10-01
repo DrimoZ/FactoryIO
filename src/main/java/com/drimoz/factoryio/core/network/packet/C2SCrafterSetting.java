@@ -72,7 +72,7 @@ public class C2SCrafterSetting {
                 CrafterMenu.class, CrafterMenu::getBlockEntity, CrafterBlockEntity.class);
         if (crafter == null) return false;
 
-        RedstoneCondition condition = crafter.getRedstoneCondition();
+        RedstoneCondition condition = crafter.getConfiguredRedstoneCondition();
         switch (setting) {
             case POWER -> crafter.setSwitchedOn(value == 1);
             case REDSTONE_MODE -> crafter.setRedstoneCondition(condition.withMode(RedstoneCondition.Mode.byOrdinal(value)));

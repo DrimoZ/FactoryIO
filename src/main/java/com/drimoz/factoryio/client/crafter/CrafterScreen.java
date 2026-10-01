@@ -100,8 +100,8 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
     }
 
     /**
-     * Le crafter vu par l'onglet de contrôle commun. La condition est réglable sans module :
-     * le crafter n'a pas encore de slots d'amélioration (FIO-127 décidera s'il faut l'y verrouiller).
+     * Le crafter vu par l'onglet de contrôle commun. Modes et seuil se débloquent avec le module
+     * de redstone avancée, posé dans un slot de module — comme sur un inserter (FIO-185).
      */
     private ControlTab.Controls controls() {
         return new ControlTab.Controls() {
@@ -122,7 +122,7 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
 
             @Override
             public boolean isConditionUnlocked() {
-                return true;
+                return menu.isConditionUnlocked();
             }
 
             @Override
