@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.client.screen;
 
+import com.drimoz.factoryio.shared.SideTabMetrics;
 import com.drimoz.factoryio.client.gui.GuiSprites;
 import com.drimoz.factoryio.client.gui.IconButton;
 import com.drimoz.factoryio.client.gui.SideTab;
@@ -249,7 +250,7 @@ final class InserterTabs {
 
         @Override
         protected int contentWidth() {
-            return InserterGuiLayout.AUGMENT_TAB_WIDTH - 2 * InserterGuiLayout.TAB_PADDING;
+            return InserterGuiLayout.AUGMENT_TAB_WIDTH - 2 * SideTabMetrics.PADDING;
         }
 
         @Override

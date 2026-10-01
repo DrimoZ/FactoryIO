@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.inserters;
 
+import com.drimoz.factoryio.shared.SideTabMetrics;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -118,10 +119,10 @@ class InserterGuiLayoutTest {
         for (int i = 0; i < 4; i++) {
             assertTrue(InserterGuiLayout.augmentSlotX(i) >= InserterGuiLayout.WIDTH, "slot " + i);
             assertTrue(InserterGuiLayout.augmentSlotX(i) + 16
-                    <= InserterGuiLayout.WIDTH + InserterGuiLayout.AUGMENT_TAB_WIDTH - InserterGuiLayout.TAB_PADDING, "slot " + i);
+                    <= InserterGuiLayout.WIDTH + InserterGuiLayout.AUGMENT_TAB_WIDTH - SideTabMetrics.PADDING, "slot " + i);
             if (i > 0) assertEquals(InserterGuiLayout.SLOT, InserterGuiLayout.augmentSlotX(i) - InserterGuiLayout.augmentSlotX(i - 1));
         }
-        assertTrue(InserterGuiLayout.augmentSlotY() >= InserterGuiLayout.TAB_TOP + InserterGuiLayout.TAB_HEADER);
+        assertTrue(InserterGuiLayout.augmentSlotY() >= SideTabMetrics.TOP + SideTabMetrics.HEADER);
     }
 
     @Test

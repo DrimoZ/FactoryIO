@@ -238,16 +238,19 @@ L'inventaire du code existant a montré que le socle est déjà largement géné
 `StrictCodecs`, `EnergyContainer`, `BaseMenu`, `GhostSlot`, `GuiSprites`, `IconButton`,
 `ThroughputMeter`, `ModNetworks` servent tels quels.
 
-Six couplages aux inserters sont levés **avant** le crafter, dans un ticket sans
-changement de comportement (FIO-175) :
+Quatre couplages aux inserters sont levés **avant** le crafter, dans un ticket sans
+changement de comportement (FIO-175, ✅) :
 
-1. `ModEntityBlock.neighborChanged` teste `instanceof InserterBlockEntity` → un point
-   d'extension.
-2. `SideTab` / `SideTabs` lisent `InserterGuiLayout` (constantes, largeur) → paramètres.
-3. Les 6 validations de `C2SInserterSetting` sont en ligne → un helper partagé.
+1. `ModEntityBlock.neighborChanged` testait `instanceof InserterBlockEntity` → point
+   d'extension `onNeighbourChanged(level, pos)`.
+2. `SideTab` / `SideTabs` lisaient `InserterGuiLayout` → mesures dans
+   `shared/SideTabMetrics`, largeur de la fenêtre passée à `SideTabs`.
+3. Les 6 validations de `C2SInserterSetting` étaient en ligne → `C2SChecks.openedBlockEntity`.
 4. `InserterUpgradeSlot` → `UpgradeSlot` à prédicat ; `InserterBufferSlot` → `OutputSlot`.
-5. `ModRegistries` sans `RECIPE_TYPES` ni `RECIPE_SERIALIZERS` → les ajouter.
-6. `PackGenerator` ne connaît qu'inserters et convoyeurs dans son test « rien à générer ».
+
+Deux autres points relevés vont avec le code qui s'en sert, plutôt que d'enregistrer du
+vide d'avance : `RECIPE_TYPES` / `RECIPE_SERIALIZERS` dans `ModRegistries` (FIO-120), et
+le crafter dans le test « rien à générer » de `PackGenerator` (FIO-122).
 
 Le même ticket corrige [`09`](09-CONVENTIONS.md) §1, qui se contredit : il place
 `Screen` et `Renderer` sous `content/<feature>/` tout en interdisant d'importer du client

@@ -1,6 +1,6 @@
 package com.drimoz.factoryio.client.gui;
 
-import com.drimoz.factoryio.core.inserters.InserterGuiLayout;
+import com.drimoz.factoryio.shared.SideTabMetrics;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -110,25 +110,25 @@ public abstract class SideTab {
     }
 
     public int width() {
-        return Math.round(Mth.lerp(eased(), InserterGuiLayout.TAB_HEADER, fullWidth()));
+        return Math.round(Mth.lerp(eased(), SideTabMetrics.HEADER, fullWidth()));
     }
 
     public int height() {
-        return Math.round(Mth.lerp(eased(), InserterGuiLayout.TAB_HEADER, fullHeight()));
+        return Math.round(Mth.lerp(eased(), SideTabMetrics.HEADER, fullHeight()));
     }
 
     /** Assez large pour le contenu, et pour le titre : il ne déborde jamais de son onglet. */
     private int fullWidth() {
-        int titled = TITLE_X + Minecraft.getInstance().font.width(title()) + InserterGuiLayout.TAB_PADDING;
+        int titled = TITLE_X + Minecraft.getInstance().font.width(title()) + SideTabMetrics.PADDING;
 
-        return Math.max(titled, contentWidth() + 2 * InserterGuiLayout.TAB_PADDING);
+        return Math.max(titled, contentWidth() + 2 * SideTabMetrics.PADDING);
     }
 
     /** Abscisse du titre dans l'en-tête, après l'icône. */
     private static final int TITLE_X = 24;
 
     private int fullHeight() {
-        return InserterGuiLayout.TAB_HEADER + contentHeight() + InserterGuiLayout.TAB_PADDING;
+        return SideTabMetrics.HEADER + contentHeight() + SideTabMetrics.PADDING;
     }
 
     /** Ralentit en fin de course : l'onglet se pose au lieu de s'arrêter net. */
@@ -160,11 +160,11 @@ public abstract class SideTab {
     }
 
     int contentX() {
-        return left() + InserterGuiLayout.TAB_PADDING;
+        return left() + SideTabMetrics.PADDING;
     }
 
     int contentY() {
-        return this.y + InserterGuiLayout.TAB_HEADER;
+        return this.y + SideTabMetrics.HEADER;
     }
 
     boolean contains(double mouseX, double mouseY) {
@@ -172,7 +172,7 @@ public abstract class SideTab {
     }
 
     boolean headerContains(double mouseX, double mouseY) {
-        return contains(mouseX, mouseY) && mouseY < this.y + InserterGuiLayout.TAB_HEADER;
+        return contains(mouseX, mouseY) && mouseY < this.y + SideTabMetrics.HEADER;
     }
 
     void renderBackground(GuiGraphics graphics) {
@@ -180,8 +180,8 @@ public abstract class SideTab {
     }
 
     void renderForeground(GuiGraphics graphics, Font font, int mouseX, int mouseY) {
-        int iconX = left() + (InserterGuiLayout.TAB_HEADER - 16) / 2;
-        int iconY = this.y + (InserterGuiLayout.TAB_HEADER - 16) / 2;
+        int iconX = left() + (SideTabMetrics.HEADER - 16) / 2;
+        int iconY = this.y + (SideTabMetrics.HEADER - 16) / 2;
         renderIcon(graphics, iconX, iconY);
 
         if (!isFullyOpen()) return;

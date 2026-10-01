@@ -1,6 +1,5 @@
 package com.drimoz.factoryio.core.generic.block;
 
-import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.MenuProvider;
@@ -72,11 +71,17 @@ public abstract class ModEntityBlock extends BaseEntityBlock {
 
         this.checkPoweredState(pLevel, pPos, pState);
 
-        // Un coffre posé ou cassé à côté doit invalider les inventaires mémorisés et
-        // relancer la machine (cf. DT-07).
-        if (!pLevel.isClientSide && pLevel.getBlockEntity(pPos) instanceof InserterBlockEntity inserter) {
-            inserter.onNeighbourChanged();
+        if (!pLevel.isClientSide) {
+            onNeighbourChanged(pLevel, pPos);
         }
+    }
+
+    /**
+     * Un voisin a changé, côté serveur. Un coffre posé ou cassé à côté doit invalider les
+     * inventaires mémorisés et relancer la machine (cf. DT-07) ; chaque bloc sait ce que
+     * cela veut dire pour le sien.
+     */
+    protected void onNeighbourChanged(Level pLevel, BlockPos pPos) {
     }
 
     /**
