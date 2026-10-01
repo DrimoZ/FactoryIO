@@ -1,7 +1,9 @@
 package com.drimoz.factoryio;
 
 import com.drimoz.factoryio.core.belts.BeltSettings;
+import com.drimoz.factoryio.content.crafter.CrafterRecipes;
 import com.drimoz.factoryio.core.configs.CommonConfig;
+import com.drimoz.factoryio.core.configs.ServerConfig;
 import com.drimoz.factoryio.core.datagen.ModDataGenerators;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
@@ -60,6 +62,7 @@ public class FactoryIO
         // Déclenche l'initialisation statique des deux classes, donc leurs register().
         ModItems.init();
         ModBlocks.init();
+        CrafterRecipes.init();
         ModCreativeTab.MOD_TAB.getId();
 
         // Le générateur du pack runtime est construit paresseusement, à l'ouverture du
@@ -81,6 +84,9 @@ public class FactoryIO
         // via EarlyConfig (cf. la javadoc de cette classe).
         ModLoadingContext.get().registerConfig(
                 ModConfig.Type.COMMON, CommonConfig.SPEC, "factor_io/factor_io-common.toml");
+
+        // Par monde, et synchronisé vers les clients (le sélecteur du crafter en dépend).
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC, "factor_io-server.toml");
 
         GeckoLib.initialize();
 
@@ -113,10 +119,12 @@ public class FactoryIO
      */
     private void onConfigLoaded(final ModConfigEvent.Loading event) {
         if (event.getConfig().getSpec() == CommonConfig.SPEC) BeltSettings.invalidate();
+        if (event.getConfig().getSpec() == ServerConfig.SPEC) CrafterRecipes.invalidate();
     }
 
     private void onConfigReloaded(final ModConfigEvent.Reloading event) {
         if (event.getConfig().getSpec() == CommonConfig.SPEC) BeltSettings.invalidate();
+        if (event.getConfig().getSpec() == ServerConfig.SPEC) CrafterRecipes.invalidate();
     }
 
     public void onCommonSetup(final FMLCommonSetupEvent event)
