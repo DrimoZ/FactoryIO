@@ -1,5 +1,8 @@
 package com.drimoz.factoryio.core.init;
 
+import com.drimoz.factoryio.content.crafter.CrafterBlock;
+import com.drimoz.factoryio.content.crafter.CrafterBlockEntity;
+import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.content.multiblock.MultiblockPartBlock;
 import com.drimoz.factoryio.content.multiblock.MultiblockPartBlockEntity;
 import com.drimoz.factoryio.core.belts.BeltBlock;
@@ -136,6 +139,31 @@ public final class ModBlocks {
                     "multiblock_part",
                     () -> BlockEntityType.Builder
                             .of(MultiblockPartBlockEntity::new, MULTIBLOCK_PART.get())
+                            .build(null));
+
+    /**
+     * Un bloc par définition de crafter ({@link CrafterRegistry}). Les blockstates sont
+     * générés pour tous — ils ne font que choisir entre deux modèles écrits à la main.
+     */
+    public static final List<RegistryObject<Block>> CRAFTERS = CrafterRegistry.all().stream()
+            .map(crafter -> {
+                RegistryObject<Block> block = registerWithHandwrittenAssets(
+                        crafter.getName(),
+                        () -> new CrafterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                                .noOcclusion()
+                                .pushReaction(PushReaction.BLOCK), crafter),
+                        registered -> new BlockItem(registered, new Item.Properties()));
+                crafter.setBlock(block);
+                return block;
+            })
+            .toList();
+
+    /** Un seul type pour tous les paliers : le palier se lit sur le bloc, comme pour les convoyeurs. */
+    public static final RegistryObject<BlockEntityType<CrafterBlockEntity>> CRAFTER_ENTITY =
+            ModRegistries.BLOCK_ENTITIES.register(
+                    "crafter",
+                    () -> BlockEntityType.Builder
+                            .of(CrafterBlockEntity::new, CRAFTERS.stream().map(RegistryObject::get).toArray(Block[]::new))
                             .build(null));
 
     // Life cycle

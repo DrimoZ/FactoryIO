@@ -211,16 +211,29 @@ les paliers changent surtout vitesse et consommation. Le temps réel d'un craft 
 - **Changement de recette** : les entrées et les ingrédients du craft en cours sont
   rendus au joueur, le surplus tombe au sol ; la sortie déjà produite reste.
 - **Chemin chaud** : `tick()` sans allocation ni `stream()` ; la recette résolue est
-  mise en cache et ne se recherche qu'au changement ou au `/reload`.
+  mise en cache et ne se recherche que quand `CrafterRecipes.generation()` bouge
+  (`/reload`, option vanilla). Une sortie pleine n'est réessayée que quand une sortie a
+  changé.
+- **Les ingrédients se consomment à la fin du craft** (écart assumé avec Factorio, qui les
+  prend au début). Tant que le craft n'est pas fini, ils restent dans leurs slots : casser
+  la machine ou changer de recette les rend sans aucune comptabilité intermédiaire, et la
+  conservation des items ne dépend d'aucun état caché. Retirer un ingrédient en cours de
+  route met le craft en pause, sans perdre l'avancement.
+- **Restes** : ce que laisse un ingrédient consommé (le seau d'un seau de lait) va dans les
+  sorties. Les quatre sorties sont une réserve commune, pas un slot par résultat.
 
 ### 4.5 État visuel et synchronisation
 
-- `WORKING` dans le `BlockState` du maître, **avec hystérésis** : il ne retombe pas entre
-  deux crafts enchaînés, sinon un crafter alimenté en continu réécrirait son état à
-  chaque craft. L'animation GeckoLib tourne côté client tant qu'il est vrai.
+- `WORKING` dans le `BlockState` du maître, **avec hystérésis** (20 ticks) : il ne retombe
+  pas entre deux crafts enchaînés, sinon un crafter alimenté en continu réécrirait son
+  état à chaque craft.
 - Progression et énergie dans le GUI : `ContainerData`, synchronisé seulement menu
   ouvert. **Aucun paquet S→C périodique.**
-- Modèle : placeholder, en attendant l'art définitif.
+- **Modèle provisoire en JSON statique**, pas en GeckoLib : `block/crafter` et
+  `block/crafter_working`, textures vanilla étirées sur le volume (un modèle de bloc
+  couvre -16 à 32, soit exactement 3×2×3 autour du maître). Le blockstate choisit l'un
+  ou l'autre selon `WORKING` — la façade du haut fourneau s'allume. Le modèle GeckoLib
+  animé arrivera avec l'art définitif, sans rien changer au bloc.
 
 ---
 

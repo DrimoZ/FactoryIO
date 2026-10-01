@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
+import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.core.model.TranslationCode;
 import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
@@ -41,6 +42,13 @@ public class ModLangGenerator extends LanguageProvider {
             if (translation == null) return;
 
             addBlock(belt.getBlock(), translation);
+        });
+
+        CrafterRegistry.all().forEach(crafter -> {
+            String translation = crafter.getTranslation().getTranslation(translationCode);
+            if (translation == null) return;
+
+            addBlock(crafter.getBlock(), translation);
         });
     }
 }

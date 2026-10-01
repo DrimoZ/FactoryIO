@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
+import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.registry.BeltRegistry;
@@ -31,6 +32,10 @@ public class ModItemModelGenerator extends ItemModelProvider {
         BeltRegistry.all().stream().filter(belt -> belt.getRampBlock() != null).forEach(belt ->
                 withExistingParent("item/" + belt.getName() + "_ramp",
                         modLoc("block/transport_belts/" + belt.getName() + "/" + belt.getName() + "_ramp_up")));
+
+        // Le modèle du bloc est à l'échelle du volume ; ses « display » le ramènent dans une case.
+        CrafterRegistry.all().forEach(crafter ->
+                withExistingParent("item/" + crafter.getName(), modLoc("block/crafter")));
 
         ModBlocks.MODELLED.forEach(block -> {
             String name = block.getId().getPath();

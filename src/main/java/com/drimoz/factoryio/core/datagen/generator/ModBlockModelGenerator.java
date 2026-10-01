@@ -1,5 +1,8 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
+import com.drimoz.factoryio.content.crafter.Crafter;
+import com.drimoz.factoryio.content.crafter.CrafterBlock;
+import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltFlow;
 import com.drimoz.factoryio.core.belts.BeltRampBlock;
@@ -27,6 +30,7 @@ public class ModBlockModelGenerator extends BlockStateProvider {
         ModBlocks.MODELLED.forEach(block -> simpleBlock(block.get()));
         registerUserBelts();
         registerRamps();
+        registerCrafters();
 
         InserterRegistry.getInstance().getInserters().forEach((inserter) -> {
             InserterBlock block = inserter.getBlock().get();
@@ -80,6 +84,23 @@ public class ModBlockModelGenerator extends BlockStateProvider {
                     .modelFile(models[state.getValue(BeltBlock.CONNECTED)])
                     .rotationY(getYRotation(state.getValue(BeltBlock.FACING)))
                     .build(), BeltBlock.WATERLOGGED);
+        }
+    }
+
+    /**
+     * Tous les crafters, livrés ou ajoutés : deux modèles provisoires écrits à la main, à
+     * l'arrêt et au travail, tournés selon la face. L'art définitif remplacera ces deux
+     * fichiers et rien d'autre.
+     */
+    private void registerCrafters() {
+        ModelFile idle = models().getExistingFile(modLoc("block/crafter"));
+        ModelFile working = models().getExistingFile(modLoc("block/crafter_working"));
+
+        for (Crafter crafter : CrafterRegistry.all()) {
+            getVariantBuilder(crafter.getBlock().get()).forAllStatesExcept(state -> ConfiguredModel.builder()
+                    .modelFile(state.getValue(CrafterBlock.WORKING) ? working : idle)
+                    .rotationY(getYRotation(state.getValue(CrafterBlock.FACING)))
+                    .build(), CrafterBlock.ENABLED);
         }
     }
 

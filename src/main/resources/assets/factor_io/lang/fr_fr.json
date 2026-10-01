@@ -1,6 +1,9 @@
 {
   "block.factor_io.belt_ramp": "%s (rampe)",
   "block.factor_io.burner_inserter": "Bras à combustion",
+  "block.factor_io.crafter_mk1": "Crafter Mk1",
+  "block.factor_io.crafter_mk2": "Crafter Mk2",
+  "block.factor_io.crafter_mk3": "Crafter Mk3",
   "block.factor_io.creative_energy_source": "Source d’énergie créative",
   "block.factor_io.express_transport_belt": "Convoyeur express",
   "block.factor_io.fast_inserter": "Bras mécanique rapide",
@@ -8,6 +11,7 @@
   "block.factor_io.filter_inserter": "Bras mécanique filtrant",
   "block.factor_io.inserter": "Bras mécanique",
   "block.factor_io.long_handed_inserter": "Bras mécanique long",
+  "block.factor_io.multiblock_part": "Partie de machine",
   "block.factor_io.stack_filter_inserter": "Bras mécanique de piles filtrant",
   "block.factor_io.stack_inserter": "Bras mécanique de piles",
   "block.factor_io.transport_belt": "Convoyeur",

@@ -1,4 +1,4 @@
-// 1.20.1	2026-09-30T15:15:42.1401342	Item Models: factor_io
+// 1.20.1	2026-09-30T22:07:23.7978126	Item Models: factor_io
 aff44f81c6fdbf4b7be31fb97f097d8a72eb141e assets/factor_io/models/item/advanced_circuit.json
 059ed81bc71b4550a5272713afef9946997df4d7 assets/factor_io/models/item/advanced_redstone_module.json
 7d58f82e489e5c0b11b28a8e33697c92f6bb74a2 assets/factor_io/models/item/automation_science_pack.json
@@ -7,6 +7,9 @@ ecce98e2f6981b8851902d8086c74b8fd600c58e assets/factor_io/models/item/burner_ins
 2b0b8a0d6b7fc4cc0479374689be9e6b2e731ce2 assets/factor_io/models/item/configurator.json
 dcb1d3565b3f87c3c5d63cc4e4471f1b1b30add6 assets/factor_io/models/item/copper_cable.json
 3fcd7e803f202242cdefe0074e7edcaa0033a6af assets/factor_io/models/item/copper_plate.json
+2b66d7a8918c8ff1410136f7198acf3eb50502b2 assets/factor_io/models/item/crafter_mk1.json
+2b66d7a8918c8ff1410136f7198acf3eb50502b2 assets/factor_io/models/item/crafter_mk2.json
+2b66d7a8918c8ff1410136f7198acf3eb50502b2 assets/factor_io/models/item/crafter_mk3.json
 92b224bb8fce154d3a179b7bab9de0d2adda694f assets/factor_io/models/item/creative_energy_source.json
 4927c5fc080a7c1f647bb06a1359271e279038e0 assets/factor_io/models/item/efficiency_module.json
 afdad8cb7f96a029cb3fc55c95207117f1dbd63a assets/factor_io/models/item/efficiency_module_2.json

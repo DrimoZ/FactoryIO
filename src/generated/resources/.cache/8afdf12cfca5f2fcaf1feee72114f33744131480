@@ -1,5 +1,8 @@
-// 1.20.1	2026-09-30T15:15:42.1311243	Block States: factor_io
+// 1.20.1	2026-09-30T22:07:23.7857331	Block States: factor_io
 8eae3c12cd5e5a5480c3b5a82965d7402bee64fb assets/factor_io/blockstates/burner_inserter.json
+10ad34817b3be10c8260d509af9bc33616b97ee4 assets/factor_io/blockstates/crafter_mk1.json
+10ad34817b3be10c8260d509af9bc33616b97ee4 assets/factor_io/blockstates/crafter_mk2.json
+10ad34817b3be10c8260d509af9bc33616b97ee4 assets/factor_io/blockstates/crafter_mk3.json
 be73dc5566719d7f2b821706b16a9270f7b6d22e assets/factor_io/blockstates/creative_energy_source.json
 4131aa6af279a653d60c21a6c73a426141b05f0f assets/factor_io/blockstates/express_transport_belt_ramp.json
 f612d30d713d8b5cdaf7c8adb3f0b40359c697e3 assets/factor_io/blockstates/fast_inserter.json

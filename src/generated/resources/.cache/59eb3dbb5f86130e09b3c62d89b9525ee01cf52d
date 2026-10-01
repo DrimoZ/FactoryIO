@@ -1,5 +1,8 @@
-// 1.20.1	2026-09-30T15:15:42.1361463	Loot Tables
+// 1.20.1	2026-09-30T22:07:23.7922659	Loot Tables
 8de712da096d82537dcf2ff1bb798603ac43c2b2 data/factor_io/loot_tables/blocks/burner_inserter.json
+868221582ed8ffa6cf11b53728433bb62334a587 data/factor_io/loot_tables/blocks/crafter_mk1.json
+3f32ba3086e516b48c6bd552fa89824060270c28 data/factor_io/loot_tables/blocks/crafter_mk2.json
+f9f5d35565506e69b95c4319557d0a011aecf81b data/factor_io/loot_tables/blocks/crafter_mk3.json
 0c0ffe4fc3c68b50a2d501c8874a106c48b4475d data/factor_io/loot_tables/blocks/creative_energy_source.json
 d9c9f8c9b66bb8896f91556e3045d8099fd26999 data/factor_io/loot_tables/blocks/express_transport_belt.json
 e879f7b972e44c20c095ba046e8adb825897c631 data/factor_io/loot_tables/blocks/express_transport_belt_ramp.json

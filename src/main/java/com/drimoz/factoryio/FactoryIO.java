@@ -2,6 +2,7 @@ package com.drimoz.factoryio;
 
 import com.drimoz.factoryio.core.belts.BeltSettings;
 import com.drimoz.factoryio.content.crafter.CrafterRecipes;
+import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.core.configs.CommonConfig;
 import com.drimoz.factoryio.core.configs.ServerConfig;
 import com.drimoz.factoryio.core.datagen.ModDataGenerators;
@@ -55,6 +56,7 @@ public class FactoryIO
         EarlyConfig.load();
         InserterLoader.setup();
         BeltRegistry.load();
+        CrafterRegistry.load();
         EarlyConfig.close();
 
         InserterRegistry.getInstance().registerAll();
@@ -143,6 +145,7 @@ public class FactoryIO
     public void onAddReloadListener(AddReloadListenerEvent event) {
         event.addListener(new InserterReloadListener());
         event.addListener(new BeltReloadListener());
+        event.addListener(new CrafterRegistry.ReloadListener());
         event.addListener(new UpgradeReloadListener());
     }
 
