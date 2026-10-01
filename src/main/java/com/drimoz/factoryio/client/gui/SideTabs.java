@@ -37,15 +37,28 @@ public final class SideTabs {
         this.guiWidth = guiWidth;
         this.tabs.addAll(tabs);
 
+        // Un onglet mémorisé qu'un autre écran a ouvert, et que celui-ci n'a pas, ne compte pas :
+        // le défaut de cet écran s'applique. Un côté fermé exprès (null) le reste.
         for (String id : defaultOpen) {
             for (SideTab tab : this.tabs) {
-                if (tab.id().equals(id)) REMEMBERED.putIfAbsent(tab.side(), id);
+                if (!tab.id().equals(id)) continue;
+                String remembered = REMEMBERED.get(tab.side());
+                if (!REMEMBERED.containsKey(tab.side()) || (remembered != null && !hasTab(tab.side(), remembered))) {
+                    REMEMBERED.put(tab.side(), id);
+                }
             }
         }
 
         for (SideTab tab : this.tabs) {
             if (tab.id().equals(REMEMBERED.get(tab.side()))) tab.snapOpen();
         }
+    }
+
+    private boolean hasTab(SideTab.Side side, String id) {
+        for (SideTab tab : this.tabs) {
+            if (tab.side() == side && tab.id().equals(id)) return true;
+        }
+        return false;
     }
 
     // Interface (Rendu)

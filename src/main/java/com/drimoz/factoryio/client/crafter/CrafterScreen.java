@@ -72,10 +72,12 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
         this.picker = new RecipePicker(this.font, this::chooseRecipe);
         addWidget(this.picker.search());
 
-        List<SideTab> sideTabs = List.of(
-                new CrafterInfoTab(this.menu, this.meter, this::selectedRecipe),
-                new ControlTab(controls()));
-        this.tabs = new SideTabs(sideTabs, GuiMetrics.WIDTH, CrafterInfoTab.ID);
+        // Les modules d'abord à droite : leurs slots ont des coordonnées figées pour cette place.
+        List<SideTab> sideTabs = new ArrayList<>();
+        sideTabs.add(new CrafterInfoTab(this.menu, this.meter, this::selectedRecipe));
+        if (this.menu.getModuleSlots() > 0) sideTabs.add(new CrafterModulesTab(this.menu));
+        sideTabs.add(new ControlTab(controls()));
+        this.tabs = new SideTabs(sideTabs, GuiMetrics.WIDTH, CrafterInfoTab.ID, CrafterModulesTab.ID);
     }
 
     // Interface (pour JEI)

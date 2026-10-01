@@ -7,6 +7,8 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 
 ### Added
 
+- **Modules in crafters**: Mk2 has 2 slots, Mk3 has 4. Speed, productivity and efficiency modules
+  work as in Factorio; productivity fills a bar and gives a free craft every 100%.
 - **Crafter control tab**, the same as the inserters': an on/off switch, and a redstone condition
   (always, signal below, signal at least a threshold) read from any block of the machine.
 - **Crafters**, Factorio's assembling machines: three tiers (Mk1, Mk2, Mk3) of a 3×3×2 machine

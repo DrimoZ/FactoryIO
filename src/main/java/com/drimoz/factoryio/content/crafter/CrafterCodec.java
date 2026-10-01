@@ -19,6 +19,7 @@ import java.util.Optional;
  *   "energyPerTick": 60,
  *   "energyCapacity": 40000,
  *   "inputCrafts": 2,
+ *   "moduleSlots": 2,
  *   "translations": { "en_us": "Crafter Mk2", "fr_fr": "Crafter Mk2" }
  * }
  * }</pre>
@@ -32,6 +33,7 @@ public final class CrafterCodec {
     public static final float MAX_SPEED = 100.0F;
     public static final int MAX_ENERGY = 1_000_000;
     public static final int MAX_INPUT_CRAFTS = 64;
+    public static final int MAX_MODULE_SLOTS = CrafterBlockEntity.MODULE_SLOTS;
 
     public static final Crafter.Tuning DEFAULT_TUNING = new Crafter.Tuning(1.0F, 50, 20_000, 2);
 
@@ -51,6 +53,7 @@ public final class CrafterCodec {
 
     private record Fields(
             int tier,
+            int moduleSlots,
             float craftingSpeed,
             int energyPerTick,
             int energyCapacity,
@@ -59,6 +62,7 @@ public final class CrafterCodec {
 
         private static final Codec<Fields> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 StrictCodecs.optional(Codec.intRange(1, MAX_TIER), "tier", 1).forGetter(Fields::tier),
+                StrictCodecs.optional(Codec.intRange(0, MAX_MODULE_SLOTS), "moduleSlots", 0).forGetter(Fields::moduleSlots),
                 StrictCodecs.optional(SPEED, "craftingSpeed", DEFAULT_TUNING.craftingSpeed()).forGetter(Fields::craftingSpeed),
                 StrictCodecs.optional(Codec.intRange(0, MAX_ENERGY), "energyPerTick", DEFAULT_TUNING.energyPerTick())
                         .forGetter(Fields::energyPerTick),
@@ -71,7 +75,7 @@ public final class CrafterCodec {
         ).apply(instance, Fields::new));
 
         private Crafter toCrafter(ResourceLocation id) {
-            Crafter crafter = new Crafter(id, this.tier,
+            Crafter crafter = new Crafter(id, this.tier, this.moduleSlots,
                     new Crafter.Tuning(this.craftingSpeed, this.energyPerTick, this.energyCapacity, this.inputCrafts));
             this.translations.ifPresent(map -> map.forEach(crafter.getTranslation()::addTranslation));
             return crafter;
@@ -79,7 +83,7 @@ public final class CrafterCodec {
 
         private static Fields of(Crafter crafter) {
             Crafter.Tuning tuning = crafter.getTuning();
-            return new Fields(crafter.getTier(), tuning.craftingSpeed(), tuning.energyPerTick(),
+            return new Fields(crafter.getTier(), crafter.getModuleSlots(), tuning.craftingSpeed(), tuning.energyPerTick(),
                     tuning.energyCapacity(), tuning.inputCrafts(), Optional.empty());
         }
     }

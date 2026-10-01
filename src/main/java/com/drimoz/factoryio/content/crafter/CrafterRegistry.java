@@ -13,7 +13,7 @@ import java.util.List;
  * chacun désactivable dans la section {@code CRAFTERS} du TOML.
  *
  * <p>Vitesse et consommation reprennent Factorio : assembleurs 1, 2 et 3 à 0,5, 0,75 et 1,25,
- * avec 75, 150 et 375 kW ramenés à 30, 60 et 150 FE/tick.
+ * avec 75, 150 et 375 kW ramenés à 30, 60 et 150 FE/tick, et 0, 2 et 4 slots de module.
  */
 public final class CrafterRegistry {
 
@@ -26,9 +26,9 @@ public final class CrafterRegistry {
     /** Des instances neuves à chaque appel : chacune porte ses réglages, modifiables à chaud. */
     public static List<Crafter> defaults() {
         return List.of(
-                new Crafter(Crafter.id("crafter_mk1"), 1, new Crafter.Tuning(0.5F, 30, 20_000, 2)),
-                new Crafter(Crafter.id("crafter_mk2"), 2, new Crafter.Tuning(0.75F, 60, 40_000, 2)),
-                new Crafter(Crafter.id("crafter_mk3"), 3, new Crafter.Tuning(1.25F, 150, 100_000, 2)));
+                new Crafter(Crafter.id("crafter_mk1"), 1, 0, new Crafter.Tuning(0.5F, 30, 20_000, 2)),
+                new Crafter(Crafter.id("crafter_mk2"), 2, 2, new Crafter.Tuning(0.75F, 60, 40_000, 2)),
+                new Crafter(Crafter.id("crafter_mk3"), 3, 4, new Crafter.Tuning(1.25F, 150, 100_000, 2)));
     }
 
     /** À appeler une fois, dans le constructeur du mod, config anticipée ouverte. */
@@ -73,9 +73,9 @@ public final class CrafterRegistry {
 
         @Override
         protected void applyTuning(Crafter target, Crafter parsed) {
-            if (parsed.getTier() != target.getTier()) {
-                FactoryIO.LOGGER.error("{} : « tier » vaut {} au lancement et ne peut pas changer par datapack "
-                        + "(lu : {}) ; réglage ignoré", target.getId(), target.getTier(), parsed.getTier());
+            if (parsed.getTier() != target.getTier() || parsed.getModuleSlots() != target.getModuleSlots()) {
+                FactoryIO.LOGGER.error("{} : « tier » et « moduleSlots » sont figés au lancement et ne peuvent pas "
+                        + "changer par datapack ; réglage ignoré", target.getId());
                 return;
             }
             target.setTuning(parsed.getTuning());

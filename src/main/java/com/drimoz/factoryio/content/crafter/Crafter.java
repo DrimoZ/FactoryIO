@@ -19,6 +19,7 @@ public class Crafter implements Definition {
 
     private final ResourceLocation id;
     private final int tier;
+    private final int moduleSlots;
     private final Tuning defaults;
     private final Translation translation = new Translation();
 
@@ -32,9 +33,11 @@ public class Crafter implements Definition {
      */
     public record Tuning(float craftingSpeed, int energyPerTick, int energyCapacity, int inputCrafts) {}
 
-    public Crafter(ResourceLocation id, int tier, Tuning tuning) {
+    /** @param moduleSlots slots de module, structurels comme le palier (FIO-127) */
+    public Crafter(ResourceLocation id, int tier, int moduleSlots, Tuning tuning) {
         this.id = id;
         this.tier = tier;
+        this.moduleSlots = moduleSlots;
         this.defaults = tuning;
         this.tuning = tuning;
     }
@@ -53,6 +56,10 @@ public class Crafter implements Definition {
 
     public int getTier() {
         return this.tier;
+    }
+
+    public int getModuleSlots() {
+        return this.moduleSlots;
     }
 
     // Interface (Réglages)
@@ -81,7 +88,7 @@ public class Crafter implements Definition {
 
     @Override
     public String toString() {
-        return "Crafter{" + this.id + ", tier=" + this.tier + ", " + this.tuning + "}";
+        return "Crafter{" + this.id + ", tier=" + this.tier + ", modules=" + this.moduleSlots + ", " + this.tuning + "}";
     }
 
     public static ResourceLocation id(String name) {

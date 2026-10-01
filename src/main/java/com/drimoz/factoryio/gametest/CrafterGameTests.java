@@ -13,10 +13,12 @@ import com.drimoz.factoryio.content.crafter.CrafterRecipe;
 import com.drimoz.factoryio.content.crafter.CrafterRecipes;
 import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.core.init.ModBlocks;
+import com.drimoz.factoryio.core.init.ModItems;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
@@ -230,6 +232,80 @@ public class CrafterGameTests {
         helper.assertTrue(basic.getId().equals(crafter.getRecipeId()), "La recette a changé malgré le refus");
         helper.assertTrue(basic.getId().equals(((CrafterMenu) player.containerMenu).getRecipeId()), "Le menu n'a pas suivi");
         helper.succeed();
+    }
+
+    // Tests (Modules, FIO-127)
+
+    /**
+     * Quatre productivité 3 : +40 % par craft. Après deux crafts la barre est à 80 %, le
+     * troisième la fait déborder — trois crafts, quatre pierres.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 600)
+    public static void productivityGivesABonusCraft(GameTestHelper helper) {
+        CrafterRecipe recipe = inject(helper, "productivity", 1);
+        CrafterBlockEntity crafter = place(helper, "crafter_mk3");
+        crafter.selectRecipe(recipe.getId(), null);
+        helper.setBlock(MASTER.offset(0, 2, 0), ModBlocks.CREATIVE_ENERGY_SOURCE.get());
+
+        for (int i = 0; i < CrafterBlockEntity.MODULE_SLOTS; i++) {
+            ItemStack left = crafter.getItems().insertItem(CrafterBlockEntity.MODULE_FIRST + i,
+                    new ItemStack(ModItems.PRODUCTIVITY_MODULE_3.get()), false);
+            helper.assertTrue(left.isEmpty(), "Le Mk3 refuse un module dans le slot " + i);
+        }
+        helper.assertTrue(Math.abs(crafter.getModules().productivity() - 0.40F) < 1e-4F,
+                "Productivité : " + crafter.getModules().productivity());
+
+        IItemHandler handler = handler(helper, WEST_PART);
+        handler.insertItem(0, new ItemStack(Items.COBBLESTONE, 4), false);
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(stone(crafter) == 2, "Pierres : " + stone(crafter)))
+                .thenExecute(() -> handler.insertItem(0, new ItemStack(Items.COBBLESTONE, 2), false))
+                .thenWaitUntil(() -> helper.assertTrue(stone(crafter) == 4,
+                        "Trois crafts sous +40 % devraient donner 4 pierres : " + stone(crafter)))
+                .thenSucceed();
+    }
+
+    /** Le Mk1 n'a aucun slot de module : rien n'y entre, et rien n'est perdu. */
+    @GameTest(template = TEMPLATE)
+    public static void aMk1HasNoModuleSlot(GameTestHelper helper) {
+        CrafterBlockEntity crafter = place(helper, "crafter_mk1");
+
+        ItemStack module = new ItemStack(ModItems.SPEED_MODULE_1.get());
+        ItemStack left = crafter.getItems().insertItem(CrafterBlockEntity.MODULE_FIRST, module, false);
+
+        helper.assertTrue(left.getCount() == 1, "Un Mk1 a accepté un module");
+        helper.assertTrue(crafter.getModules().isEmpty(), "Un Mk1 a des modules actifs");
+        helper.succeed();
+    }
+
+    /** Une sauvegarde d'avant les modules (13 slots) se recharge avec ses 17 slots, sans planter. */
+    @GameTest(template = TEMPLATE)
+    public static void aSaveFromBeforeModulesStillLoads(GameTestHelper helper) {
+        CrafterBlockEntity crafter = place(helper, "crafter_mk3");
+        crafter.getItems().setStackInSlot(0, new ItemStack(Items.COBBLESTONE, 3));
+
+        CompoundTag tag = crafter.saveWithoutMetadata();
+        CompoundTag items = tag.getCompound("items");
+        items.putInt("Size", CrafterBlockEntity.SLOTS);
+        tag.put("items", items);
+
+        CrafterBlockEntity copy = new CrafterBlockEntity(crafter.getBlockPos(), crafter.getBlockState());
+        copy.load(tag);
+
+        helper.assertTrue(copy.getItems().getSlots() == CrafterBlockEntity.TOTAL_SLOTS, "Slots : " + copy.getItems().getSlots());
+        helper.assertTrue(copy.getItems().getStackInSlot(0).getCount() == 3, "Entrées perdues");
+        helper.assertTrue(copy.getItems().getStackInSlot(CrafterBlockEntity.MODULE_FIRST).isEmpty(), "Slot de module illisible");
+        helper.succeed();
+    }
+
+    private static int stone(CrafterBlockEntity crafter) {
+        int total = 0;
+        for (int slot = CrafterBlockEntity.INPUT_SLOTS; slot < CrafterBlockEntity.SLOTS; slot++) {
+            ItemStack stack = crafter.getItems().getStackInSlot(slot);
+            if (stack.is(Items.STONE)) total += stack.getCount();
+        }
+        return total;
     }
 
     // Tests (Contrôle, FIO-183)
