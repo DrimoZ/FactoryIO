@@ -234,7 +234,12 @@ tourne 30 minutes sans perte d'item ni chute de TPS.
 
 ---
 
-## Phase 4 — Machines et progression (≈ 4 semaines) — **ajournée**
+## Phase 4 — Machines et progression (≈ 4 semaines) — **rouverte partiellement**
+
+> **Rouverte partiellement le 30/09/2026** : un cadre multibloc générique et le crafter
+> T1-T3, conçus dans [`12`](12-DESIGN-CRAFTER.md). Le reste de la phase reste ajourné, et
+> l'énergie de survie (FIO-124) n'est pas tranchée : le crafter consomme du FE venu d'un
+> autre mod, ou de la source créative en test.
 
 > **Reportée le 16/08/2026, décision du mainteneur** : « la Phase 4 n'a pas de sens pour
 > le moment ». Rien n'est supprimé — la spécification ci-dessous reste valable le jour où
