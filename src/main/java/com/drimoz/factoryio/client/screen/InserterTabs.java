@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.client.screen;
 
 import com.drimoz.factoryio.shared.GuiMetrics;
+import com.drimoz.factoryio.client.gui.ButtonTab;
 import com.drimoz.factoryio.client.gui.ControlTab;
 import com.drimoz.factoryio.client.gui.GuiSprites;
 import com.drimoz.factoryio.client.gui.GuiTheme;
@@ -30,7 +31,6 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,47 +54,8 @@ final class InserterTabs {
     private static final int VALUE = GuiTheme.TAB_VALUE;
     private static final int MUTED = GuiTheme.TAB_MUTED;
 
-    private static void label(GuiGraphics graphics, Font font, Component text, int x, int y) {
-        GuiTheme.tabLabel(graphics, font, text, x, y);
-    }
-
-    private static void value(GuiGraphics graphics, Font font, Component text, int x, int y, int colour) {
-        GuiTheme.tabValue(graphics, font, text, x, y, colour);
-    }
-
     private static Component number(double value) {
         return Component.literal(StringHelper.decimal(value));
-    }
-
-    /** Onglet à boutons : rendu, clic et infobulle délégués à la liste. */
-    private abstract static class ButtonTab extends SideTab {
-
-        protected final List<IconButton> buttons = new ArrayList<>();
-
-        ButtonTab(String id, Side side, int colour) {
-            super(id, side, colour);
-        }
-
-        protected void renderButtons(GuiGraphics graphics, Font font, int x, int y, int mouseX, int mouseY) {
-            for (IconButton button : this.buttons) button.render(graphics, font, x, y, mouseX, mouseY);
-        }
-
-        @Override
-        protected boolean contentClicked(int x, int y, double mouseX, double mouseY, int button) {
-            for (IconButton b : this.buttons) {
-                if (b.mouseClicked(x, y, mouseX, mouseY)) return true;
-            }
-            return false;
-        }
-
-        @Override
-        protected List<Component> contentTooltip(int x, int y, double mouseX, double mouseY) {
-            for (IconButton b : this.buttons) {
-                List<Component> lines = b.tooltipAt(x, y, mouseX, mouseY);
-                if (!lines.isEmpty()) return lines;
-            }
-            return List.of();
-        }
     }
 
     // Informations (gauche) ------------------------------------------------------------------
@@ -140,23 +101,23 @@ final class InserterTabs {
         protected void renderContent(GuiGraphics graphics, Font font, int x, int y, int mouseX, int mouseY) {
             InserterBlockEntity be = this.screen.blockEntity();
 
-            label(graphics, font, ModUtils.tooltipComponent("info_state"), x, y);
+            GuiTheme.tabLabel(graphics, font, ModUtils.tooltipComponent("info_state"), x, y);
             State state = state(be);
-            value(graphics, font, ModUtils.tooltipComponent(state.key), x, y + LINE, state.status.tabColour);
+            GuiTheme.tabValue(graphics, font, ModUtils.tooltipComponent(state.key), x, y + LINE, state.status.tabColour);
 
-            label(graphics, font, ModUtils.tooltipComponent("info_rate"), x, y + ROW);
-            value(graphics, font, ModUtils.tooltipComponent("value_items_per_second", number(be.getItemsPerSecond())),
+            GuiTheme.tabLabel(graphics, font, ModUtils.tooltipComponent("info_rate"), x, y + ROW);
+            GuiTheme.tabValue(graphics, font, ModUtils.tooltipComponent("value_items_per_second", number(be.getItemsPerSecond())),
                     x, y + ROW + LINE, VALUE);
 
-            label(graphics, font, ModUtils.tooltipComponent("info_measured"), x, y + 2 * ROW);
+            GuiTheme.tabLabel(graphics, font, ModUtils.tooltipComponent("info_measured"), x, y + 2 * ROW);
             ThroughputMeter meter = this.screen.meter();
-            value(graphics, font, meter.isMeasuring()
+            GuiTheme.tabValue(graphics, font, meter.isMeasuring()
                             ? ModUtils.tooltipComponent("info_measuring")
                             : ModUtils.tooltipComponent("value_items_per_second", number(meter.itemsPerSecond())),
                     x, y + 2 * ROW + LINE, meter.isMeasuring() ? MUTED : VALUE);
 
-            label(graphics, font, ModUtils.tooltipComponent("info_consumption"), x, y + 3 * ROW);
-            value(graphics, font, ModUtils.tooltipComponent(
+            GuiTheme.tabLabel(graphics, font, ModUtils.tooltipComponent("info_consumption"), x, y + 3 * ROW);
+            GuiTheme.tabValue(graphics, font, ModUtils.tooltipComponent(
                             this.screen.getMenu().usesEnergy() ? "value_energy_per_swing" : "value_fuel_per_swing",
                             be.getFuelConsumptionPerAction()),
                     x, y + 3 * ROW + LINE, VALUE);
@@ -167,7 +128,7 @@ final class InserterTabs {
             // sur le réglage effectif.
             if (this.screen.getMenu().usesEnergy()) {
                 double perTick = (double) be.getFuelConsumptionPerAction() / Math.max(1, be.getTicksPerSwing());
-                value(graphics, font, ModUtils.tooltipComponent("value_energy_per_tick", number(perTick)),
+                GuiTheme.tabValue(graphics, font, ModUtils.tooltipComponent("value_energy_per_tick", number(perTick)),
                         x, y + 3 * ROW + 2 * LINE, VALUE);
             }
         }
@@ -287,11 +248,11 @@ final class InserterTabs {
             InserterTuning now = be.getEffectiveTuning();
             boolean energy = this.screen.getMenu().usesEnergy();
 
-            value(graphics, font, ModUtils.tooltipComponent("augment_swing",
+            GuiTheme.tabValue(graphics, font, ModUtils.tooltipComponent("augment_swing",
                     change(base.ticksPerSwing(), now.ticksPerSwing())), x, text, VALUE);
-            value(graphics, font, ModUtils.tooltipComponent("augment_hand",
+            GuiTheme.tabValue(graphics, font, ModUtils.tooltipComponent("augment_hand",
                     change(base.handSize(), now.handSize())), x, text + LINE, VALUE);
-            value(graphics, font, ModUtils.tooltipComponent(energy ? "augment_cost_energy" : "augment_cost_fuel",
+            GuiTheme.tabValue(graphics, font, ModUtils.tooltipComponent(energy ? "augment_cost_energy" : "augment_cost_fuel",
                     energy ? change(base.energyConsumption(), now.energyConsumption())
                            : change(base.fuelConsumption(), now.fuelConsumption())), x, text + 2 * LINE, VALUE);
         }
@@ -459,7 +420,7 @@ final class InserterTabs {
         protected void renderContent(GuiGraphics graphics, Font font, int x, int y, int mouseX, int mouseY) {
             renderButtons(graphics, font, x, y, mouseX, mouseY);
 
-            label(graphics, font, ModUtils.tooltipComponent("hand_size_setting"), x, y);
+            GuiTheme.tabLabel(graphics, font, ModUtils.tooltipComponent("hand_size_setting"), x, y);
 
             int capacity = be().getMaximumItemCountPerAction();
             Component hand = be().getHandSizeLimit() == InserterBlockEntity.HAND_SIZE_MAX
@@ -467,8 +428,8 @@ final class InserterTabs {
                     : ModUtils.tooltipComponent("hand_size_value", be().getHandSize(), capacity);
             graphics.drawCenteredString(font, hand, x + WIDTH / 2, y + HAND_ROW + 3, VALUE);
 
-            label(graphics, font, ModUtils.tooltipComponent("drop_lane"), x, y + LANE_LABEL);
-            label(graphics, font, ModUtils.tooltipComponent("animation_setting"), x, y + ANIMATION_LABEL);
+            GuiTheme.tabLabel(graphics, font, ModUtils.tooltipComponent("drop_lane"), x, y + LANE_LABEL);
+            GuiTheme.tabLabel(graphics, font, ModUtils.tooltipComponent("animation_setting"), x, y + ANIMATION_LABEL);
         }
     }
 }

@@ -3,23 +3,32 @@ package com.drimoz.factoryio.core.inserters;
 
 import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.generic.block.WaterloggedEntityBlock;
+import com.drimoz.factoryio.core.generic.block.ModEntityBlock;
 import com.drimoz.factoryio.core.init.ModTags;
 import com.drimoz.factoryio.core.model.Inserter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -29,7 +38,9 @@ import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
-public class InserterBlock extends WaterloggedEntityBlock {
+public class InserterBlock extends ModEntityBlock implements SimpleWaterloggedBlock {
+
+    public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
     // Private properties
 
@@ -50,6 +61,39 @@ public class InserterBlock extends WaterloggedEntityBlock {
         super(pProperties);
 
         this.inserter = inserter;
+        this.registerDefaultState(this.stateDefinition.any().setValue(ENABLED, Boolean.TRUE).setValue(WATERLOGGED, false));
+    }
+
+    // Interface (Eau)
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> pBuilder) {
+        pBuilder.add(FACING, ENABLED, WATERLOGGED);
+    }
+
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext pContext) {
+        FluidState fluidState = pContext.getLevel().getFluidState(pContext.getClickedPos());
+
+        // BlockState est immuable : la version précédente appelait setValue sur
+        // defaultBlockState() et jetait le résultat, si bien que WATERLOGGED restait
+        // toujours false et que poser un bloc dans l'eau la supprimait (cf. BUG-010).
+        return super.getStateForPlacement(pContext)
+                .setValue(WATERLOGGED, fluidState.getType() == Fluids.WATER);
+    }
+
+    @Override
+    public FluidState getFluidState(BlockState state) {
+        return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
+    }
+
+    @Override
+    public BlockState updateShape(BlockState stateIn, Direction facing, BlockState facingState, LevelAccessor worldIn, BlockPos currentPos, BlockPos facingPos) {
+        if (stateIn.getValue(WATERLOGGED)) {
+            worldIn.scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(worldIn));
+        }
+
+        return super.updateShape(stateIn, facing, facingState, worldIn, currentPos, facingPos);
     }
 
     // Interface (Redstone)
@@ -99,13 +143,6 @@ public class InserterBlock extends WaterloggedEntityBlock {
     @Override
     public RenderShape getRenderShape(BlockState pState) {
         return RenderShape.ENTITYBLOCK_ANIMATED;
-    }
-
-    // Interface (Ticks)
-
-    @Nullable
-    protected static <T extends BlockEntity> BlockEntityTicker<T> createTicker(Level pLevel, BlockEntityType<T> eTypeT, BlockEntityType<? extends InserterBlockEntity> eTypeI) {
-        return pLevel.isClientSide ? null : createTickerHelper(eTypeT, eTypeI, InserterBlockEntity::tick);
     }
 
     // Interface (Interactions)
@@ -161,14 +198,16 @@ public class InserterBlock extends WaterloggedEntityBlock {
         return held.isEmpty() && player.isSecondaryUseActive();
     }
 
-
-
     // Interface BlockEntity
+
     @Override
     public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
-        return new InserterBlockEntity(inserter.getBlockEntityType().get(), pPos, pState, inserter);
+        return new InserterBlockEntity(pPos, pState, inserter);
     }
+
+    @Nullable
+    @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState blockState, BlockEntityType<T> blockEntityType) {
-        return level.isClientSide ? null : createTicker(level, blockEntityType, inserter.getBlockEntityType().get());
+        return level.isClientSide ? null : createTickerHelper(blockEntityType, inserter.getBlockEntityType().get(), InserterBlockEntity::tick);
     }
 }

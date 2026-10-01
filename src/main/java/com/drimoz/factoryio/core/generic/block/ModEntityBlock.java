@@ -1,22 +1,15 @@
 package com.drimoz.factoryio.core.generic.block;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.MenuProvider;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.*;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityTicker;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 
-import javax.annotation.Nullable;
 
 public abstract class ModEntityBlock extends BaseEntityBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
@@ -50,10 +43,6 @@ public abstract class ModEntityBlock extends BaseEntityBlock {
     @Override
     public RenderShape getRenderShape(BlockState pState) {
         return RenderShape.MODEL;
-    }
-
-    public BlockState updateShape(BlockState stateIn, Direction facing, BlockState facingState, LevelAccessor worldIn, BlockPos currentPos, BlockPos facingPos) {
-        return super.updateShape(stateIn, facing, facingState, worldIn, currentPos, facingPos);
     }
 
     @Override
@@ -115,16 +104,5 @@ public abstract class ModEntityBlock extends BaseEntityBlock {
      */
     protected boolean shouldBeEnabled(Level pLevel, BlockPos pPos) {
         return !isAffectedByRedstone() || !pLevel.hasNeighborSignal(pPos);
-    }
-
-
-    public MenuProvider getMenuProvider(BlockState pBlockState, Level pLevel, BlockPos pPos) {
-        BlockEntity blockEntity = pLevel.getBlockEntity(pPos);
-        return blockEntity instanceof MenuProvider ? (MenuProvider)blockEntity : null;
-    }
-
-    @Nullable
-    protected static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> createTickerHelper(BlockEntityType<A> eTypeA, BlockEntityType<E> eTypeE, BlockEntityTicker<? super E> eTickerE) {
-        return eTypeE == eTypeA ? (BlockEntityTicker<A>) eTickerE : null;
     }
 }

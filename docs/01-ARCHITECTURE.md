@@ -21,10 +21,9 @@ com.drimoz.factoryio
 │   ├── configs/                    ← ForgeConfigSpec + EarlyConfig (lecture anticipée)
 │   ├── datagen/                    ← providers, partagés par runData et le pack runtime
 │   ├── generic/                    ← classes de base réutilisables
-│   │   ├── block/                  ← ModEntityBlock (+WaterloggedEntityBlock)
-│   │   ├── block_entity/           ← BaseBlockEntity (+MenuBlockEntity)
+│   │   ├── block/                  ← ModEntityBlock, RedstoneCondition
 │   │   ├── container/              ← BaseMenu, slots, EnergyContainer
-│   │   └── item/                   ← ModItem / ModBlockItem / ColoredItem
+│   │   └── item/                   ← ColoredItem
 │   ├── init/                       ← DeferredRegister, tags, réseau, ModBlocks
 │   ├── inserters/                  ← la feature du mod
 │   ├── item/                       ← ConfiguratorItem
@@ -49,7 +48,7 @@ synchronisation.
 
 ```
 Constructeur @Mod FactoryIO()
- 1. InserterLoader.setup()
+ 1. InserterRegistry.load()
       ├── EarlyConfig.load()            ← lit le TOML à la main (voir §3)
       ├── config/factor_io/inserters/*.json → InserterCodec
       └── InserterDefaults.all()        ← le barème des 7 inserters livrés
@@ -69,7 +68,7 @@ OnDatapackSyncEvent      → S2CInserterTunings vers les clients
 
 **Contrainte structurelle** : la liste des inserters doit être connue avant que le bus
 d'évènements ne soit sollicité, puisque `DeferredRegister` a besoin des noms dès la
-construction du mod. C'est pourquoi `InserterLoader.setup()` est la première instruction.
+construction du mod. C'est pourquoi `InserterRegistry.load()` est la première instruction.
 
 ---
 
@@ -143,14 +142,14 @@ la construction du mod sur serveur dédié (DT-09).
 ## 6. La chaîne inserter
 
 ```
-InserterBlock  (→ WaterloggedEntityBlock → ModEntityBlock → BaseEntityBlock)
+InserterBlock  (→ ModEntityBlock → BaseEntityBlock, SimpleWaterloggedBlock)
    ├── FACING, ENABLED, WATERLOGGED
    ├── getShape       → socle + palier, calqués sur la géométrie
    ├── shouldBeEnabled→ condition redstone analogique lue sur le block entity
    ├── use()          → clé à molette ou shift+clic nu = rotation, sinon ouverture du menu
    └── getTicker()    → serveur uniquement
 
-InserterBlockEntity  (→ MenuBlockEntity, GeoBlockEntity)
+InserterBlockEntity  (→ BlockEntity, MenuProvider, GeoBlockEntity)
    ├── machine à états WAITING / SWINGING / BLOCKED / RETURNING
    ├── ItemStackHandler dimensionné par InserterSlotLayout
    ├── EnergyContainer (si électrique)

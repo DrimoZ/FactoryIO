@@ -2,7 +2,7 @@ package com.drimoz.factoryio.core.inserters;
 
 import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.generic.block_entity.MenuBlockEntity;
+import net.minecraft.world.MenuProvider;
 import com.drimoz.factoryio.core.generic.container.energy.EnergyContainer;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.model.InserterTuning;
@@ -63,7 +63,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEntity {
+public class InserterBlockEntity extends BlockEntity implements MenuProvider, GeoBlockEntity {
 
     // Public constants
 
@@ -259,16 +259,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
     // Life cycle
 
     public InserterBlockEntity(BlockPos blockPos, BlockState blockState, Inserter inserter) {
-        this(inserter.getBlockEntityType().get(), blockPos, blockState, inserter);
-    }
-
-    public InserterBlockEntity(
-            BlockEntityType<?> blockEntityType,
-            BlockPos blockPos,
-            BlockState blockState,
-            Inserter inserter
-    ) {
-        super(blockEntityType, blockPos, blockState);
+        super(inserter.getBlockEntityType().get(), blockPos, blockState);
 
         this.inserter = inserter;
 

@@ -2,7 +2,7 @@ package com.drimoz.factoryio.core.datagen;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.datagen.generator.*;
-import com.drimoz.factoryio.core.registry.Translations;
+import com.drimoz.factoryio.core.model.Translation;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
 import net.minecraftforge.common.data.ExistingFileHelper;
@@ -20,7 +20,7 @@ public class ModDataGenerators {
         boolean client = event.includeClient();
         boolean server = event.includeServer();
 
-        Translations.getINSTANCE().getTranslationList().forEach(code ->
+        Translation.codes().forEach(code ->
                 generator.addProvider(client, new ModLangGenerator(output, FactoryIO.MOD_ID, code)));
 
         generator.addProvider(client, new ModBlockModelGenerator(output, FactoryIO.MOD_ID, existingFileHelper));

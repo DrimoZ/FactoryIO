@@ -15,7 +15,6 @@ import com.drimoz.factoryio.core.network.packet.S2CBeltSpeeds;
 import com.drimoz.factoryio.core.network.packet.S2CInserterTunings;
 import net.minecraft.server.level.ServerPlayer;
 import java.util.List;
-import com.drimoz.factoryio.core.registry.InserterLoader;
 import com.drimoz.factoryio.core.configs.EarlyConfig;
 import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.registry.BeltReloadListener;
@@ -53,7 +52,7 @@ public class FactoryIO
         // Doit précéder ModRegistries.register() : la liste des inserters
         // détermine les blocs, items, block entities et menus à déclarer.
         EarlyConfig.load();
-        InserterLoader.setup();
+        InserterRegistry.getInstance().load();
         BeltRegistry.load();
         CrafterRegistry.load();
         EarlyConfig.close();

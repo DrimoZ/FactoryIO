@@ -3,11 +3,12 @@ package com.drimoz.factoryio.core.generic.item;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
 
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
 
-public class ColoredItem extends ModItem {
+public class ColoredItem extends Item {
 
     // Private properties
 

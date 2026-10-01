@@ -8,7 +8,7 @@ import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.model.Belt;
 import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
-import com.drimoz.factoryio.core.registry.Translations;
+import com.drimoz.factoryio.core.model.Translation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.core.HolderLookup;
@@ -167,7 +167,7 @@ public class PackGenerator {
 
         providers.add(new ModLootGenerator(output));
 
-        Translations.getINSTANCE().getTranslationList().forEach(translationCode ->
+        Translation.codes().forEach(translationCode ->
                 providers.add(new ModLangGenerator(output, FactoryIO.MOD_ID, translationCode)));
 
         ModBlockTagsGenerator blockTags =
