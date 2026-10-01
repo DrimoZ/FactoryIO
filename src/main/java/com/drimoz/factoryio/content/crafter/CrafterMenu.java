@@ -114,9 +114,8 @@ public class CrafterMenu extends BaseMenu {
         return GuiMetrics.TAB_TOP + GuiMetrics.TAB_HEADER + 1;
     }
 
-    private static final int PROGRESS_SCALE = 1000;
-    private static final int SPEED_SCALE = 1000;
-    private static final int RATIO_SCALE = 1000;
+    /** Échelle des valeurs fractionnaires envoyées par le ContainerData. */
+    private static final int SCALE = 1000;
     private static final int MACHINE_FIRST_SLOT = VANILLA_SLOT_COUNT;
 
     @Nullable private final CrafterBlockEntity blockEntity;
@@ -157,8 +156,7 @@ public class CrafterMenu extends BaseMenu {
 
         // Autant de slots que le palier en a : le menu existe des deux côtés avec le même block
         // entity, donc le même nombre.
-        int modules = blockEntity != null ? Math.min(CrafterBlockEntity.MODULE_SLOTS, blockEntity.getCrafter().getModuleSlots()) : 0;
-        for (int i = 0; i < modules; i++) {
+        for (int i = 0; i < getModuleSlots(); i++) {
             addSlot(new UpgradeSlot(items, CrafterBlockEntity.MODULE_FIRST + i, moduleSlotX(i), moduleSlotY(),
                     CrafterBlockEntity::isModule));
         }
@@ -172,21 +170,21 @@ public class CrafterMenu extends BaseMenu {
             public int get(int index) {
                 Crafter.Tuning tuning = blockEntity.getCrafter().getTuning();
                 return switch (index) {
-                    case PROGRESS -> Math.round(blockEntity.getProgress() * PROGRESS_SCALE);
+                    case PROGRESS -> Math.round(blockEntity.getProgress() * SCALE);
                     case ENERGY -> blockEntity.getEnergyStored() & 0xFFFF;
                     case ENERGY + 1 -> blockEntity.getEnergyStored() >>> 16;
                     case CAPACITY -> blockEntity.getEnergyCapacity() & 0xFFFF;
                     case CAPACITY + 1 -> blockEntity.getEnergyCapacity() >>> 16;
                     case STATUS -> blockEntity.getStatus().ordinal();
                     case CRAFTS -> blockEntity.getCraftsCompleted() & 0xFFFF;
-                    case SPEED -> Math.round(blockEntity.getEffectiveSpeed() * SPEED_SCALE) & 0xFFFF;
-                    case SPEED + 1 -> Math.round(blockEntity.getEffectiveSpeed() * SPEED_SCALE) >>> 16;
+                    case SPEED -> Math.round(blockEntity.getEffectiveSpeed() * SCALE) & 0xFFFF;
+                    case SPEED + 1 -> Math.round(blockEntity.getEffectiveSpeed() * SCALE) >>> 16;
                     case ENERGY_PER_TICK -> blockEntity.getEffectiveEnergyPerTick() & 0xFFFF;
                     case ENERGY_PER_TICK + 1 -> blockEntity.getEffectiveEnergyPerTick() >>> 16;
-                    case SPEED_MULTIPLIER -> Math.round(blockEntity.getModules().speedMultiplier() * RATIO_SCALE);
-                    case ENERGY_MULTIPLIER -> Math.round(blockEntity.getModules().energyMultiplier() * RATIO_SCALE);
-                    case PRODUCTIVITY -> Math.round(blockEntity.getModules().productivity() * RATIO_SCALE);
-                    case PRODUCTIVITY_PROGRESS -> Math.round(blockEntity.getProductivityProgress() * RATIO_SCALE);
+                    case SPEED_MULTIPLIER -> Math.round(blockEntity.getModules().speedMultiplier() * SCALE);
+                    case ENERGY_MULTIPLIER -> Math.round(blockEntity.getModules().energyMultiplier() * SCALE);
+                    case PRODUCTIVITY -> Math.round(blockEntity.getModules().productivity() * SCALE);
+                    case PRODUCTIVITY_PROGRESS -> Math.round(blockEntity.getProductivityProgress() * SCALE);
                     case SWITCHED_ON -> blockEntity.isSwitchedOn() ? 1 : 0;
                     case REDSTONE_MODE -> blockEntity.getConfiguredRedstoneCondition().mode().ordinal();
                     case REDSTONE_THRESHOLD -> blockEntity.getConfiguredRedstoneCondition().threshold();
@@ -245,7 +243,7 @@ public class CrafterMenu extends BaseMenu {
     }
 
     public float getProgress() {
-        return this.data.get(PROGRESS) / (float) PROGRESS_SCALE;
+        return this.data.get(PROGRESS) / (float) SCALE;
     }
 
     public int getEnergyStored() {
@@ -262,7 +260,7 @@ public class CrafterMenu extends BaseMenu {
     }
 
     public float getCraftingSpeed() {
-        return wide(SPEED) / (float) SPEED_SCALE;
+        return wide(SPEED) / (float) SCALE;
     }
 
     public int getEnergyPerTick() {
@@ -270,23 +268,23 @@ public class CrafterMenu extends BaseMenu {
     }
 
     public int getModuleSlots() {
-        return this.blockEntity != null ? Math.min(CrafterBlockEntity.MODULE_SLOTS, this.blockEntity.getCrafter().getModuleSlots()) : 0;
+        return this.blockEntity != null ? this.blockEntity.getCrafter().getModuleSlots() : 0;
     }
 
     public float getSpeedMultiplier() {
-        return this.data.get(SPEED_MULTIPLIER) / (float) RATIO_SCALE;
+        return this.data.get(SPEED_MULTIPLIER) / (float) SCALE;
     }
 
     public float getEnergyMultiplier() {
-        return this.data.get(ENERGY_MULTIPLIER) / (float) RATIO_SCALE;
+        return this.data.get(ENERGY_MULTIPLIER) / (float) SCALE;
     }
 
     public float getProductivity() {
-        return this.data.get(PRODUCTIVITY) / (float) RATIO_SCALE;
+        return this.data.get(PRODUCTIVITY) / (float) SCALE;
     }
 
     public float getProductivityProgress() {
-        return this.data.get(PRODUCTIVITY_PROGRESS) / (float) RATIO_SCALE;
+        return this.data.get(PRODUCTIVITY_PROGRESS) / (float) SCALE;
     }
 
     /** Contenu du réservoir {@code tank}, tel que le serveur l'a envoyé. */

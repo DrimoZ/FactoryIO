@@ -480,8 +480,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     private boolean hasAdvancedRedstone() {
-        int active = Math.min(MODULE_SLOTS, getCrafter().getModuleSlots());
-        for (int i = 0; i < active; i++) {
+        for (int i = 0; i < getCrafter().getModuleSlots(); i++) {
             if (InserterUpgradeType.ADVANCED_REDSTONE.levelOf(this.items.getStackInSlot(MODULE_FIRST + i)) > 0) return true;
         }
         return false;
@@ -548,40 +547,32 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
-     * La nature d'un module, par les tags des inserters ; {@code null} si ce n'en est pas un
-     * qui sert au crafter. Le tag {@code capacity} porte les modules de productivité.
+     * Le tag d'inserter qui porte chaque nature de module, dans l'ordre de
+     * {@link CrafterModules.Kind} : le tag {@code capacity} porte les modules de productivité.
      */
+    private static final InserterUpgradeType[] MODULE_TAGS = {
+            InserterUpgradeType.SPEED, InserterUpgradeType.CAPACITY, InserterUpgradeType.EFFICIENCY };
+
     /** Ce qu'un slot de module accepte : un module d'effet, ou celui de redstone avancée. */
     public static boolean isModule(ItemStack stack) {
-        return moduleKind(stack) != null || InserterUpgradeType.ADVANCED_REDSTONE.levelOf(stack) > 0;
-    }
-
-    @Nullable
-    public static CrafterModules.Kind moduleKind(ItemStack stack) {
-        if (InserterUpgradeType.SPEED.levelOf(stack) > 0) return CrafterModules.Kind.SPEED;
-        if (InserterUpgradeType.CAPACITY.levelOf(stack) > 0) return CrafterModules.Kind.PRODUCTIVITY;
-        if (InserterUpgradeType.EFFICIENCY.levelOf(stack) > 0) return CrafterModules.Kind.EFFICIENCY;
-        return null;
-    }
-
-    private static int moduleTier(CrafterModules.Kind kind, ItemStack stack) {
-        return switch (kind) {
-            case SPEED -> InserterUpgradeType.SPEED.levelOf(stack);
-            case PRODUCTIVITY -> InserterUpgradeType.CAPACITY.levelOf(stack);
-            case EFFICIENCY -> InserterUpgradeType.EFFICIENCY.levelOf(stack);
-        };
+        for (InserterUpgradeType tag : MODULE_TAGS) {
+            if (tag.levelOf(stack) > 0) return true;
+        }
+        return InserterUpgradeType.ADVANCED_REDSTONE.levelOf(stack) > 0;
     }
 
     /** Les modules des slots actifs : un slot au-delà du palier ne compte pas. */
     private CrafterModules readModules() {
-        int[][] counts = new int[CrafterModules.Kind.values().length][CrafterModules.MAX_TIER];
-        int active = Math.min(MODULE_SLOTS, getCrafter().getModuleSlots());
-        for (int i = 0; i < active; i++) {
+        int[][] counts = new int[MODULE_TAGS.length][CrafterModules.MAX_TIER];
+        for (int i = 0; i < getCrafter().getModuleSlots(); i++) {
             ItemStack stack = this.items.getStackInSlot(MODULE_FIRST + i);
-            CrafterModules.Kind kind = moduleKind(stack);
-            if (kind == null) continue;
-            int tier = Math.min(CrafterModules.MAX_TIER, moduleTier(kind, stack));
-            if (tier > 0) counts[kind.ordinal()][tier - 1]++;
+            for (int kind = 0; kind < MODULE_TAGS.length; kind++) {
+                int tier = Math.min(CrafterModules.MAX_TIER, MODULE_TAGS[kind].levelOf(stack));
+                if (tier > 0) {
+                    counts[kind][tier - 1]++;
+                    break;
+                }
+            }
         }
         return CrafterModules.of(counts);
     }
