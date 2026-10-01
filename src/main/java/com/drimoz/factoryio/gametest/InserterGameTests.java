@@ -272,11 +272,14 @@ public class InserterGameTests {
 
         container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
 
-        // Cible saturée : l'inserter se bloque avec un item en main, ce qui est justement
-        // l'état où un joueur serait tenté de le lui prendre.
-        fillWithStone(container(helper, TARGET));
-
+        // L'inserter se bloque avec un item en main : l'état où un joueur serait tenté de le
+        // lui prendre.
+        // Cible remplie pendant le trajet, item déjà en main : depuis FIO-182, une cible pleine
+        // dès le départ ne fait plus rien prendre, et c'est ainsi seulement qu'on se bloque.
         helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(
+                        inserter(helper).getState() == InserterState.SWINGING, "L'inserter n'a rien pris"))
+                .thenExecute(() -> fillWithStone(container(helper, TARGET)))
                 .thenWaitUntil(() -> helper.assertTrue(
                         inserter(helper).getState() == InserterState.BLOCKED,
                         "L'inserter ne s'est pas bloqué"))
@@ -299,8 +302,14 @@ public class InserterGameTests {
                             "L'item retiré n'est pas arrivé entier chez le joueur");
                 })
                 .thenWaitUntil(() -> helper.assertTrue(
-                        !inserterHandler(helper).getStackInSlot(InserterBlockEntity.BUFFER_SLOT).isEmpty(),
+                        inserter(helper).getState() != InserterState.BLOCKED,
                         "Main vidée : l'inserter est resté figé au lieu de repartir"))
+                // La cible est toujours pleine : il attend sans rien prendre (FIO-182), et
+                // reprend dès qu'elle se libère.
+                .thenExecute(() -> container(helper, TARGET).setItem(0, ItemStack.EMPTY))
+                .thenWaitUntil(() -> helper.assertTrue(
+                        container(helper, TARGET).countItem(Items.COBBLESTONE) > 0,
+                        "L'inserter n'a pas repris une fois la cible libérée"))
                 .thenSucceed();
     }
 
@@ -446,21 +455,49 @@ public class InserterGameTests {
         fuelInserter(helper);
 
         container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
+
+        // Cible remplie pendant le trajet, item déjà en main : depuis FIO-182, une cible pleine
+        // dès le départ ne fait plus rien prendre, et c'est ainsi seulement qu'on se bloque.
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(
+                        inserter(helper).getState() == InserterState.SWINGING, "L'inserter n'a rien pris"))
+                .thenExecute(() -> fillWithStone(container(helper, TARGET)))
+                .thenWaitUntil(() -> helper.assertTrue(
+                        inserter(helper).getState() == InserterState.BLOCKED,
+                        "L'inserter ne s'est pas bloqué"))
+                .thenExecute(() -> {
+                    InserterBlockEntity blockEntity = inserter(helper);
+
+                    helper.assertTrue(blockEntity.getHeldStack().is(Items.COBBLESTONE),
+                            "L'inserter bloqué ne garde pas son item : " + blockEntity.getHeldStack());
+
+                    // Et l'item n'a été ni dupliqué ni perdu en cours de route.
+                    int total = countCobblestone(helper);
+                    helper.assertTrue(total == MOVED_ITEMS,
+                            "Les items ne sont pas conservés pendant le blocage : " + total);
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Cible pleine dès le départ : l'inserter ne prend rien et attend, main vide (FIO-182).
+     *
+     * <p>C'est la prise « intelligente » : prendre un item que la cible refusera ne mène qu'à
+     * rester bloqué avec, et devant une machine à plusieurs entrées, à ne plus jamais livrer
+     * les autres.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void aFullTargetIsNotFedAtAll(GameTestHelper helper) {
+        setupChain(helper, "burner_inserter");
+        fuelInserter(helper);
+
+        container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
         fillWithStone(container(helper, TARGET));
 
-        helper.succeedWhen(() -> {
-            InserterBlockEntity blockEntity = inserter(helper);
-
-            helper.assertTrue(blockEntity.getState() == InserterState.BLOCKED,
-                    "L'inserter devrait être bloqué, il est " + blockEntity.getState());
-
-            helper.assertTrue(blockEntity.getHeldStack().is(Items.COBBLESTONE),
-                    "L'inserter bloqué ne garde pas son item : " + blockEntity.getHeldStack());
-
-            // Et l'item n'a été ni dupliqué ni perdu en cours de route.
-            int total = countCobblestone(helper);
-            helper.assertTrue(total == MOVED_ITEMS,
-                    "Les items ne sont pas conservés pendant le blocage : " + total);
+        helper.runAfterDelay(100, () -> {
+            helper.assertTrue(inserter(helper).getHeldStack().isEmpty(), "L'inserter a pris un item que la cible refusera");
+            helper.assertTrue(countIn(container(helper, SOURCE)) == MOVED_ITEMS, "La source a été entamée");
+            helper.succeed();
         });
     }
 
@@ -642,9 +679,12 @@ public class InserterGameTests {
         fuelInserter(helper);
 
         container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
-        fillWithStone(container(helper, TARGET));
-
+        // Cible remplie pendant le trajet, item déjà en main : depuis FIO-182, une cible pleine
+        // dès le départ ne fait plus rien prendre, et c'est ainsi seulement qu'on se bloque.
         helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(
+                        inserter(helper).getState() == InserterState.SWINGING, "L'inserter n'a rien pris"))
+                .thenExecute(() -> fillWithStone(container(helper, TARGET)))
                 .thenWaitUntil(() -> helper.assertTrue(
                         inserter(helper).getState() == InserterState.BLOCKED,
                         "L'inserter ne s'est pas bloqué"))
@@ -667,9 +707,12 @@ public class InserterGameTests {
         fuelInserter(helper);
 
         container(helper, SOURCE).setItem(0, new ItemStack(Items.COBBLESTONE, MOVED_ITEMS));
-        fillWithStone(container(helper, TARGET));
-
+        // Cible remplie pendant le trajet, item déjà en main : depuis FIO-182, une cible pleine
+        // dès le départ ne fait plus rien prendre, et c'est ainsi seulement qu'on se bloque.
         helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(
+                        inserter(helper).getState() == InserterState.SWINGING, "L'inserter n'a rien pris"))
+                .thenExecute(() -> fillWithStone(container(helper, TARGET)))
                 .thenWaitUntil(() -> helper.assertTrue(
                         inserter(helper).getState() == InserterState.BLOCKED,
                         "L'inserter ne s'est pas bloqué"))

@@ -47,6 +47,10 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 
 ### Changed
 
+- **Inserters only pick what their target will accept**, like in Factorio. In front of a
+  machine with several inputs, they no longer grab an ingredient that is already full and get
+  stuck with it: they bring the missing one. With a full target, an inserter now waits with an
+  empty hand instead of blocking with an item.
 - **All machine screens share one look**: power on the left, a status light in the title bar
   (green working, yellow waiting, orange blocked, red needs you, grey stopped), the same
   progress arrow and Information tab. Empty inputs show what they expect and how many.

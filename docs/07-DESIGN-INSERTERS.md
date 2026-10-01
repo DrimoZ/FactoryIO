@@ -17,6 +17,7 @@ diverge sur presque tous les points.
 | Source | inventaire, **bande transporteuse**, sol | inventaire ; convoyeur en Phase 3. **Le sol est écarté** (FIO-068) |
 | Cible | inventaire, **bande transporteuse**, sol | inventaire ; convoyeur en Phase 3. **Le sol est écarté** (FIO-068) |
 | Blocage | l'inserter garde l'item en main et attend | ✅ état `BLOCKED` (FIO-060) |
+| Prise | ne prend que ce que la cible peut recevoir | ✅ insertion simulée avant la prise (FIO-182) |
 | Filtre | par type d'item, whitelist/blacklist | ✅ par type ou par tag, au choix par slot (FIO-069) |
 | Taille de main | dépend du type + bonus de recherche | ✅ 1 ou 3, **+1 par palier de capacité** (FIO-080) |
 | Copier / coller de configuration | `shift + clic droit` / `clic droit` | ✅ configurateur, ouvert par tag (FIO-079) |
@@ -51,6 +52,15 @@ ticket. Ils vivent comme méthodes (`tickWaiting` saisit, `tryDrop` dépose). Re
 « repasse » pas au repos quand la cible est pleine, il **reste bloqué**, bras tendu et item
 en main, jusqu'à ce que la place se libère. C'est ce que le texte du design demandait ; le
 diagramme le contredisait.
+
+**Prise « intelligente » (FIO-182).** Avant de prendre, l'inserter simule l'insertion dans sa
+cible et ne saisit, slot par slot, que ce qu'elle recevrait — comme dans Factorio. Une cible
+pleine dès le départ ne fait donc plus rien prendre : l'inserter reste en `WAITING`, main
+vide. `BLOCKED` ne survient plus que si la cible se remplit **pendant** le trajet. Sans cela,
+devant une machine à plusieurs entrées, il saisissait un ingrédient déjà plein et ne livrait
+plus jamais les autres ; et prendre plus que la cible n'accepte gardait le reliquat en main,
+la même impasse à retardement. Le coût — une simulation par slot candidat — n'est payé
+qu'au moment de la prise. Le ravitaillement en carburant n'est pas concerné.
 
 **Trafic réseau.** Un cycle nominal coûte deux paquets, comme avant la refonte :
 `WAITING→SWINGING` et `SWINGING→RETURNING`. La transition `RETURNING→WAITING` n'est
