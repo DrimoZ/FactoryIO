@@ -85,6 +85,8 @@
   "tooltip.factor_io.crafter_choose": "Click: choose a recipe · Right-click: clear",
   "tooltip.factor_io.crafter_choose_title": "Choose a recipe",
   "tooltip.factor_io.crafter_energy": "%s / %s FE",
+  "tooltip.factor_io.crafter_jei_tier": "Tier %s+",
+  "tooltip.factor_io.crafter_jei_title": "Crafter",
   "tooltip.factor_io.crafter_no_recipe": "No recipe selected",
   "tooltip.factor_io.crafter_none_found": "No matching recipe",
   "tooltip.factor_io.crafter_recipe_missing": "Recipe not found",
