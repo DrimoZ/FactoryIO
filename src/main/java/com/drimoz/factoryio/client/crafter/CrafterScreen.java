@@ -226,7 +226,7 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
         CrafterBlockEntity.Status status = this.menu.getStatus();
         if (this.menu.getRecipeId() == null) {
             name = ModUtils.tooltipComponent("crafter_no_recipe");
-            detail = ModUtils.tooltipComponent("crafter_click_to_choose");
+            detail = Component.empty();
         } else if (recipe == null || status == CrafterBlockEntity.Status.RECIPE_MISSING) {
             name = Component.literal(this.menu.getRecipeId().toString());
             detail = ModUtils.tooltipComponent("crafter_recipe_missing");
