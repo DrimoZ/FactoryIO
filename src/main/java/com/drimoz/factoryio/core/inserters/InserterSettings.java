@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.inserters;
 
+import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -38,7 +39,7 @@ public record InserterSettings(
         InserterAnimationMode animation,
         boolean whitelist,
         int tagFilterMask,
-        InserterRedstoneCondition redstone,
+        RedstoneCondition redstone,
         int handSizeLimit,
         InserterDropLane dropLane,
         List<ItemStack> filters) {
@@ -92,8 +93,8 @@ public record InserterSettings(
                 InserterAnimationMode.byOrdinal(tag.getByte(TAG_ANIMATION)),
                 tag.getBoolean(TAG_WHITELIST),
                 tag.getInt(TAG_MASK),
-                new InserterRedstoneCondition(
-                        InserterRedstoneCondition.Mode.byOrdinal(tag.getByte(TAG_MODE)),
+                new RedstoneCondition(
+                        RedstoneCondition.Mode.byOrdinal(tag.getByte(TAG_MODE)),
                         tag.getByte(TAG_THRESHOLD)),
                 // Absentes d'un configurateur rempli avant FIO-168/169 : zéro vaut « main au
                 // maximum » et « voie automatique », soit le comportement d'alors.

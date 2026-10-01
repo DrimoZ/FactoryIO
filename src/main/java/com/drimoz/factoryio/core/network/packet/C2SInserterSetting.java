@@ -4,7 +4,7 @@ import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterContainer;
 import com.drimoz.factoryio.core.inserters.InserterDropLane;
-import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
+import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
@@ -111,7 +111,7 @@ public class C2SInserterSetting {
 			}
 			case REDSTONE_MODE -> blockEntity.setRedstoneCondition(
 					blockEntity.getConfiguredRedstoneCondition()
-							.withMode(InserterRedstoneCondition.Mode.byOrdinal(value)));
+							.withMode(RedstoneCondition.Mode.byOrdinal(value)));
 
 			// Le constructeur de la condition borne le seuil : une valeur forgée hors de
 			// [0, 15] est ramenée dans le domaine plutôt que rejetée.

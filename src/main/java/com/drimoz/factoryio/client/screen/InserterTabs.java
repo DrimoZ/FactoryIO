@@ -10,7 +10,7 @@ import com.drimoz.factoryio.core.inserters.InserterAnimationMode;
 import com.drimoz.factoryio.core.inserters.InserterBlockEntity;
 import com.drimoz.factoryio.core.inserters.InserterDropLane;
 import com.drimoz.factoryio.core.inserters.InserterGuiLayout;
-import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
+import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.core.inserters.InserterState;
 import com.drimoz.factoryio.core.model.InserterTuning;
 import com.drimoz.factoryio.core.network.packet.C2SInserterSetting;
@@ -323,7 +323,7 @@ final class InserterTabs {
         private static final int POWER_HEIGHT = 16;
         private static final int REDSTONE_LABEL = POWER_HEIGHT + 6;
         private static final int MODES = REDSTONE_LABEL + LINE + 1;
-        private static final int THRESHOLD_ROW = MODES + InserterRedstoneCondition.Mode.values().length * (BUTTON + 2) + 2;
+        private static final int THRESHOLD_ROW = MODES + RedstoneCondition.Mode.values().length * (BUTTON + 2) + 2;
         private static final int SIGNAL_ROW = THRESHOLD_ROW + BUTTON + 4;
 
         private static final ItemStack ICON = new ItemStack(Items.REDSTONE_TORCH);
@@ -344,9 +344,9 @@ final class InserterTabs {
 
             if (!this.redstone) return;
 
-            InserterRedstoneCondition.Mode[] modes = InserterRedstoneCondition.Mode.values();
+            RedstoneCondition.Mode[] modes = RedstoneCondition.Mode.values();
             for (int i = 0; i < modes.length; i++) {
-                InserterRedstoneCondition.Mode mode = modes[i];
+                RedstoneCondition.Mode mode = modes[i];
                 this.buttons.add(new IconButton(0, MODES + i * (BUTTON + 2), WIDTH, BUTTON)
                         .label(() -> ModUtils.tooltipComponent(mode.translationKey()))
                         .pressed(() -> condition().mode() == mode)
@@ -373,7 +373,7 @@ final class InserterTabs {
             return this.screen.blockEntity();
         }
 
-        private InserterRedstoneCondition condition() {
+        private RedstoneCondition condition() {
             return be().getConfiguredRedstoneCondition();
         }
 

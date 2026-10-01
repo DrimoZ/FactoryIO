@@ -1,4 +1,4 @@
-package com.drimoz.factoryio.core.inserters;
+package com.drimoz.factoryio.core.generic.block;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,23 +17,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * historique, sans quoi tous les inserters des mondes existants changeraient de conduite
  * au chargement.
  */
-class InserterRedstoneConditionTest {
+class RedstoneConditionTest {
 
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2, 7, 14, 15})
     @DisplayName("Le défaut reproduit l'ancien comportement : actif seulement sans signal")
     void defaultMatchesHistoricalBehaviour(int signal) {
-        assertEquals(signal == 0, InserterRedstoneCondition.DEFAULT.allows(signal),
+        assertEquals(signal == 0, RedstoneCondition.DEFAULT.allows(signal),
                 "signal " + signal);
     }
 
     @Test
     @DisplayName("« Toujours » ignore la redstone, quel que soit le seuil")
     void alwaysIgnoresSignal() {
-        InserterRedstoneCondition condition =
-                new InserterRedstoneCondition(InserterRedstoneCondition.Mode.ALWAYS, 9);
+        RedstoneCondition condition =
+                new RedstoneCondition(RedstoneCondition.Mode.ALWAYS, 9);
 
-        for (int signal = 0; signal <= InserterRedstoneCondition.MAX_SIGNAL; signal++) {
+        for (int signal = 0; signal <= RedstoneCondition.MAX_SIGNAL; signal++) {
             assertTrue(condition.allows(signal), "signal " + signal);
         }
 
@@ -43,13 +43,13 @@ class InserterRedstoneConditionTest {
     @Test
     @DisplayName("« Signal ≥ 5 » : le critère du ticket")
     void atLeastFive() {
-        InserterRedstoneCondition condition =
-                new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 5);
+        RedstoneCondition condition =
+                new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 5);
 
         for (int signal = 0; signal < 5; signal++) {
             assertFalse(condition.allows(signal), "signal " + signal + " devrait bloquer");
         }
-        for (int signal = 5; signal <= InserterRedstoneCondition.MAX_SIGNAL; signal++) {
+        for (int signal = 5; signal <= RedstoneCondition.MAX_SIGNAL; signal++) {
             assertTrue(condition.allows(signal), "signal " + signal + " devrait autoriser");
         }
     }
@@ -57,13 +57,13 @@ class InserterRedstoneConditionTest {
     @Test
     @DisplayName("Les deux modes à seuil sont exactement complémentaires")
     void belowAndAtLeastPartitionTheRange() {
-        for (int threshold = 0; threshold <= InserterRedstoneCondition.MAX_SIGNAL; threshold++) {
-            InserterRedstoneCondition below =
-                    new InserterRedstoneCondition(InserterRedstoneCondition.Mode.BELOW, threshold);
-            InserterRedstoneCondition atLeast =
-                    new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, threshold);
+        for (int threshold = 0; threshold <= RedstoneCondition.MAX_SIGNAL; threshold++) {
+            RedstoneCondition below =
+                    new RedstoneCondition(RedstoneCondition.Mode.BELOW, threshold);
+            RedstoneCondition atLeast =
+                    new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, threshold);
 
-            for (int signal = 0; signal <= InserterRedstoneCondition.MAX_SIGNAL; signal++) {
+            for (int signal = 0; signal <= RedstoneCondition.MAX_SIGNAL; signal++) {
                 assertTrue(below.allows(signal) != atLeast.allows(signal),
                         "seuil " + threshold + ", signal " + signal + " : les deux modes se recouvrent");
             }
@@ -77,36 +77,36 @@ class InserterRedstoneConditionTest {
     @Test
     @DisplayName("Un seuil hors de [0, 15] est ramené dans le domaine")
     void thresholdIsClamped() {
-        assertEquals(0, new InserterRedstoneCondition(
-                InserterRedstoneCondition.Mode.BELOW, -40).threshold());
-        assertEquals(InserterRedstoneCondition.MAX_SIGNAL, new InserterRedstoneCondition(
-                InserterRedstoneCondition.Mode.BELOW, 900).threshold());
+        assertEquals(0, new RedstoneCondition(
+                RedstoneCondition.Mode.BELOW, -40).threshold());
+        assertEquals(RedstoneCondition.MAX_SIGNAL, new RedstoneCondition(
+                RedstoneCondition.Mode.BELOW, 900).threshold());
     }
 
     @Test
     @DisplayName("Le seuil boucle après 15, comme le fait le bouton")
     void thresholdWrapsAround() {
-        InserterRedstoneCondition at15 =
-                new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 15);
+        RedstoneCondition at15 =
+                new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 15);
 
         assertEquals(0, at15.nextThreshold().threshold());
-        assertEquals(6, new InserterRedstoneCondition(
-                InserterRedstoneCondition.Mode.AT_LEAST, 5).nextThreshold().threshold());
+        assertEquals(6, new RedstoneCondition(
+                RedstoneCondition.Mode.AT_LEAST, 5).nextThreshold().threshold());
     }
 
     @Test
     @DisplayName("Les modes défilent en boucle et le décodage résiste aux valeurs invalides")
     void modeCyclesAndDecodesSafely() {
-        InserterRedstoneCondition.Mode mode = InserterRedstoneCondition.Mode.ALWAYS;
+        RedstoneCondition.Mode mode = RedstoneCondition.Mode.ALWAYS;
 
-        for (int i = 0; i < InserterRedstoneCondition.Mode.values().length; i++) {
+        for (int i = 0; i < RedstoneCondition.Mode.values().length; i++) {
             mode = mode.next();
         }
-        assertEquals(InserterRedstoneCondition.Mode.ALWAYS, mode, "le cycle doit revenir au départ");
+        assertEquals(RedstoneCondition.Mode.ALWAYS, mode, "le cycle doit revenir au départ");
 
         // Un ordinal corrompu retombe sur le comportement historique, pas sur ALWAYS :
         // un inserter qui cesserait de répondre à la redstone serait plus surprenant.
-        assertEquals(InserterRedstoneCondition.Mode.BELOW, InserterRedstoneCondition.Mode.byOrdinal(-1));
-        assertEquals(InserterRedstoneCondition.Mode.BELOW, InserterRedstoneCondition.Mode.byOrdinal(99));
+        assertEquals(RedstoneCondition.Mode.BELOW, RedstoneCondition.Mode.byOrdinal(-1));
+        assertEquals(RedstoneCondition.Mode.BELOW, RedstoneCondition.Mode.byOrdinal(99));
     }
 }
