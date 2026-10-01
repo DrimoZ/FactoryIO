@@ -82,6 +82,44 @@ public class CrafterGameTests {
         });
     }
 
+    /**
+     * FIO-182 : l'inserter ne prend que ce que la cible acceptera. Les pavés sont au plafond,
+     * la redstone manque : il doit laisser les pavés et apporter la redstone, au lieu de
+     * rester bloqué main pleine de pavés.
+     *
+     * <p>Le crafter n'est pas alimenté : rien n'est consommé, le plafond reste atteint.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void anInserterOnlyPicksWhatTheMachineStillAccepts(GameTestHelper helper) {
+        CrafterRecipe recipe = new CrafterRecipe(new ResourceLocation(FactoryIO.MOD_ID, "test/two_inputs"),
+                List.of(new CrafterRecipe.Input(Ingredient.of(Items.COBBLESTONE), 2),
+                        new CrafterRecipe.Input(Ingredient.of(Items.REDSTONE), 1)),
+                List.of(new CrafterRecipe.Output(new ItemStack(Items.STONE), 1.0F)),
+                20, 1);
+        add(helper, recipe);
+        CrafterBlockEntity crafter = place(helper, "crafter_mk1");
+        crafter.selectRecipe(recipe.getId(), null);
+
+        int cap = 2 * crafter.getCrafter().getTuning().inputCrafts();
+        handler(helper, WEST_PART).insertItem(0, new ItemStack(Items.COBBLESTONE, cap), false);
+
+        BlockPos source = new BlockPos(0, 1, 3);
+        helper.setBlock(source, Blocks.CHEST);
+        ((Container) helper.getBlockEntity(source)).setItem(0, new ItemStack(Items.COBBLESTONE, 16));
+        ((Container) helper.getBlockEntity(source)).setItem(1, new ItemStack(Items.REDSTONE, 4));
+
+        // Alimenté par-dessous : la source ne touche pas le crafter, qui reste sans énergie.
+        BlockPos inserter = new BlockPos(1, 1, 3);
+        helper.setBlock(inserter, InserterRegistry.getInstance().getInserterByName("inserter").getBlock().get()
+                .defaultBlockState().setValue(InserterBlock.FACING, Direction.EAST));
+        helper.setBlock(inserter.below(), ModBlocks.CREATIVE_ENERGY_SOURCE.get());
+
+        helper.succeedWhen(() -> {
+            helper.assertTrue(crafter.getItems().getStackInSlot(1).is(Items.REDSTONE), "La redstone n'est jamais arrivée");
+            helper.assertTrue(crafter.getItems().getStackInSlot(0).getCount() == cap, "Le plafond des pavés a bougé");
+        });
+    }
+
     /** Pas d'énergie, pas de travail — et la progression attend, intacte. */
     @GameTest(template = TEMPLATE, timeoutTicks = 60)
     public static void withoutEnergyNothingIsCrafted(GameTestHelper helper) {

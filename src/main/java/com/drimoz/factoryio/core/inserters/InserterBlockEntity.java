@@ -1311,7 +1311,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         // La capacité entière, pas la main réglée : le plafond du joueur porte sur ce que
         // l'inserter livre, pas sur ce qu'il prélève pour se nourrir.
         return grabInto(pEntity, source, pEntity.LAYOUT.fuel(), pEntity.getMaximumItemCountPerAction(),
-                stack -> stack.is(ModTags.Items.INSERTER_FUEL));
+                stack -> stack.is(ModTags.Items.INSERTER_FUEL), null);
     }
 
     /**
@@ -1947,11 +1947,22 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      * <p>Ordre impératif : simuler l'extraction, calculer ce que la destination accepte
      * réellement, puis extraire exactement cette quantité. L'inverse détruit des items.
      *
+     * <p><b>Prise « intelligente » (FIO-182).</b> Avec une {@code destination}, un slot n'est
+     * retenu que pour ce qu'une insertion <i>simulée</i> y ferait entrer, et pas un item de
+     * plus. Sans elle, devant une machine à plusieurs entrées, l'inserter saisissait un
+     * ingrédient déjà plein et restait bloqué avec lui en main, sans jamais livrer les autres ;
+     * et prendre plus que la destination n'accepte gardait le reliquat en main — la même
+     * impasse, à retardement. Le coût est celui d'une simulation par slot candidat, au moment
+     * de la prise seulement.
+     *
+     * @param destination ce que vise l'inserter devant lui, ou {@code null} : alors tout ce
+     *                    que le filtre accepte peut être pris
      * @return la pile prélevée, vide si rien n'a bougé
      */
     @Nonnull
     private static ItemStack grabInto(
-            InserterBlockEntity pEntity, IItemHandler source, int targetSlot, int wanted, Predicate<ItemStack> accept) {
+            InserterBlockEntity pEntity, IItemHandler source, int targetSlot, int wanted, Predicate<ItemStack> accept,
+            @Nullable IItemHandler destination) {
         int slots = source.getSlots();
 
         int startSlot = scanStart(pEntity.lastSourceSlot, slots);
@@ -1964,6 +1975,12 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
 
             ItemStack probe = source.extractItem(slot, wanted, true);
             if (probe.isEmpty() || !accept.test(probe)) continue;
+
+            if (destination != null) {
+                int fits = planInsert(destination, probe, insertionOrder(destination, probe, 0), 0).movable();
+                if (fits <= 0) continue;
+                if (fits < probe.getCount()) probe = probe.copyWithCount(fits);
+            }
 
             int movable = pEntity.simulateInsertInternal(targetSlot, probe);
             if (movable <= 0) continue;
@@ -2000,8 +2017,12 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
         IItemHandler source = pEntity.neighbourHandler(true, facing.getOpposite(), pDistance, facing);
         if (source == null) return ItemStack.EMPTY;
 
+        // La destination, vue comme la verra le dépôt : même face, même voie de convoyeur.
+        IItemHandler destination = pEntity.neighbourHandler(false, facing, pDistance, facing.getOpposite());
+        if (destination != null) destination = pEntity.onChosenLane(destination);
+
         return grabInto(pEntity, source, BUFFER_SLOT, pEntity.getHandSize(),
-                stack -> matchesFilters(pEntity, stack, isWhitelist));
+                stack -> matchesFilters(pEntity, stack, isWhitelist), destination);
     }
 
     /** @return la pile déposée dans l'inventaire avant, vide si rien n'a bougé */
