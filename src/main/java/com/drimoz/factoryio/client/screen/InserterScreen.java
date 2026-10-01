@@ -1,6 +1,9 @@
 package com.drimoz.factoryio.client.screen;
 
 import com.drimoz.factoryio.client.gui.GuiSprites;
+import com.drimoz.factoryio.client.gui.GuiTheme;
+import com.drimoz.factoryio.shared.GuiMetrics;
+import javax.annotation.Nullable;
 import com.drimoz.factoryio.client.gui.IconButton;
 import com.drimoz.factoryio.client.gui.SideTab;
 import com.drimoz.factoryio.client.gui.SideTabs;
@@ -61,12 +64,12 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
     /** Largeur des infobulles longues, au-delà de laquelle elles passent à la ligne. */
     private static final int TOOLTIP_WIDTH = 200;
 
-    private static final int LABEL_COLOUR = 0x404040;
 
     private final InserterGuiLayout gui;
     private final ThroughputMeter meter = new ThroughputMeter();
     private IconButton listButton;
     private SideTabs tabs;
+    @Nullable private InserterTabs.Info info;
 
     public InserterScreen(InserterContainer menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -83,7 +86,8 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         super.init();
 
         this.listButton = null;
-        this.tabs = new SideTabs(List.of(), InserterGuiLayout.WIDTH, null);
+        this.info = null;
+        this.tabs = new SideTabs(List.of(), InserterGuiLayout.WIDTH);
         if (!getMenu().isBacked()) return;
 
         if (getMenu().isFilterable()) {
@@ -103,12 +107,13 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         }
 
         List<SideTab> sideTabs = new ArrayList<>();
-        sideTabs.add(new InserterTabs.Info(this));
+        this.info = new InserterTabs.Info(this);
+        sideTabs.add(this.info);
         if (this.gui.hasAugmentTab()) sideTabs.add(new InserterTabs.Augments(this));
         sideTabs.add(new InserterTabs.Control(this));
         sideTabs.add(new InserterTabs.Settings(this));
 
-        this.tabs = new SideTabs(sideTabs, InserterGuiLayout.WIDTH, this.gui.hasAugmentTab() ? InserterTabs.Augments.ID : null);
+        this.tabs = new SideTabs(sideTabs, InserterGuiLayout.WIDTH, InserterTabs.Augments.ID);
     }
 
     // Interface (pour les onglets)
@@ -188,6 +193,10 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         this.tabs.renderBackgrounds(graphics, left, top);
         GuiSprites.panel(graphics, left, top, this.imageWidth, this.imageHeight);
 
+        if (this.info != null) {
+            GuiSprites.statusLight(graphics, this.info.state().status, left + GuiMetrics.LED_X, top + GuiMetrics.LED_Y);
+        }
+
         renderPower(graphics, left, top);
         renderHand(graphics, left, top, partialTick);
 
@@ -240,8 +249,8 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         GuiSprites.bigSlot(graphics, left + this.gui.handSocketX(), top + this.gui.handSocketY());
         GuiSprites.arrow(graphics, left + this.gui.outArrowX(), top + this.gui.arrowY(), out);
 
-        renderNeighbour(graphics, left + this.gui.sourceSocketX(), top + this.gui.neighbourSocketY(), neighbour(true));
-        renderNeighbour(graphics, left + this.gui.targetSocketX(), top + this.gui.neighbourSocketY(), neighbour(false));
+        renderNeighbour(graphics, left + this.gui.sourceSocketX(), top + this.gui.neighbourSocketY(), true);
+        renderNeighbour(graphics, left + this.gui.targetSocketX(), top + this.gui.neighbourSocketY(), false);
 
         if (be.getHeldStack().isEmpty()) {
             GuiSprites.faintIcon(graphics, GuiSprites.Icon.HAND,
@@ -251,10 +260,10 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
     }
 
     /** Socle et icône du bloc visé ; vide s'il n'y a rien. */
-    private void renderNeighbour(GuiGraphics graphics, int x, int y, BlockState state) {
+    private void renderNeighbour(GuiGraphics graphics, int x, int y, boolean source) {
         GuiSprites.inset(graphics, x, y, InserterGuiLayout.SLOT, InserterGuiLayout.SLOT);
 
-        ItemStack icon = iconOf(state);
+        ItemStack icon = iconOf(neighbourPos(source), neighbour(source));
         if (!icon.isEmpty()) graphics.renderItem(icon, x + 1, y + 1);
     }
 
@@ -266,16 +275,23 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         InserterBlockEntity be = blockEntity();
         if (be.getLevel() == null) return null;
 
-        Direction facing = be.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING);
-        BlockPos pos = be.getBlockPos().relative(source ? facing.getOpposite() : facing, be.getGrabDistance());
-
-        return be.getLevel().getBlockState(pos);
+        return be.getLevel().getBlockState(neighbourPos(source));
     }
 
-    private static ItemStack iconOf(BlockState state) {
-        if (state == null || state.isAir()) return ItemStack.EMPTY;
+    private BlockPos neighbourPos(boolean source) {
+        InserterBlockEntity be = blockEntity();
+        Direction facing = be.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING);
+        return be.getBlockPos().relative(source ? facing.getOpposite() : facing, be.getGrabDistance());
+    }
 
-        return new ItemStack(state.getBlock());
+    /**
+     * L'item que donnerait le « bloc choisi » : une partie de multibloc n'a pas d'item, mais
+     * renvoie celui de sa machine — c'est elle qu'on veut voir.
+     */
+    private ItemStack iconOf(BlockPos pos, BlockState state) {
+        if (state == null || state.isAir() || blockEntity().getLevel() == null) return ItemStack.EMPTY;
+
+        return state.getBlock().getCloneItemStack(blockEntity().getLevel(), pos, state);
     }
 
     private List<Component> neighbourTooltip(double mouseX, double mouseY) {
@@ -293,14 +309,16 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
             return List.of(ModUtils.tooltipComponent(source ? "source_none" : "target_none").withStyle(ChatFormatting.GRAY));
         }
 
+        ItemStack icon = iconOf(neighbourPos(source), state);
+        Component name = icon.isEmpty() ? state.getBlock().getName() : icon.getHoverName().copy();
         return List.of(ModUtils.tooltipComponent(source ? "source_block" : "target_block",
-                state.getBlock().getName().withStyle(ChatFormatting.AQUA)));
+                name.copy().withStyle(ChatFormatting.AQUA)));
     }
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, LABEL_COLOUR, false);
-        graphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, LABEL_COLOUR, false);
+        GuiTheme.text(graphics, this.font, this.title, this.titleLabelX, this.titleLabelY);
+        GuiTheme.text(graphics, this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY);
     }
 
     /** Teinte les slots de filtre dont la correspondance porte sur le tag. */
@@ -325,6 +343,10 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
 
         if (lines.isEmpty()) lines.addAll(neighbourTooltip(mouseX, mouseY));
 
+        if (lines.isEmpty() && this.info != null && isOverLed(mouseX, mouseY)) {
+            lines.add(ModUtils.tooltipComponent(this.info.state().key));
+        }
+
         if (lines.isEmpty() && isOverPower(mouseX, mouseY)) {
             lines.add(getMenu().usesEnergy()
                     ? StringHelper.displayEnergy(getMenu().getPowerStored(), getMenu().getPowerCapacity())
@@ -338,6 +360,12 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         for (Component line : lines) wrapped.addAll(this.font.split(line, TOOLTIP_WIDTH));
 
         graphics.renderTooltip(this.font, wrapped, mouseX, mouseY);
+    }
+
+    private boolean isOverLed(double mouseX, double mouseY) {
+        double x = mouseX - this.leftPos - GuiMetrics.LED_X;
+        double y = mouseY - this.topPos - GuiMetrics.LED_Y;
+        return x >= -1 && x < GuiMetrics.LED_SIZE + 1 && y >= -1 && y < GuiMetrics.LED_SIZE + 1;
     }
 
     private boolean isOverPower(double mouseX, double mouseY) {

@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.client.compat.jei;
 
 import com.drimoz.factoryio.FactoryIO;
+import com.drimoz.factoryio.client.crafter.CrafterScreen;
 import com.drimoz.factoryio.client.screen.InserterScreen;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.constants.RecipeTypes;
@@ -48,6 +49,12 @@ public class JeiCompat implements IModPlugin {
         registration.addGuiContainerHandler(InserterScreen.class, new IGuiContainerHandler<>() {
             @Override
             public List<Rect2i> getGuiExtraAreas(InserterScreen screen) {
+                return screen.getExtraAreas();
+            }
+        });
+        registration.addGuiContainerHandler(CrafterScreen.class, new IGuiContainerHandler<>() {
+            @Override
+            public List<Rect2i> getGuiExtraAreas(CrafterScreen screen) {
                 return screen.getExtraAreas();
             }
         });

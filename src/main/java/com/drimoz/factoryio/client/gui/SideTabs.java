@@ -1,6 +1,6 @@
 package com.drimoz.factoryio.client.gui;
 
-import com.drimoz.factoryio.shared.SideTabMetrics;
+import com.drimoz.factoryio.shared.GuiMetrics;
 import net.minecraft.Util;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -30,16 +30,17 @@ public final class SideTabs {
     private long lastFrame = Util.getMillis();
 
     /**
-     * @param guiWidth     largeur de la fenêtre, contre laquelle s'adossent les onglets de droite
-     * @param defaultRight onglet de droite à ouvrir quand rien n'est encore mémorisé, ou
-     *                     {@code null}
+     * @param guiWidth    largeur de la fenêtre, contre laquelle s'adossent les onglets de droite
+     * @param defaultOpen onglets à ouvrir, de leur côté, quand rien n'y est encore mémorisé
      */
-    public SideTabs(List<SideTab> tabs, int guiWidth, String defaultRight) {
+    public SideTabs(List<SideTab> tabs, int guiWidth, String... defaultOpen) {
         this.guiWidth = guiWidth;
         this.tabs.addAll(tabs);
 
-        if (!REMEMBERED.containsKey(SideTab.Side.RIGHT) && defaultRight != null) {
-            REMEMBERED.put(SideTab.Side.RIGHT, defaultRight);
+        for (String id : defaultOpen) {
+            for (SideTab tab : this.tabs) {
+                if (tab.id().equals(id)) REMEMBERED.putIfAbsent(tab.side(), id);
+            }
         }
 
         for (SideTab tab : this.tabs) {
@@ -134,18 +135,18 @@ public final class SideTabs {
 
     /** Empile les onglets de chaque côté, en tenant compte de la taille courante de chacun. */
     private void layout(int guiLeft, int guiTop) {
-        int left = guiTop + SideTabMetrics.TOP;
-        int right = guiTop + SideTabMetrics.TOP;
+        int left = guiTop + GuiMetrics.TAB_TOP;
+        int right = guiTop + GuiMetrics.TAB_TOP;
 
         for (SideTab tab : this.tabs) {
             if (tab.side() == SideTab.Side.RIGHT) {
                 tab.x = guiLeft + this.guiWidth;
                 tab.y = right;
-                right += tab.height() + SideTabMetrics.GAP;
+                right += tab.height() + GuiMetrics.TAB_GAP;
             } else {
                 tab.x = guiLeft;
                 tab.y = left;
-                left += tab.height() + SideTabMetrics.GAP;
+                left += tab.height() + GuiMetrics.TAB_GAP;
             }
         }
     }

@@ -140,6 +140,8 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     private boolean outputsChanged;
     private int idleTicks;
     private Status status = Status.NO_RECIPE;
+    /** Crafts achevés depuis le chargement : l'écran en tire un rythme mesuré, par différence. */
+    private int craftsCompleted;
 
     // Réserve de simulation des sorties, allouée une fois.
     private final ItemStack[] simulatedItems = new ItemStack[OUTPUT_SLOTS];
@@ -253,6 +255,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
             if (output.isCertain() || level.random.nextFloat() < output.chance()) addOutput(output.stack().copy());
         }
         remainders.forEach(this::addOutput);
+        this.craftsCompleted++;
         return true;
     }
 
@@ -400,6 +403,10 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     /** Inventaire complet, pour le menu : le joueur peut aussi reprendre des entrées. */
     public ItemStackHandler getItems() {
         return this.items;
+    }
+
+    public int getCraftsCompleted() {
+        return this.craftsCompleted;
     }
 
     public Status getStatus() {

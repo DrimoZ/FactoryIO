@@ -3,6 +3,7 @@ package com.drimoz.factoryio.content.crafter;
 import com.drimoz.factoryio.core.generic.container.BaseMenu;
 import com.drimoz.factoryio.core.generic.container.slots.OutputSlot;
 import com.drimoz.factoryio.core.init.ModRegistries;
+import com.drimoz.factoryio.shared.GuiMetrics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -23,36 +24,65 @@ import net.minecraftforge.registries.RegistryObject;
 import javax.annotation.Nullable;
 
 /**
- * Le menu du crafter : neuf entrées en 3×3, quatre sorties en 2×2, l'inventaire du joueur.
+ * Le menu du crafter (FIO-177, refait en FIO-181 sur la grille commune).
  *
- * <p>La recette choisie arrive avec l'ouverture ; un changement fait depuis cet écran s'y
- * reporte aussitôt côté client, le serveur ayant déjà refusé tout ce que l'écran ne propose
- * pas. Progression, énergie et état passent par {@code ContainerData}, synchronisé
- * seulement menu ouvert — jamais par un paquet périodique.
+ * <pre>
+ *  ┌────────────────────────────────────────┐
+ *  │ Crafter Mk2                          ● │  bandeau : titre, voyant d'état
+ *  │ ▌ [recette]  Circuit électronique      │  la recette : socle cliquable, nom, temps
+ *  │ ▌            0,7 s par craft           │
+ *  │ ▌ [e][e][e]           [s][s]           │  le travail : entrées 3×3 ▶ sorties 2×2
+ *  │ ▌ [e][e][e]    ▶      [s][s]           │
+ *  │ ▌ [e][e][e]                            │
+ *  │ Inventaire                             │
+ *  └────────────────────────────────────────┘
+ * </pre>
+ *
+ * <p>Tout s'aligne sur les colonnes de l'inventaire ({@link GuiMetrics#column}) : jauge en
+ * colonne 0, recette et entrées en colonnes 1 à 3, sorties en colonnes 7 et 8 — au ras de
+ * l'inventaire à droite comme à gauche.
+ *
+ * <p>La recette choisie arrive avec l'ouverture ; un changement fait depuis l'écran s'y
+ * reporte aussitôt, le serveur ayant déjà refusé tout ce que l'écran ne propose pas. Le reste
+ * passe par {@code ContainerData}, synchronisé seulement menu ouvert.
  */
 public class CrafterMenu extends BaseMenu {
 
     public static final RegistryObject<MenuType<CrafterMenu>> TYPE = ModRegistries.MENUS.register(
             "crafter", () -> IForgeMenuType.create(CrafterMenu::new));
 
-    // Disposition, partagée avec l'écran.
-    public static final int WIDTH = 176;
-    public static final int HEIGHT = 180;
-    public static final int CONTENT_TOP = 18;
-    public static final int RECIPE_X = 7;
-    public static final int INPUT_X = 38;
-    public static final int ARROW_X = 96;
-    public static final int ARROW_Y = CONTENT_TOP + 22;
-    public static final int OUTPUT_X = 118;
-    public static final int OUTPUT_Y = CONTENT_TOP + 9;
-    public static final int GAUGE_X = 160;
-    public static final int GAUGE_WIDTH = 10;
-    public static final int GAUGE_HEIGHT = 54;
-    public static final int STATUS_Y = CONTENT_TOP + 58;
-    public static final int INVENTORY_TOP = 98;
+    // Disposition (cadres de slot et de socle, comme GuiSprites les dessine).
 
-    private static final int MACHINE_FIRST_SLOT = VANILLA_SLOT_COUNT;
+    public static final int RECIPE_X = GuiMetrics.column(1);
+    public static final int RECIPE_Y = GuiMetrics.CONTENT_TOP;
+    public static final int RECIPE_TEXT_X = RECIPE_X + GuiMetrics.SOCKET + 6;
+
+    public static final int WORK_TOP = RECIPE_Y + GuiMetrics.SOCKET + 4;
+    public static final int INPUT_X = GuiMetrics.column(1);
+    public static final int OUTPUT_X = GuiMetrics.column(7);
+    public static final int OUTPUT_Y = WORK_TOP + GuiMetrics.SLOT / 2;
+
+    public static final int ARROW_X = (INPUT_X + 3 * GuiMetrics.SLOT + OUTPUT_X - GuiMetrics.ARROW_WIDTH) / 2;
+    public static final int ARROW_Y = WORK_TOP + (3 * GuiMetrics.SLOT - GuiMetrics.ARROW_HEIGHT) / 2;
+
+    public static final int CONTENT_BOTTOM = WORK_TOP + 3 * GuiMetrics.SLOT;
+    public static final int GAUGE_HEIGHT = CONTENT_BOTTOM - GuiMetrics.CONTENT_TOP;
+    public static final int HEIGHT = GuiMetrics.height(CONTENT_BOTTOM);
+
+    // Données synchronisées. Un ContainerData voyage en 16 bits : les grands nombres en deux.
+
+    private static final int PROGRESS = 0;
+    private static final int ENERGY = 1;
+    private static final int CAPACITY = 3;
+    private static final int STATUS = 5;
+    private static final int CRAFTS = 6;
+    private static final int SPEED = 7;
+    private static final int ENERGY_PER_TICK = 9;
+    private static final int DATA_COUNT = 11;
+
     private static final int PROGRESS_SCALE = 1000;
+    private static final int SPEED_SCALE = 1000;
+    private static final int MACHINE_FIRST_SLOT = VANILLA_SLOT_COUNT;
 
     @Nullable private final CrafterBlockEntity blockEntity;
     private final ContainerData data;
@@ -60,7 +90,7 @@ public class CrafterMenu extends BaseMenu {
 
     /** Côté client : la position et la recette viennent du serveur. */
     public CrafterMenu(int containerId, Inventory inventory, FriendlyByteBuf buf) {
-        this(containerId, inventory, blockEntityAt(inventory.player, buf.readBlockPos()), new SimpleContainerData(6));
+        this(containerId, inventory, blockEntityAt(inventory.player, buf.readBlockPos()), new SimpleContainerData(DATA_COUNT));
         this.recipeId = buf.readBoolean() ? buf.readResourceLocation() : null;
     }
 
@@ -75,35 +105,41 @@ public class CrafterMenu extends BaseMenu {
         this.blockEntity = blockEntity;
         this.data = data;
 
-        addPlayerInventory(inventory, INVENTORY_TOP);
-        addPlayerHotbar(inventory, INVENTORY_TOP + 58);
+        addPlayerInventory(inventory, GuiMetrics.inventoryY(CONTENT_BOTTOM));
+        addPlayerHotbar(inventory, GuiMetrics.hotbarY(CONTENT_BOTTOM));
 
         // Un block entity disparu entre la demande et l'ouverture : le menu se construit sans
         // lui et stillValid le ferme au tick suivant (le précédent de BUG-020).
         IItemHandler items = blockEntity != null ? blockEntity.getItems() : new ItemStackHandler(CrafterBlockEntity.SLOTS);
         for (int slot = 0; slot < CrafterBlockEntity.INPUT_SLOTS; slot++) {
-            addSlot(new SlotItemHandler(items, slot, INPUT_X + 18 * (slot % 3), CONTENT_TOP + 1 + 18 * (slot / 3)));
+            addSlot(new SlotItemHandler(items, slot,
+                    INPUT_X + 1 + GuiMetrics.SLOT * (slot % 3), WORK_TOP + 1 + GuiMetrics.SLOT * (slot / 3)));
         }
         for (int slot = 0; slot < CrafterBlockEntity.OUTPUT_SLOTS; slot++) {
             addSlot(new OutputSlot(items, CrafterBlockEntity.INPUT_SLOTS + slot,
-                    OUTPUT_X + 18 * (slot % 2), OUTPUT_Y + 18 * (slot / 2)));
+                    OUTPUT_X + 1 + GuiMetrics.SLOT * (slot % 2), OUTPUT_Y + 1 + GuiMetrics.SLOT * (slot / 2)));
         }
 
         addDataSlots(data);
     }
 
     private static ContainerData serverData(CrafterBlockEntity blockEntity) {
-        // Un ContainerData voyage en 16 bits : les réserves d'énergie sont coupées en deux.
         return new ContainerData() {
             @Override
             public int get(int index) {
+                Crafter.Tuning tuning = blockEntity.getCrafter().getTuning();
                 return switch (index) {
-                    case 0 -> Math.round(blockEntity.getProgress() * PROGRESS_SCALE);
-                    case 1 -> blockEntity.getEnergyStored() & 0xFFFF;
-                    case 2 -> blockEntity.getEnergyStored() >>> 16;
-                    case 3 -> blockEntity.getEnergyCapacity() & 0xFFFF;
-                    case 4 -> blockEntity.getEnergyCapacity() >>> 16;
-                    case 5 -> blockEntity.getStatus().ordinal();
+                    case PROGRESS -> Math.round(blockEntity.getProgress() * PROGRESS_SCALE);
+                    case ENERGY -> blockEntity.getEnergyStored() & 0xFFFF;
+                    case ENERGY + 1 -> blockEntity.getEnergyStored() >>> 16;
+                    case CAPACITY -> blockEntity.getEnergyCapacity() & 0xFFFF;
+                    case CAPACITY + 1 -> blockEntity.getEnergyCapacity() >>> 16;
+                    case STATUS -> blockEntity.getStatus().ordinal();
+                    case CRAFTS -> blockEntity.getCraftsCompleted() & 0xFFFF;
+                    case SPEED -> Math.round(tuning.craftingSpeed() * SPEED_SCALE) & 0xFFFF;
+                    case SPEED + 1 -> Math.round(tuning.craftingSpeed() * SPEED_SCALE) >>> 16;
+                    case ENERGY_PER_TICK -> tuning.energyPerTick() & 0xFFFF;
+                    case ENERGY_PER_TICK + 1 -> tuning.energyPerTick() >>> 16;
                     default -> 0;
                 };
             }
@@ -113,7 +149,7 @@ public class CrafterMenu extends BaseMenu {
 
             @Override
             public int getCount() {
-                return 6;
+                return DATA_COUNT;
             }
         };
     }
@@ -121,6 +157,10 @@ public class CrafterMenu extends BaseMenu {
     @Nullable
     private static CrafterBlockEntity blockEntityAt(Player player, BlockPos pos) {
         return player.level().getBlockEntity(pos) instanceof CrafterBlockEntity crafter ? crafter : null;
+    }
+
+    private int wide(int index) {
+        return (this.data.get(index) & 0xFFFF) | (this.data.get(index + 1) << 16);
     }
 
     // Interface (Écran)
@@ -145,20 +185,33 @@ public class CrafterMenu extends BaseMenu {
     }
 
     public float getProgress() {
-        return this.data.get(0) / (float) PROGRESS_SCALE;
+        return this.data.get(PROGRESS) / (float) PROGRESS_SCALE;
     }
 
     public int getEnergyStored() {
-        return (this.data.get(1) & 0xFFFF) | (this.data.get(2) << 16);
+        return wide(ENERGY);
     }
 
     public int getEnergyCapacity() {
-        return (this.data.get(3) & 0xFFFF) | (this.data.get(4) << 16);
+        return wide(CAPACITY);
+    }
+
+    /** Compteur de crafts sur 16 bits : il ne sert qu'à mesurer un rythme, par différence. */
+    public int getCraftsCompleted() {
+        return this.data.get(CRAFTS) & 0xFFFF;
+    }
+
+    public float getCraftingSpeed() {
+        return wide(SPEED) / (float) SPEED_SCALE;
+    }
+
+    public int getEnergyPerTick() {
+        return wide(ENERGY_PER_TICK);
     }
 
     public CrafterBlockEntity.Status getStatus() {
         CrafterBlockEntity.Status[] values = CrafterBlockEntity.Status.values();
-        int ordinal = this.data.get(5);
+        int ordinal = this.data.get(STATUS);
         return ordinal >= 0 && ordinal < values.length ? values[ordinal] : CrafterBlockEntity.Status.NO_RECIPE;
     }
 

@@ -47,6 +47,10 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 
 ### Changed
 
+- **All machine screens share one look**: power on the left, a status light in the title bar
+  (green working, yellow waiting, orange blocked, red needs you, grey stopped), the same
+  progress arrow and Information tab. Empty inputs show what they expect and how many.
+- An inserter pointing at a crafter now shows the crafter as its target instead of an empty socket.
 - **Advanced circuits and processing units are now made in a crafter only**, with Factorio's
   quantities: 2 electronic circuits, 2 dried kelp and 4 cables for an advanced circuit; 20
   electronic circuits, 2 advanced circuits and 5 gunpowder for a processing unit, which needs a

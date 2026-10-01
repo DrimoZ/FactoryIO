@@ -2,7 +2,10 @@ package com.drimoz.factoryio.client.gui;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.drimoz.factoryio.shared.GuiMetrics;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -119,20 +122,65 @@ public final class GuiSprites {
         graphics.blit(SHEET, x, y + FLAME_SIZE - lit, 56, 16 + FLAME_SIZE - lit, FLAME_SIZE, lit);
     }
 
-    public static final int ARROW_WIDTH = 16;
-    public static final int ARROW_HEIGHT = 11;
+    public static final int ARROW_WIDTH = GuiMetrics.ARROW_WIDTH;
+    public static final int ARROW_HEIGHT = GuiMetrics.ARROW_HEIGHT;
 
     /**
      * Flèche de trajet, remplie de gauche à droite à hauteur de {@code progress} : elle suit le
      * bras, comme la flèche de cuisson d'un four suit la cuisson.
      */
     public static void arrow(GuiGraphics graphics, int x, int y, float progress) {
-        graphics.blit(SHEET, x, y, 84, 16, ARROW_WIDTH, ARROW_HEIGHT);
+        graphics.blit(SHEET, x, y, 112, 16, ARROW_WIDTH, ARROW_HEIGHT);
 
         int filled = Math.round(ARROW_WIDTH * Math.max(0f, Math.min(1f, progress)));
         if (filled <= 0) return;
 
-        graphics.blit(SHEET, x, y, 84, 28, filled, ARROW_HEIGHT);
+        graphics.blit(SHEET, x, y, 112, 30, filled, ARROW_HEIGHT);
+    }
+
+    // Charte commune (FIO-181)
+
+    /** Champ de saisie : un creux sombre où le texte blanc se lit. */
+    public static void field(GuiGraphics graphics, int x, int y, int width, int height) {
+        graphics.blitNineSliced(SHEET, x, y, width, height, 1, 1, FRAME_SIZE, FRAME_SIZE, 112, FRAME_V);
+    }
+
+    /** Socle d'un slot qui n'acceptera rien : plus sombre, hachuré. */
+    public static void disabledSlot(GuiGraphics graphics, int itemX, int itemY) {
+        graphics.blit(SHEET, itemX - 1, itemY - 1, 132, 16, SLOT_SIZE, SLOT_SIZE);
+    }
+
+    /** Socle au liseré vert : le choix courant d'une liste. */
+    public static void selectedSlot(GuiGraphics graphics, int itemX, int itemY) {
+        graphics.blit(SHEET, itemX - 1, itemY - 1, 150, 16, SLOT_SIZE, SLOT_SIZE);
+    }
+
+    /** Voyant d'état du bandeau, à la teinte de {@link GuiTheme.Status}. */
+    public static void statusLight(GuiGraphics graphics, GuiTheme.Status status, int x, int y) {
+        graphics.blit(SHEET, x, y, 168 + status.ordinal() * 8, 16, GuiMetrics.LED_SIZE, GuiMetrics.LED_SIZE);
+    }
+
+    /** Petit verrou, dans le coin bas-droit d'une case de 16. */
+    public static void smallLock(GuiGraphics graphics, int itemX, int itemY) {
+        graphics.blit(SHEET, itemX + 9, itemY + 8, 208, 16, 7, 8);
+    }
+
+    /**
+     * Item « fantôme » : ce qui va dans ce slot, voilé, avec la quantité attendue. Ce n'est pas
+     * un contenu — il ne se prend pas, et le voile le distingue d'un vrai item.
+     */
+    public static void ghostItem(GuiGraphics graphics, Font font, ItemStack stack, int count, int itemX, int itemY) {
+        if (stack.isEmpty()) return;
+
+        graphics.renderFakeItem(stack, itemX, itemY);
+        graphics.pose().pushPose();
+        graphics.pose().translate(0, 0, 200);
+        graphics.fill(itemX, itemY, itemX + 16, itemY + 16, GuiTheme.GHOST_WASH);
+        if (count > 1) {
+            String text = String.valueOf(count);
+            graphics.drawString(font, text, itemX + 17 - font.width(text), itemY + 9, GuiTheme.TEXT_MUTED, false);
+        }
+        graphics.pose().popPose();
     }
 
     /** Icône estompée : un rappel de ce qui va là, pas un contenu. */
