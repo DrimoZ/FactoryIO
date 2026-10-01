@@ -47,6 +47,10 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 
 ### Changed
 
+- **Advanced circuits and processing units are now made in a crafter only**, with Factorio's
+  quantities: 2 electronic circuits, 2 dried kelp and 4 cables for an advanced circuit; 20
+  electronic circuits, 2 advanced circuits and 5 gunpowder for a processing unit, which needs a
+  Mk2 crafter. Gears, cables and electronic circuits can still be made by hand, and in a crafter.
 - Tooltips are translated as whole sentences; nothing is glued together from fragments anymore.
 - An inserter's item tooltip no longer ends with the long upgrade hint: the screen's Upgrades tab
   says it.

@@ -5,20 +5,23 @@
     "A": {
       "tag": "forge:circuits/advanced"
     },
-    "E": {
-      "tag": "forge:circuits/basic"
-    },
     "G": {
-      "tag": "forge:gunpowder"
+      "tag": "forge:gears/iron"
+    },
+    "M": {
+      "item": "factor_io:crafter_mk1"
+    },
+    "S": {
+      "tag": "forge:plates/steel"
     }
   },
   "pattern": [
-    "EAE",
-    "EGE",
-    " A "
+    "SAS",
+    "GMG",
+    "SAS"
   ],
   "result": {
-    "item": "factor_io:processing_unit"
+    "item": "factor_io:crafter_mk2"
   },
   "show_notification": true
 }

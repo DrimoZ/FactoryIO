@@ -1,0 +1,23 @@
+{
+  "type": "factor_io:crafting",
+  "ingredients": [
+    {
+      "count": 1,
+      "ingredient": {
+        "tag": "forge:plates/iron"
+      }
+    },
+    {
+      "count": 3,
+      "ingredient": {
+        "tag": "forge:wires/copper"
+      }
+    }
+  ],
+  "results": [
+    {
+      "item": "factor_io:electronic_circuit"
+    }
+  ],
+  "time": 0.5
+}

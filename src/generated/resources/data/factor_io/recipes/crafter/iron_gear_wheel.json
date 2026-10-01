@@ -1,0 +1,17 @@
+{
+  "type": "factor_io:crafting",
+  "ingredients": [
+    {
+      "count": 2,
+      "ingredient": {
+        "tag": "forge:plates/iron"
+      }
+    }
+  ],
+  "results": [
+    {
+      "item": "factor_io:iron_gear_wheel"
+    }
+  ],
+  "time": 0.5
+}

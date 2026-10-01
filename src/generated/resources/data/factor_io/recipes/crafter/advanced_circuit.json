@@ -1,0 +1,29 @@
+{
+  "type": "factor_io:crafting",
+  "ingredients": [
+    {
+      "count": 2,
+      "ingredient": {
+        "tag": "forge:circuits/basic"
+      }
+    },
+    {
+      "count": 2,
+      "ingredient": {
+        "item": "minecraft:dried_kelp"
+      }
+    },
+    {
+      "count": 4,
+      "ingredient": {
+        "tag": "forge:wires/copper"
+      }
+    }
+  ],
+  "results": [
+    {
+      "item": "factor_io:advanced_circuit"
+    }
+  ],
+  "time": 6.0
+}

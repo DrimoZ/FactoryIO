@@ -1,0 +1,18 @@
+{
+  "type": "factor_io:crafting",
+  "ingredients": [
+    {
+      "count": 1,
+      "ingredient": {
+        "tag": "forge:plates/copper"
+      }
+    }
+  ],
+  "results": [
+    {
+      "count": 2,
+      "item": "factor_io:copper_cable"
+    }
+  ],
+  "time": 0.5
+}
