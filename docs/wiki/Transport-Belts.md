@@ -9,6 +9,8 @@
 Each block holds **two lanes of four slots**, so eight items, as in Factorio. Speed is set in
 ticks per slot, per belt, [by datapack](Datapack-Guide#belts), and modpacks can [add their own belts](Datapack-Guide#creating-a-belt).
 
+![The three belt tiers side by side](images/belt_tiers.jpg)
+
 | Belt | Recipe |
 |---|---|
 | Transport Belt | 2 iron plates + 1 iron gear wheel → 4 |
@@ -33,6 +35,8 @@ crossing, and both simply back up.
 **An inserter drops on the lane furthest from it.** This is the rule every two-lane build rests
 on: one inserter on each side of a belt fills both lanes independently, and a single inserter
 never touches the far side's reserve.
+
+![Two inserters facing each other across a belt, each filling its far lane](images/belt_lanes.jpg)
 
 By default, an inserter falls back to the near lane once the far one is full, so that it never
 stalls in front of a belt that visibly has room. Set `insert_on_far_lane_only` to make it wait
@@ -65,7 +69,15 @@ A belt with nowhere to go fills and stops, and the backup travels upstream one s
 Right-click with an item to drop one on the lane and slot you clicked; right-click empty-handed
 to take the front-most one back. To place a block on top of a belt, sneak, as vanilla expects.
 
+## Ramps
+
+Each tier has a **ramp**, to climb or descend one block. A ramp placed below the end of a belt goes
+down; anywhere else it goes up. It is crafted from a belt of its tier and an iron plate.
+
+![A belt climbing a ramp, crossing a block and coming back down](images/ramp_hall.jpg)
+
+> The ramp models are placeholders.
+
 ## Not yet
 
-**Vertical belts** and **splitters** do not exist. The code anticipates the first — a belt's flow
-direction is already a property it carries — but there are no models for either.
+**Splitters** do not exist yet; they are next. Underground belts are out of scope.

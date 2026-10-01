@@ -1,127 +1,194 @@
-=== SHORT DESCRIPTION ===
+# Store copy
 
-Factorio's inserters and belts, in Minecraft. Machines that move items on their own, and belts that carry them — between the inventories you already have.
+Paste-ready text for the CurseForge project page. Not documentation: this file sells the mod, the
+wiki explains it. Every claim here is something the mod does today — check it against
+`CHANGELOG.md` before changing a number.
 
-=== FULL DESCRIPTION ===
+Images go through the description editor's own upload, which refuses anything wider than 850 px;
+CurseForge then gives each one a `media.forgecdn.net` URL, to paste in place of the local path
+below. They come from the showcase run and `Banners.java` ([`showcase/`](showcase/README.md)).
 
-# Factor'I/O
+## Summary
 
-**Factorio's inserters and transport belts, in Minecraft.** Items move between the inventories
-you already have — vanilla or from any other mod — without a hopper in sight.
+> One line, 256 characters at most, shown under the name in every search result.
 
-Forge 1.20.1 · MIT · [GitHub](https://github.com/DrimoZ/FactoryIO) ·
-[Wiki](https://github.com/DrimoZ/FactoryIO/wiki) ·
-[CurseForge](https://www.curseforge.com/minecraft/mc-mods/factoryio) ·
-[Discord](https://discord.com/invite/b8ZutEfWyV)
+Factorio's inserters, transport belts and assembling machines, in Minecraft. Seven inserters,
+three belt tiers with ramps, three tiers of crafters, modules — and the Factorio component chain
+to build them.
 
-> **This is a beta.** Inserters and belts are complete and tested. **There are no machines** — no
-> furnaces, no assemblers, no ore processing. That is a deliberate pause, not an oversight: this
-> release is a transport toolkit rather than a production chain. What ships works; what is
-> missing is missing on purpose, and it is listed at the bottom of this page.
+## Categories
 
----
+Main: **Technology**. Additional: Energy, Fluid, and Item Transport · Processing · Energy.
 
-## Inserters
+## Relations
 
-An inserter takes items out of the block behind it and puts them into the block in front. Seven
-of them, differing in how fast, how far, and how selectively.
+- GeckoLib — **required dependency**
+- JEI — **optional dependency**
+
+## Files
+
+Display name `Factor'I/O 0.4.0-beta`, release type **Beta**, game version **1.20.1 only** (not
+`1.20`: `mods.toml` refuses it), loader **Forge**. Changelog: the `0.4.0-beta` section of
+`CHANGELOG.md`.
+
+## Description
+
+<!-- Everything below this line is pasted into CurseForge's Markdown editor as-is. -->
+
+![Factor'I/O](showcase/out/banner.png)
+
+### Factorio's machines, in Minecraft.
+
+Inserters that move items on their own, belts that carry them on two lanes, and crafters that turn
+plates into gears, gears into circuits, circuits into the next machine. It works with the
+inventories you already have — vanilla chests, furnaces, and every storage mod on Forge.
+
+![A factory hall: two rows of crafters around a belt bus](showcase/out/crafter_row_850.jpg)
+
+![Inserters](showcase/out/header_inserters.png)
+
+An inserter takes from the block behind it and puts into the block in front. Seven of them, from
+the coal-fed burner to the stack filter inserter:
 
 | Inserter | Items/s | Reach | Hand | Filters | Power |
 |---|---|---|---|---|---|
-| Burner | 0.59 | 1 | 1 | — | fuel |
+| Burner | 0.59 | 1 | 1 | — | coal |
 | Inserter | 0.83 | 1 | 1 | — | 8 FE/t |
 | Long Handed | 1.25 | 2 | 1 | — | 10 FE/t |
-| Filter | 0.83 | 1 | 1 | yes | 10 FE/t |
+| Filter | 0.83 | 1 | 1 | ✔ | 10 FE/t |
 | Fast | 2.50 | 1 | 1 | — | 25 FE/t |
 | Stack | 7.50 | 1 | 3 | — | 35 FE/t |
-| Stack Filter | 7.50 | 1 | 3 | yes | 40 FE/t |
+| Stack Filter | 7.50 | 1 | 3 | ✔ | 40 FE/t |
 
-Throughput sits within 8 % of Factorio's, converted to 20 ticks per second.
+- **They only pick up what the target will accept**, as in Factorio. One inserter on a mixed belt
+  brings a crafter exactly the ingredient it is missing, and waits empty-handed in front of a full
+  chest.
+- **Filters by item or by whole tag**, slot by slot: `#forge:ingots` keeps working when you add a
+  mod.
+- **The burner refuels itself** from what it takes, so a whole line can run on coal.
+- **A screen that tells you why**: expected and measured rate, what a swing costs, and side tabs
+  for settings, modules and redstone.
 
-**Filters** hold five ghost items, whitelist or blacklist, and each slot matches either that
-exact item **or its whole tag** — your choice, per slot. `#forge:ingots` in one slot and a single
-plank in the next is a normal setup, and it keeps working when you add another mod.
+![A stack inserter mid-swing](showcase/out/inserter_swing_850.jpg)
 
-**Redstone is a comparison, not a switch**: always on, on below a signal strength, or on at or
-above it. A comparator reading a chest can run an inserter only when that chest is nearly empty,
-with no additional circuit.
+![The seven inserters along one belt](showcase/out/inserters_row_850.jpg)
 
-## Transport belts
+![The inserter screen and its side tabs](showcase/out/gui_inserter_info_850.jpg)
 
-| Belt | Items/s | Carries |
-|---|---|---|
-| Transport Belt | 10 | 8 items |
-| Fast Transport Belt | 20 | 8 items |
-| Express Transport Belt | 40 | 8 items |
+![Transport belts](showcase/out/header_belts.png)
 
-Two lanes of four slots, as in Factorio. Belts curve, merge from the side, compress against an
-obstacle, and **a closed loop keeps turning when full**.
+| Belt | Items/s |
+|---|---|
+| Transport Belt | 10 |
+| Fast Transport Belt | 20 |
+| Express Transport Belt | 40 |
 
-**An inserter drops on the far lane** — the one furthest from it. That is the rule every two-lane
-build in Factorio rests on, and it is the belt that enforces it, from the side the request comes
-from. Hoppers and pipes from other mods follow the same rule without knowing belts exist.
+- **Two lanes of four slots**, curves, side merges, compression, and closed loops that keep
+  turning when full.
+- **The far-lane rule**: an inserter drops on the lane furthest from it, so one inserter on each
+  side fills each lane. Hoppers and other mods' pipes follow it too.
+- **Ramps**, one per tier, to climb or cross over another belt.
+- Every face is an inventory: a hopper above loads a belt, a hopper below drains it.
 
-Belts expose an inventory on **every face**. A hopper above loads one; a hopper below drains one,
-taking the front-most item first, because a belt is a queue. A belt never fills a chest by itself
-and never empties one — that is what inserters are for.
+![Iron on one lane, copper on the other](showcase/out/belt_lanes_850.jpg)
 
-You can also load a belt by hand: right-click with an item to drop one on the lane and slot you
-clicked, right-click empty-handed to take the front one back.
+![Three belt tiers, and a ramp crossing them](showcase/out/ramp_outdoor_850.jpg)
 
-## Upgrades
+![A belt turning on its own](showcase/out/belt_curve_850.jpg)
 
-Three axes — speed, capacity, efficiency — three tiers each, and **they stack**: two Speed
-Module 3 are worth more than one. How many fit is a property of the machine, from one on a burner
-to four on a stack filter inserter.
+![Crafters](showcase/out/header_crafters.png)
 
-Speed shortens the swing without changing what a swing costs, so a faster inserter draws more
-power per second and the same per item. Efficiency is the axis that lowers cost per item.
+Factorio's assembling machine. **Three tiers, one 3×3 machine** placed in one go, with an outline
+showing where it will stand.
 
-## Data-driven
+| Crafter | Speed | Power while working | Module slots |
+|---|---|---|---|
+| Mk1 | ×0.50 | 30 FE/t | 0 |
+| Mk2 | ×0.75 | 60 FE/t | 2 |
+| Mk3 | ×1.25 | 150 FE/t | 4 |
 
-**An inserter is a data file, not a Java class.** Drop a JSON into `config/factor_io/inserters/`
-and you have a new one — block, item, block entity, menu and screen are built from the
-definition, and its models, translations, loot table and tags are generated in memory. No assets
-to draw, no code to write.
+- **Pick a recipe from an icon grid**, with search. Recipes above the machine's tier are locked.
+- **Feed it from any side, take from any side.** Inputs only accept the recipe's ingredients, and
+  only two crafts ahead — an inserter never empties a belt into one machine.
+- **Power only while working.** No recipe, no ingredients, no cost.
+- **Item and fluid recipes**: up to two fluids in and out, through pipes from other mods or a
+  bucket.
+- **JEI** lists every crafter recipe, and its `+` button sets it.
 
-A **datapack** retunes the shipped inserters live and applies on `/reload`. Everything the mod
-recognises goes through **item tags**, never a hardcoded list, so another mod's wrench or another
-pack's component becomes usable by joining a tag.
+![Inserters feeding a crafter](showcase/out/crafter_feed_850.jpg)
 
-Belt speeds, and which of the seven inserters exist at all, are config options. Belt speed
-changes apply to belts **already placed**.
+![The crafter screen and its recipe picker](showcase/out/gui_picker_850.jpg)
 
-## Energy
+![Modules](showcase/out/header_modules.png)
 
-The mod consumes Forge Energy and **produces none** — bring a generator from Mekanism, Thermal,
-or anything outputting FE. **Burner inserters need no power at all** and refuel themselves from
-the chest they draw from, so a whole line can run on coal.
+Speed, productivity and efficiency, three tiers each, for **both** machines:
 
-The Creative Energy Source covers creative and testing, and is deliberately recipe-less.
+- In an **inserter**, they shorten the swing, add items per swing, or cut the cost per swing. They
+  stack: two Speed 3 are worth more than one.
+- In a **crafter**, they have Factorio's effects — up to +50 % speed, +10 % free output, −50 %
+  power — and productivity fills a bar that pays out a free craft.
+- The **Advanced Redstone Module** turns redstone from a stop into a comparison: run only while a
+  chest is nearly empty, with no extra circuit.
 
----
+![A Mk3 crafter with four modules](showcase/out/crafter_mk3_850.jpg)
 
-## What is not in this build
+![The modules](showcase/out/items_modules.png)
 
-Said plainly, because finding out in-game is worse:
+Everything is crafted through **Factorio's component chain** — plates from the stonecutter, steel
+from the blast furnace, gears, cables, electronic circuits by hand; advanced circuits and
+processing units only in a crafter. Forge tags throughout, so other mods' plates and circuits
+work.
 
-- **No machines** — no furnaces, assemblers or ore processing.
-- **Modules and the configurator have no recipes** and are creative-only.
-- **No splitters and no vertical belts.**
-- **No JEI plugin.**
-- Belt worlds may not survive a `0.x` update. Back up.
+![The component chain](showcase/out/items_components.png)
 
-## Compatibility and permissions
+![Everything in the creative tab](showcase/out/gui_creative_850.jpg)
 
-Anything exposing an `IItemHandler` works with both inserters and belts, which is essentially
-every storage mod on Forge 1.20.1. Vanilla hoppers work in both directions.
+![Data-driven](showcase/out/header_data.png)
 
-**Modpacks: yes.** No permission needed, public or private, monetised or not. Credit appreciated,
-never required.
+- **A new machine is a JSON file.** Drop one into `config/factor_io/inserters/`, `belts/` or
+  `crafters/` and its block, item, screen, model and translations are built for it.
+- **Every number is retunable by datapack**, live on `/reload` — speeds, costs, module effects.
+- **Crafter recipes are plain datapack recipes**, `factor_io:crafting`, with counted
+  ingredients, chances and fluids.
+- Validation **refuses and names the problem** in the log. Nothing is silently clamped.
 
-## Getting help
+![JEI lists every crafter recipe](showcase/out/gui_jei_850.jpg)
 
-The **[wiki](https://github.com/DrimoZ/FactoryIO/wiki)** is the reference — player guide, config,
-datapack docs and FAQ. Bugs go to
-**[GitHub issues](https://github.com/DrimoZ/FactoryIO/issues)**, questions to
-**[Discord](https://discord.com/invite/b8ZutEfWyV)**.
+![Not in this build](showcase/out/header_missing.png)
+
+- **Placeholder models** for the crafter and the ramps; the real ones are being drawn.
+- **No splitters** yet — they are next. No furnaces, drills or power generation: bring Forge
+  Energy from another mod, or run on burner inserters and coal.
+- This is a **beta**: worlds may not survive a `0.x` update. Back up.
+
+### Requirements
+
+| | |
+|---|---|
+| Minecraft | 1.20.1 |
+| Loader | Forge 47 or newer |
+| [GeckoLib](https://www.curseforge.com/minecraft/mc-mods/geckolib) | 4.4 or newer, required |
+| [JEI](https://www.curseforge.com/minecraft/mc-mods/jei) | optional, recommended |
+| Power | any Forge Energy generator, in survival |
+
+The `1.18.2` files on this page are the original prototype, under another mod ID: they are not
+compatible with this version and are no longer supported.
+
+### FAQ
+
+**Can I put it in my modpack?** Yes. No permission needed, public or private, monetised or not.
+Credit appreciated, never required.
+
+**Does it work on a dedicated server?** Yes.
+
+**Fabric? NeoForge? Other versions?** Forge 1.20.1 only, for now.
+
+**Where is the documentation?** The [wiki](https://github.com/DrimoZ/FactoryIO/wiki) covers every
+machine, the configuration and the datapack format.
+
+### Links
+
+[Wiki](https://github.com/DrimoZ/FactoryIO/wiki) ·
+[Source](https://github.com/DrimoZ/FactoryIO) ·
+[Issues](https://github.com/DrimoZ/FactoryIO/issues) ·
+[Discord](https://discord.gg/YY9gk63rKz)

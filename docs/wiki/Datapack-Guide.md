@@ -1,11 +1,13 @@
 # Datapack Guide
 
-Inserters and belts work the same way. Four jobs, four places:
+Inserters, belts and crafters work the same way. Four jobs, four places:
 
 | I want to… | Where | Applies |
 |---|---|---|
-| **create** an inserter or a belt | `config/factor_io/<inserters|belts>/<name>.json` | next launch |
-| **retune** an existing one | `data/<namespace>/factor_io/<inserters|belts>/<name>.json` | `/reload` |
+| **create** an inserter, a belt or a crafter | `config/factor_io/<kind>/<name>.json` | next launch |
+| **retune** an existing one | `data/<namespace>/factor_io/<kind>/<name>.json` | `/reload` |
+
+`<kind>` is `inserters`, `belts` or `crafters`.
 | **remove** a shipped one | `config/factor_io/factor_io-common.toml` | next launch |
 | **dress** it | a resource pack providing the texture | resource reload |
 
@@ -91,7 +93,7 @@ You will want a recipe, which is an ordinary datapack recipe like any other.
 untouched. Naming an inserter that does not exist logs a warning telling you to declare it in
 `config/` instead.
 
-## Retuning the upgrades
+## Retuning the modules
 
 `data/mypack/factor_io/upgrades/tuning.json` — one file, and only that name:
 
@@ -139,12 +141,13 @@ Nothing the mod recognises is hardcoded:
 |---|---|
 | `factor_io:configurators` | items that copy and paste inserter settings |
 | `factor_io:upgrades/speed/<1-3>` | modules acting as a Speed module of that tier |
-| `factor_io:upgrades/productivity/<1-3>` | likewise for capacity |
+| `factor_io:upgrades/capacity/<1-3>` | likewise for Productivity modules |
+| `factor_io:upgrades/advanced_redstone` | items unlocking the full redstone condition |
 | `factor_io:upgrades/efficiency/<1-3>` | likewise for cost |
 | `factor_io:inserter_fuel` | what a burner will accept |
-| `factor_io:wrench` | what rotates a block |
+| `forge:tools/wrench` | what rotates a block |
 
-Adding another mod's wrench to `factor_io:wrench` makes it rotate inserters. No Java, and the
+Adding another mod's wrench to `forge:tools/wrench` makes it rotate inserters. No Java, and the
 two mods never need to know about each other.
 
 ## Belts
@@ -193,3 +196,80 @@ assets.
 `/reload` applies it to belts already placed, and sends it to connected players, whose clients
 replay the belt simulation. Only the speed is taken from a datapack; appearance, ramp and next
 tier are fixed at launch.
+
+## Crafters
+
+Crafters follow the same four places as inserters and belts: a file in
+`config/factor_io/crafters/` creates one, a datapack file in `data/<namespace>/factor_io/crafters/`
+retunes it on `/reload`, the TOML removes one.
+
+### Fields
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `tier` | int, 1 to 16 | 1 | recipes with a higher `minTier` are refused; **fixed at launch** |
+| `moduleSlots` | int, 0 to 4 | 0 | module slots; **fixed at launch** |
+| `craftingSpeed` | number > 0, up to 100 | — | a recipe takes `time ÷ craftingSpeed` |
+| `energyPerTick` | int ≥ 0 | — | FE drawn per tick, only while crafting |
+| `energyCapacity` | int > 0 | — | buffer |
+| `inputCrafts` | int, 1 to 64 | 2 | how many crafts ahead the inputs accept |
+| `fluidCapacity` | int, 1,000 to 64,000 | — | size of each fluid tank, in mB |
+| `translations` | map | — | display names per language code |
+
+A datapack may change everything but `tier` and `moduleSlots`; a file that contradicts either is
+refused whole and named in the log.
+
+### Creating a crafter
+
+`config/factor_io/crafters/crafter_mk4.json`:
+
+```json
+{
+  "tier": 4,
+  "moduleSlots": 4,
+  "craftingSpeed": 2.0,
+  "energyPerTick": 300,
+  "energyCapacity": 200000,
+  "fluidCapacity": 64000,
+  "translations": { "en_us": "Crafter Mk4", "fr_fr": "Crafter Mk4" }
+}
+```
+
+## Crafting recipes
+
+Crafter recipes are ordinary datapack recipes of type `factor_io:crafting`:
+
+```json
+{
+  "type": "factor_io:crafting",
+  "ingredients": [
+    { "ingredient": { "tag": "forge:circuits/basic" }, "count": 20 },
+    { "ingredient": { "tag": "forge:circuits/advanced" }, "count": 2 }
+  ],
+  "fluidIngredients": [
+    { "fluid": "minecraft:water", "amount": 500 }
+  ],
+  "results": [
+    { "item": "factor_io:processing_unit", "count": 1 },
+    { "item": "minecraft:glowstone_dust", "count": 1, "chance": 0.1 }
+  ],
+  "time": 10.0,
+  "minTier": 2
+}
+```
+
+| Field | Bounds | Notes |
+|---|---|---|
+| `ingredients` | 1 to 9, `count` 1 to 64 | items or tags |
+| `results` | 1 to 4, `count` 1 to 64 | `chance` optional, above 0 and up to 1 |
+| `time` | > 0 | seconds, before the machine's speed |
+| `minTier` | ≥ 1, default 1 | lowest crafter tier allowed |
+| `fluidIngredients` | 0 to 2, `amount` 1 to 32,000 mB | exactly one of `fluid` or `tag` |
+| `fluidResults` | 0 to 2 | `fluid` and `amount` |
+
+Any other key starting with `fluid` is **refused**: a typo must not silently give a recipe without
+its fluid. The machine reserves room for every possible result before it starts, so a lucky roll
+is never lost.
+
+Removing a recipe on `/reload` stops the machines that use it without destroying anything; they
+restart by themselves if it comes back.

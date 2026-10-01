@@ -6,7 +6,7 @@ Welcome to the Factor'I/O community! Here are some ways you can get involved and
 
 Join our Discord server to chat with other players, ask questions, and get the latest updates:
 
-[Join Factor'I/O Discord](https://discord.gg/b8ZutEfWyV)
+[Join Factor'I/O Discord](https://discord.gg/YY9gk63rKz)
 
 ## GitHub Issues
 

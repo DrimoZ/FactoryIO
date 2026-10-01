@@ -3,7 +3,11 @@
 All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the jar is named
 `factor_io-<minecraft>-<version>.jar`.
 
-## [Unreleased]
+## [0.4.0-beta] — 2026-10-01
+
+The first machine: **crafters**, Factorio's assembling machines, in three tiers, with modules and
+fluid recipes. Belts gain **ramps**, inserters a new screen and Factorio's habit of picking only
+what their target will take. Modules, the configurator and every component now have a recipe.
 
 ### Added
 
@@ -74,6 +78,14 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 - Moving belts resend their state every 10 s, so a line watched in multiplayer no longer drifts
   away from the server's. About 3.3 KB/s per player for 500 moving items; idle and stopped belts
   send nothing.
+
+### Known gaps
+
+- The **crafter and ramp models are placeholders**.
+- **No splitters**, no furnaces or drills, no power generation: bring FE from another mod.
+- No shipped recipe uses fluids yet; datapacks can.
+- The configurator copies inserter settings only, not crafter settings.
+- Worlds may not survive a `0.x` update. Back up.
 
 ## [0.3.0-beta] — 2026-08-16
 

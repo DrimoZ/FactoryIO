@@ -3,7 +3,7 @@
 An inserter takes items out of the block behind it and puts them into the block in front.
 Everything else is a variation on how fast, how far, and how selectively.
 
-| Inserter | Items/s | Reach | Hand | Filters | Upgrade slots | Power |
+| Inserter | Items/s | Reach | Hand | Filters | Module slots | Power |
 |---|---|---|---|---|---|---|
 | Burner | 0.59 | 1 | 1 | — | 1 | fuel |
 | Inserter | 0.83 | 1 | 1 | — | 2 | 8 FE/t |
@@ -14,6 +14,8 @@ Everything else is a variation on how fast, how far, and how selectively.
 | Stack Filter | 7.50 | 1 | 3 | yes | 4 | 40 FE/t |
 
 Throughput sits within 8 % of Factorio's, converted to 20 ticks per second.
+
+![The seven inserters, each between two chests](images/inserters_row.jpg)
 
 ## The three things that differ
 
@@ -30,6 +32,8 @@ blocks, which lets it skip over a belt to take from what is behind it.
 
 Right-click an inserter to open it.
 
+![The inserter screen, side tabs open](images/gui_inserter_info.png)
+
 - **The window** shows what the machine is doing: its power on the left, then the block it takes
   from, the item in its hand and the block it drops into — the arrows fill as the arm moves. On
   filtering models the five filter slots sit underneath, with the whitelist/blacklist button at
@@ -39,27 +43,22 @@ Right-click an inserter to open it.
   a measured rate well under the expected one means a starving or blocked inserter — and
   **Settings**: the **hand size** (how many items a swing takes, "Max" following capacity
   modules), the **drop lane** on a belt (automatic, near or far) and the **animation**. On the
-  right, **Upgrades** (open by default) and **Control**: the **on/off** switch — off wins over
+  right, **Upgrades** (open by default, see [Modules](Modules)) and **Control**: the **on/off** switch — off wins over
   any redstone signal — and the redstone condition.
+
+## What it picks up
+
+An inserter only takes **what its target will accept**, as in Factorio. In front of a crafter, it
+brings the missing ingredient rather than one that is already full; in front of a full chest, it
+waits with an empty hand. Nothing is ever stuck in its grip.
+
+From a belt it takes from either lane. Onto a belt it drops on the far lane — see
+[Transport Belts](Transport-Belts#the-far-lane).
 
 ## Crafting
 
-Factorio's recipes, fitted to a crafting grid — gears, plates and circuits (see
-[Upgrades](Upgrades) for how those are made):
-
-| Inserter | Recipe |
-|---|---|
-| Burner | 1 iron gear wheel + 1 iron plate |
-| Inserter | 1 electronic circuit + 1 gear + 1 iron plate |
-| Long Handed | 1 inserter + 1 gear + 1 iron plate |
-| Fast | 1 inserter + 2 electronic circuits + 2 iron plates |
-| Filter | 1 inserter + 4 electronic circuits |
-| Stack | 1 fast inserter + 4 gears + 3 electronic circuits + 1 advanced circuit |
-| Stack Filter | 1 stack inserter + 4 electronic circuits |
-
-One departure from Factorio: the Filter inserter is built from the plain one, not the fast one —
-here it works at the plain inserter's speed, and paying for a speed it does not have would make
-no sense.
+From gears, plates and circuits — see [Recipes](Recipes#machines). Each tier is built from the one
+below, as in Factorio.
 
 ## Fuel, for the burner
 

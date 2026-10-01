@@ -4,8 +4,10 @@
 - [Getting Started](Getting-Started)
 - [Inserters](Inserters)
 - [Transport Belts](Transport-Belts)
+- [Crafters](Crafters)
+- [Modules](Modules)
 - [Filters and Redstone](Filters-and-Redstone)
-- [Upgrades](Upgrades)
+- [Recipes](Recipes)
 
 **Running it**
 - [Configuration](Configuration)

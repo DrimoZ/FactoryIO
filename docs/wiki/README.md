@@ -10,6 +10,7 @@ GitHub wikis are a separate git repository. To publish:
 ```bash
 git clone https://github.com/DrimoZ/FactoryIO.wiki.git /tmp/fio-wiki
 cp docs/wiki/*.md /tmp/fio-wiki/
+cp -r docs/wiki/images /tmp/fio-wiki/
 rm /tmp/fio-wiki/README.md
 cd /tmp/fio-wiki && git add -A && git commit -m "Sync from docs/wiki" && git push
 ```
@@ -21,3 +22,7 @@ The wiki must have been initialised once through the web interface — GitHub do
 `[Transport Belts](Transport-Belts)` resolves to `Transport-Belts.md`.
 
 This `README.md` is not copied — it describes the folder, not the mod.
+
+Images live in `images/` and are referenced relatively (`images/crafter_row.jpg`), so they work both in
+the wiki and when browsing this folder on GitHub. They come from the showcase run
+([`docs/showcase/`](../showcase/README.md)), converted to JPEG and kept under 400 KB each.

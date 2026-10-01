@@ -17,12 +17,13 @@ worth more than a description of what you saw.
 
 Two possibilities.
 
-**Which inserters exist** is read *before* Forge loads the config file — block registration
+**Which inserters, belts and crafters exist** is read *before* Forge loads the config file — block registration
 happens earlier — so a change takes effect on the **next** launch, not this one. On the very
 first launch the file does not exist at all, and defaults apply.
 
-**Belt speeds** apply immediately, including to belts already placed. If they do not, check you
-edited `ticks_per_slot` and not the old `duration` key, which is inert.
+**Belt speeds are not in the config file any more.** They are set by datapack and apply on
+`/reload`, to belts already placed; the old `ticks_per_slot` keys are inert. See
+[Datapack Guide](Datapack-Guide#belts).
 
 ## Items are not moving on a belt
 
@@ -40,10 +41,23 @@ edited `ticks_per_slot` and not the old `duration` key, which is inert.
   sneak and right-click bare-handed.
 - **A filter is excluding it.** Check whitelist versus blacklist, and whether a slot is in tag
   mode.
-- **Redstone.** The default condition stops it on *any* signal.
-- **Its target is full.** It holds the item, arm extended, and resumes when there is room.
+- **Redstone.** Any signal stops it, unless an Advanced Redstone Module says otherwise.
+- **Its target is full, or will not take that item.** An inserter only picks up what its target
+  accepts, so in front of a full chest or a crafter that already has two crafts' worth, it waits
+  with an empty hand. That is intended.
 - **It is looking at something it cannot read.** Inserters use block inventories; items on the
   ground, minecarts and entities are ignored.
+
+## A crafter does not start
+
+Open it and read the light in the title bar, then the **Information** tab, which names the reason.
+
+- **Grey, "No recipe".** Click the recipe socket and pick one.
+- **Red.** No power; or the recipe needs a higher tier; or it disappeared after a `/reload` —
+  the machine keeps it and restarts by itself if it comes back.
+- **Yellow.** An ingredient is missing. Empty input slots show what they expect.
+- **Orange.** The outputs are full. Take from any block of the machine with an inserter.
+- **Grey, switched off or redstone.** See the **Control** tab.
 
 ## Lag
 

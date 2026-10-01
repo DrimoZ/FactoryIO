@@ -5,6 +5,10 @@
 The Filter and Stack Filter inserters carry **five filter slots**. Drop an item onto one to set
 it — the item is a ghost, it is not consumed and you get it straight back.
 
+![A filter inserter pulling copper plates off a mixed belt](images/filter_inserter.jpg)
+
+![The filter panel](images/gui_inserter.png)
+
 The list button at the end of the filter row switches the whole panel between **whitelist** — only
 these pass — and **blacklist** — these do not.
 
@@ -21,7 +25,11 @@ Tag mode is what keeps a filter working after you add a mod. An item list would 
 
 ## Redstone
 
-Redstone is a **comparison, not a switch**. Three conditions:
+Inserters and crafters share the same **Control** tab.
+
+**Out of the box**, redstone is a stop: any signal pauses the machine, as you would expect.
+
+**With an Advanced Redstone Module** in a module slot, it becomes a **comparison**:
 
 | Condition | Runs when |
 |---|---|
@@ -29,21 +37,20 @@ Redstone is a **comparison, not a switch**. Three conditions:
 | Signal below N | strength is under N — the default, with N = 1, so any signal stops it |
 | Signal at or above N | strength is N or more |
 
-The default reproduces the intuitive "redstone turns it off". The other two are what a comparator
-is for: an inserter that only runs when a chest is nearly empty, or only when it is nearly full,
-needs no additional circuit.
+That is what a comparator is for: an inserter that only runs while a chest is nearly empty, or a
+crafter that only runs while its output chest has room, with no extra circuit. The condition you
+set is kept if you remove the module; it simply stops applying.
 
-Set it in the **Control** tab, which also shows the signal the inserter currently receives — the
-quickest way to see why one is stopped.
+The tab also shows the signal the machine currently receives — the quickest way to see why one is
+stopped. A crafter reads the strongest signal reaching **any** of its blocks.
 
-The same tab holds the **on/off** switch, above the condition. Off wins: no signal turns the
-inserter back on.
-
-A disabled inserter changes texture, so a stopped line is readable at a glance.
+Above the condition sits the **on/off** switch. Off wins: no signal turns the machine back on. A
+disabled inserter changes texture, so a stopped line reads at a glance.
 
 ## Copying settings
 
-The **Configurator** copies everything above between machines.
+The **Configurator** copies an inserter's settings onto other inserters. Crafters are not
+supported yet.
 
 - **Sneak + right-click** an inserter to memorise its filters, whitelist mode, redstone condition,
   animation setting, hand size and drop lane.

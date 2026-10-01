@@ -40,11 +40,16 @@ import java.util.stream.Stream;
  * Le client charge une <b>copie</b> du monde « Test FactorIO » (jamais l'original), pose la
  * démo {@code demo:crafter} loin de tout, ouvre chaque écran, enregistre
  * {@code run/screenshots/preview/*.png} et se ferme.
+ *
+ * <p>{@code FACTORIO_GUI_PREVIEW=showcase} joue à la place le scénario de {@link Showcase} :
+ * les captures de la page du mod et du wiki.
  */
 @Mod.EventBusSubscriber(modid = FactoryIO.MOD_ID, value = Dist.CLIENT)
 public final class GuiPreview {
 
-    private static final boolean ENABLED = "1".equals(System.getenv("FACTORIO_GUI_PREVIEW"));
+    private static final String MODE = System.getenv("FACTORIO_GUI_PREVIEW");
+    private static final boolean ENABLED = "1".equals(MODE) || Showcase.MODE.equals(MODE);
+    private static final boolean SHOWCASE = Showcase.MODE.equals(MODE);
     private static final String SOURCE_WORLD = "Test FactorIO";
     private static final String WORLD = "GuiPreview";
     private static final BlockPos ORIGIN = new BlockPos(1000, 120, 1000);
@@ -66,11 +71,17 @@ public final class GuiPreview {
         if (!started && minecraft.screen instanceof TitleScreen title) {
             started = true;
             minecraft.options.pauseOnLostFocus = false;
-            copyWorld(minecraft);
-            script();
-            minecraft.createWorldOpenFlows().loadLevel(title, WORLD);
+            if (SHOWCASE) {
+                Showcase.script();
+                Showcase.open(minecraft, title);
+            } else {
+                copyWorld(minecraft);
+                script();
+                minecraft.createWorldOpenFlows().loadLevel(title, WORLD);
+            }
             return;
         }
+        if (SHOWCASE && started) Showcase.tick(minecraft);
         if (!started || minecraft.player == null || minecraft.getSingleplayerServer() == null) return;
         if (pendingShot != null || STEPS.isEmpty()) return;
         if (wait-- > 0) return;
@@ -86,7 +97,8 @@ public final class GuiPreview {
         if (!ENABLED || event.phase != TickEvent.Phase.END || pendingShot == null) return;
         Minecraft minecraft = Minecraft.getInstance();
 
-        File file = new File(minecraft.gameDirectory, "screenshots/preview/" + pendingShot + ".png");
+        String folder = SHOWCASE ? "screenshots/showcase/" : "screenshots/preview/";
+        File file = new File(minecraft.gameDirectory, folder + pendingShot + ".png");
         file.getParentFile().mkdirs();
         try (NativeImage image = Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
             image.writeToFile(file);
@@ -146,16 +158,16 @@ public final class GuiPreview {
         step(10, Minecraft::stop);
     }
 
-    private static void step(int delay, Consumer<Minecraft> action) {
+    static void step(int delay, Consumer<Minecraft> action) {
         STEPS.add(new Step(delay, action));
     }
 
-    private static void shot(String name) {
+    static void shot(String name) {
         pendingShot = name;
     }
 
     /** Exécutée par le serveur intégré, avec tous les droits : le monde n'a pas forcément les commandes. */
-    private static void command(Minecraft minecraft, String command) {
+    static void command(Minecraft minecraft, String command) {
         var server = minecraft.getSingleplayerServer();
         server.execute(() -> {
             ServerPlayer player = server.getPlayerList().getPlayer(minecraft.player.getUUID());
@@ -165,13 +177,13 @@ public final class GuiPreview {
         });
     }
 
-    private static void use(Minecraft minecraft, BlockPos pos) {
+    static void use(Minecraft minecraft, BlockPos pos) {
         minecraft.gameMode.useItemOn(minecraft.player, InteractionHand.MAIN_HAND,
                 new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false));
     }
 
     /** Clique le grand slot de recette de l'écran de crafter, s'il est ouvert. */
-    private static void clickRecipeSocket(Minecraft minecraft) {
+    static void clickRecipeSocket(Minecraft minecraft) {
         if (!(minecraft.screen instanceof AbstractContainerScreen<?> screen)) return;
         try {
             Class<?> menu = Class.forName("com.drimoz.factoryio.content.crafter.CrafterMenu");
@@ -184,14 +196,14 @@ public final class GuiPreview {
     }
 
     /** Clique un point de l'écran ouvert, en coordonnées de sa fenêtre — onglets compris. */
-    private static void clickGui(Minecraft minecraft, int x, int y) {
+    static void clickGui(Minecraft minecraft, int x, int y) {
         if (minecraft.screen instanceof AbstractContainerScreen<?> screen) {
             screen.mouseClicked(screen.getGuiLeft() + x, screen.getGuiTop() + y, 0);
         }
     }
 
     /** Place le curseur sur un point de l'écran ouvert, en coordonnées de sa fenêtre. */
-    private static void hoverGui(Minecraft minecraft, int x, int y) {
+    static void hoverGui(Minecraft minecraft, int x, int y) {
         if (!(minecraft.screen instanceof AbstractContainerScreen<?> screen)) return;
         double scale = minecraft.getWindow().getGuiScale();
         hover(minecraft, (screen.getGuiLeft() + x) * scale / minecraft.getWindow().getScreenWidth(),
@@ -199,7 +211,7 @@ public final class GuiPreview {
     }
 
     /** Place le curseur, en fraction de la fenêtre : les infobulles suivent la vraie souris. */
-    private static void hover(Minecraft minecraft, double fx, double fy) {
+    static void hover(Minecraft minecraft, double fx, double fy) {
         try {
             MouseHandler mouse = minecraft.mouseHandler;
             Field x = MouseHandler.class.getDeclaredField("xpos");
