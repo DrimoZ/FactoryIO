@@ -31,6 +31,10 @@ public class ModBlockTagsGenerator extends BlockTagsProvider {
             this.tag(ModTags.Blocks.MINEABLE_PICKAXE).add(block.get());
             this.tag(ModTags.Blocks.TOOL_STONE).add(block.get());
         });
+
+        // Hors d'ENTRIES (ni item ni loot), mais une partie se casse comme son maître.
+        this.tag(ModTags.Blocks.MINEABLE_PICKAXE).add(ModBlocks.MULTIBLOCK_PART.get());
+        this.tag(ModTags.Blocks.TOOL_STONE).add(ModBlocks.MULTIBLOCK_PART.get());
     }
 
     @Override

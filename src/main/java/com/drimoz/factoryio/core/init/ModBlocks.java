@@ -1,5 +1,7 @@
 package com.drimoz.factoryio.core.init;
 
+import com.drimoz.factoryio.content.multiblock.MultiblockPartBlock;
+import com.drimoz.factoryio.content.multiblock.MultiblockPartBlockEntity;
 import com.drimoz.factoryio.core.belts.BeltBlock;
 import com.drimoz.factoryio.core.belts.BeltBlockEntity;
 import com.drimoz.factoryio.core.belts.BeltRampBlock;
@@ -13,6 +15,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.PushReaction;
 import net.minecraftforge.registries.RegistryObject;
 
 import net.minecraft.world.item.BlockItem;
@@ -113,6 +116,26 @@ public final class ModBlocks {
                     () -> BlockEntityType.Builder
                             .of(BeltBlockEntity::new,
                                     BELTS.stream().map(RegistryObject::get).toArray(Block[]::new))
+                            .build(null));
+
+    /**
+     * Toute position d'un multibloc autre que son maître ({@code content/multiblock}).
+     *
+     * <p>Ni item ni loot : hors d'{@link #ENTRIES}. Elle ne bouge pas plus que le maître
+     * sous un piston, et se casse comme lui.
+     */
+    public static final RegistryObject<Block> MULTIBLOCK_PART = ModRegistries.BLOCKS.register(
+            "multiblock_part",
+            () -> new MultiblockPartBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .noOcclusion()
+                    .noLootTable()
+                    .pushReaction(PushReaction.BLOCK)));
+
+    public static final RegistryObject<BlockEntityType<MultiblockPartBlockEntity>> MULTIBLOCK_PART_ENTITY =
+            ModRegistries.BLOCK_ENTITIES.register(
+                    "multiblock_part",
+                    () -> BlockEntityType.Builder
+                            .of(MultiblockPartBlockEntity::new, MULTIBLOCK_PART.get())
                             .build(null));
 
     // Life cycle
