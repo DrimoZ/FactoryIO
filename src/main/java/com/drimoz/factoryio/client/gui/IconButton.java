@@ -25,8 +25,8 @@ import java.util.function.Supplier;
  */
 public final class IconButton {
 
-    private int x;
-    private int y;
+    private final int x;
+    private final int y;
     private final int width;
     private final int height;
 
@@ -46,13 +46,6 @@ public final class IconButton {
     }
 
     // Configuration
-
-    /** Déplace le bouton : une rangée alignée à droite ne connaît ses positions qu'une fois complète. */
-    public IconButton movedTo(int x, int y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
 
     public IconButton icon(Supplier<GuiSprites.Icon> icon) {
         this.icon = icon;

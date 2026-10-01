@@ -22,11 +22,9 @@ import com.drimoz.factoryio.core.registry.BeltReloadListener;
 import com.drimoz.factoryio.core.registry.InserterReloadListener;
 import com.drimoz.factoryio.core.registry.UpgradeReloadListener;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
-import com.drimoz.factoryio.core.resourcepack.EPackType;
 import com.drimoz.factoryio.core.resourcepack.PackRepositorySource;
 import com.drimoz.factoryio.shared.ModCreativeTab;
 import com.mojang.logging.LogUtils;
-import net.minecraft.server.packs.PackType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddPackFindersEvent;
 import net.minecraftforge.event.AddReloadListenerEvent;
@@ -102,13 +100,7 @@ public class FactoryIO
      * nettoyer (cf. FIO-039).
      */
     private void onRegisterResourcePacks(AddPackFindersEvent e) {
-        if (e.getPackType() == PackType.SERVER_DATA) {
-            e.addRepositorySource(new PackRepositorySource(EPackType.DATA));
-        }
-        else {
-            e.addRepositorySource(new PackRepositorySource(EPackType.RESOURCE));
-        }
-
+        e.addRepositorySource(new PackRepositorySource(e.getPackType()));
         FactoryIO.LOGGER.debug("Dépôt de packs {} enregistré", e.getPackType());
     }
 

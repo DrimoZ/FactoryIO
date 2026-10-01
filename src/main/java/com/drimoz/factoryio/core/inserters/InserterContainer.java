@@ -250,26 +250,6 @@ public class InserterContainer extends BaseMenu {
         return usesEnergy() ? inserter.getEnergyCapacity() : inserter.getFuelCapacity();
     }
 
-    public int getEnergyScaled(int pixels) {
-        if (!usesEnergy()) return -1;
-
-        return scaled(pixels);
-    }
-
-    public int getFuelScaled(int pixels) {
-        if (usesEnergy()) return -1;
-
-        return scaled(pixels);
-    }
-
-    public boolean hasEnergy() {
-        return usesEnergy() && getPowerStored() > 0;
-    }
-
-    public boolean hasFuel() {
-        return !usesEnergy() && getPowerStored() > 0;
-    }
-
     // Inner work (Synchronisation)
 
     private boolean isServerSide() {
@@ -281,14 +261,6 @@ public class InserterContainer extends BaseMenu {
     private int currentPowerOnServer() {
         return usesEnergy() ? BLOCK_ENTITY.getCurrentEnergy() : BLOCK_ENTITY.getCurrentFuelValue();
     }
-
-    private int scaled(int pixels) {
-        int capacity = getPowerCapacity();
-        if (capacity <= 0) return 0;
-
-        return Math.min(pixels, getPowerStored() * pixels / capacity);
-    }
-
 
     // Interface (Inventory Interaction)
 

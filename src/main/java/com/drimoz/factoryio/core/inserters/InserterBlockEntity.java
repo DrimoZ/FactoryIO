@@ -1566,17 +1566,6 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
                 || state.getValue(BlockStateProperties.ENABLED);
     }
 
-    public void setEnabled(boolean enabled) {
-        if (this.level == null) return;
-
-        // BlockState est immuable : setValue renvoie un nouvel état, il faut le poser
-        // dans le monde (cf. BUG-018).
-        this.level.setBlock(
-                this.worldPosition,
-                this.getBlockState().setValue(BlockStateProperties.ENABLED, enabled),
-                Block.UPDATE_ALL);
-    }
-
     // Inner work
 
     private static Direction getFacing(BlockEntity entity) {

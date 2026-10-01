@@ -26,14 +26,6 @@ public abstract class BaseMenu extends AbstractContainerMenu {
 
     // Inner work (Inventory)
 
-    protected void addPlayerInventory(Inventory playerInventory) {
-        addPlayerInventory(playerInventory, 84);
-    }
-
-    protected void addPlayerHotbar(Inventory playerInventory) {
-        addPlayerHotbar(playerInventory, 142);
-    }
-
     /** @param top ordonnée de la première rangée, pour un écran dont la hauteur varie */
     protected void addPlayerInventory(Inventory playerInventory, int top) {
         for (int i = 0; i < PLAYER_INVENTORY_ROW_COUNT; ++i) {

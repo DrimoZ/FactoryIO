@@ -1,7 +1,6 @@
 package com.drimoz.factoryio.core.model;
 
 import com.drimoz.factoryio.FactoryIO;
-import com.drimoz.factoryio.core.belts.BeltLane;
 import com.drimoz.factoryio.core.belts.BeltTransport;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
@@ -87,11 +86,6 @@ public class Belt implements Definition {
     /** Débit d'un bloc saturé, les deux voies comprises. */
     public double getItemsPerSecond() {
         return BeltTransport.LANES * TICKS_PER_SECOND / this.ticksPerSlot;
-    }
-
-    /** Ticks pour traverser un bloc. */
-    public int getTicksPerBlock() {
-        return this.ticksPerSlot * BeltLane.DEFAULT_CAPACITY;
     }
 
     public void setTicksPerSlot(int ticksPerSlot) {
