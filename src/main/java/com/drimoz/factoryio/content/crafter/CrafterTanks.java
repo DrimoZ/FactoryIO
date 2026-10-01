@@ -28,10 +28,8 @@ final class CrafterTanks {
     private final FluidTank[] inputs = new FluidTank[CrafterRecipe.MAX_FLUIDS];
     private final FluidTank[] outputs = new FluidTank[CrafterRecipe.MAX_FLUIDS];
     @Nullable private CrafterRecipe recipe;
-    private final Runnable onChange;
 
     CrafterTanks(Runnable onChange) {
-        this.onChange = onChange;
         for (int i = 0; i < CrafterRecipe.MAX_FLUIDS; i++) {
             int index = i;
             this.inputs[i] = new FluidTank(0, stack -> accepts(index, stack)) {
@@ -130,10 +128,6 @@ final class CrafterTanks {
         return index < CrafterRecipe.MAX_FLUIDS ? this.inputs[index] : this.outputs[index - CrafterRecipe.MAX_FLUIDS];
     }
 
-    static boolean isInput(int index) {
-        return index < CrafterRecipe.MAX_FLUIDS;
-    }
-
     /** Ce que voient tuyaux et mods tiers, par n'importe quelle face des 18 blocs. */
     final IFluidHandler external = new IFluidHandler() {
         @Override
@@ -153,7 +147,7 @@ final class CrafterTanks {
 
         @Override
         public boolean isFluidValid(int tank, @NotNull FluidStack stack) {
-            return isInput(tank) && tank(tank).isFluidValid(stack);
+            return tank < CrafterRecipe.MAX_FLUIDS && tank(tank).isFluidValid(stack);
         }
 
         @Override

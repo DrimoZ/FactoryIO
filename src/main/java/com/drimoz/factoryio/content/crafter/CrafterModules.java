@@ -63,10 +63,6 @@ public record CrafterModules(float speedMultiplier, float energyMultiplier, floa
         return new CrafterModules(Math.max(FLOOR, 1.0F + speed), Math.max(FLOOR, 1.0F + energy), productivity);
     }
 
-    public boolean isEmpty() {
-        return this.equals(NONE);
-    }
-
     /** Vitesse de fabrication effective. */
     public float speed(float base) {
         return base * this.speedMultiplier;

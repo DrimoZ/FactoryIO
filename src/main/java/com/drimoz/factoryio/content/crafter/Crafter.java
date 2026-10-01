@@ -34,11 +34,14 @@ public class Crafter implements Definition {
      */
     public record Tuning(float craftingSpeed, int energyPerTick, int energyCapacity, int inputCrafts, int fluidCapacity) {}
 
-    /** @param moduleSlots slots de module, structurels comme le palier (FIO-127) */
+    /**
+     * @param moduleSlots slots de module, structurels comme le palier (FIO-127) ; borné ici
+     *                    au nombre de slots du block entity, une fois pour tous les lecteurs
+     */
     public Crafter(ResourceLocation id, int tier, int moduleSlots, Tuning tuning) {
         this.id = id;
         this.tier = tier;
-        this.moduleSlots = moduleSlots;
+        this.moduleSlots = Math.min(moduleSlots, CrafterBlockEntity.MODULE_SLOTS);
         this.defaults = tuning;
         this.tuning = tuning;
     }

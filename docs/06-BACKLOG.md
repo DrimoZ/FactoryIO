@@ -208,6 +208,7 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | ~~FIO-047~~ | ✅ | M | **Débloquer `runClient`** — **fait**. Deux causes, isolées en comparant avec un MDK 1.20.1 vierge (voir ci-dessous). | le client démarre, `Loaded 7 inserters` |
 | ~~FIO-053~~ | ✅ | S | Modèles `base_*_inserter_c.json` : `"textures": { "0": "" }` → `JsonSyntaxException: Missing texture` au chargement. Antérieurs au port, apparemment référencés par rien. À compléter ou supprimer. | plus aucun `Failed to load model` |
 | ~~FIO-054~~ | ✅ | M | **Valider le mod en jeu** : poser un inserter, vérifier le rendu GeckoLib, l'onglet créatif, et que le pack généré au runtime fournit modèles et loot tables | **validé en jeu par le mainteneur le 30/07/2026** |
+| ~~FIO-186~~ | ✅ | M | **Élagage** — **fait** : revue « sur-ingénierie » du code entier. Code mort retiré, classes de base vides (`ModItem`, `ModBlockItem`, `BaseBlockEntity`, `MenuBlockEntity`, `WaterloggedEntityBlock`) remplacées par leurs parents vanilla, `TranslationCode`/`Translations` réduits à des chaînes dans `Translation`, `EPackType`/`PackConstants`/`InserterLoader` repliés, transferts internes de l'inserter confiés à `ItemStackHandler`. Aucun changement de comportement visé. | `build` et les 84 GameTests passent |
 
 ### Pourquoi `runClient` ne démarrait pas (FIO-047)
 

@@ -309,11 +309,7 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
     }
 
     private boolean isTankShown(int tank, @Nullable CrafterRecipe recipe) {
-        if (!this.menu.getTankFluid(tank).isEmpty()) return true;
-        if (recipe == null) return false;
-        return tank < CrafterRecipe.MAX_FLUIDS
-                ? tank < recipe.fluidInputs().size()
-                : tank - CrafterRecipe.MAX_FLUIDS < recipe.fluidOutputs().size();
+        return !this.menu.getTankFluid(tank).isEmpty() || !expectedFluid(tank, recipe).isEmpty();
     }
 
     private static FluidStack expectedFluid(int tank, @Nullable CrafterRecipe recipe) {

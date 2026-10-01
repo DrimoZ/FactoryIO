@@ -7,6 +7,8 @@ import com.drimoz.factoryio.core.inserters.InserterContainer;
 import com.drimoz.factoryio.core.inserters.InserterBlock;
 import com.drimoz.factoryio.core.inserters.InserterItem;
 import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.model.InserterCodec;
+import com.drimoz.factoryio.core.model.InserterDefaults;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Blocks;
@@ -37,7 +39,15 @@ public class InserterRegistry {
 
     // Interface ( Inserters )
 
-    /** Le registre à remplir, une seule fois, par {@link InserterLoader}. */
+    /**
+     * Charge les inserters : les JSON de {@code config/factor_io/inserters/}, puis les sept livrés
+     * ({@link InserterDefaults}), chacun désactivable dans la section {@code Inserters} du TOML.
+     * À appeler une fois, dans le constructeur du mod.
+     */
+    public void load() {
+        DefinitionLoader.load(this.inserters, "inserters", InserterCodec::forId, InserterDefaults.all(), "Inserters");
+    }
+
     DefinitionRegistry<Inserter> definitions() {
         return this.inserters;
     }

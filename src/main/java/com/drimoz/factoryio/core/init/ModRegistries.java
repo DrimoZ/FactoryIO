@@ -21,7 +21,7 @@ import net.minecraftforge.registries.ForgeRegistries;
  *
  * <p>Conséquence sur l'architecture data-driven : la liste des inserters doit être
  * connue <b>avant</b> que le bus d'évènements ne soit sollicité, c'est-à-dire dans le
- * constructeur du mod. C'est déjà le cas — {@code InserterLoader.setup()} est
+ * constructeur du mod. C'est déjà le cas — {@code InserterRegistry.load()} est
  * la toute première instruction — mais la contrainte est maintenant structurelle et non
  * plus seulement une question d'ordre.
  */

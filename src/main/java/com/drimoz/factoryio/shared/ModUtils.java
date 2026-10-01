@@ -8,10 +8,6 @@ public final class ModUtils {
 
     private ModUtils() {}
 
-    public static MutableComponent tooltipComponent(String name) {
-        return Component.translatable(tooltipKey(name));
-    }
-
     /**
      * Clé à trous : les valeurs prennent la place des {@code %s} de la traduction.
      *
@@ -24,9 +20,5 @@ public final class ModUtils {
 
     public static String tooltipKey(String name) {
         return "tooltip." + FactoryIO.MOD_ID + "." + name;
-    }
-
-    public static String tooltipString(String name) {
-        return tooltipComponent(name).getString();
     }
 }

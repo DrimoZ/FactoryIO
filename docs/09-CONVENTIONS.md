@@ -70,7 +70,7 @@ La règle appliquée, à retenir pour les prochaines classes :
 |---|---|---|
 | Nom sans ambiguïté | pas de préfixe | `InserterBlockEntity`, `InserterScreen`, `GhostSlot` |
 | Point d'entrée d'enregistrement | préfixe `Mod` | `ModItems`, `ModTags`, `ModRegistries`, `ModNetworks` |
-| Classe de base du mod | nom décrivant le rôle | `BaseBlockEntity`, `BaseMenu`, `ModEntityBlock` |
+| Classe de base du mod | nom décrivant le rôle | `BaseMenu`, `ModEntityBlock` |
 | Producteur de datagen | préfixe `Mod` | `ModLootGenerator`, `ModBlockTagsGenerator` |
 
 Deux renommages en profitent pour dire ce que la classe est vraiment :

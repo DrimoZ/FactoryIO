@@ -15,18 +15,15 @@ import com.drimoz.factoryio.core.network.packet.S2CBeltSpeeds;
 import com.drimoz.factoryio.core.network.packet.S2CInserterTunings;
 import net.minecraft.server.level.ServerPlayer;
 import java.util.List;
-import com.drimoz.factoryio.core.registry.InserterLoader;
 import com.drimoz.factoryio.core.configs.EarlyConfig;
 import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.registry.BeltReloadListener;
 import com.drimoz.factoryio.core.registry.InserterReloadListener;
 import com.drimoz.factoryio.core.registry.UpgradeReloadListener;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
-import com.drimoz.factoryio.core.resourcepack.EPackType;
 import com.drimoz.factoryio.core.resourcepack.PackRepositorySource;
 import com.drimoz.factoryio.shared.ModCreativeTab;
 import com.mojang.logging.LogUtils;
-import net.minecraft.server.packs.PackType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddPackFindersEvent;
 import net.minecraftforge.event.AddReloadListenerEvent;
@@ -55,7 +52,7 @@ public class FactoryIO
         // Doit précéder ModRegistries.register() : la liste des inserters
         // détermine les blocs, items, block entities et menus à déclarer.
         EarlyConfig.load();
-        InserterLoader.setup();
+        InserterRegistry.getInstance().load();
         BeltRegistry.load();
         CrafterRegistry.load();
         EarlyConfig.close();
@@ -102,13 +99,7 @@ public class FactoryIO
      * nettoyer (cf. FIO-039).
      */
     private void onRegisterResourcePacks(AddPackFindersEvent e) {
-        if (e.getPackType() == PackType.SERVER_DATA) {
-            e.addRepositorySource(new PackRepositorySource(EPackType.DATA));
-        }
-        else {
-            e.addRepositorySource(new PackRepositorySource(EPackType.RESOURCE));
-        }
-
+        e.addRepositorySource(new PackRepositorySource(e.getPackType()));
         FactoryIO.LOGGER.debug("Dépôt de packs {} enregistré", e.getPackType());
     }
 

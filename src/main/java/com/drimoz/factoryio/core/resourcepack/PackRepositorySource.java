@@ -2,6 +2,7 @@ package com.drimoz.factoryio.core.resourcepack;
 
 import com.drimoz.factoryio.FactoryIO;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.repository.RepositorySource;
@@ -9,13 +10,12 @@ import java.util.function.Consumer;
 
 public class PackRepositorySource implements RepositorySource {
 
-    // Private properties
+    /** Identifiant technique du pack, stable d'un lancement à l'autre. */
+    private static final String PACK_ID = FactoryIO.MOD_ID + ":generated";
 
-    private final EPackType packType;
+    private final PackType packType;
 
-    // Life cycle
-
-    public PackRepositorySource(EPackType packType) {
+    public PackRepositorySource(PackType packType) {
         this.packType = packType;
     }
 
@@ -29,11 +29,11 @@ public class PackRepositorySource implements RepositorySource {
     @Override
     public void loadPacks(Consumer<Pack> consumer) {
         Pack pack = Pack.readMetaAndCreate(
-                PackConstants.PACK_ID,
+                PACK_ID,
                 Component.translatable("pack." + FactoryIO.MOD_ID + ".generated"),
                 true,
                 this::createResources,
-                packType.getVanillaType(),
+                packType,
                 Pack.Position.TOP,
                 PackSource.BUILT_IN);
 
@@ -56,6 +56,6 @@ public class PackRepositorySource implements RepositorySource {
      * (cf. FIO-039).
      */
     private InMemoryPackResources createResources(String id) {
-        return new InMemoryPackResources(id, packType.getVanillaType(), PackGenerator.generate());
+        return new InMemoryPackResources(id, packType, PackGenerator.generate());
     }
 }

@@ -1,6 +1,5 @@
 package com.drimoz.factoryio.core.power;
 
-import com.drimoz.factoryio.core.generic.block_entity.BaseBlockEntity;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -38,7 +37,7 @@ import javax.annotation.Nullable;
  * par tick. L'invalidation est confiée au {@code LazyOptional} lui-même, et seuls les
  * résultats positifs sont mémorisés.
  */
-public class CreativeEnergySourceBlockEntity extends BaseBlockEntity {
+public class CreativeEnergySourceBlockEntity extends BlockEntity {
 
     /**
      * Débit offert à chaque face et à chaque tick.

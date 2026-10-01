@@ -1,6 +1,6 @@
 package com.drimoz.factoryio.core.inserters;
 
-import com.drimoz.factoryio.core.generic.item.ModBlockItem;
+import net.minecraft.world.item.BlockItem;
 import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.shared.ModUtils;
 import com.drimoz.factoryio.shared.StringHelper;
@@ -21,7 +21,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class InserterItem extends ModBlockItem implements GeoItem {
+public class InserterItem extends BlockItem implements GeoItem {
 
     // Private properties
 

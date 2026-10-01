@@ -12,7 +12,6 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,7 +26,7 @@ import java.util.List;
  * <p>L'onglet ne connaît aucune machine : il lit et règle à travers {@link Controls}. Il
  * n'applique rien lui-même, ses boutons envoient un réglage au serveur.
  */
-public final class ControlTab extends SideTab {
+public final class ControlTab extends ButtonTab {
 
     /** Ce qu'une machine expose pour être pilotée. */
     public interface Controls {
@@ -67,7 +66,6 @@ public final class ControlTab extends SideTab {
     private static final ItemStack ICON = new ItemStack(Items.REDSTONE_TORCH);
 
     private final Controls controls;
-    private final List<IconButton> buttons = new ArrayList<>();
 
     public ControlTab(Controls controls) {
         super(ID, Side.RIGHT, GuiTheme.TAB_CONTROL);
@@ -134,7 +132,7 @@ public final class ControlTab extends SideTab {
 
     @Override
     protected void renderContent(GuiGraphics graphics, Font font, int x, int y, int mouseX, int mouseY) {
-        for (IconButton button : this.buttons) button.render(graphics, font, x, y, mouseX, mouseY);
+        renderButtons(graphics, font, x, y, mouseX, mouseY);
 
         if (!this.controls.isAffectedByRedstone()) return;
 
@@ -158,22 +156,5 @@ public final class ControlTab extends SideTab {
             graphics.drawString(font, part, x + 16, line, GuiTheme.TAB_LABEL, true);
             line += LINE;
         }
-    }
-
-    @Override
-    protected boolean contentClicked(int x, int y, double mouseX, double mouseY, int button) {
-        for (IconButton b : this.buttons) {
-            if (b.mouseClicked(x, y, mouseX, mouseY)) return true;
-        }
-        return false;
-    }
-
-    @Override
-    protected List<Component> contentTooltip(int x, int y, double mouseX, double mouseY) {
-        for (IconButton b : this.buttons) {
-            List<Component> lines = b.tooltipAt(x, y, mouseX, mouseY);
-            if (!lines.isEmpty()) return lines;
-        }
-        return List.of();
     }
 }

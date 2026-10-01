@@ -1,23 +1,24 @@
 package com.drimoz.factoryio.core.datagen.generator;
 
 import com.drimoz.factoryio.content.crafter.CrafterRegistry;
-import com.drimoz.factoryio.core.model.TranslationCode;
+import com.drimoz.factoryio.core.model.Translation;
 import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
 import net.minecraft.data.PackOutput;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.common.data.LanguageProvider;
 
+import java.util.function.Supplier;
 
 public class ModLangGenerator extends LanguageProvider {
 
-    // Private properties
+    private final String code;
 
-    private final TranslationCode translationCode;
+    /** @param code code de langue normalisé, {@code en_us} */
+    public ModLangGenerator(PackOutput output, String modid, String code) {
+        super(output, modid, code);
 
-    public ModLangGenerator(PackOutput output, String modid, TranslationCode code) {
-        super(output, modid, code.getFullCode());
-
-        this.translationCode = code;
+        this.code = code;
     }
 
     /**
@@ -30,25 +31,13 @@ public class ModLangGenerator extends LanguageProvider {
      */
     @Override
     protected void addTranslations() {
-        InserterRegistry.getInstance().getInserters().forEach((inserter) -> {
-            String translation = inserter.getTranslation().getTranslation(translationCode);
-            if (translation == null) return;
+        InserterRegistry.getInstance().getInserters().forEach(inserter -> add(inserter.getTranslation(), inserter.getBlock()));
+        BeltRegistry.all().forEach(belt -> add(belt.getTranslation(), belt.getBlock()));
+        CrafterRegistry.all().forEach(crafter -> add(crafter.getTranslation(), crafter.getBlock()));
+    }
 
-            addBlock(inserter.getBlock(), translation);
-        });
-
-        BeltRegistry.all().forEach(belt -> {
-            String translation = belt.getTranslation().getTranslation(translationCode);
-            if (translation == null) return;
-
-            addBlock(belt.getBlock(), translation);
-        });
-
-        CrafterRegistry.all().forEach(crafter -> {
-            String translation = crafter.getTranslation().getTranslation(translationCode);
-            if (translation == null) return;
-
-            addBlock(crafter.getBlock(), translation);
-        });
+    private void add(Translation translation, Supplier<? extends Block> block) {
+        String name = translation.getTranslation(this.code);
+        if (name != null) addBlock(block, name);
     }
 }

@@ -8,7 +8,7 @@ import com.drimoz.factoryio.core.model.Inserter;
 import com.drimoz.factoryio.core.model.Belt;
 import com.drimoz.factoryio.core.registry.BeltRegistry;
 import com.drimoz.factoryio.core.registry.InserterRegistry;
-import com.drimoz.factoryio.core.registry.Translations;
+import com.drimoz.factoryio.core.model.Translation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.core.HolderLookup;
@@ -167,7 +167,7 @@ public class PackGenerator {
 
         providers.add(new ModLootGenerator(output));
 
-        Translations.getINSTANCE().getTranslationList().forEach(translationCode ->
+        Translation.codes().forEach(translationCode ->
                 providers.add(new ModLangGenerator(output, FactoryIO.MOD_ID, translationCode)));
 
         ModBlockTagsGenerator blockTags =
@@ -189,22 +189,21 @@ public class PackGenerator {
      * Métadonnées du pack.
      *
      * <p>Les deux formats Forge cohabitent afin que le même contenu serve de resource pack
-     * et de data pack, dont les numéros de version diffèrent (cf. BUG-031).
+     * et de data pack (cf. BUG-031). En 1.20.1 ils valent tous deux 15 ; ils se séparent de
+     * nouveau dans les versions suivantes, et c'est ici qu'il faudra les distinguer.
      */
     private static String packMeta() {
         return """
                 {
                   "pack": {
-                    "description": "%s",
+                    "description": "%s Resources",
                     "pack_format": %d,
                     "forge:resource_pack_format": %d,
                     "forge:data_pack_format": %d
                   }
                 }
-                """.formatted(
-                PackConstants.PACK_DESCRIPTION,
-                EPackType.DATA.getPackFormat(),
-                EPackType.RESOURCE.getPackFormat(),
-                EPackType.DATA.getPackFormat());
+                """.formatted(FactoryIO.MOD_DISPLAY_NAME, PACK_FORMAT, PACK_FORMAT, PACK_FORMAT);
     }
+
+    private static final int PACK_FORMAT = 15;
 }

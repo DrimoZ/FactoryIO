@@ -4,6 +4,7 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.content.crafter.Crafter;
 import com.drimoz.factoryio.content.crafter.CrafterBlock;
 import com.drimoz.factoryio.content.crafter.CrafterBlockEntity;
+import com.drimoz.factoryio.content.crafter.CrafterModules;
 import com.drimoz.factoryio.content.crafter.CrafterMenu;
 import com.drimoz.factoryio.core.network.packet.C2SCrafterRecipe;
 import com.drimoz.factoryio.core.network.packet.C2SCrafterFluid;
@@ -280,7 +281,7 @@ public class CrafterGameTests {
         ItemStack left = crafter.getItems().insertItem(CrafterBlockEntity.MODULE_FIRST, module, false);
 
         helper.assertTrue(left.getCount() == 1, "Un Mk1 a accepté un module");
-        helper.assertTrue(crafter.getModules().isEmpty(), "Un Mk1 a des modules actifs");
+        helper.assertTrue(crafter.getModules() == CrafterModules.NONE, "Un Mk1 a des modules actifs");
         helper.succeed();
     }
 
