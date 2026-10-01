@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.client.screen;
 
 import com.drimoz.factoryio.shared.GuiMetrics;
+import com.drimoz.factoryio.client.gui.ControlTab;
 import com.drimoz.factoryio.client.gui.GuiSprites;
 import com.drimoz.factoryio.client.gui.GuiTheme;
 import com.drimoz.factoryio.client.gui.IconButton;
@@ -307,134 +308,56 @@ final class InserterTabs {
     // Contrôle (droite) ----------------------------------------------------------------------
 
     /**
-     * Quand l'inserter travaille : l'interrupteur (FIO-167), puis la condition redstone si le
-     * type y est sensible.
-     *
-     * <p>Les deux vont ensemble parce qu'ils répondent à la même question, et se combinent en une
-     * seule propriété du bloc. L'interrupteur y est en tête : il l'emporte sur tout signal. Le
-     * signal reçu est affiché — c'est ce qui permet de comprendre pourquoi l'inserter est arrêté
-     * sans aller chercher un comparateur.
+     * L'onglet de contrôle commun ({@link ControlTab}), branché sur l'inserter : modes et seuil
+     * se débloquent avec le module de redstone avancée (FIO-172).
      */
-    static final class Control extends ButtonTab {
-
-        private static final int WIDTH = 110;
-        private static final int BUTTON = 14;
-
-        private static final int POWER_HEIGHT = 16;
-        private static final int REDSTONE_LABEL = POWER_HEIGHT + 6;
-        private static final int MODES = REDSTONE_LABEL + LINE + 1;
-        private static final int THRESHOLD_ROW = MODES + RedstoneCondition.Mode.values().length * (BUTTON + 2) + 2;
-        private static final int SIGNAL_ROW = THRESHOLD_ROW + BUTTON + 4;
-
-        private static final ItemStack ICON = new ItemStack(Items.REDSTONE_TORCH);
-
-        private final InserterScreen screen;
-        private final boolean redstone;
-
-        Control(InserterScreen screen) {
-            super("control", Side.RIGHT, GuiTheme.TAB_CONTROL);
-            this.screen = screen;
-            this.redstone = screen.getMenu().isAffectedByRedstone();
-
-            this.buttons.add(new IconButton(0, 0, WIDTH, POWER_HEIGHT)
-                    .icon(() -> be().isSwitchedOn() ? GuiSprites.Icon.POWER_ON : GuiSprites.Icon.POWER_OFF)
-                    .label(() -> ModUtils.tooltipComponent(be().isSwitchedOn() ? "power_on" : "power_off"))
-                    .tooltip(() -> List.of(ModUtils.tooltipComponent("power_help").withStyle(ChatFormatting.GRAY)))
-                    .onPress(() -> screen.send(C2SInserterSetting.Setting.POWER, be().isSwitchedOn() ? 0 : 1)));
-
-            if (!this.redstone) return;
-
-            RedstoneCondition.Mode[] modes = RedstoneCondition.Mode.values();
-            for (int i = 0; i < modes.length; i++) {
-                RedstoneCondition.Mode mode = modes[i];
-                this.buttons.add(new IconButton(0, MODES + i * (BUTTON + 2), WIDTH, BUTTON)
-                        .label(() -> ModUtils.tooltipComponent(mode.translationKey()))
-                        .pressed(() -> condition().mode() == mode)
-                        .visible(this::unlocked)
-                        .tooltip(() -> List.of(ModUtils.tooltipComponent("redstone_help").withStyle(ChatFormatting.GRAY)))
-                        .onPress(() -> screen.send(C2SInserterSetting.Setting.REDSTONE_MODE, mode.ordinal())));
+    static ControlTab control(InserterScreen screen) {
+        return new ControlTab(new ControlTab.Controls() {
+            private InserterBlockEntity be() {
+                return screen.blockEntity();
             }
 
-            this.buttons.add(new IconButton(0, THRESHOLD_ROW, BUTTON, BUTTON)
-                    .icon(() -> GuiSprites.Icon.MINUS)
-                    .visible(this::unlocked)
-                    .active(() -> condition().usesThreshold() && condition().threshold() > 0)
-                    .onPress(() -> screen.send(C2SInserterSetting.Setting.REDSTONE_THRESHOLD,
-                            Screen.hasShiftDown() ? 0 : condition().threshold() - 1)));
-            this.buttons.add(new IconButton(WIDTH - BUTTON, THRESHOLD_ROW, BUTTON, BUTTON)
-                    .icon(() -> GuiSprites.Icon.PLUS)
-                    .visible(this::unlocked)
-                    .active(() -> condition().usesThreshold() && condition().threshold() < 15)
-                    .onPress(() -> screen.send(C2SInserterSetting.Setting.REDSTONE_THRESHOLD,
-                            Screen.hasShiftDown() ? 15 : condition().threshold() + 1)));
-        }
-
-        private InserterBlockEntity be() {
-            return this.screen.blockEntity();
-        }
-
-        private RedstoneCondition condition() {
-            return be().getConfiguredRedstoneCondition();
-        }
-
-        private boolean unlocked() {
-            return be().getUpgrades().unlocks(InserterUpgradeType.ADVANCED_REDSTONE, InserterUpgradeTunings.current());
-        }
-
-        @Override
-        protected Component title() {
-            return ModUtils.tooltipComponent("tab_control");
-        }
-
-        @Override
-        protected void renderIcon(GuiGraphics graphics, int x, int y) {
-            graphics.renderItem(ICON, x, y);
-        }
-
-        @Override
-        protected int contentWidth() {
-            return WIDTH;
-        }
-
-        @Override
-        protected int contentHeight() {
-            if (!this.redstone) return POWER_HEIGHT;
-
-            if (unlocked()) return SIGNAL_ROW + LINE;
-
-            // Sans module : le signal, puis l'indication, sur autant de lignes qu'elle en occupe.
-            int lines = Minecraft.getInstance().font.split(ModUtils.tooltipComponent("redstone_locked"), WIDTH - 16).size();
-            return REDSTONE_LABEL + LINE + 4 + lines * LINE;
-        }
-
-        @Override
-        protected void renderContent(GuiGraphics graphics, Font font, int x, int y, int mouseX, int mouseY) {
-            renderButtons(graphics, font, x, y, mouseX, mouseY);
-
-            if (!this.redstone) return;
-
-            var level = Minecraft.getInstance().level;
-            int signal = level != null ? level.getBestNeighborSignal(be().getBlockPos()) : 0;
-            Component received = ModUtils.tooltipComponent("redstone_signal", signal);
-
-            if (unlocked()) {
-                label(graphics, font, ModUtils.tooltipComponent("redstone_condition"), x, y + REDSTONE_LABEL);
-                graphics.drawCenteredString(font, ModUtils.tooltipComponent("redstone_threshold", condition().threshold()),
-                        x + WIDTH / 2, y + THRESHOLD_ROW + 3, condition().usesThreshold() ? VALUE : MUTED);
-                label(graphics, font, received, x, y + SIGNAL_ROW);
-                return;
+            @Override
+            public boolean isSwitchedOn() {
+                return be().isSwitchedOn();
             }
 
-            // Sans module de redstone avancée, modes et seuil sont cachés : seule la réaction
-            // native s'applique. Le signal reste affiché, c'est lui qui explique un arrêt.
-            label(graphics, font, received, x, y + REDSTONE_LABEL);
-            int line = y + REDSTONE_LABEL + LINE + 4;
-            GuiSprites.icon(graphics, GuiSprites.Icon.LOCK, x, line);
-            for (FormattedCharSequence part : font.split(ModUtils.tooltipComponent("redstone_locked"), WIDTH - 16)) {
-                graphics.drawString(font, part, x + 16, line, LABEL, true);
-                line += LINE;
+            @Override
+            public RedstoneCondition condition() {
+                return be().getConfiguredRedstoneCondition();
             }
-        }
+
+            @Override
+            public boolean isAffectedByRedstone() {
+                return screen.getMenu().isAffectedByRedstone();
+            }
+
+            @Override
+            public boolean isConditionUnlocked() {
+                return be().getUpgrades().unlocks(InserterUpgradeType.ADVANCED_REDSTONE, InserterUpgradeTunings.current());
+            }
+
+            @Override
+            public int signal() {
+                var level = Minecraft.getInstance().level;
+                return level != null ? level.getBestNeighborSignal(be().getBlockPos()) : 0;
+            }
+
+            @Override
+            public void sendSwitchedOn(boolean on) {
+                screen.send(C2SInserterSetting.Setting.POWER, on ? 1 : 0);
+            }
+
+            @Override
+            public void sendMode(RedstoneCondition.Mode mode) {
+                screen.send(C2SInserterSetting.Setting.REDSTONE_MODE, mode.ordinal());
+            }
+
+            @Override
+            public void sendThreshold(int threshold) {
+                screen.send(C2SInserterSetting.Setting.REDSTONE_THRESHOLD, threshold);
+            }
+        });
     }
 
     // Réglages (gauche) ----------------------------------------------------------------------

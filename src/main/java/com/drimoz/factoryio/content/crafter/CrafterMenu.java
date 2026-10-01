@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.content.crafter;
 
+import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.core.generic.container.BaseMenu;
 import com.drimoz.factoryio.core.generic.container.slots.OutputSlot;
 import com.drimoz.factoryio.core.init.ModRegistries;
@@ -78,7 +79,10 @@ public class CrafterMenu extends BaseMenu {
     private static final int CRAFTS = 6;
     private static final int SPEED = 7;
     private static final int ENERGY_PER_TICK = 9;
-    private static final int DATA_COUNT = 11;
+    private static final int SWITCHED_ON = 11;
+    private static final int REDSTONE_MODE = 12;
+    private static final int REDSTONE_THRESHOLD = 13;
+    private static final int DATA_COUNT = 14;
 
     private static final int PROGRESS_SCALE = 1000;
     private static final int SPEED_SCALE = 1000;
@@ -140,6 +144,9 @@ public class CrafterMenu extends BaseMenu {
                     case SPEED + 1 -> Math.round(tuning.craftingSpeed() * SPEED_SCALE) >>> 16;
                     case ENERGY_PER_TICK -> tuning.energyPerTick() & 0xFFFF;
                     case ENERGY_PER_TICK + 1 -> tuning.energyPerTick() >>> 16;
+                    case SWITCHED_ON -> blockEntity.isSwitchedOn() ? 1 : 0;
+                    case REDSTONE_MODE -> blockEntity.getRedstoneCondition().mode().ordinal();
+                    case REDSTONE_THRESHOLD -> blockEntity.getRedstoneCondition().threshold();
                     default -> 0;
                 };
             }
@@ -207,6 +214,14 @@ public class CrafterMenu extends BaseMenu {
 
     public int getEnergyPerTick() {
         return wide(ENERGY_PER_TICK);
+    }
+
+    public boolean isSwitchedOn() {
+        return this.data.get(SWITCHED_ON) != 0;
+    }
+
+    public RedstoneCondition getRedstoneCondition() {
+        return new RedstoneCondition(RedstoneCondition.Mode.byOrdinal(this.data.get(REDSTONE_MODE)), this.data.get(REDSTONE_THRESHOLD));
     }
 
     public CrafterBlockEntity.Status getStatus() {

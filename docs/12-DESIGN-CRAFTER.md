@@ -206,8 +206,13 @@ les paliers changent surtout vitesse et consommation. Le temps réel d'un craft 
   consommation à vide. À court d'énergie, le craft se met en pause et **garde sa
   progression**. En survie, l'énergie vient d'un autre mod ; en test, de
   `creative_energy_source`. Le générateur de survie reste FIO-124, ajourné.
-- **Redstone** : la propriété `ENABLED` de `ModEntityBlock`, déjà en place. Un signal sur
-  n'importe quelle partie met la machine en pause.
+- **Contrôle** (FIO-183), comme sur les inserters : un **interrupteur**, qui l'emporte sur
+  tout signal, et une **condition redstone** (toujours / si signal < seuil / si signal ≥
+  seuil), lue sur le plus fort signal reçu par **n'importe quelle partie** du volume. Le
+  défaut — « si signal < 1 » — est la réaction native : un signal met la machine en pause.
+  L'onglet de contrôle est celui des inserters (`client/gui/ControlTab`). La condition se
+  règle sans module : le crafter n'a pas encore de slots d'amélioration ; FIO-127 dira s'il
+  faut l'y verrouiller derrière le module de redstone avancée, comme sur les inserters.
 - **Changement de recette** : les entrées et les ingrédients du craft en cours sont
   rendus au joueur, le surplus tombe au sol ; la sortie déjà produite reste.
 - **Chemin chaud** : `tick()` sans allocation ni `stream()` ; la recette résolue est

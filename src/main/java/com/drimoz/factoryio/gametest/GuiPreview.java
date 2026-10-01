@@ -110,6 +110,9 @@ public final class GuiPreview {
         step(80, mc -> use(mc, ORIGIN.offset(3, 0, 3)));
         step(5, mc -> hover(mc, 0.0, 0.0));
         step(30, mc -> shot("crafter_mk1"));
+        step(5, mc -> clickGui(mc, 176 + 11, 4 + 11));
+        step(15, mc -> shot("crafter_control"));
+        step(5, mc -> clickGui(mc, 176 + 11, 4 + 11));
         step(5, mc -> hoverGui(mc, 25 + 13, 20 + 13));
         step(5, mc -> shot("crafter_mk1_recipe_tooltip"));
         step(5, mc -> clickRecipeSocket(mc));
@@ -168,6 +171,13 @@ public final class GuiPreview {
             screen.mouseClicked(screen.getGuiLeft() + x, screen.getGuiTop() + y, 0);
         } catch (ReflectiveOperationException e) {
             FactoryIO.LOGGER.error("Slot de recette introuvable", e);
+        }
+    }
+
+    /** Clique un point de l'écran ouvert, en coordonnées de sa fenêtre — onglets compris. */
+    private static void clickGui(Minecraft minecraft, int x, int y) {
+        if (minecraft.screen instanceof AbstractContainerScreen<?> screen) {
+            screen.mouseClicked(screen.getGuiLeft() + x, screen.getGuiTop() + y, 0);
         }
     }
 

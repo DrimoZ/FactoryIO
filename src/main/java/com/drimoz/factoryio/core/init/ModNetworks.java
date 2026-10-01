@@ -2,6 +2,7 @@ package com.drimoz.factoryio.core.init;
 
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.network.packet.C2SCrafterRecipe;
+import com.drimoz.factoryio.core.network.packet.C2SCrafterSetting;
 import com.drimoz.factoryio.core.network.packet.C2SInserterSetting;
 import com.drimoz.factoryio.core.network.packet.S2CBeltSpeeds;
 import com.drimoz.factoryio.core.network.packet.S2CInserterTunings;
@@ -67,6 +68,12 @@ public class ModNetworks {
                 .decoder(C2SCrafterRecipe::new)
                 .encoder(C2SCrafterRecipe::toBytes)
                 .consumerMainThread(C2SCrafterRecipe::handle)
+                .add();
+
+        net.messageBuilder(C2SCrafterSetting.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(C2SCrafterSetting::new)
+                .encoder(C2SCrafterSetting::toBytes)
+                .consumerMainThread(C2SCrafterSetting::handle)
                 .add();
     }
 

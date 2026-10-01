@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.content.crafter;
 
+import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.core.generic.container.energy.EnergyContainer;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import net.minecraft.core.BlockPos;
@@ -65,7 +66,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     private static final int WORKING_GRACE_TICKS = 20;
 
     /** Ce que la machine fait, pour l'écran. L'ordre est celui du réseau ({@code ContainerData}). */
-    public enum Status { NO_RECIPE, RECIPE_MISSING, TIER_TOO_LOW, DISABLED, NO_ENERGY, NO_INPUTS, OUTPUT_FULL, WORKING }
+    public enum Status { NO_RECIPE, RECIPE_MISSING, TIER_TOO_LOW, SWITCHED_OFF, DISABLED, NO_ENERGY, NO_INPUTS, OUTPUT_FULL, WORKING }
 
     private final ItemStackHandler items = new ItemStackHandler(SLOTS) {
         @Override
@@ -140,6 +141,10 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     private boolean outputsChanged;
     private int idleTicks;
     private Status status = Status.NO_RECIPE;
+
+    // Contrôle (FIO-183), comme sur les inserters : l'interrupteur l'emporte sur tout signal.
+    private boolean switchedOn = true;
+    private RedstoneCondition redstoneCondition = RedstoneCondition.DEFAULT;
     /** Crafts achevés depuis le chargement : l'écran en tire un rythme mesuré, par différence. */
     private int craftsCompleted;
 
@@ -188,7 +193,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         if (this.recipeId == null) return Status.NO_RECIPE;
         if (recipe == null) return Status.RECIPE_MISSING;
         if (recipe.minTier() > getCrafter().getTier()) return Status.TIER_TOO_LOW;
-        if (!state.getValue(CrafterBlock.ENABLED)) return Status.DISABLED;
+        if (!state.getValue(CrafterBlock.ENABLED)) return this.switchedOn ? Status.DISABLED : Status.SWITCHED_OFF;
         if (!hasInputs(recipe)) return Status.NO_INPUTS;
 
         if (this.progress < recipe.ticks()) {
@@ -388,6 +393,40 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
+    // Interface (Contrôle, FIO-183)
+
+    public boolean isSwitchedOn() {
+        return this.switchedOn;
+    }
+
+    public void setSwitchedOn(boolean on) {
+        if (this.switchedOn == on) return;
+
+        this.switchedOn = on;
+        setChanged();
+        reevaluateEnabled();
+    }
+
+    public RedstoneCondition getRedstoneCondition() {
+        return this.redstoneCondition;
+    }
+
+    public void setRedstoneCondition(RedstoneCondition condition) {
+        if (this.redstoneCondition.equals(condition)) return;
+
+        this.redstoneCondition = condition;
+        setChanged();
+        reevaluateEnabled();
+    }
+
+    /** Recalcule {@code ENABLED} tout de suite, sans attendre un changement de voisinage. */
+    private void reevaluateEnabled() {
+        if (this.level == null || this.level.isClientSide) return;
+
+        BlockState state = getBlockState();
+        state.getBlock().neighborChanged(state, this.level, this.worldPosition, state.getBlock(), this.worldPosition, false);
+    }
+
     // Interface (Écran)
 
     @Override
@@ -458,6 +497,9 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         tag.putInt("energy", this.energy.getCurrentEnergy());
         tag.putFloat("progress", this.progress);
         if (this.recipeId != null) tag.putString("recipe", this.recipeId.toString());
+        tag.putBoolean("switchedOn", this.switchedOn);
+        tag.putByte("redstoneMode", (byte) this.redstoneCondition.mode().ordinal());
+        tag.putByte("redstoneThreshold", (byte) this.redstoneCondition.threshold());
     }
 
     @Override
@@ -468,5 +510,11 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         this.progress = tag.getFloat("progress");
         this.recipeId = tag.contains("recipe") ? ResourceLocation.tryParse(tag.getString("recipe")) : null;
         this.resolvedGeneration = -1;
+
+        // contains et non getBoolean : une machine posée avant FIO-183 reste allumée.
+        this.switchedOn = !tag.contains("switchedOn") || tag.getBoolean("switchedOn");
+        this.redstoneCondition = tag.contains("redstoneMode")
+                ? new RedstoneCondition(RedstoneCondition.Mode.byOrdinal(tag.getByte("redstoneMode")), tag.getByte("redstoneThreshold"))
+                : RedstoneCondition.DEFAULT;
     }
 }
