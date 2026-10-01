@@ -191,4 +191,4 @@ machine, the configuration and the datapack format.
 [Wiki](https://github.com/DrimoZ/FactoryIO/wiki) ·
 [Source](https://github.com/DrimoZ/FactoryIO) ·
 [Issues](https://github.com/DrimoZ/FactoryIO/issues) ·
-[Discord](https://discord.gg/b8ZutEfWyV)
+[Discord](https://discord.gg/YY9gk63rKz)

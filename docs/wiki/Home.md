@@ -10,7 +10,7 @@ the parts of the next machine.
 
 **[Download on CurseForge](https://www.curseforge.com/minecraft/mc-mods/factoryio)** ·
 [GitHub](https://github.com/DrimoZ/FactoryIO) ·
-[Discord](https://discord.gg/b8ZutEfWyV)
+[Discord](https://discord.gg/YY9gk63rKz)
 
 ## What is in it
 

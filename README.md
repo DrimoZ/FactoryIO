@@ -10,7 +10,7 @@ them into the parts of the next machine.
 
 **[Download on CurseForge](https://www.curseforge.com/minecraft/mc-mods/factoryio)** ·
 📖 **[Wiki](https://github.com/DrimoZ/FactoryIO/wiki)** ·
-[Discord](https://discord.gg/b8ZutEfWyV) ·
+[Discord](https://discord.gg/YY9gk63rKz) ·
 [Changelog](CHANGELOG.md)
 
 ---
