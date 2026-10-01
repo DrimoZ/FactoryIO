@@ -21,8 +21,11 @@ Transport belts carry items on two lanes, curve, and hand off between blocks.
 Inserters drop onto the far lane, as in Factorio. Belts expose an inventory on every
 face, so hoppers and pipes from other mods can load and unload them.
 
-Beta: machines and the production chain are not implemented. Inserters and belts move
-items between inventories you already have.
+Crafters, Factorio's assembling machines, come in three tiers: pick a recipe, feed them
+with inserters, and they make the plates, gears and circuits of the next machine.
+Modules speed them up, make them productive or save power.
+
+Beta: the crafter and ramp models are placeholders.
 '''
 
 [[dependencies.factor_io]] #optional
@@ -44,4 +47,12 @@ items between inventories you already have.
     mandatory=true
     versionRange="[4.4,)"
     ordering="AFTER"
+    side="BOTH"
+
+# Facultatif : catégorie des recettes du crafter et bouton « + ».
+[[dependencies.factor_io]]
+    modId="jei"
+    mandatory=false
+    versionRange="[15.20,)"
+    ordering="NONE"
     side="BOTH"

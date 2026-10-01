@@ -33,6 +33,35 @@ wants a shorter progression.
 
 Same as inserters: `false` removes the belt entirely, effective on the next launch.
 
+## Which crafters exist
+
+```toml
+[factor_io.CRAFTERS]
+    crafter_mk1 = true
+    crafter_mk2 = true
+    crafter_mk3 = true
+```
+
+Same rule: `false` removes the tier entirely, on the next launch.
+
+## Crafters
+
+The one per-world option lives in `<world>/serverconfig/factor_io-server.toml`, and the server
+sends it to every player:
+
+```toml
+[crafter]
+    vanillaRecipes = false
+    vanillaTime = 0.5
+```
+
+`vanillaRecipes = true` lets crafters run crafting table recipes, shaped and shapeless — special
+ones such as fireworks, dyes or map copies excepted, since their result depends on the input's
+data. They appear after the mod's own recipes in the picker. `vanillaTime` is their crafting
+time in seconds, before the machine's speed (0.05 to 60).
+
+Off by default, so the picker is not buried under a thousand recipes.
+
 ## Belt speed
 
 Belt speed is **no longer in this file**: it is set by datapack, and applies on `/reload` to belts

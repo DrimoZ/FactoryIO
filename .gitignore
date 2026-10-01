@@ -37,3 +37,6 @@ graphify-out/
 .claude/CLAUDE.md
 .claude/settings.local.json
 .claude/skills/
+
+# exports de la vitrine pour CurseForge : régénérés par docs/showcase/Banners.java
+docs/showcase/out/

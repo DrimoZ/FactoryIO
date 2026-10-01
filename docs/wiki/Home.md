@@ -1,7 +1,10 @@
 # Factor'I/O
 
-Factorio's inserters and transport belts, in Minecraft. Items move between the inventories you
-already have — vanilla or from any other mod — without a hopper in sight.
+![A Factor'I/O factory hall](images/crafter_row.jpg)
+
+Factorio's inserters, transport belts and assembling machines, in Minecraft. Items move between
+the inventories you already have — vanilla or from any other mod — and crafters turn them into
+the parts of the next machine.
 
 **Forge 1.20.1** · Java 17 · MIT · **beta**
 
@@ -9,28 +12,31 @@ already have — vanilla or from any other mod — without a hopper in sight.
 [GitHub](https://github.com/DrimoZ/FactoryIO) ·
 [Discord](https://discord.gg/b8ZutEfWyV)
 
-## What it is
+## What is in it
 
-Two things, done properly: machines that move items on their own, and belts that carry them.
+- **Seven inserters**, from the coal-fed burner to the stack filter inserter. They take from the
+  block behind and put into the block in front — and only pick up what the target will accept.
+- **Transport belts** in three tiers, two lanes each, with curves, side merges and ramps.
+- **Crafters**, Factorio's assembling machine, in three tiers: pick a recipe, feed it, collect.
+- **Modules** — speed, productivity, efficiency — for both, and an Advanced Redstone Module.
+- **Factorio's component chain**: plates, gears, cables, then electronic and advanced circuits and
+  processing units.
+- **Data-driven**: new inserters, belts and crafters from a JSON file; every number retunable by
+  datapack.
 
-An **inserter** takes from the block behind it and puts into the block in front, at a speed and
-selectivity that depend on which of the seven you built. A **transport belt** carries items on two
-lanes, curves, merges, and backs up against an obstacle exactly as you would expect.
+## Playing
 
-What it is **not**, yet: a production chain. There are no furnaces, no assemblers, no ore
-processing. That is a deliberate pause rather than an oversight — this build is a transport
-toolkit, and it is finished as one.
+- **[Getting Started](Getting-Started)** — from ingots to a crafter line
+- **[Inserters](Inserters)** — all seven, and what separates them
+- **[Transport Belts](Transport-Belts)** — lanes, curves, ramps and the far-lane rule
+- **[Crafters](Crafters)** — recipes, feeding, modules, fluids
+- **[Modules](Modules)** — what they do in each machine
+- **[Filters and Redstone](Filters-and-Redstone)** — item and tag matching, conditions, the
+  configurator
+- **[Recipes](Recipes)** — the whole component chain
 
-## Start here
+## Running a server or a pack
 
-- **[Getting Started](Getting-Started)** — your first inserter, your first belt line
-- **[Inserters](Inserters)** — all seven, what separates them
-- **[Transport Belts](Transport-Belts)** — lanes, curves, and the far-lane rule
-- **[Filters and Redstone](Filters-and-Redstone)** — item and tag matching, analogue conditions
-- **[Upgrades](Upgrades)** — the three module axes, and how they stack
-
-## For server owners and pack authors
-
-- **[Configuration](Configuration)** — every option in the TOML
-- **[Datapack Guide](Datapack-Guide)** — add an inserter, retune the shipped ones
-- **[FAQ](FAQ)**
+- **[Configuration](Configuration)** — every option
+- **[Datapack Guide](Datapack-Guide)** — add machines, retune them, write crafter recipes
+- **[FAQ](FAQ)** · **[Troubleshooting](Troubleshooting)**

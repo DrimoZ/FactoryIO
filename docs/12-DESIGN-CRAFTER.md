@@ -1,9 +1,12 @@
 # 12 — Design : crafter et multiblocs
 
 Spécification de la reprise partielle de la Phase 4 ([`05`](05-ROADMAP.md)), décidée le
-30/09/2026. **Rien n'existe côté code.** Le périmètre est volontairement étroit : un
-**cadre multibloc générique** et **une machine**, le crafter. Four, foreuse, énergie de
-survie et arbre de recherche restent ajournés.
+30/09/2026 et **livrée dans `0.4.0-beta`** (FIO-175 à FIO-185, §9). Le périmètre est
+volontairement étroit : un **cadre multibloc générique** et **une machine**, le crafter. Four,
+foreuse, énergie de survie et arbre de recherche restent ajournés.
+
+Les sections « Tel qu'implémenté » disent ce qui a changé en route ; le reste décrit le code
+actuel.
 
 Toutes les décisions ci-dessous ont été tranchées une à une avec le mainteneur ; chaque
 section dit ce qui a été écarté et pourquoi, pour ne pas rouvrir le débat par accident.
@@ -171,7 +174,7 @@ sur le modèle de `BeltRegistry` : trois paliers livrés, désactivables, extens
 {
   "tier": 1,
   "craftingSpeed": 0.5,
-  "energyPerTick": 40,
+  "energyPerTick": 30,
   "energyCapacity": 20000,
   "inputCrafts": 2
 }
@@ -179,8 +182,8 @@ sur le modèle de `BeltRegistry` : trois paliers livrés, désactivables, extens
 
 | Nature | Champs | Quand |
 |---|---|---|
-| **Structurel** | nombre de paliers (un bloc chacun), `tier`, taille 3×2×3, slots (9 entrées, 4 sorties) | au lancement ; refusé à chaud comme l'est `useEnergy` des inserters |
-| **Réglage** | `craftingSpeed`, `energyPerTick`, `energyCapacity`, `inputCrafts` | rechargeable par datapack (`/reload`) |
+| **Structurel** | nombre de paliers (un bloc chacun), `tier`, `moduleSlots`, taille 3×2×3, slots (9 entrées, 4 sorties) | au lancement ; refusé à chaud comme l'est `useEnergy` des inserters |
+| **Réglage** | `craftingSpeed`, `energyPerTick`, `energyCapacity`, `inputCrafts`, `fluidCapacity` | rechargeable par datapack (`/reload`) |
 
 Un seul type de `BlockEntity` et un seul `MenuType` pour les trois paliers, le palier lu
 sur le bloc — le précédent des convoyeurs (`BELT_ENTITY`).

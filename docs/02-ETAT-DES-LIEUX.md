@@ -1,26 +1,13 @@
 # 02 — État des lieux
 
-Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé · ⬜ inexistant
+Photographie du mod **à la sortie de `0.4.0-beta`** (01/10/2026). Le détail de chaque
+fonctionnalité est dans son document de conception ; ce fichier dit seulement ce qui existe,
+ce qui tient et ce qui manque.
 
-`./gradlew build` **passe**. Tous les problèmes listés ici sont des problèmes de
-**runtime**, pas de compilation.
+Légende : ✅ fait et fiable · 🟡 fait mais partiel ou à vérifier · 🔴 cassé · ⬜ inexistant
 
-> **Mis à jour après la Phase 0 et le port en Forge 1.20.1.** Les correctifs sont
-> appliqués (voir [`03-BUGS.md`](03-BUGS.md)), le mod compile et **le client démarre**
-> (`Loaded 7 inserters`, aucune erreur fatale).
->
-> Le comportement est désormais largement vérifié. **Le mod est validé en jeu** par le
-> mainteneur (FIO-054, 30/07/2026), et **24 GameTests** couvrent les invariants de monde —
-> conservation, ravitaillement, redstone, persistance, synchro de l'item en main, blocage
-> sur cible pleine, filtres par tag, rotation, améliorations, configurateur — doublés d'une
-> centaine de cas JUnit sur le calcul pur.
->
-> **Audit complet du 31/07/2026** : relecture à froid de tout le code, des assets et de la
-> documentation. Sept anomalies trouvées et corrigées (BUG-042 à BUG-048), le préambule du
-> tick allégé, et deux fonctionnalités ajoutées — configurateur et améliorations.
->
-> Le **rendu** reste hors de portée des tests automatisés : il est vérifié à l'œil, pas
-> par une assertion. C'est la limite à garder en tête à chaque changement d'affichage.
+Les versions précédentes de ce document (Phase 0, audit du 31/07/2026) sont dans l'historique
+git.
 
 ---
 
@@ -28,161 +15,91 @@ Légende : ✅ fait et fiable · 🟡 fait mais partiel/fragile · 🔴 cassé �
 
 | Élément | État | Commentaire |
 |---|---|---|
-| Build ForgeGradle 6 / Forge 1.20.1 / Java 17 | ✅ | Gradle 8.8 |
-| Mappings Parchment | ✅ | `official` faisait échouer le chargement, cf. FIO-051 |
-| Registre data-driven d'inserters | ✅ | migré sur `DeferredRegister` lors du port |
-| Chargement de JSON utilisateur | ✅ | validé par `Codec`, erreurs nommées (FIO-034) ; la **liste** vient de `config/`, les **réglages** d'un datapack rechargeable à chaud (FIO-037) |
-| Config Forge (`ForgeConfigSpec`) | 🟡 | lue en amont via `EarlyConfig` ; **prend effet au lancement suivant** (contrainte Forge, cf. BUG-001) |
-| Réseau (`SimpleChannel`) | ✅ | 2 paquets : réglages d'inserter (C→S, filtrage et redstone) et barème à la connexion / `/reload` (S→C) |
-| Pack de ressources/data généré au runtime | ✅ | en mémoire, refait à chaque rechargement, limité aux inserters utilisateur (FIO-039) |
-| Data generation Gradle (`runData`) | ✅ | 93 fichiers générés et versionnés |
+| ForgeGradle 6, Forge 1.20.1 (47.3.6), Java 17, Parchment | ✅ | Gradle 8.8 |
+| Définitions data-driven : inserters, convoyeurs, crafters | ✅ | socle commun `Definition` / `DefinitionRegistry` / `DefinitionLoader` ; la **liste** vient de `config/`, les **réglages** d'un datapack rechargeable (FIO-174) |
+| Validation des données | ✅ | `StrictCodecs` : refuse et journalise, ne borne jamais en silence |
+| Config Forge | 🟡 | `factor_io-common.toml` lu en amont par `EarlyConfig`, **effectif au lancement suivant** (contrainte Forge, BUG-001) ; `factor_io-server.toml` par monde pour le crafter |
+| Réseau | ✅ | 4 paquets C→S validés par `C2SChecks` (inserter, crafter : réglage, recette, fluide) ; 2 S→C sur événement (barème des inserters, vitesses des convoyeurs). **Aucun paquet périodique** |
+| Pack généré au runtime | ✅ | en mémoire, seulement pour les définitions utilisateur (FIO-039, FIO-174) |
+| `runData` | ✅ | 203 fichiers générés et versionnés |
+| GameTests | ✅ | ~80 tests d'invariants et 2 benchmarks, `./gradlew runGameTestServer` |
+| JUnit | ✅ | ~180 cas de calcul pur, exécutés par `build` |
+| Captures de la vitrine | ✅ | rejouables : [`showcase/`](showcase/README.md) |
 
-| Tests (GameTest) | ✅ | 24 tests d'invariants + 2 benchmarks, `./gradlew runGameTestServer` |
-| Tests (JUnit) | ✅ | ~100 cas de calcul pur, `./gradlew test`, exécutés par `build` |
-| Benchmark de charge | ✅ | consigné ; **les deux budgets tenus** depuis l'allègement du préambule ([`10`](10-BENCHMARKS.md), FIO-073) |
-| `mods.toml` | ✅ | rempli, plages de versions 1.20.1 |
-
-## 2. Inserters
+## 2. Inserters — [`07`](07-DESIGN-INSERTERS.md)
 
 | Fonctionnalité | État | Commentaire |
 |---|---|---|
-| Placement / rotation / cassage | ✅ | rotation à la clé à molette **ou** shift + clic droit à main nue (BUG-026) |
-| Waterlogging | ✅ | corrigé (BUG-010) |
-| Aspiration d'items depuis un inventaire | 🟡 | marche pour les BlockEntity ; ignore les items au sol, minecarts, entités |
-| Éjection vers un inventaire | ✅ | répartition multi-slot (BUG-022) et face de capability correcte (BUG-023) |
-| Perte d'items | ✅ | simulation avant extraction ; tout reliquat est réinjecté ou lâché au sol (BUG-006) |
-| Filtres (5 slots, items fantômes) | ✅ | whitelist/blacklist persisté (BUG-008) ; correspondance par item ou par tag, au choix par slot (FIO-069) |
-| Bascule whitelist/blacklist | ✅ | paquet C→S validé : expéditeur, chunk, distance, menu ouvert, type de bloc (BUG-007) |
-| Consommation d'énergie (FE) | ✅ | `consumeInternal()` distinct du contrat externe (BUG-003) |
-| Réception d'énergie | ✅ | toutes faces + `side == null` (BUG-021) |
-| Consommation de carburant | ✅ | bornée (BUG-013), consommée au dernier moment et écrêtée (BUG-041) |
-| Vitesse et débit | ✅ | barème Factorio, 0,59 à 7,5 items/s selon le modèle (FIO-065) |
-| Machine à états du bras | ✅ | `WAITING` / `SWINGING` / `BLOCKED` / `RETURNING`, persistée et synchronisée (FIO-060) |
-| Cible pleine | ✅ | l'item reste en main, bras tendu, jusqu'à libération (FIO-060) |
-| Auto-alimentation en carburant | ✅ | se réapprovisionne sous le seuil `FUEL_BUFFER_TARGET`, hors de la garde de réserve (BUG-012) |
-| Réaction au redstone | ✅ | condition **analogique** réglable : toujours / signal < N / signal ≥ N (FIO-070, BUG-015) |
-| Shift-clic dans le GUI | ✅ | patron vanilla, respecte `mayPickup` et efface les filtres fantômes (BUG-009, BUG-036) |
-| Barre d'énergie / de carburant | ✅ | `ContainerData`, synchronisée aux seuls joueurs ayant le GUI ouvert (BUG-004) |
-| Tooltips d'item (Shift) | ✅ | débit en items/s, taille de main, unités correctes (BUG-029, FIO-065) |
-| Noms traduits des blocs et items | ✅ | `en_us` et `fr_fr` complets ; le générateur runtime n'agit plus qu'en surcharge (BUG-011) |
-| Modèle / texture | ✅ | GeckoLib, 3 géométries, textures normale + `_disabled` |
-| Animation de la tourelle | 🟡 | demi-tour autour de l'axe vertical, piloté par l'état ; tout est en place et testé, **le rendu reste à voir à l'œil** (FIO-066, [`11`](11-DESIGN-ANIMATION.md)) |
-| Réglage d'animation par machine | ✅ | bouton dans le GUI ; « désactivé » = sans interpolation, pas immobile (FIO-161) |
-| Rendu de l'item transporté | ✅ | l'item est **dans la pince** : une seule grandeur pilote le bras et l'item, ils ne peuvent plus se contredire (FIO-066, FIO-067) |
-| Boîte de collision | ✅ | socle + palier calqués sur le modèle (BUG-017) |
-| Recettes | ✅ | **les 7**, en chaîne : burner → inserter → {long handed, fast, filter} → stack → stack filter (FIO-125) |
-| Copier / coller de réglages | ✅ | item `configurator`, ouvert par le tag `factor_io:configurators` |
-| Améliorations posables | 🟡 | **vrais slots** (1 à 4 selon le modèle), modules **empilables**, paliers cumulés ; natures cumulatives et débloquantes ; barème réglable ; tags `factor_io:upgrades/<axe>/<palier>` ; tombent avec le reste du contenu. **L'interface reste à faire** : les slots sont posés à un emplacement provisoire (FIO-162, FIO-071) |
-| Recettes des modules | 🔴 | **aucune** : les 9 modules et le configurateur sont inaccessibles en survie (FIO-164) |
-| Rotation et cible visée | ✅ | tourner un inserter change enfin ce qu'il vise (BUG-042) |
-| Loot tables | ✅ | générées par `runData` et versionnées |
+| Sept modèles, barème Factorio à 8 % près | ✅ | 0,59 à 7,5 items/s (FIO-065) |
+| Transferts sans perte | ✅ | simuler → calculer → extraire ; délégués à `ItemStackHandler` (FIO-186) |
+| Prise intelligente | ✅ | ne prend que ce que la cible acceptera ; attend main vide devant une cible pleine (FIO-182) |
+| Filtres : 5 slots, item ou tag par slot, liste blanche ou noire | ✅ | FIO-069 |
+| Interrupteur, condition redstone | ✅ | modes et seuil derrière le module de redstone avancée (FIO-172) |
+| Taille de main, voie de dépôt par inserter | ✅ | FIO-167 à 170 |
+| Modules : 1 à 4 slots, paliers cumulés | ✅ | barème par datapack, refuse au lieu de borner (FIO-165) |
+| Burner : réserve et ravitaillement depuis la source | ✅ | BUG-012, BUG-041 |
+| Écran à onglets | ✅ | Informations (débit mesuré), Réglages, Améliorations, Contrôle (FIO-071, FIO-181) |
+| Configurateur | ✅ | inserters seulement ; générique pour le crafter : FIO-180 |
+| Rendu : bras GeckoLib, item dans la pince | 🟡 | sens de rotation corrigé (FIO-163), **reste la vérification à l'œil** dans les quatre orientations |
 
-## 2 bis. Énergie
+## 3. Convoyeurs — [`08`](08-DESIGN-BELTS.md)
 
 | Élément | État | Commentaire |
 |---|---|---|
-| Réception de FE par les inserters | ✅ | toutes faces, `side == null` compris |
-| Source d'énergie créative | ✅ | `creative_energy_source` : pousse vers ses 6 faces, **sans recette**, créatif seulement (FIO-124) |
-| Générateur jouable en survie | ⬜ | **décision de périmètre non tranchée** : le mod produit-il son énergie ou dépend-il de Mekanism / Thermal ? Voir [`05`](05-ROADMAP.md) §Phase 4 |
+| Trois paliers, deux voies de quatre cases | ✅ | 10, 20, 40 items/s ; vitesse par datapack |
+| Courbes, fusions latérales, compression, boucle pleine qui tourne | ✅ | BUG-050 |
+| Voie lointaine décidée par le convoyeur | ✅ | vaut aussi pour les hoppers et les tuyaux d'autres mods |
+| `IItemHandler` sur toutes les faces, pose et retrait à la main | ✅ | |
+| Rampes, une par palier | ✅ | **modèles provisoires** (FIO-103) |
+| Rendu fluide des items | ✅ | un pas de retard sur la simulation (FIO-095) |
+| Réconciliation client / serveur | 🟡 | toutes les 10 s pour ce qui bouge (FIO-096) ; **reste la vérification à deux clients sur `runServer`** |
+| Budget de rendu (300 blocs, 2 400 items, 60 FPS) | ⬜ | FIO-090b |
+| Séparateurs | ⬜ | prochain jalon ([`05`](05-ROADMAP.md)) |
 
-La source créative lève la dépendance à un mod tiers **pour tester et pour jouer en
-créatif**. Elle ne tranche pas la question du générateur : lui donner une recette
-supprimerait toute progression énergétique, et c'est précisément le choix que la Phase 4
-doit faire en connaissance de cause.
+## 4. Crafter et multiblocs — [`12`](12-DESIGN-CRAFTER.md)
 
-## 3. Convoyeurs (« transport belts »)
+| Élément | État | Commentaire |
+|---|---|---|
+| Cadre multibloc : pose unique, contour, casse depuis n'importe quelle partie | ✅ | FIO-176 |
+| Trois paliers en définitions JSON | ✅ | vitesse 0,5 / 0,75 / 1,25 ; 30 / 60 / 150 FE/t (FIO-122) |
+| Recettes `factor_io:crafting` | ✅ | ingrédients comptés, résultats à probabilité, palier minimal (FIO-120) |
+| Recettes vanilla, en option par monde | ✅ | `vanillaRecipes`, désactivé par défaut |
+| Entrées limitées à deux crafts d'avance | ✅ | l'inserter s'arrête de lui-même |
+| Écran, sélecteur de recettes, onglet d'informations | ✅ | FIO-177, FIO-181 |
+| JEI : catégorie, catalyseurs, bouton « + » | ✅ | FIO-178 |
+| Modules (Mk2 : 2, Mk3 : 4), barre de productivité | ✅ | FIO-127 |
+| Interrupteur et condition redstone | ✅ | FIO-183, FIO-185 |
+| Fluides : 2 entrées, 2 sorties, seaux et tuyaux | ✅ | FIO-179 ; **aucune recette livrée n'en utilise** |
+| Modèle | 🟡 | **provisoire**, JSON statique en textures vanilla ; le modèle GeckoLib viendra avec l'art |
 
-| Élément | État |
-|---|---|
-| Textures (3 tiers) | ✅ présentes |
-| Blockstates + 24 modèles avec `connected` 0-7 | ✅ présents |
-| Modèles d'item | ✅ présents |
-| Options de config de vitesse | ✅ lues, appliquées aux convoyeurs déjà posés |
-| Transport (`BeltLane`, `BeltTransport`, `BeltFlow`, `BeltShape`, `BeltPath`) | ✅ écrit, testé en JUnit, sans dépendance à Minecraft |
-| Bloc, block entity, placement, `connected` | ✅ les trois tiers existent en jeu |
-| Rendu des items | ✅ `BeltItemRenderer` |
-| Capability `IItemHandler` sur toutes les faces | ✅ hoppers et inserters peuvent prendre et déposer |
-| Pose et retrait à la main (clic droit) | ✅ voie et case déduites du point cliqué |
-| Réconciliation client/serveur | ✅ toutes les 10 s pour ce qui bouge, cf. [`08`](08-DESIGN-BELTS.md) §6 |
-| Rampes | ✅ une par tier (`BeltRampBlock`), montée ou descente décidée à la pose ; **modèles provisoires** |
-| Alimentation automatique par l'inserter | ✅ dépôt sur la voie lointaine, décidé par le convoyeur |
+## 5. Énergie
 
-Une implémentation antérieure (`FactoryIOConvoyerBlockEntity`, `FactoryIOConvoyerEntityBlock`)
-a été supprimée au commit `9acd8ff` (« Inserter - Rewrite 5/? »). Elle n'était
-qu'une coquille abstraite vide.
+| Élément | État | Commentaire |
+|---|---|---|
+| Réception de FE (inserters, crafters) | ✅ | toutes faces ; le crafter par n'importe quelle partie |
+| Source d'énergie créative | ✅ | sans recette, créatif seulement |
+| Production en survie | ⬜ | FIO-124 : décision de périmètre ouverte ([`05`](05-ROADMAP.md) Phase 4) |
 
-**La boucle Factorio existe** : coffre → inserter → convoyeur → inserter → coffre
-fonctionne, et l'inserter dépose sur la voie lointaine. Ce qui manque désormais
-relève de la finition — budget de rendu, modèles
-définitifs des rampes — et non plus de la mécanique.
-Spécification : [`08-DESIGN-BELTS.md`](08-DESIGN-BELTS.md).
+## 6. Items et recettes
 
-## 4. Items et progression
+| Élément | État | Commentaire |
+|---|---|---|
+| Chaîne de composants | ✅ | plaques (tailleur de pierre), acier (haut fourneau), engrenage, câble, circuits ; circuit avancé et processeur **au crafter seulement** (FIO-126) |
+| Recettes de tous les blocs, modules et outils | ✅ | tags Forge partout (`forge:plates/*`, `forge:circuits/*`…) |
+| Textures dans le style Minecraft | ✅ | plaques, circuits, modules, configurateur (FIO-164) |
+| Science packs, fusées, carburants, uranium | 🟡 | enregistrés, **cachés de l'onglet créatif**, sans usage |
+| `stone`, `stone_brick` | 🟡 | doublons d'items vanilla, à retirer (DT-12) |
 
-35 items enregistrés dans [`ModItems`](../src/main/java/com/drimoz/factoryio/core/init/ModItems.java) :
-
-- plaques : `iron_plate`, `copper_plate`, `steel_plate`
-- circuits : `electronic_circuit`, `advanced_circuit`, `processing_unit`
-- 7 science packs
-- modules ×9 (efficiency / productivity / speed, T1-T3) — **utilisés** comme améliorations
-  d'inserter
-- `configurator` — copie et repose les réglages d'une machine
-- divers : `explosives`, `flying_robot_frame`, `low_density_structure`,
-  `nuclear_fuel`, `rocket_*`, `solid_fuel`, `stone`, `stone_brick`,
-  `uranium_fuel_cell`, `used_up_uranium_fuel_cell`, `uranium_235/238`
-
-Les trois textures orphelines de BUG-033 sont traitées : les deux provisoires supprimées,
-`uranium_fuel_cell` enregistré.
-
-| Aspect | État |
-|---|---|
-| Enregistrement + textures | ✅ |
-| Modèles d'item | ✅ générés et versionnés |
-| Noms traduits | ✅ `en_us` et `fr_fr` |
-| Recettes | ⬜ aucune |
-| Usage en jeu | 🟡 les 9 modules et le configurateur servent ; les plaques, circuits et science packs, non |
-| Tags (`forge:plates/*`, `factor_io:upgrades/*`, `factor_io:configurators`) | ✅ générés et versionnés |
-
-`stone` et `stone_brick` **dupliquent** des items vanilla — à supprimer ou à
-remplacer par les tags vanilla.
-
-## 5. Intégrations
+## 7. Intégrations
 
 | Mod | État |
 |---|---|
-| JEI | 🔴 API en `compileOnly` dans `build.gradle`, **aucun plugin écrit** |
-| The One Probe | 🔴 dépendance runtime déclarée, **aucun provider** |
-| Mekanism / Thermal / CoFH | ⬜ retirés des dépendances par défaut (`-PwithTestMods`) |
-| Forge Energy | 🟡 côté réception seulement, mais sur toutes les faces |
-| Forge `IItemHandler` | ✅ consommé correctement |
+| JEI | ✅ catégorie du crafter, « + », pas de recouvrement des onglets ; dépendance facultative déclarée |
+| Jade / The One Probe | ⬜ FIO-151 |
+| Tout inventaire `IItemHandler`, tout tuyau à fluide | ✅ |
 
-## 6. Code mort recensé
+## 8. Ce qui manque avant `1.0`
 
-Supprimé en Phase 0 (FIO-018) :
-
-| Élément | Fichier |
-|---|---|
-| `FactoryIOColorHandler` (classe entière, jamais enregistrée) | supprimé |
-| `FactoryIOPaths` (classe entière, jamais référencée) | supprimé |
-| `FactoryIOScreen` (classe vide) | supprimé |
-| `FactoryIOSyncS2CItemStack` (+ son enregistrement réseau) | supprimé |
-| `FactoryIOFoilItem` + `ModItems.registerGlowing()` | supprimé |
-| `ModNetworks.sendToPlayer()` | supprimé |
-| `PackConstants.init()` et `DUMMY_PACK_META` | supprimés |
-| `Inserter.filterSlotCount` | supprimé |
-| `InserterBlockEntity.menuType` (+ paramètre de constructeur) | supprimé |
-| `getInnerFuelCapacity()` (récursion infinie) | supprimé |
-| `quickMoveStack2()` (28 lignes commentées) | supprimé |
-| `CommonConfig.SHOW_ERRORS` | supprimé |
-| Blocs de rendu commentés dans `GuiButton.render()` | supprimés |
-
-Reste volontairement en place :
-
-| Élément | Raison |
-|---|---|
-| `Inserter.texture` (assigné, jamais lu) | à raccorder au rendu en Phase 2 |
-| ~~`getActionMultiplier()`~~ | supprimé par FIO-065 avec le reste du modèle temporel |
-| ~~`*_BELT_COOLDOWN`~~ | **branchées** : renommées en `ticks_per_slot`, lues par `BeltSpeeds`. Leur ancienne unité — celle du compteur d'inserter supprimé par FIO-065 — rendait un branchement direct impossible |
-| `ModTags.Items.INSERTERS`, `ModTags.Blocks.TOOL_*` | consommés par les générateurs de tags |
-| `GuiButton.onRightClick()`, `hasUV()`, `hasUVHover()` | API du widget, utile à la refonte GUI (FIO-071) |
-| `StringHelper.getShiftInfoGui()` | ses clés de langue existent désormais |
+Dans l'ordre de [`05`](05-ROADMAP.md) : séparateurs, art définitif (crafter, rampes, séparateurs,
+dessiné hors du dépôt), four et foreuse, production d'énergie, Jade, sons,
+budget de rendu mesuré.

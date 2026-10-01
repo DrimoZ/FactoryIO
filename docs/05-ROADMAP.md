@@ -21,6 +21,13 @@ Phase 5  Finition & publication  ~2 sem   JEI, TOP, i18n, release
 Estimations pour **un développeur à temps partiel régulier**. Elles supposent que
 les phases sont faites dans l'ordre.
 
+> **Où en est-on — 01/10/2026, `0.4.0-beta`.** Phases 0, 1 et 2 faites. Phase 3 faite à
+> l'exception des **séparateurs** (3.9) et des vérifications à l'œil ou à deux clients
+> (FIO-096, FIO-090b). Phase 4 **rouverte partiellement** et livrée sur son périmètre
+> réduit : cadre multibloc et crafter T1-T3, avec modules et fluides. Phase 5 entamée :
+> JEI, i18n `en_us`/`fr_fr` complète, wiki et page CurseForge refaits, captures rejouables.
+> Le détail est dans [`02`](02-ETAT-DES-LIEUX.md).
+
 ---
 
 ## Décision préalable : version cible — ✅ **tranchée : Forge 1.20.1**
@@ -314,10 +321,15 @@ circuits électroniques sans mode créatif.
 
 ## Jalons de version
 
-| Version | Contenu | Après |
+Le plan d'origine, puis ce qui est réellement sorti. Les numéros publiés suivent les
+livraisons, pas les phases : `0.1` et `0.2` n'ont jamais été publiés (la seule version
+antérieure sur CurseForge est le prototype 1.18.2, `factory_io-0.0.x`).
+
+| Version prévue | Contenu prévu | Publié |
 |---|---|---|
-| `0.1.0` | inserters fonctionnels, rien ne casse | Phase 0 + 1 |
-| `0.2.0` | inserters au niveau Factorio, performants | Phase 2 |
-| `0.4.0` | convoyeurs + séparateurs | Phase 3 |
-| `0.7.0` | machines, recettes, progression jouable | Phase 4 |
-| `1.0.0` | intégrations, i18n, publication | Phase 5 |
+| `0.1.0` | inserters fonctionnels, rien ne casse | — |
+| `0.2.0` | inserters au niveau Factorio, performants | — |
+| `0.4.0` | convoyeurs + séparateurs | `0.3.0-beta` (16/08/2026) : inserters et convoyeurs, sans séparateurs |
+| `0.7.0` | machines, recettes, progression jouable | `0.4.0-beta` (01/10/2026) : crafters, rampes, modules, toutes les recettes |
+| `0.5.0` | séparateurs, art définitif du crafter et des rampes | à venir |
+| `1.0.0` | intégrations, i18n, publication | à venir |

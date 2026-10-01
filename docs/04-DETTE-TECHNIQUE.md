@@ -385,7 +385,18 @@ et zéro surcharge de `clicked()`.
 
 ---
 
-## DT-09 — Séparation client / serveur fragile
+## DT-09 — Séparation client / serveur fragile — 🟡 **en grande partie traité**
+
+**État au 01/10/2026.** Les paquets S→C ne touchent plus au client hors de `client/`,
+`shared/` n'importe plus rien de `net.minecraft.client` (`StringHelper` a rendu la lecture du
+clavier à `client/ClientInput`), et le code neuf (`content/`, `client/`) respecte la cible de
+[`09`](09-CONVENTIONS.md) §1. **Reste** : `InserterBlockRenderer`, `InserterItemRenderer` et
+`InserterGeoModel` vivent encore dans `core/inserters` avec des `@OnlyIn`, et
+`BeltItemRenderer` dans `core/belts`. Ils ne fuient pas — rien de commun ne les charge —
+mais ils sont au mauvais endroit ; à déplacer avec la migration de `core/`.
+
+<details>
+<summary>Rédaction initiale</summary>
 
 **Impact : moyen · Effort : S · Quand : Phase 1**
 
@@ -401,6 +412,8 @@ et zéro surcharge de `clicked()`.
 - `Minecraft.getInstance().level` est déréférencé sans test de nullité (menu
   principal, changement de dimension).
 - `FactoryIOPackResources` mélange code client et serveur ([BUG-005](03-BUGS.md)).
+
+</details>
 
 ---
 
@@ -438,7 +451,7 @@ sub-tick, le traiter explicitement avec un accumulateur en millièmes de tick.
 
 ---
 
-## DT-11 — Tests en place, mesure toujours absente
+## DT-11 — Tests et mesure — ✅ **largement traité**
 
 **Impact : élevé · Effort : M · Quand : Phase 1 puis continu**
 
@@ -516,7 +529,14 @@ fil des retouches.
 
 ---
 
-## DT-13 — `build.gradle`
+## DT-13 — `build.gradle` — ✅ **traité**
+
+Mods tiers derrière `-PwithTestMods` (JEI, Jade) et `-Pshowcase` (rendu et décor des
+captures) ; GSON retiré ; manifeste corrigé ; Gradle 8.8. Seul reste ouvert le
+`withSourcesJar()`, sans objet tant que le mod ne publie pas d'API.
+
+<details>
+<summary>Rédaction initiale</summary>
 
 **Impact : faible · Effort : XS · Quand : Phase 0**
 
@@ -529,3 +549,5 @@ fil des retouches.
 - `Specification-Vendor: "${mod_id}sareus"` dans le manifeste — reliquat de copier-coller.
 - Gradle 7.5.1 avec fonctionnalités dépréciées → incompatible Gradle 8.
 - Pas de `withSourcesJar()`, pas de configuration de publication utilisable.
+
+</details>

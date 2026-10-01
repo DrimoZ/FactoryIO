@@ -49,6 +49,10 @@ minecraft {
 
         client {
             property 'forge.enabledGameTestNamespaces', mod_id
+            // Les captures de la vitrine se prennent en 1080p.
+            if (project.hasProperty('showcase')) {
+                args '--width', '1920', '--height', '1080'
+            }
         }
 
         server {
@@ -130,6 +134,27 @@ dependencies {
     if (project.hasProperty('withTestMods')) {
         runtimeOnly fg.deobf("mezz.jei:jei-${mc_version}-forge:${jei_version}")
         runtimeOnly fg.deobf("maven.modrinth:jade:${jade_version}")
+    }
+
+    // Captures de la page du mod et du wiki : JEI, et Embeddium + Oculus pour un pack de
+    // shaders posé à la main dans run/shaderpacks/. Jamais dans le client de tous les jours.
+    //   ./gradlew runClient -Pshowcase
+    if (project.hasProperty('showcase')) {
+        runtimeOnly fg.deobf("mezz.jei:jei-${mc_version}-forge:${jei_version}")
+        runtimeOnly fg.deobf("maven.modrinth:embeddium:0.3.31+mc1.20.1")
+        runtimeOnly fg.deobf("maven.modrinth:oculus:1.20.1-1.8.0")
+        // Décor des scènes : jamais une dépendance du mod, seulement de quoi meubler l'image.
+        // Macaw's par identifiant de version : ses numéros servent pour plusieurs versions de
+        // Minecraft, et le maven de Modrinth rendrait le jar NeoForge 1.21.
+        runtimeOnly fg.deobf("maven.modrinth:macaws-lights-and-lamps:H1a9Tx4h")
+        runtimeOnly fg.deobf("maven.modrinth:macaws-windows:SSIlzrPf")
+        runtimeOnly fg.deobf("maven.modrinth:macaws-roofs:31e80GhE")
+        runtimeOnly fg.deobf("maven.modrinth:macaws-bridges:KImk0Oo1")
+        runtimeOnly fg.deobf("maven.modrinth:macaws-fences-and-walls:HnyfcyJ9")
+        runtimeOnly fg.deobf("maven.modrinth:macaws-paths-and-pavings:yHkcTSFb")
+        runtimeOnly fg.deobf("maven.modrinth:decorative-blocks:4.1.3+forge")
+        runtimeOnly fg.deobf("maven.modrinth:moonlight:1.20-2.16.35-forge")
+        runtimeOnly fg.deobf("maven.modrinth:supplementaries:1.20-3.1.43-forge")
     }
 }
 

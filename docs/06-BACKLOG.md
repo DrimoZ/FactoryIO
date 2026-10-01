@@ -189,7 +189,7 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 
 | ID | P | Est. | Ticket |
 |---|---|---|---|
-| FIO-150 | P1 | M | Plugin JEI (recettes + catégorie inserters) |
+| 🟡 FIO-150 | P1 | M | Plugin JEI — **crafter fait** (FIO-178 : catégorie `factor_io:crafting`, catalyseurs, « + »). Reste une catégorie d'information pour les inserters, si elle sert. |
 | FIO-151 | P2 | M | Provider The One Probe / Jade |
 | ~~FIO-152~~ | ✅ | M | i18n complète — **fait** : plus de fragments recollés, des clés à trous (`%s`) ; `LangFilesTest` vérifie la parité `en_us`/`fr_fr` et l'existence des clés citées |
 | FIO-153 | P2 | M | Sons |
@@ -197,7 +197,8 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | FIO-155 | P1 | S | Documenter la procédure de publication (CurseForge + Modrinth), sans CI |
 | FIO-156 | P2 | S | `updateJSONURL` + fichier de mise à jour |
 | FIO-157 | P2 | M | Passe d'accessibilité GUI (contrastes, tooltips, clavier) |
-| FIO-158 | P1 | S | `CHANGELOG.md` et politique de versionnage |
+| ~~FIO-158~~ | ✅ | S | `CHANGELOG.md` et politique de versionnage — **fait** : `MAJOR.MINOR.PATCH`, suffixe `-beta` tant que des modèles sont provisoires, section par version reprise telle quelle comme « What's new » du fichier CurseForge. |
+| FIO-187 | P1 | M | **Refonte de la documentation et de la vitrine pour `0.4.0-beta`** : wiki réécrit (pages Crafters, Modules, Recipes), README, page CurseForge ([`curseforge-description.md`](curseforge-description.md)), captures rejouables ([`showcase/`](showcase/README.md)), état des lieux et roadmap à jour. |
 
 ---
 
