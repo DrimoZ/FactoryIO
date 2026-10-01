@@ -1,6 +1,7 @@
 package com.drimoz.factoryio.core.inserters;
 
 
+import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.block.WaterloggedEntityBlock;
 import com.drimoz.factoryio.core.init.ModTags;

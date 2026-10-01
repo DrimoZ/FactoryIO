@@ -15,7 +15,7 @@ import com.drimoz.factoryio.core.inserters.InserterBlock;
 import com.drimoz.factoryio.core.inserters.InserterDropLane;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import com.drimoz.factoryio.core.init.ModItems;
-import com.drimoz.factoryio.core.inserters.InserterRedstoneCondition;
+import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.core.inserters.InserterSettings;
 import com.drimoz.factoryio.core.inserters.InserterSlotLayout;
 import com.drimoz.factoryio.core.inserters.InserterState;
@@ -183,12 +183,12 @@ public class InserterGameTests {
                 .thenWaitUntil(() -> helper.assertBlockProperty(
                         INSERTER, InserterBlock.ENABLED, false))
                 .thenExecute(() -> inserter(helper).setRedstoneCondition(
-                        new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 5)))
+                        new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 5)))
                 // Avec « signal ≥ 5 », le même bloc l'active : 15 ≥ 5.
                 .thenWaitUntil(() -> helper.assertBlockProperty(
                         INSERTER, InserterBlock.ENABLED, true))
                 .thenExecute(() -> inserter(helper).setRedstoneCondition(
-                        new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 16)))
+                        new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 16)))
                 // Un seuil ramené à 15 reste satisfait ; au-delà, plus rien ne l'atteindrait.
                 .thenWaitUntil(() -> helper.assertBlockProperty(
                         INSERTER, InserterBlock.ENABLED, true))
@@ -210,7 +210,7 @@ public class InserterGameTests {
 
         helper.startSequence()
                 .thenExecute(() -> inserter(helper).setRedstoneCondition(
-                        new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 5)))
+                        new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 5)))
                 .thenIdle(5)
                 .thenExecute(() -> helper.assertBlockProperty(INSERTER, InserterBlock.ENABLED, false))
                 .thenExecute(() -> installAdvancedRedstone(helper))
@@ -1045,7 +1045,7 @@ public class InserterGameTests {
         source.toggleTagFilter(0);
         source.setWhitelist(false);
         source.setRedstoneCondition(
-                new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 7));
+                new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 7));
         source.setAnimationMode(InserterAnimationMode.SNAP);
         source.setHandSizeLimit(1);
         source.setDropLane(InserterDropLane.FAR);
@@ -1111,7 +1111,7 @@ public class InserterGameTests {
 
         helper.setBlock(INSERTER.above(), Blocks.REDSTONE_BLOCK);
         inserter(helper).setRedstoneCondition(
-                new InserterRedstoneCondition(InserterRedstoneCondition.Mode.AT_LEAST, 5));
+                new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 5));
 
         helper.startSequence()
                 .thenWaitUntil(() -> helper.assertBlockProperty(INSERTER, InserterBlock.ENABLED, true))

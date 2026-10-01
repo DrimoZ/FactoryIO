@@ -1,11 +1,15 @@
 package com.drimoz.factoryio.client.crafter;
 
+import com.drimoz.factoryio.client.gui.ControlTab;
 import com.drimoz.factoryio.client.gui.GuiSprites;
 import com.drimoz.factoryio.client.gui.GuiTheme;
 import com.drimoz.factoryio.client.gui.SideTab;
 import com.drimoz.factoryio.client.gui.SideTabs;
 import com.drimoz.factoryio.client.screen.ThroughputMeter;
+import com.drimoz.factoryio.content.crafter.CrafterBlock;
 import com.drimoz.factoryio.content.crafter.CrafterBlockEntity;
+import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
+import com.drimoz.factoryio.core.network.packet.C2SCrafterSetting;
 import com.drimoz.factoryio.content.crafter.CrafterMenu;
 import com.drimoz.factoryio.content.crafter.CrafterRecipe;
 import com.drimoz.factoryio.content.crafter.CrafterRecipes;
@@ -68,7 +72,9 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
         this.picker = new RecipePicker(this.font, this::chooseRecipe);
         addWidget(this.picker.search());
 
-        List<SideTab> sideTabs = List.of(new CrafterInfoTab(this.menu, this.meter, this::selectedRecipe));
+        List<SideTab> sideTabs = List.of(
+                new CrafterInfoTab(this.menu, this.meter, this::selectedRecipe),
+                new ControlTab(controls()));
         this.tabs = new SideTabs(sideTabs, GuiMetrics.WIDTH, CrafterInfoTab.ID);
     }
 
@@ -86,6 +92,62 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
     /** Rectangles des onglets, pour que JEI ne pose pas sa liste dessus. */
     public List<Rect2i> getExtraAreas() {
         return this.tabs == null || this.picker.isOpen() ? List.of() : this.tabs.areas();
+    }
+
+    /**
+     * Le crafter vu par l'onglet de contrôle commun. La condition est réglable sans module :
+     * le crafter n'a pas encore de slots d'amélioration (FIO-127 décidera s'il faut l'y verrouiller).
+     */
+    private ControlTab.Controls controls() {
+        return new ControlTab.Controls() {
+            @Override
+            public boolean isSwitchedOn() {
+                return menu.isSwitchedOn();
+            }
+
+            @Override
+            public RedstoneCondition condition() {
+                return menu.getRedstoneCondition();
+            }
+
+            @Override
+            public boolean isAffectedByRedstone() {
+                return true;
+            }
+
+            @Override
+            public boolean isConditionUnlocked() {
+                return true;
+            }
+
+            @Override
+            public int signal() {
+                CrafterBlockEntity blockEntity = menu.getBlockEntity();
+                if (blockEntity == null || minecraft == null || minecraft.level == null) return 0;
+                return ((CrafterBlock) blockEntity.getBlockState().getBlock()).bestSignal(minecraft.level, blockEntity.getBlockPos());
+            }
+
+            @Override
+            public void sendSwitchedOn(boolean on) {
+                send(C2SCrafterSetting.Setting.POWER, on ? 1 : 0);
+            }
+
+            @Override
+            public void sendMode(RedstoneCondition.Mode mode) {
+                send(C2SCrafterSetting.Setting.REDSTONE_MODE, mode.ordinal());
+            }
+
+            @Override
+            public void sendThreshold(int threshold) {
+                send(C2SCrafterSetting.Setting.REDSTONE_THRESHOLD, threshold);
+            }
+        };
+    }
+
+    /** Le serveur fait autorité : l'écran relit l'état par le menu, sans prédire. */
+    private void send(C2SCrafterSetting.Setting setting, int value) {
+        CrafterBlockEntity blockEntity = this.menu.getBlockEntity();
+        if (blockEntity != null) ModNetworks.sendToServer(new C2SCrafterSetting(blockEntity.getBlockPos(), setting, value));
     }
 
     // Cycle

@@ -16,6 +16,7 @@ record CrafterStatus(String key, GuiTheme.Status light) {
             case NO_RECIPE -> new CrafterStatus("crafter_no_recipe", GuiTheme.Status.OFF);
             case RECIPE_MISSING -> new CrafterStatus("crafter_recipe_missing", GuiTheme.Status.PROBLEM);
             case TIER_TOO_LOW -> new CrafterStatus("crafter_tier_too_low", GuiTheme.Status.PROBLEM);
+            case SWITCHED_OFF -> new CrafterStatus("state_off", GuiTheme.Status.OFF);
             case DISABLED -> new CrafterStatus("state_redstone", GuiTheme.Status.OFF);
             case NO_ENERGY -> new CrafterStatus("state_no_power", GuiTheme.Status.PROBLEM);
             case NO_INPUTS -> new CrafterStatus("state_waiting", GuiTheme.Status.WAITING);

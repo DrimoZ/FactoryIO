@@ -6,6 +6,8 @@ import com.drimoz.factoryio.content.crafter.CrafterBlock;
 import com.drimoz.factoryio.content.crafter.CrafterBlockEntity;
 import com.drimoz.factoryio.content.crafter.CrafterMenu;
 import com.drimoz.factoryio.core.network.packet.C2SCrafterRecipe;
+import com.drimoz.factoryio.core.network.packet.C2SCrafterSetting;
+import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import net.minecraft.server.level.ServerPlayer;
 import com.drimoz.factoryio.content.crafter.CrafterRecipe;
 import com.drimoz.factoryio.content.crafter.CrafterRecipes;
@@ -230,6 +232,55 @@ public class CrafterGameTests {
         helper.succeed();
     }
 
+    // Tests (Contrôle, FIO-183)
+
+    /** L'interrupteur, réglé comme depuis l'écran, arrête la machine — même sous énergie et garnie. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void switchingOffStopsTheCrafter(GameTestHelper helper) {
+        CrafterRecipe recipe = inject(helper, "switch", 1);
+        CrafterBlockEntity crafter = place(helper, "crafter_mk3");
+        crafter.selectRecipe(recipe.getId(), null);
+        helper.setBlock(MASTER.offset(0, 2, 0), ModBlocks.CREATIVE_ENERGY_SOURCE.get());
+
+        ServerPlayer player = openedBy(helper, crafter);
+        helper.assertTrue(C2SCrafterSetting.apply(player, crafter.getBlockPos(), C2SCrafterSetting.Setting.POWER, 0),
+                "Réglage refusé menu ouvert");
+        handler(helper, WEST_PART).insertItem(0, new ItemStack(Items.COBBLESTONE, 2), false);
+
+        helper.runAfterDelay(60, () -> {
+            helper.assertTrue(crafter.getStatus() == CrafterBlockEntity.Status.SWITCHED_OFF, "État : " + crafter.getStatus());
+            helper.assertTrue(inputCount(crafter) == 2, "Une machine éteinte a consommé ses ingrédients");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * « Au moins 5 » : arrêtée sans signal, elle démarre dès qu'un bloc de redstone touche
+     * <b>n'importe quelle</b> partie du volume — pas seulement le maître.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void theRedstoneConditionReadsTheWholeMachine(GameTestHelper helper) {
+        CrafterRecipe recipe = inject(helper, "condition", 1);
+        CrafterBlockEntity crafter = place(helper, "crafter_mk3");
+        crafter.selectRecipe(recipe.getId(), null);
+        helper.setBlock(MASTER.offset(0, 2, 0), ModBlocks.CREATIVE_ENERGY_SOURCE.get());
+
+        ServerPlayer player = openedBy(helper, crafter);
+        C2SCrafterSetting.apply(player, crafter.getBlockPos(), C2SCrafterSetting.Setting.REDSTONE_MODE,
+                RedstoneCondition.Mode.AT_LEAST.ordinal());
+        C2SCrafterSetting.apply(player, crafter.getBlockPos(), C2SCrafterSetting.Setting.REDSTONE_THRESHOLD, 5);
+        handler(helper, WEST_PART).insertItem(0, new ItemStack(Items.COBBLESTONE, 2), false);
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(crafter.getStatus() == CrafterBlockEntity.Status.DISABLED,
+                        "Sans signal, « au moins 5 » devrait l'arrêter : " + crafter.getStatus()))
+                .thenExecute(() -> helper.setBlock(MASTER.offset(2, 1, 1), Blocks.REDSTONE_BLOCK))
+                .thenWaitUntil(() -> helper.assertTrue(
+                        crafter.getItems().getStackInSlot(CrafterBlockEntity.INPUT_SLOTS).is(Items.STONE),
+                        "Le signal sur une partie éloignée n'a pas démarré la machine"))
+                .thenSucceed();
+    }
+
     /** Recette, contenu, énergie et avancement survivent à une sauvegarde. */
     @GameTest(template = TEMPLATE)
     public static void stateSurvivesSaveAndLoad(GameTestHelper helper) {
@@ -237,12 +288,17 @@ public class CrafterGameTests {
         CrafterBlockEntity crafter = place(helper, "crafter_mk1");
         crafter.selectRecipe(recipe.getId(), null);
         handler(helper, WEST_PART).insertItem(0, new ItemStack(Items.COBBLESTONE, 3), false);
+        crafter.setSwitchedOn(false);
+        crafter.setRedstoneCondition(new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 7));
 
         CrafterBlockEntity copy = new CrafterBlockEntity(crafter.getBlockPos(), crafter.getBlockState());
         copy.load(crafter.saveWithoutMetadata());
 
         helper.assertTrue(recipe.getId().equals(copy.getRecipeId()), "Recette perdue");
         helper.assertTrue(copy.getItems().getStackInSlot(0).getCount() == 3, "Entrées perdues");
+        helper.assertTrue(!copy.isSwitchedOn(), "Interrupteur perdu");
+        helper.assertTrue(copy.getRedstoneCondition().equals(new RedstoneCondition(RedstoneCondition.Mode.AT_LEAST, 7)),
+                "Condition redstone perdue : " + copy.getRedstoneCondition());
         helper.succeed();
     }
 
@@ -278,6 +334,15 @@ public class CrafterGameTests {
         recipes.removeIf(existing -> existing.getId().equals(recipe.getId()));
         manager.replaceRecipes(recipes);
         CrafterRecipes.invalidate();
+    }
+
+    /** Un joueur à côté, menu de ce crafter ouvert : ce qu'exigent les validations des paquets. */
+    private static ServerPlayer openedBy(GameTestHelper helper, CrafterBlockEntity crafter) {
+        BlockPos pos = crafter.getBlockPos();
+        ServerPlayer player = FakePlayerFactory.getMinecraft(helper.getLevel());
+        player.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() - 2.5);
+        player.containerMenu = new CrafterMenu(1, player.getInventory(), crafter);
+        return player;
     }
 
     private static CrafterBlockEntity place(GameTestHelper helper, String name) {

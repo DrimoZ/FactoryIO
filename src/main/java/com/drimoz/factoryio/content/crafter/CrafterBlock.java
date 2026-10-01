@@ -82,6 +82,20 @@ public class CrafterBlock extends MultiblockBlock {
         return InteractionResult.CONSUME;
     }
 
+    // Interface (Redstone, FIO-183)
+
+    /**
+     * L'interrupteur d'abord : éteint, rien ne rallume la machine. Allumée, la condition
+     * décide, sur le plus fort signal reçu par n'importe quelle partie du volume.
+     */
+    @Override
+    protected boolean shouldBeEnabled(Level level, BlockPos pos) {
+        if (!(level.getBlockEntity(pos) instanceof CrafterBlockEntity crafter)) return super.shouldBeEnabled(level, pos);
+        if (!crafter.isSwitchedOn()) return false;
+
+        return crafter.getRedstoneCondition().allows(bestSignal(level, pos));
+    }
+
     // Interface (Casse)
 
     /** Tout le contenu sort, entrées comprises : un craft en cours n'a encore rien consommé. */

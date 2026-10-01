@@ -1,9 +1,10 @@
-package com.drimoz.factoryio.core.inserters;
+package com.drimoz.factoryio.core.generic.block;
 
 import net.minecraft.util.Mth;
 
 /**
- * Condition d'activation d'un inserter en fonction du signal redstone (FIO-070).
+ * Condition d'activation d'une machine en fonction du signal redstone (FIO-070 ; partagée
+ * avec le crafter en FIO-183).
  *
  * <p>Équivalent minimal de la condition de circuit de Factorio : « n'agir que si le signal
  * vaut au moins N ». Minecraft transporte un signal de 0 à 15 ; le lire en analogique
@@ -14,15 +15,15 @@ import net.minecraft.util.Mth;
  * historique : actif tant qu'aucun signal n'arrive. Un monde existant se recharge donc
  * inchangé.
  */
-public record InserterRedstoneCondition(Mode mode, int threshold) {
+public record RedstoneCondition(Mode mode, int threshold) {
 
     /** Signal maximal transporté par la redstone. */
     public static final int MAX_SIGNAL = 15;
 
     /** Comportement d'origine : actif tant qu'il n'y a pas de signal. */
-    public static final InserterRedstoneCondition DEFAULT = new InserterRedstoneCondition(Mode.BELOW, 1);
+    public static final RedstoneCondition DEFAULT = new RedstoneCondition(Mode.BELOW, 1);
 
-    public InserterRedstoneCondition {
+    public RedstoneCondition {
         threshold = Mth.clamp(threshold, 0, MAX_SIGNAL);
     }
 
@@ -68,16 +69,16 @@ public record InserterRedstoneCondition(Mode mode, int threshold) {
         return mode != Mode.ALWAYS;
     }
 
-    public InserterRedstoneCondition withMode(Mode mode) {
-        return new InserterRedstoneCondition(mode, threshold);
+    public RedstoneCondition withMode(Mode mode) {
+        return new RedstoneCondition(mode, threshold);
     }
 
-    public InserterRedstoneCondition withThreshold(int threshold) {
-        return new InserterRedstoneCondition(mode, threshold);
+    public RedstoneCondition withThreshold(int threshold) {
+        return new RedstoneCondition(mode, threshold);
     }
 
     /** Seuil suivant, en boucle : c'est ce que fait un clic sur le bouton de seuil. */
-    public InserterRedstoneCondition nextThreshold() {
+    public RedstoneCondition nextThreshold() {
         return withThreshold(threshold >= MAX_SIGNAL ? 0 : threshold + 1);
     }
 }

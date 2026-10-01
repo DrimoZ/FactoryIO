@@ -110,7 +110,7 @@ public class InserterScreen extends AbstractContainerScreen<InserterContainer> {
         this.info = new InserterTabs.Info(this);
         sideTabs.add(this.info);
         if (this.gui.hasAugmentTab()) sideTabs.add(new InserterTabs.Augments(this));
-        sideTabs.add(new InserterTabs.Control(this));
+        sideTabs.add(InserterTabs.control(this));
         sideTabs.add(new InserterTabs.Settings(this));
 
         this.tabs = new SideTabs(sideTabs, InserterGuiLayout.WIDTH, InserterTabs.Augments.ID);

@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.inserters;
 
+import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.generic.block_entity.MenuBlockEntity;
 import com.drimoz.factoryio.core.generic.container.energy.EnergyContainer;
@@ -121,7 +122,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      * <p>Par défaut « actif tant que le signal est sous 1 », c'est-à-dire le comportement
      * historique : un monde existant se recharge inchangé.
      */
-    private InserterRedstoneCondition redstoneCondition = InserterRedstoneCondition.DEFAULT;
+    private RedstoneCondition redstoneCondition = RedstoneCondition.DEFAULT;
 
     /** Copie de la propriété {@code ENABLED}, cf. {@link #setBlockState}. */
     private boolean enabled;
@@ -1463,7 +1464,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      * @return la condition qui s'applique réellement, module d'amélioration compris
      *
      * <p>Sans module de <b>redstone avancé</b>, la condition retombe sur
-     * {@link InserterRedstoneCondition#DEFAULT} : un signal coupe l'inserter, et rien de
+     * {@link RedstoneCondition#DEFAULT} : un signal coupe l'inserter, et rien de
      * plus. Le réglage fin — modes et seuil — est ce que le module déverrouille.
      *
      * <p>La condition réglée par le joueur est <b>conservée</b> pendant ce temps, et non
@@ -1472,16 +1473,16 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      * {@link #getConfiguredRedstoneCondition()} donne cette valeur mémorisée, dont l'écran a
      * besoin pour afficher ce que le joueur a choisi.
      */
-    public InserterRedstoneCondition getRedstoneCondition() {
+    public RedstoneCondition getRedstoneCondition() {
         if (this.upgrades.unlocks(InserterUpgradeType.ADVANCED_REDSTONE, upgradeTuning())) {
             return this.redstoneCondition;
         }
 
-        return InserterRedstoneCondition.DEFAULT;
+        return RedstoneCondition.DEFAULT;
     }
 
     /** @return la condition telle que le joueur l'a réglée, module ou non */
-    public InserterRedstoneCondition getConfiguredRedstoneCondition() {
+    public RedstoneCondition getConfiguredRedstoneCondition() {
         return this.redstoneCondition;
     }
 
@@ -1492,7 +1493,7 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      * condition jusqu'au prochain changement de voisinage — c'est-à-dire, pour un signal
      * stable, indéfiniment.
      */
-    public void setRedstoneCondition(InserterRedstoneCondition condition) {
+    public void setRedstoneCondition(RedstoneCondition condition) {
         if (this.redstoneCondition.equals(condition)) return;
 
         this.redstoneCondition = condition;
@@ -1531,11 +1532,11 @@ public class InserterBlockEntity extends MenuBlockEntity implements GeoBlockEnti
      * soit {@code ALWAYS}, et tous les inserters d'un monde existant cesseraient de
      * répondre à la redstone.
      */
-    private static InserterRedstoneCondition readCondition(CompoundTag tag) {
-        if (!tag.contains("inserterRedstoneMode")) return InserterRedstoneCondition.DEFAULT;
+    private static RedstoneCondition readCondition(CompoundTag tag) {
+        if (!tag.contains("inserterRedstoneMode")) return RedstoneCondition.DEFAULT;
 
-        return new InserterRedstoneCondition(
-                InserterRedstoneCondition.Mode.byOrdinal(tag.getByte("inserterRedstoneMode")),
+        return new RedstoneCondition(
+                RedstoneCondition.Mode.byOrdinal(tag.getByte("inserterRedstoneMode")),
                 tag.getByte("inserterRedstoneThreshold"));
     }
 

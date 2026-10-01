@@ -115,6 +115,19 @@ public abstract class MultiblockBlock extends ModEntityBlock {
 
     // Interface (Redstone)
 
+    /** Le plus fort signal reçu par l'une quelconque des positions du volume, de 0 à 15. */
+    public int bestSignal(Level level, BlockPos master) {
+        BlockState state = level.getBlockState(master);
+        if (!state.is(this)) return level.getBestNeighborSignal(master);
+
+        int best = 0;
+        for (BlockPos position : this.shape.positions(master, state.getValue(FACING))) {
+            best = Math.max(best, level.getBestNeighborSignal(position));
+            if (best >= 15) break;
+        }
+        return best;
+    }
+
     /** Un signal sur n'importe quelle partie compte, pas seulement sur le maître. */
     @Override
     protected boolean shouldBeEnabled(Level level, BlockPos pos) {

@@ -7,6 +7,8 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 
 ### Added
 
+- **Crafter control tab**, the same as the inserters': an on/off switch, and a redstone condition
+  (always, signal below, signal at least a threshold) read from any block of the machine.
 - **Crafters**, Factorio's assembling machines: three tiers (Mk1, Mk2, Mk3) of a 3×3×2 machine
   placed in one go, with an outline showing where it will stand. Pick a recipe from the icon
   selector — tiers above the machine are greyed out — and feed it with inserters from any
