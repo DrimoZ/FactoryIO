@@ -10,6 +10,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.fluids.FluidStack;
 
 import java.util.List;
 
@@ -30,8 +31,13 @@ public record CrafterRecipe(
         ResourceLocation id,
         List<Input> inputs,
         List<Output> outputs,
+        List<FluidInput> fluidInputs,
+        List<FluidStack> fluidOutputs,
         int ticks,
         int minTier) implements Recipe<Container> {
+
+    /** Au plus deux fluides en entrée, deux en sortie (docs/12 §8). */
+    public static final int MAX_FLUIDS = 2;
 
     /** Un ingrédient et la quantité qu'en consomme un craft. */
     public record Input(Ingredient ingredient, int count) {}
@@ -47,6 +53,13 @@ public record CrafterRecipe(
     public CrafterRecipe {
         inputs = List.copyOf(inputs);
         outputs = List.copyOf(outputs);
+        fluidInputs = List.copyOf(fluidInputs);
+        fluidOutputs = List.copyOf(fluidOutputs);
+    }
+
+    /** Une recette sans fluide. */
+    public CrafterRecipe(ResourceLocation id, List<Input> inputs, List<Output> outputs, int ticks, int minTier) {
+        this(id, inputs, outputs, List.of(), List.of(), ticks, minTier);
     }
 
     @Override

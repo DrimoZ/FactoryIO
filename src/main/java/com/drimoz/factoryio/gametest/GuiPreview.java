@@ -136,6 +136,13 @@ public final class GuiPreview {
         step(15, mc -> shot("crafter_modules"));
         step(5, mc -> mc.setScreen(null));
 
+        // Crafter à fluide, plus loin encore.
+        step(10, mc -> command(mc, "tp @s " + ORIGIN.getX() + " " + ORIGIN.getY() + " " + (ORIGIN.getZ() + 18) + " 0 30"));
+        step(40, mc -> use(mc, ORIGIN.offset(3, 0, 21)));
+        step(5, mc -> hover(mc, 0.0, 0.0));
+        step(30, mc -> shot("crafter_fluid"));
+        step(5, mc -> mc.setScreen(null));
+
         step(10, Minecraft::stop);
     }
 

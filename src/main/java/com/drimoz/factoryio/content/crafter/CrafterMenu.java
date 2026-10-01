@@ -7,6 +7,9 @@ import com.drimoz.factoryio.core.generic.container.slots.UpgradeSlot;
 import com.drimoz.factoryio.core.init.ModRegistries;
 import com.drimoz.factoryio.shared.GuiMetrics;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.templates.FluidTank;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -33,16 +36,17 @@ import javax.annotation.Nullable;
  *  │ Crafter Mk2                          ● │  bandeau : titre, voyant d'état
  *  │ ▌ [recette]  Circuit électronique      │  la recette : socle cliquable, nom, temps
  *  │ ▌            0,7 s par craft           │
- *  │ ▌ [e][e][e]           [s][s]           │  le travail : entrées 3×3 ▶ sorties 2×2
- *  │ ▌ [e][e][e]    ▶      [s][s]           │
- *  │ ▌ [e][e][e]                            │
+ *  │ ▌ [e][e][e][f]        [s][s]           │  le travail : entrées 3×3, fluides ▶ sorties 2×2
+ *  │ ▌ [e][e][e][f]   ▶    [s][s]           │
+ *  │ ▌ [e][e][e]           [f][f]           │  fluides de sortie sous les sorties
  *  │ Inventaire                             │
  *  └────────────────────────────────────────┘
  * </pre>
  *
  * <p>Tout s'aligne sur les colonnes de l'inventaire ({@link GuiMetrics#column}) : jauge en
- * colonne 0, recette et entrées en colonnes 1 à 3, sorties en colonnes 7 et 8 — au ras de
- * l'inventaire à droite comme à gauche.
+ * colonne 0, recette et entrées en colonnes 1 à 3, réservoirs d'entrée en colonne 4, sorties en
+ * colonnes 7 et 8 — au ras de l'inventaire à droite comme à gauche. Les réservoirs ne se
+ * dessinent que si la recette a des fluides (FIO-179).
  *
  * <p>La recette choisie arrive avec l'ouverture ; un changement fait depuis l'écran s'y
  * reporte aussitôt, le serveur ayant déjà refusé tout ce que l'écran ne propose pas. Le reste
@@ -62,9 +66,18 @@ public class CrafterMenu extends BaseMenu {
     public static final int WORK_TOP = RECIPE_Y + GuiMetrics.SOCKET + 4;
     public static final int INPUT_X = GuiMetrics.column(1);
     public static final int OUTPUT_X = GuiMetrics.column(7);
-    public static final int OUTPUT_Y = WORK_TOP + GuiMetrics.SLOT / 2;
+    public static final int OUTPUT_Y = WORK_TOP;
 
-    public static final int ARROW_X = (INPUT_X + 3 * GuiMetrics.SLOT + OUTPUT_X - GuiMetrics.ARROW_WIDTH) / 2;
+    /** Réservoirs, en cadres de slot : entrées en colonne 4, sorties sous les sorties d'item. */
+    public static int tankX(int tank) {
+        return tank < CrafterRecipe.MAX_FLUIDS ? GuiMetrics.column(4) : OUTPUT_X + (tank - CrafterRecipe.MAX_FLUIDS) * GuiMetrics.SLOT;
+    }
+
+    public static int tankY(int tank) {
+        return tank < CrafterRecipe.MAX_FLUIDS ? WORK_TOP + tank * GuiMetrics.SLOT : WORK_TOP + 2 * GuiMetrics.SLOT;
+    }
+
+    public static final int ARROW_X = (GuiMetrics.column(5) + OUTPUT_X - GuiMetrics.ARROW_WIDTH) / 2;
     public static final int ARROW_Y = WORK_TOP + (3 * GuiMetrics.SLOT - GuiMetrics.ARROW_HEIGHT) / 2;
 
     public static final int CONTENT_BOTTOM = WORK_TOP + 3 * GuiMetrics.SLOT;
@@ -87,7 +100,9 @@ public class CrafterMenu extends BaseMenu {
     private static final int ENERGY_MULTIPLIER = 15;
     private static final int PRODUCTIVITY = 16;
     private static final int PRODUCTIVITY_PROGRESS = 17;
-    private static final int DATA_COUNT = 18;
+    /** Par réservoir : fluide (indice du registre, +1 ; 0 = vide), quantité, capacité. */
+    private static final int TANKS = 18;
+    private static final int DATA_COUNT = TANKS + 3 * CrafterTanks.TANKS;
 
     /** Slots de module : dans l'onglet « Modules », premier à droite, comme les améliorations d'un inserter. */
     public static int moduleSlotX(int index) {
@@ -174,7 +189,7 @@ public class CrafterMenu extends BaseMenu {
                     case SWITCHED_ON -> blockEntity.isSwitchedOn() ? 1 : 0;
                     case REDSTONE_MODE -> blockEntity.getRedstoneCondition().mode().ordinal();
                     case REDSTONE_THRESHOLD -> blockEntity.getRedstoneCondition().threshold();
-                    default -> 0;
+                    default -> index >= TANKS ? tankData(blockEntity, index - TANKS) : 0;
                 };
             }
 
@@ -185,6 +200,15 @@ public class CrafterMenu extends BaseMenu {
             public int getCount() {
                 return DATA_COUNT;
             }
+        };
+    }
+
+    private static int tankData(CrafterBlockEntity blockEntity, int field) {
+        FluidTank tank = blockEntity.getTank(field / 3);
+        return switch (field % 3) {
+            case 0 -> tank.isEmpty() ? 0 : BuiltInRegistries.FLUID.getId(tank.getFluid().getFluid()) + 1;
+            case 1 -> tank.getFluidAmount();
+            default -> tank.getCapacity();
         };
     }
 
@@ -261,6 +285,18 @@ public class CrafterMenu extends BaseMenu {
 
     public float getProductivityProgress() {
         return this.data.get(PRODUCTIVITY_PROGRESS) / (float) RATIO_SCALE;
+    }
+
+    /** Contenu du réservoir {@code tank}, tel que le serveur l'a envoyé. */
+    public FluidStack getTankFluid(int tank) {
+        int id = this.data.get(TANKS + 3 * tank);
+        int amount = this.data.get(TANKS + 3 * tank + 1) & 0xFFFF;
+        if (id <= 0 || amount <= 0) return FluidStack.EMPTY;
+        return new FluidStack(BuiltInRegistries.FLUID.byId(id - 1), amount);
+    }
+
+    public int getTankCapacity(int tank) {
+        return this.data.get(TANKS + 3 * tank + 2) & 0xFFFF;
     }
 
     public boolean isSwitchedOn() {

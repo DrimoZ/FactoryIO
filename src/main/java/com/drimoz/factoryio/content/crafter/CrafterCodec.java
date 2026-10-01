@@ -20,6 +20,7 @@ import java.util.Optional;
  *   "energyCapacity": 40000,
  *   "inputCrafts": 2,
  *   "moduleSlots": 2,
+ *   "fluidCapacity": 16000,
  *   "translations": { "en_us": "Crafter Mk2", "fr_fr": "Crafter Mk2" }
  * }
  * }</pre>
@@ -34,8 +35,10 @@ public final class CrafterCodec {
     public static final int MAX_ENERGY = 1_000_000;
     public static final int MAX_INPUT_CRAFTS = 64;
     public static final int MAX_MODULE_SLOTS = CrafterBlockEntity.MODULE_SLOTS;
+    /** Un réservoir tient dans les 16 bits d'un {@code ContainerData}. */
+    public static final int MAX_FLUID_CAPACITY = 64_000;
 
-    public static final Crafter.Tuning DEFAULT_TUNING = new Crafter.Tuning(1.0F, 50, 20_000, 2);
+    public static final Crafter.Tuning DEFAULT_TUNING = new Crafter.Tuning(1.0F, 50, 20_000, 2, 8_000);
 
     private static final Codec<Float> SPEED = Codec.FLOAT.flatXmap(
             speed -> speed > 0.0F && speed <= MAX_SPEED
@@ -58,6 +61,7 @@ public final class CrafterCodec {
             int energyPerTick,
             int energyCapacity,
             int inputCrafts,
+            int fluidCapacity,
             Optional<Map<String, String>> translations) {
 
         private static final Codec<Fields> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -70,13 +74,15 @@ public final class CrafterCodec {
                         .forGetter(Fields::energyCapacity),
                 StrictCodecs.optional(Codec.intRange(1, MAX_INPUT_CRAFTS), "inputCrafts", DEFAULT_TUNING.inputCrafts())
                         .forGetter(Fields::inputCrafts),
+                StrictCodecs.optional(Codec.intRange(1_000, MAX_FLUID_CAPACITY), "fluidCapacity", DEFAULT_TUNING.fluidCapacity())
+                        .forGetter(Fields::fluidCapacity),
                 StrictCodecs.optional(Codec.unboundedMap(Codec.STRING, Codec.STRING), "translations")
                         .forGetter(Fields::translations)
         ).apply(instance, Fields::new));
 
         private Crafter toCrafter(ResourceLocation id) {
             Crafter crafter = new Crafter(id, this.tier, this.moduleSlots,
-                    new Crafter.Tuning(this.craftingSpeed, this.energyPerTick, this.energyCapacity, this.inputCrafts));
+                    new Crafter.Tuning(this.craftingSpeed, this.energyPerTick, this.energyCapacity, this.inputCrafts, this.fluidCapacity));
             this.translations.ifPresent(map -> map.forEach(crafter.getTranslation()::addTranslation));
             return crafter;
         }
@@ -84,7 +90,7 @@ public final class CrafterCodec {
         private static Fields of(Crafter crafter) {
             Crafter.Tuning tuning = crafter.getTuning();
             return new Fields(crafter.getTier(), crafter.getModuleSlots(), tuning.craftingSpeed(), tuning.energyPerTick(),
-                    tuning.energyCapacity(), tuning.inputCrafts(), Optional.empty());
+                    tuning.energyCapacity(), tuning.inputCrafts(), tuning.fluidCapacity(), Optional.empty());
         }
     }
 }

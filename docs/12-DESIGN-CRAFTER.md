@@ -124,7 +124,9 @@ Un `RecipeType` et un `RecipeSerializer` propres, chargés par datapack.
 | `results` | 1 à 4, `count` 1 à 64 | `chance` optionnel, `0 < p ≤ 1`, défaut 1 |
 | `time` | `> 0`, en secondes | converti en ticks |
 | `minTier` | `≥ 1`, optionnel, défaut 1 | voir §4.3 |
-| `fluid*` | **refusé** | les fluides viendront plus tard (§8) ; un champ ignoré serait une coercition silencieuse |
+| `fluidIngredients` | 0 à 2, `{ "fluid" | "tag", "amount" }`, 1 à 32 000 mB | exactement l'un de `fluid` ou `tag` (FIO-179) |
+| `fluidResults` | 0 à 2, `{ "fluid", "amount" }` | |
+| autre `fluid…` | **refusé** | une faute de frappe ne doit pas donner une recette sans son fluide |
 
 Codec borné qui refuse et journalise, selon [`09`](09-CONVENTIONS.md) §3.
 
@@ -247,6 +249,27 @@ les paliers changent surtout vitesse et consommation. Le temps réel d'un craft 
 - Une sauvegarde d'avant les modules (13 slots) se recharge à 17 : la taille enregistrée ne
   fait pas foi, sans quoi le premier accès à un slot de module plantait le serveur.
 
+### 4.4 ter Fluides (FIO-179)
+
+- **Quatre réservoirs** (`CrafterTanks`) : deux d'entrée, deux de sortie. Comme les slots
+  d'item, l'entrée `i` n'accepte que le fluide `i` de la recette, et au plus `inputCrafts`
+  crafts d'avance ; la sortie a la capacité `fluidCapacity` de la définition (8 000, 16 000,
+  32 000 mB), réglable par datapack, jamais moins de deux crafts.
+- **Capability `FLUID_HANDLER`** sur les 18 blocs, par la même délégation que les items :
+  on remplit les entrées, on vide les sorties. Les tuyaux d'autres mods s'y branchent.
+- **Seau** : clic sur un réservoir avec un seau plein pour le verser (entrées), avec un seau
+  vide pour le remplir (`C2SCrafterFluid`, six validations). Sans tuyau dans le mod, c'est
+  ce qui rend les fluides jouables seuls.
+- **Écran** : les réservoirs n'apparaissent que si la recette a des fluides — entrées en
+  colonne 4 à côté des slots, sorties sous les sorties d'item. Vide, un réservoir d'entrée
+  montre le fluide attendu, voilé. Synchronisés par `ContainerData` (fluide, quantité,
+  capacité), sans paquet de plus.
+- **Productivité** : le craft bonus double aussi les fluides produits, place réservée.
+- **Perte assumée** : casser la machine perd ses fluides (comme vanilla), et changer de recette
+  vide un réservoir d'entrée dont le fluide ne sert plus — un fluide ne se rend pas au joueur.
+- **Contenu** : le mod ne livre aucun fluide, donc aucune recette à fluide ; l'acide du
+  processeur reste la poudre à canon. Un datapack peut en écrire dès maintenant.
+
 ### 4.5 État visuel et synchronisation
 
 - `WORKING` dans le `BlockState` du maître, **avec hystérésis** (20 ticks) : il ne retombe
@@ -347,7 +370,6 @@ directement dans la cible ; l'existant n'est pas déplacé en passant.
 
 | Sujet | Décision déjà prise | Ticket |
 |---|---|---|
-| Fluides | ≤ 2 en entrée, ≤ 2 en sortie ; réservoirs dans la définition ; capability sur les 18 blocs ; seau cliquable sur la jauge du GUI | FIO-179 |
 | Configurateur | `ConfiguratorItem` générique : `CompoundTag` brut + type de machine | FIO-180 |
 | Jade / The One Probe | — | FIO-151 |
 | Sons | — | FIO-153 |

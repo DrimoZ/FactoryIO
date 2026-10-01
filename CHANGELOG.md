@@ -7,6 +7,9 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 
 ### Added
 
+- **Fluids in crafter recipes**: up to two fluid ingredients and two fluid results
+  (`fluidIngredients`, `fluidResults`). Pipes from other mods connect to any block of the machine;
+  without pipes, click a tank with a bucket to pour or fill it. No shipped recipe uses fluids yet.
 - **Modules in crafters**: Mk2 has 2 slots, Mk3 has 4. Speed, productivity and efficiency modules
   work as in Factorio; productivity fills a bar and gives a free craft every 100%.
 - **Crafter control tab**, the same as the inserters': an on/off switch, and a redstone condition

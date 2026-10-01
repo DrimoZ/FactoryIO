@@ -17,6 +17,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
@@ -70,6 +72,38 @@ public class CrafterRecipeGameTests {
                 && received.outputs().get(1).chance() == 0.1F
                 && ItemStack.matches(received.outputs().get(0).stack(), recipe.outputs().get(0).stack()),
                 "La recette reçue par le client diffère");
+        helper.succeed();
+    }
+
+    /** Fluides en entrée (fluide ou tag) et en sortie, lus et transmis au client (FIO-179). */
+    @GameTest(template = TEMPLATE)
+    public static void fluidsAreReadAndSurviveTheNetwork(GameTestHelper helper) {
+        String json = VALID.replace("\"minTier\": 2", "\"minTier\": 2, "
+                + "\"fluidIngredients\": [ { \"tag\": \"minecraft:water\", \"amount\": 500 }, { \"fluid\": \"minecraft:lava\", \"amount\": 250 } ], "
+                + "\"fluidResults\": [ { \"fluid\": \"minecraft:water\", \"amount\": 100 } ]");
+        CrafterRecipe recipe = CrafterRecipes.SERIALIZER.get().fromJson(ID, json(json));
+
+        helper.assertTrue(recipe.fluidInputs().size() == 2 && recipe.fluidInputs().get(0).tag() != null
+                && recipe.fluidInputs().get(1).fluid() == Fluids.LAVA && recipe.fluidOutputs().get(0).getAmount() == 100,
+                "Fluides mal lus");
+        helper.assertTrue(recipe.fluidInputs().get(0).representative() == Fluids.WATER, "Le tag d'eau ne donne pas l'eau source");
+
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        CrafterRecipes.SERIALIZER.get().toNetwork(buf, recipe);
+        CrafterRecipe received = CrafterRecipes.SERIALIZER.get().fromNetwork(ID, buf);
+        helper.assertTrue(received != null && received.fluidInputs().get(1).amount() == 250
+                && received.fluidInputs().get(0).test(new FluidStack(Fluids.WATER, 1))
+                && received.fluidOutputs().get(0).getFluid() == Fluids.WATER, "Les fluides reçus par le client diffèrent");
+
+        for (String broken : List.of("{ \"amount\": 500 }", "{ \"fluid\": \"minecraft:water\", \"tag\": \"minecraft:water\", \"amount\": 5 }",
+                "{ \"fluid\": \"minecraft:water\", \"amount\": 0 }", "{ \"fluid\": \"minecraft:empty\", \"amount\": 5 }")) {
+            try {
+                CrafterRecipes.SERIALIZER.get().fromJson(ID, json(VALID.replace("\"minTier\": 2", "\"minTier\": 2, \"fluidIngredients\": [ " + broken + " ]")));
+                helper.fail("Ingrédient fluide accepté à tort : " + broken);
+            } catch (JsonParseException | IllegalArgumentException expected) {
+                // Refusé, comme il se doit.
+            }
+        }
         helper.succeed();
     }
 

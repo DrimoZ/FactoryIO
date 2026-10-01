@@ -16,6 +16,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraftforge.fluids.FluidStack;
+import java.util.Optional;
 import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -32,6 +37,8 @@ import java.util.List;
  *   "ingredients": [ { "ingredient": { "tag": "forge:circuits/basic" }, "count": 20 } ],
  *   "results": [ { "item": "factor_io:processing_unit" },
  *                { "item": "minecraft:glowstone_dust", "chance": 0.1 } ],
+ *   "fluidIngredients": [ { "tag": "forge:water", "amount": 500 } ],
+ *   "fluidResults": [ { "fluid": "minecraft:lava", "amount": 100 } ],
  *   "time": 10.0,
  *   "minTier": 2
  * }
@@ -39,8 +46,8 @@ import java.util.List;
  *
  * <p>Codec borné : une valeur hors bornes fait échouer la lecture avec un message qui la
  * nomme, et {@code RecipeManager} journalise l'échec — jamais de valeur ramenée en silence.
- * Un champ {@code fluid…} est refusé pour la même raison : l'ignorer donnerait une recette
- * sans son fluide (docs/12 §3.1, FIO-179).
+ * Tout autre champ {@code fluid…} est refusé pour la même raison : une faute de frappe ne doit
+ * pas donner une recette sans son fluide.
  */
 public class CrafterRecipeSerializer implements RecipeSerializer<CrafterRecipe> {
 
@@ -50,6 +57,8 @@ public class CrafterRecipeSerializer implements RecipeSerializer<CrafterRecipe> 
     /** Une heure : au-delà, c'est une faute de frappe, pas un réglage. */
     public static final float MAX_TIME = 3600.0F;
     public static final int MAX_TIER = 16;
+    /** En millibuckets : deux crafts d'avance tiennent dans un réservoir de 64 000. */
+    public static final int MAX_FLUID_AMOUNT = 32_000;
 
     private static final Codec<Ingredient> INGREDIENT = Codec.PASSTHROUGH.comapFlatMap(
             dynamic -> {
@@ -89,23 +98,57 @@ public class CrafterRecipeSerializer implements RecipeSerializer<CrafterRecipe> 
             StrictCodecs.optional(CHANCE, "chance", 1.0F).forGetter(CrafterRecipe.Output::chance)
     ).apply(instance, (item, count, chance) -> new CrafterRecipe.Output(new ItemStack(item, count), chance)));
 
-    private record Fields(List<CrafterRecipe.Input> inputs, List<CrafterRecipe.Output> outputs, float time, int minTier) {
+    private static final Codec<Fluid> FLUID = ForgeRegistries.FLUIDS.getCodec().flatXmap(
+            fluid -> fluid == Fluids.EMPTY ? DataResult.error(() -> "fluide vide ou inconnu") : DataResult.success(fluid),
+            DataResult::success);
+
+    private static final Codec<Integer> FLUID_AMOUNT = Codec.intRange(1, MAX_FLUID_AMOUNT);
+
+    /** Un fluide précis ({@code "fluid"}) ou un tag ({@code "tag"}), pas les deux. */
+    private static final Codec<FluidInput> FLUID_INPUT = RecordCodecBuilder.<FluidInputFields>create(instance -> instance.group(
+            StrictCodecs.optional(FLUID, "fluid").forGetter(FluidInputFields::fluid),
+            StrictCodecs.optional(ResourceLocation.CODEC, "tag").forGetter(FluidInputFields::tag),
+            FLUID_AMOUNT.fieldOf("amount").forGetter(FluidInputFields::amount)
+    ).apply(instance, FluidInputFields::new)).flatXmap(
+            fields -> fields.fluid().isPresent() == fields.tag().isPresent()
+                    ? DataResult.error(() -> "un ingrédient fluide a « fluid » ou « tag », exactement l'un des deux")
+                    : DataResult.success(new FluidInput(fields.fluid().orElse(null),
+                            fields.tag().map(tag -> TagKey.create(ForgeRegistries.Keys.FLUIDS, tag)).orElse(null),
+                            fields.amount())),
+            input -> DataResult.success(new FluidInputFields(Optional.ofNullable(input.fluid()),
+                    Optional.ofNullable(input.tag()).map(TagKey::location), input.amount())));
+
+    private record FluidInputFields(Optional<Fluid> fluid, Optional<ResourceLocation> tag, int amount) {}
+
+    private static final Codec<FluidStack> FLUID_OUTPUT = RecordCodecBuilder.create(instance -> instance.group(
+            FLUID.fieldOf("fluid").forGetter(FluidStack::getFluid),
+            FLUID_AMOUNT.fieldOf("amount").forGetter(FluidStack::getAmount)
+    ).apply(instance, FluidStack::new));
+
+    private record Fields(List<CrafterRecipe.Input> inputs, List<CrafterRecipe.Output> outputs,
+                          List<FluidInput> fluidInputs, List<FluidStack> fluidOutputs, float time, int minTier) {
 
         private static final Codec<Fields> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 sized(INPUT, MAX_INPUTS, "ingredients").fieldOf("ingredients").forGetter(Fields::inputs),
                 sized(OUTPUT, MAX_OUTPUTS, "results").fieldOf("results").forGetter(Fields::outputs),
+                StrictCodecs.optional(sized(FLUID_INPUT, CrafterRecipe.MAX_FLUIDS, "fluidIngredients"), "fluidIngredients", List.of())
+                        .forGetter(Fields::fluidInputs),
+                StrictCodecs.optional(sized(FLUID_OUTPUT, CrafterRecipe.MAX_FLUIDS, "fluidResults"), "fluidResults", List.of())
+                        .forGetter(Fields::fluidOutputs),
                 TIME.fieldOf("time").forGetter(Fields::time),
                 StrictCodecs.optional(Codec.intRange(1, MAX_TIER), "minTier", 1).forGetter(Fields::minTier)
         ).apply(instance, Fields::new));
     }
+
+    private static final java.util.Set<String> FLUID_KEYS = java.util.Set.of("fluidIngredients", "fluidResults");
 
     // Interface (Datapack)
 
     @Override
     public CrafterRecipe fromJson(ResourceLocation id, JsonObject json) {
         for (String key : json.keySet()) {
-            if (key.startsWith("fluid")) {
-                throw new JsonSyntaxException("« " + key + " » : les fluides ne sont pas encore pris en charge par le crafter");
+            if (key.startsWith("fluid") && !FLUID_KEYS.contains(key)) {
+                throw new JsonSyntaxException("« " + key + " » : champ inconnu, attendu « fluidIngredients » ou « fluidResults »");
             }
         }
 
@@ -115,7 +158,8 @@ public class CrafterRecipeSerializer implements RecipeSerializer<CrafterRecipe> 
         Fields fields = result.result().orElseThrow(() -> new JsonSyntaxException(
                 result.error().map(DataResult.PartialResult::message).orElse("recette illisible")));
 
-        return new CrafterRecipe(id, fields.inputs(), fields.outputs(), toTicks(fields.time()), fields.minTier());
+        return new CrafterRecipe(id, fields.inputs(), fields.outputs(), fields.fluidInputs(), fields.fluidOutputs(),
+                toTicks(fields.time()), fields.minTier());
     }
 
     /** Arrondi au tick, jamais moins d'un tick. */
@@ -139,7 +183,15 @@ public class CrafterRecipeSerializer implements RecipeSerializer<CrafterRecipe> 
             outputs.add(new CrafterRecipe.Output(buf.readItem(), buf.readFloat()));
         }
 
-        return new CrafterRecipe(id, inputs, outputs, buf.readVarInt(), buf.readVarInt());
+        int fluidInputCount = buf.readVarInt();
+        List<FluidInput> fluidInputs = new ArrayList<>(fluidInputCount);
+        for (int i = 0; i < fluidInputCount; i++) fluidInputs.add(FluidInput.fromNetwork(buf));
+
+        int fluidOutputCount = buf.readVarInt();
+        List<FluidStack> fluidOutputs = new ArrayList<>(fluidOutputCount);
+        for (int i = 0; i < fluidOutputCount; i++) fluidOutputs.add(FluidStack.readFromPacket(buf));
+
+        return new CrafterRecipe(id, inputs, outputs, fluidInputs, fluidOutputs, buf.readVarInt(), buf.readVarInt());
     }
 
     @Override
@@ -155,6 +207,12 @@ public class CrafterRecipeSerializer implements RecipeSerializer<CrafterRecipe> 
             buf.writeItem(output.stack());
             buf.writeFloat(output.chance());
         }
+
+        buf.writeVarInt(recipe.fluidInputs().size());
+        for (FluidInput input : recipe.fluidInputs()) input.toNetwork(buf);
+
+        buf.writeVarInt(recipe.fluidOutputs().size());
+        for (FluidStack output : recipe.fluidOutputs()) output.writeToPacket(buf);
 
         buf.writeVarInt(recipe.ticks());
         buf.writeVarInt(recipe.minTier());

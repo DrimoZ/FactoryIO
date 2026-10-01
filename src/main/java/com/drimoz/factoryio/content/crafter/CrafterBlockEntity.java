@@ -23,6 +23,7 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
@@ -149,7 +150,11 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     /** Reçoit, ne rend jamais : aucun voisin ne doit pouvoir siphonner la machine. */
     private final EnergyContainer energy = new EnergyContainer(1, Integer.MAX_VALUE, 0);
 
+    /** Deux réservoirs d'entrée, deux de sortie (FIO-179). */
+    private final CrafterTanks tanks = new CrafterTanks(this::setChanged);
+
     private LazyOptional<IItemHandler> lazyItems = LazyOptional.of(() -> this.external);
+    private LazyOptional<IFluidHandler> lazyFluids = LazyOptional.of(() -> this.tanks.external);
     private LazyOptional<IEnergyStorage> lazyEnergy = LazyOptional.of(() -> this.energy);
 
     @Nullable private ResourceLocation recipeId;
@@ -200,6 +205,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
             this.energy.overrideEnergyCapacity(tuning.energyCapacity());
         }
 
+        this.tanks.configure(resolveRecipe(level), tuning);
         this.status = work(level, state, tuning);
         boolean worked = this.status == Status.WORKING;
 
@@ -258,6 +264,8 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     private boolean hasInputs(CrafterRecipe recipe) {
+        if (!this.tanks.hasInputs(recipe)) return false;
+
         List<CrafterRecipe.Input> inputs = recipe.inputs();
         for (int i = 0; i < inputs.size(); i++) {
             ItemStack stack = this.items.getStackInSlot(i);
@@ -283,12 +291,13 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
 
         List<ItemStack> remainders = remainders(recipe);
         produced.addAll(remainders);
-        if (!fits(produced)) return false;
+        int sets = bonus ? 2 : 1;
+        if (!fits(produced) || !this.tanks.fits(recipe, sets)) return false;
 
         for (int i = 0; i < recipe.inputs().size(); i++) {
             this.items.extractItem(i, recipe.inputs().get(i).count(), false);
         }
-        int sets = bonus ? 2 : 1;
+        this.tanks.craft(recipe, sets);
         for (int set = 0; set < sets; set++) {
             for (CrafterRecipe.Output output : recipe.outputs()) {
                 if (output.isCertain() || level.random.nextFloat() < output.chance()) addOutput(output.stack().copy());
@@ -404,6 +413,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         // Résolue tout de suite : les entrées filtrent dès maintenant sur la nouvelle recette.
         this.recipeId = id;
         this.recipe = candidate;
+        this.tanks.onRecipeChanged(candidate, getCrafter().getTuning());
         this.resolvedGeneration = CrafterRecipes.generation();
         this.progress = 0.0F;
         this.outputBlocked = false;
@@ -486,6 +496,11 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         return this.craftsCompleted;
     }
 
+    /** Réservoir {@code index} : 0 et 1 en entrée, 2 et 3 en sortie. */
+    public net.minecraftforge.fluids.capability.templates.FluidTank getTank(int index) {
+        return this.tanks.tank(index);
+    }
+
     public CrafterModules getModules() {
         return this.modules;
     }
@@ -561,6 +576,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
     public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
         if (cap == ForgeCapabilities.ITEM_HANDLER) return this.lazyItems.cast();
         if (cap == ForgeCapabilities.ENERGY) return this.lazyEnergy.cast();
+        if (cap == ForgeCapabilities.FLUID_HANDLER) return this.lazyFluids.cast();
         return super.getCapability(cap, side);
     }
 
@@ -569,6 +585,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         super.invalidateCaps();
         this.lazyItems.invalidate();
         this.lazyEnergy.invalidate();
+        this.lazyFluids.invalidate();
     }
 
     @Override
@@ -576,6 +593,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         super.reviveCaps();
         this.lazyItems = LazyOptional.of(() -> this.external);
         this.lazyEnergy = LazyOptional.of(() -> this.energy);
+        this.lazyFluids = LazyOptional.of(() -> this.tanks.external);
     }
 
     // Persistance
@@ -589,6 +607,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         if (this.recipeId != null) tag.putString("recipe", this.recipeId.toString());
         tag.putBoolean("switchedOn", this.switchedOn);
         tag.putFloat("productivity", this.productivityProgress);
+        tag.put("tanks", this.tanks.save());
         tag.putByte("redstoneMode", (byte) this.redstoneCondition.mode().ordinal());
         tag.putByte("redstoneThreshold", (byte) this.redstoneCondition.threshold());
     }
@@ -605,6 +624,7 @@ public class CrafterBlockEntity extends BlockEntity implements MenuProvider {
         // contains et non getBoolean : une machine posée avant FIO-183 reste allumée.
         this.switchedOn = !tag.contains("switchedOn") || tag.getBoolean("switchedOn");
         this.productivityProgress = tag.getFloat("productivity");
+        this.tanks.load(tag.getCompound("tanks"));
         this.modules = readModules();
         this.redstoneCondition = tag.contains("redstoneMode")
                 ? new RedstoneCondition(RedstoneCondition.Mode.byOrdinal(tag.getByte("redstoneMode")), tag.getByte("redstoneThreshold"))

@@ -10,6 +10,9 @@ import com.drimoz.factoryio.content.crafter.CrafterBlock;
 import com.drimoz.factoryio.content.crafter.CrafterBlockEntity;
 import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import com.drimoz.factoryio.core.network.packet.C2SCrafterSetting;
+import com.drimoz.factoryio.core.network.packet.C2SCrafterFluid;
+import com.drimoz.factoryio.content.crafter.FluidInput;
+import net.minecraftforge.fluids.FluidStack;
 import com.drimoz.factoryio.content.crafter.CrafterMenu;
 import com.drimoz.factoryio.content.crafter.CrafterRecipe;
 import com.drimoz.factoryio.content.crafter.CrafterRecipes;
@@ -198,6 +201,7 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
         CrafterRecipe recipe = selectedRecipe();
         renderRecipeBand(graphics, left, top, recipe, mouseX, mouseY);
         renderSlots(graphics, left, top, recipe);
+        renderTanks(graphics, left, top, recipe);
         GuiSprites.arrow(graphics, left + CrafterMenu.ARROW_X, top + CrafterMenu.ARROW_Y, this.menu.getProgress());
 
         this.tabs.renderForegrounds(graphics, this.font, mouseX, mouseY);
@@ -285,6 +289,68 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
         }
     }
 
+    /**
+     * Les réservoirs que la recette utilise, et ceux qui contiennent encore quelque chose. Un
+     * réservoir d'entrée vide montre le fluide attendu, voilé.
+     */
+    private void renderTanks(GuiGraphics graphics, int left, int top, @Nullable CrafterRecipe recipe) {
+        for (int tank = 0; tank < 2 * CrafterRecipe.MAX_FLUIDS; tank++) {
+            if (!isTankShown(tank, recipe)) continue;
+
+            FluidStack held = this.menu.getTankFluid(tank);
+            int x = left + CrafterMenu.tankX(tank);
+            int y = top + CrafterMenu.tankY(tank);
+            if (!held.isEmpty()) {
+                GuiSprites.tank(graphics, x, y, held, this.menu.getTankCapacity(tank), false);
+            } else {
+                GuiSprites.tank(graphics, x, y, expectedFluid(tank, recipe), 1, true);
+            }
+        }
+    }
+
+    private boolean isTankShown(int tank, @Nullable CrafterRecipe recipe) {
+        if (!this.menu.getTankFluid(tank).isEmpty()) return true;
+        if (recipe == null) return false;
+        return tank < CrafterRecipe.MAX_FLUIDS
+                ? tank < recipe.fluidInputs().size()
+                : tank - CrafterRecipe.MAX_FLUIDS < recipe.fluidOutputs().size();
+    }
+
+    private static FluidStack expectedFluid(int tank, @Nullable CrafterRecipe recipe) {
+        if (recipe == null) return FluidStack.EMPTY;
+        if (tank < CrafterRecipe.MAX_FLUIDS) {
+            if (tank >= recipe.fluidInputs().size()) return FluidStack.EMPTY;
+            FluidInput input = recipe.fluidInputs().get(tank);
+            return new FluidStack(input.representative(), input.amount());
+        }
+        int output = tank - CrafterRecipe.MAX_FLUIDS;
+        return output < recipe.fluidOutputs().size() ? recipe.fluidOutputs().get(output) : FluidStack.EMPTY;
+    }
+
+    /** Le réservoir sous le curseur, ou -1. */
+    private int tankAt(double mouseX, double mouseY) {
+        CrafterRecipe recipe = selectedRecipe();
+        for (int tank = 0; tank < 2 * CrafterRecipe.MAX_FLUIDS; tank++) {
+            if (isTankShown(tank, recipe)
+                    && isOver(mouseX, mouseY, CrafterMenu.tankX(tank), CrafterMenu.tankY(tank), GuiMetrics.SLOT, GuiMetrics.SLOT)) {
+                return tank;
+            }
+        }
+        return -1;
+    }
+
+    private List<Component> tankTooltip(int tank) {
+        List<Component> lines = new ArrayList<>();
+        FluidStack held = this.menu.getTankFluid(tank);
+        FluidStack shown = held.isEmpty() ? expectedFluid(tank, selectedRecipe()) : held;
+        if (!shown.isEmpty()) lines.add(RecipePicker.plain(shown.getDisplayName()));
+        lines.add(ModUtils.tooltipComponent("crafter_tank_amount", held.getAmount(), this.menu.getTankCapacity(tank))
+                .withStyle(ChatFormatting.GRAY));
+        lines.add(ModUtils.tooltipComponent(tank < CrafterRecipe.MAX_FLUIDS ? "crafter_tank_input_help" : "crafter_tank_output_help")
+                .withStyle(ChatFormatting.DARK_GRAY));
+        return lines;
+    }
+
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         GuiTheme.text(graphics, this.font, this.title, this.titleLabelX, this.titleLabelY);
@@ -307,6 +373,8 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
             lines.add(CrafterStatus.of(this.menu.getStatus()).text());
         } else if (lines.isEmpty() && isOver(mouseX, mouseY, CrafterMenu.ARROW_X, CrafterMenu.ARROW_Y, GuiMetrics.ARROW_WIDTH, GuiMetrics.ARROW_HEIGHT)) {
             lines.add(ModUtils.tooltipComponent("crafter_progress", Math.round(this.menu.getProgress() * 100)));
+        } else if (lines.isEmpty() && tankAt(mouseX, mouseY) >= 0) {
+            lines.addAll(tankTooltip(tankAt(mouseX, mouseY)));
         } else if (lines.isEmpty() && this.hoveredSlot != null && !this.hoveredSlot.hasItem()) {
             lines.addAll(expectedAt(this.hoveredSlot));
         }
@@ -344,6 +412,16 @@ public class CrafterScreen extends AbstractContainerScreen<CrafterMenu> {
             return true;
         }
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && this.tabs.mouseClicked(mouseX, mouseY, button)) return true;
+
+        // Un récipient au curseur sur un réservoir : le serveur remplit ou vide, il fait autorité.
+        int tank = tankAt(mouseX, mouseY);
+        if (tank >= 0) {
+            CrafterBlockEntity blockEntity = this.menu.getBlockEntity();
+            if (blockEntity != null && !this.menu.getCarried().isEmpty()) {
+                ModNetworks.sendToServer(new C2SCrafterFluid(blockEntity.getBlockPos(), tank));
+            }
+            return true;
+        }
 
         return super.mouseClicked(mouseX, mouseY, button);
     }

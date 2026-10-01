@@ -6,6 +6,11 @@ import com.drimoz.factoryio.content.crafter.CrafterBlock;
 import com.drimoz.factoryio.content.crafter.CrafterBlockEntity;
 import com.drimoz.factoryio.content.crafter.CrafterMenu;
 import com.drimoz.factoryio.core.network.packet.C2SCrafterRecipe;
+import com.drimoz.factoryio.core.network.packet.C2SCrafterFluid;
+import com.drimoz.factoryio.content.crafter.FluidInput;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.IFluidHandler;
 import com.drimoz.factoryio.core.network.packet.C2SCrafterSetting;
 import com.drimoz.factoryio.core.generic.block.RedstoneCondition;
 import net.minecraft.server.level.ServerPlayer;
@@ -306,6 +311,81 @@ public class CrafterGameTests {
             if (stack.is(Items.STONE)) total += stack.getCount();
         }
         return total;
+    }
+
+    // Tests (Fluides, FIO-179)
+
+    /** 500 mB d'eau et un pavé → une pierre et 100 mB de lave ; l'eau arrive par une partie. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void aFluidRecipeCraftsThroughAPart(GameTestHelper helper) {
+        CrafterRecipe recipe = fluidRecipe(helper, "fluid");
+        CrafterBlockEntity crafter = place(helper, "crafter_mk3");
+        crafter.selectRecipe(recipe.getId(), null);
+        helper.setBlock(MASTER.offset(0, 2, 0), ModBlocks.CREATIVE_ENERGY_SOURCE.get());
+
+        IFluidHandler fluids = helper.getBlockEntity(EAST_PART).getCapability(ForgeCapabilities.FLUID_HANDLER, Direction.EAST)
+                .orElseThrow(() -> new IllegalStateException("La partie ne délègue pas les fluides"));
+        helper.assertTrue(fluids.fill(new FluidStack(Fluids.LAVA, 1000), IFluidHandler.FluidAction.EXECUTE) == 0,
+                "Un fluide étranger à la recette est entré");
+        int filled = fluids.fill(new FluidStack(Fluids.WATER, 5000), IFluidHandler.FluidAction.EXECUTE);
+        helper.assertTrue(filled == 1000, "Le plafond de deux crafts d'avance devrait laisser entrer 1000 mB, pas " + filled);
+        handler(helper, WEST_PART).insertItem(0, new ItemStack(Items.COBBLESTONE, 1), false);
+
+        helper.succeedWhen(() -> {
+            helper.assertTrue(crafter.getTank(2).getFluid().getFluid() == Fluids.LAVA
+                    && crafter.getTank(2).getFluidAmount() == 100, "Lave produite : " + crafter.getTank(2).getFluidAmount());
+            helper.assertTrue(crafter.getTank(0).getFluidAmount() == 500, "Eau restante : " + crafter.getTank(0).getFluidAmount());
+            FluidStack drained = fluids.drain(1000, IFluidHandler.FluidAction.SIMULATE);
+            helper.assertTrue(drained.getFluid() == Fluids.LAVA && drained.getAmount() == 100, "La lave ne sort pas par la partie");
+        });
+    }
+
+    /** Un seau d'eau se verse dans l'entrée ; un seau vide se remplit à la sortie. */
+    @GameTest(template = TEMPLATE)
+    public static void bucketsFillAndEmptyTheTanks(GameTestHelper helper) {
+        CrafterRecipe recipe = fluidRecipe(helper, "bucket");
+        CrafterBlockEntity crafter = place(helper, "crafter_mk3");
+        crafter.selectRecipe(recipe.getId(), null);
+        crafter.getTank(2).setCapacity(32_000);
+        crafter.getTank(2).setFluid(new FluidStack(Fluids.LAVA, 1000));
+
+        ServerPlayer player = openedBy(helper, crafter);
+        player.containerMenu.setCarried(new ItemStack(Items.WATER_BUCKET));
+        helper.assertTrue(C2SCrafterFluid.apply(player, crafter.getBlockPos(), 0), "Le seau d'eau est refusé");
+        helper.assertTrue(crafter.getTank(0).getFluidAmount() == 1000, "Eau versée : " + crafter.getTank(0).getFluidAmount());
+        helper.assertTrue(player.containerMenu.getCarried().is(Items.BUCKET), "Le seau n'est pas rendu vide");
+
+        helper.assertTrue(C2SCrafterFluid.apply(player, crafter.getBlockPos(), 2), "Le seau vide est refusé à la sortie");
+        helper.assertTrue(player.containerMenu.getCarried().is(Items.LAVA_BUCKET), "Le seau ne s'est pas rempli de lave");
+        helper.assertTrue(crafter.getTank(2).isEmpty(), "La sortie n'a pas été vidée");
+        helper.succeed();
+    }
+
+    /** Le contenu des réservoirs survit à une sauvegarde. */
+    @GameTest(template = TEMPLATE)
+    public static void tanksSurviveSaveAndLoad(GameTestHelper helper) {
+        CrafterRecipe recipe = fluidRecipe(helper, "saved_tanks");
+        CrafterBlockEntity crafter = place(helper, "crafter_mk3");
+        crafter.selectRecipe(recipe.getId(), null);
+        crafter.getTank(0).fill(new FluidStack(Fluids.WATER, 700), IFluidHandler.FluidAction.EXECUTE);
+
+        CrafterBlockEntity copy = new CrafterBlockEntity(crafter.getBlockPos(), crafter.getBlockState());
+        copy.load(crafter.saveWithoutMetadata());
+
+        helper.assertTrue(copy.getTank(0).getFluid().getFluid() == Fluids.WATER && copy.getTank(0).getFluidAmount() == 700,
+                "Réservoir perdu : " + copy.getTank(0).getFluid().getAmount());
+        helper.succeed();
+    }
+
+    private static CrafterRecipe fluidRecipe(GameTestHelper helper, String name) {
+        CrafterRecipe recipe = new CrafterRecipe(new ResourceLocation(FactoryIO.MOD_ID, "test/" + name),
+                List.of(new CrafterRecipe.Input(Ingredient.of(Items.COBBLESTONE), 1)),
+                List.of(new CrafterRecipe.Output(new ItemStack(Items.STONE), 1.0F)),
+                List.of(new FluidInput(Fluids.WATER, null, 500)),
+                List.of(new FluidStack(Fluids.LAVA, 100)),
+                20, 1);
+        add(helper, recipe);
+        return recipe;
     }
 
     // Tests (Contrôle, FIO-183)
