@@ -15,6 +15,8 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import com.drimoz.factoryio.content.crafter.FluidInput;
+import net.minecraftforge.fluids.FluidStack;
 import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nullable;
@@ -278,9 +280,19 @@ final class RecipePicker {
             lines.add(line);
         }
 
+        for (FluidStack output : recipe.fluidOutputs()) {
+            lines.add(Component.literal("  ").append(ModUtils.tooltipComponent("crafter_fluid_amount",
+                    output.getAmount(), plain(output.getDisplayName()))).withStyle(ChatFormatting.GREEN));
+        }
+
         lines.add(ModUtils.tooltipComponent("crafter_consumes").withStyle(ChatFormatting.GRAY));
         for (CrafterRecipe.Input input : recipe.inputs()) {
             lines.add(Component.literal("  " + input.count() + " × ").append(plain(firstItem(input)))
+                    .withStyle(ChatFormatting.WHITE));
+        }
+        for (FluidInput input : recipe.fluidInputs()) {
+            lines.add(Component.literal("  ").append(ModUtils.tooltipComponent("crafter_fluid_amount",
+                    input.amount(), plain(new FluidStack(input.representative(), 1).getDisplayName())))
                     .withStyle(ChatFormatting.WHITE));
         }
 
@@ -294,7 +306,11 @@ final class RecipePicker {
 
     /** Le nom sans le style propre à l'item : l'infobulle garde une seule charte de couleurs. */
     static MutableComponent plain(ItemStack stack) {
-        return Component.literal(stack.getHoverName().getString());
+        return plain(stack.getHoverName());
+    }
+
+    static MutableComponent plain(Component name) {
+        return Component.literal(name.getString());
     }
 
     static ItemStack firstItem(CrafterRecipe.Input input) {

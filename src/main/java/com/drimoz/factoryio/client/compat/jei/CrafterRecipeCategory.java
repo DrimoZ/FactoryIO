@@ -16,6 +16,9 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import com.drimoz.factoryio.content.crafter.FluidInput;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -28,10 +31,14 @@ public class CrafterRecipeCategory implements IRecipeCategory<CrafterRecipe> {
 
     public static final RecipeType<CrafterRecipe> TYPE = RecipeType.create(FactoryIO.MOD_ID, "crafting", CrafterRecipe.class);
 
-    private static final int WIDTH = 128;
+    // Même disposition que l'écran : entrées 3×3, fluides d'entrée à côté, sorties 2×2 avec
+    // leurs fluides dessous.
+    private static final int WIDTH = 146;
     private static final int HEIGHT = 64;
-    private static final int OUTPUT_X = 92;
-    private static final int OUTPUT_Y = 10;
+    private static final int FLUID_IN_X = 56;
+    private static final int ARROW_X = 80;
+    private static final int OUTPUT_X = 110;
+    private static final int OUTPUT_Y = 1;
 
     private final IDrawable icon;
 
@@ -84,11 +91,31 @@ public class CrafterRecipeCategory implements IRecipeCategory<CrafterRecipe> {
                         if (!output.isCertain()) tooltip.add(chance(output).withStyle(ChatFormatting.GOLD));
                     });
         }
+
+        for (int i = 0; i < recipe.fluidInputs().size(); i++) {
+            FluidInput input = recipe.fluidInputs().get(i);
+            var slot = builder.addSlot(RecipeIngredientRole.INPUT, FLUID_IN_X, 1 + 18 * i).setStandardSlotBackground();
+            if (input.fluid() != null) {
+                slot.addFluidStack(input.fluid(), input.amount());
+            } else {
+                var tags = ForgeRegistries.FLUIDS.tags();
+                if (tags != null) for (Fluid fluid : tags.getTag(input.tag())) {
+                    if (fluid.isSource(fluid.defaultFluidState())) slot.addFluidStack(fluid, input.amount());
+                }
+            }
+        }
+
+        for (int i = 0; i < recipe.fluidOutputs().size(); i++) {
+            var output = recipe.fluidOutputs().get(i);
+            builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X + 18 * i, OUTPUT_Y + 36)
+                    .setStandardSlotBackground()
+                    .addFluidStack(output.getFluid(), output.getAmount());
+        }
     }
 
     @Override
     public void createRecipeExtras(IRecipeExtrasBuilder builder, CrafterRecipe recipe, IFocusGroup focuses) {
-        builder.addAnimatedRecipeArrow(recipe.ticks()).setPosition(62, 19);
+        builder.addAnimatedRecipeArrow(recipe.ticks()).setPosition(ARROW_X, 19);
     }
 
     @Override
@@ -96,10 +123,10 @@ public class CrafterRecipeCategory implements IRecipeCategory<CrafterRecipe> {
                      net.minecraft.client.gui.GuiGraphics graphics, double mouseX, double mouseY) {
         var font = Minecraft.getInstance().font;
         String seconds = String.format(Locale.ROOT, "%.1f s", recipe.ticks() / 20.0F);
-        graphics.drawString(font, seconds, 60, 40, 0xFF808080, false);
+        graphics.drawString(font, seconds, FLUID_IN_X, 44, 0xFF808080, false);
 
         if (recipe.minTier() > 1) {
-            graphics.drawString(font, ModUtils.tooltipComponent("crafter_jei_tier", recipe.minTier()), 60, 54, 0xFF808080, false);
+            graphics.drawString(font, ModUtils.tooltipComponent("crafter_jei_tier", recipe.minTier()), FLUID_IN_X, 54, 0xFF808080, false);
         }
     }
 

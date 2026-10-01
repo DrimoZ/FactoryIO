@@ -29,9 +29,10 @@ public class Crafter implements Definition {
     /**
      * @param craftingSpeed  multiplicateur du temps de recette, comme dans Factorio
      * @param energyPerTick  FE consommés par tick de travail ; rien à l'arrêt
-     * @param inputCrafts    crafts d'avance qu'acceptent les entrées
+     * @param inputCrafts    crafts d'avance qu'acceptent les entrées, fluides compris
+     * @param fluidCapacity  millibuckets de chaque réservoir de sortie (FIO-179)
      */
-    public record Tuning(float craftingSpeed, int energyPerTick, int energyCapacity, int inputCrafts) {}
+    public record Tuning(float craftingSpeed, int energyPerTick, int energyCapacity, int inputCrafts, int fluidCapacity) {}
 
     /** @param moduleSlots slots de module, structurels comme le palier (FIO-127) */
     public Crafter(ResourceLocation id, int tier, int moduleSlots, Tuning tuning) {

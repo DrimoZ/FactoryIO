@@ -26,9 +26,9 @@ public final class CrafterRegistry {
     /** Des instances neuves à chaque appel : chacune porte ses réglages, modifiables à chaud. */
     public static List<Crafter> defaults() {
         return List.of(
-                new Crafter(Crafter.id("crafter_mk1"), 1, 0, new Crafter.Tuning(0.5F, 30, 20_000, 2)),
-                new Crafter(Crafter.id("crafter_mk2"), 2, 2, new Crafter.Tuning(0.75F, 60, 40_000, 2)),
-                new Crafter(Crafter.id("crafter_mk3"), 3, 4, new Crafter.Tuning(1.25F, 150, 100_000, 2)));
+                new Crafter(Crafter.id("crafter_mk1"), 1, 0, new Crafter.Tuning(0.5F, 30, 20_000, 2, 8_000)),
+                new Crafter(Crafter.id("crafter_mk2"), 2, 2, new Crafter.Tuning(0.75F, 60, 40_000, 2, 16_000)),
+                new Crafter(Crafter.id("crafter_mk3"), 3, 4, new Crafter.Tuning(1.25F, 150, 100_000, 2, 32_000)));
     }
 
     /** À appeler une fois, dans le constructeur du mod, config anticipée ouverte. */

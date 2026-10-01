@@ -6,6 +6,11 @@ import com.drimoz.factoryio.shared.GuiMetrics;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -181,6 +186,37 @@ public final class GuiSprites {
             graphics.drawString(font, text, itemX + 17 - font.width(text), itemY + 9, GuiTheme.TEXT_MUTED, false);
         }
         graphics.pose().popPose();
+    }
+
+    /**
+     * Réservoir dans un cadre de slot (FIO-179) : le fluide monte du fond à hauteur du
+     * remplissage, à sa texture et à sa teinte. {@code ghost} : réservoir vide, on montre le
+     * fluide attendu, voilé, comme un item fantôme.
+     */
+    public static void tank(GuiGraphics graphics, int frameX, int frameY, FluidStack fluid, int capacity, boolean ghost) {
+        graphics.blit(SHEET, frameX, frameY, 0, 16, SLOT_SIZE, SLOT_SIZE);
+        if (fluid.isEmpty()) return;
+
+        int x = frameX + 1;
+        int y = frameY + 1;
+        float fill = ghost ? 1.0F : Math.min(1.0F, fluid.getAmount() / (float) Math.max(1, capacity));
+        int height = Math.max(1, Math.round(16 * fill));
+
+        IClientFluidTypeExtensions extensions = IClientFluidTypeExtensions.of(fluid.getFluid());
+        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                .apply(extensions.getStillTexture(fluid));
+        int tint = extensions.getTintColor(fluid);
+
+        // Le ciseau coupe le haut de la texture au niveau du fluide : rien n'est écrasé.
+        graphics.enableScissor(x, y + 16 - height, x + 16, y + 16);
+        RenderSystem.enableBlend();
+        graphics.setColor(((tint >> 16) & 0xFF) / 255F, ((tint >> 8) & 0xFF) / 255F, (tint & 0xFF) / 255F, 1.0F);
+        graphics.blit(x, y, 0, 16, 16, sprite);
+        graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
+        graphics.disableScissor();
+
+        if (ghost) graphics.fill(x, y, x + 16, y + 16, GuiTheme.GHOST_WASH);
     }
 
     /** Icône estompée : un rappel de ce qui va là, pas un contenu. */
