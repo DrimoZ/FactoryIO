@@ -85,7 +85,6 @@
   "tooltip.factor_io.crafter_chance": "(%s%% chance)",
   "tooltip.factor_io.crafter_choose": "Click: choose a recipe · Right-click: clear",
   "tooltip.factor_io.crafter_choose_title": "Choose a recipe",
-  "tooltip.factor_io.crafter_click_to_choose": "Click the socket to choose one",
   "tooltip.factor_io.crafter_consumes": "Consumes",
   "tooltip.factor_io.crafter_info_none": "No recipe",
   "tooltip.factor_io.crafter_info_speed": "Crafting speed",

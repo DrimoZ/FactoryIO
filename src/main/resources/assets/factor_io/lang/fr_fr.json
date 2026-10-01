@@ -85,7 +85,6 @@
   "tooltip.factor_io.crafter_chance": "(%s %% de chance)",
   "tooltip.factor_io.crafter_choose": "Clic : choisir une recette · Clic droit : la retirer",
   "tooltip.factor_io.crafter_choose_title": "Choisir une recette",
-  "tooltip.factor_io.crafter_click_to_choose": "Cliquer le socle pour en choisir une",
   "tooltip.factor_io.crafter_consumes": "Consomme",
   "tooltip.factor_io.crafter_info_none": "Aucune recette",
   "tooltip.factor_io.crafter_info_speed": "Vitesse de fabrication",
