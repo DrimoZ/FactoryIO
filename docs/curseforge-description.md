@@ -35,7 +35,7 @@ Display name `Factor'I/O 0.4.0-beta`, release type **Beta**, game version **1.20
 
 <!-- Everything below this line is pasted into CurseForge's Markdown editor as-is. -->
 
-![Factor'I/O](showcase/out/banner.png)
+![Factor'I/O](https://media.forgecdn.net/attachments/description/1013208/description_17cca1e6-fdf9-4e71-998a-227ca2242e28.png)
 
 ### Factorio's machines, in Minecraft.
 
@@ -43,9 +43,9 @@ Inserters that move items on their own, belts that carry them on two lanes, and 
 plates into gears, gears into circuits, circuits into the next machine. It works with the
 inventories you already have — vanilla chests, furnaces, and every storage mod on Forge.
 
-![A factory hall: two rows of crafters around a belt bus](showcase/out/crafter_row_850.jpg)
+![A factory hall: two rows of crafters around a belt bus](https://media.forgecdn.net/attachments/description/1013208/description_f9378dc6-8bde-4fc9-9450-f61cf1236937.jpg)
 
-![Inserters](showcase/out/header_inserters.png)
+![Inserters](https://media.forgecdn.net/attachments/description/1013208/description_cb6c08c2-6b72-4eb7-866f-a7bde02789f9.png)
 
 An inserter takes from the block behind it and puts into the block in front. Seven of them, from
 the coal-fed burner to the stack filter inserter:
@@ -69,13 +69,11 @@ the coal-fed burner to the stack filter inserter:
 - **A screen that tells you why**: expected and measured rate, what a swing costs, and side tabs
   for settings, modules and redstone.
 
-![A stack inserter mid-swing](showcase/out/inserter_swing_850.jpg)
+![A stack inserter mid-swing](https://media.forgecdn.net/attachments/description/1013208/description_e9bcfbfd-9af3-4f09-bc1c-ec9d6cd483f7.jpg)
 
-![The seven inserters along one belt](showcase/out/inserters_row_850.jpg)
+![The inserter screen and its side tabs](https://media.forgecdn.net/attachments/description/1013208/description_b2e1123d-25ad-4af8-a529-c5eda30d2925.jpg)
 
-![The inserter screen and its side tabs](showcase/out/gui_inserter_info_850.jpg)
-
-![Transport belts](showcase/out/header_belts.png)
+![Transport belts](https://media.forgecdn.net/attachments/description/1013208/description_2af89e63-74cd-40d2-a480-056a901208bd.png)
 
 | Belt | Items/s |
 |---|---|
@@ -90,13 +88,13 @@ the coal-fed burner to the stack filter inserter:
 - **Ramps**, one per tier, to climb or cross over another belt.
 - Every face is an inventory: a hopper above loads a belt, a hopper below drains it.
 
-![Iron on one lane, copper on the other](showcase/out/belt_lanes_850.jpg)
+![Iron on one lane, copper on the other](https://media.forgecdn.net/attachments/description/1013208/description_de663454-7b96-4508-8e70-d67496cf37f7.jpg)
 
-![Three belt tiers, and a ramp crossing them](showcase/out/ramp_outdoor_850.jpg)
+![Three belt tiers, and a ramp crossing them](https://media.forgecdn.net/attachments/description/1013208/description_1a6ce697-f17c-4a2f-b377-a1a7a99f1f86.jpg)
 
-![A belt turning on its own](showcase/out/belt_curve_850.jpg)
+![A belt turning on its own](https://media.forgecdn.net/attachments/description/1013208/description_d7ce17da-31df-4a22-a28f-dc099dfec325.jpg)
 
-![Crafters](showcase/out/header_crafters.png)
+![Crafters](https://media.forgecdn.net/attachments/description/1013208/description_c0c3494f-d043-49bf-a2dc-bb6402b84117.png)
 
 Factorio's assembling machine. **Three tiers, one 3×3 machine** placed in one go, with an outline
 showing where it will stand.
@@ -115,11 +113,11 @@ showing where it will stand.
   bucket.
 - **JEI** lists every crafter recipe, and its `+` button sets it.
 
-![Inserters feeding a crafter](showcase/out/crafter_feed_850.jpg)
+![Inserters feeding a crafter](https://media.forgecdn.net/attachments/description/1013208/description_91fa901e-2e8d-4258-9d58-49bcbd14a419.jpg)
 
-![The crafter screen and its recipe picker](showcase/out/gui_picker_850.jpg)
+![The crafter screen and its recipe picker](https://media.forgecdn.net/attachments/description/1013208/description_f4c380a7-6daa-46e5-99a6-b891010f22aa.jpg)
 
-![Modules](showcase/out/header_modules.png)
+![Modules](https://media.forgecdn.net/attachments/description/1013208/description_a0485f5a-0d60-48c1-b01f-bb347c8a335a.png)
 
 Speed, productivity and efficiency, three tiers each, for **both** machines:
 
@@ -130,20 +128,20 @@ Speed, productivity and efficiency, three tiers each, for **both** machines:
 - The **Advanced Redstone Module** turns redstone from a stop into a comparison: run only while a
   chest is nearly empty, with no extra circuit.
 
-![A Mk3 crafter with four modules](showcase/out/crafter_mk3_850.jpg)
+![A Mk3 crafter with four modules](https://media.forgecdn.net/attachments/description/1013208/description_4d42b8c6-7833-4c24-8379-b2f913b7139c.jpg)
 
-![The modules](showcase/out/items_modules.png)
+![The modules](https://media.forgecdn.net/attachments/description/1013208/description_1b0537de-b8a2-4631-9de2-19159a960ad6.png)
 
 Everything is crafted through **Factorio's component chain** — plates from the stonecutter, steel
 from the blast furnace, gears, cables, electronic circuits by hand; advanced circuits and
 processing units only in a crafter. Forge tags throughout, so other mods' plates and circuits
 work.
 
-![The component chain](showcase/out/items_components.png)
+![The component chain](https://media.forgecdn.net/attachments/description/1013208/description_48894d7c-1c3b-4107-b901-bc46c62ef965.png)
 
-![Everything in the creative tab](showcase/out/gui_creative_850.jpg)
+![Everything in the creative tab](https://media.forgecdn.net/attachments/description/1013208/description_bbae93cd-2387-4110-8f3e-ddd441138210.jpg)
 
-![Data-driven](showcase/out/header_data.png)
+![Data-driven](https://media.forgecdn.net/attachments/description/1013208/description_c4d9e2eb-851a-4471-98d2-06cce9e5bbc5.png)
 
 - **A new machine is a JSON file.** Drop one into `config/factor_io/inserters/`, `belts/` or
   `crafters/` and its block, item, screen, model and translations are built for it.
@@ -152,9 +150,9 @@ work.
   ingredients, chances and fluids.
 - Validation **refuses and names the problem** in the log. Nothing is silently clamped.
 
-![JEI lists every crafter recipe](showcase/out/gui_jei_850.jpg)
+![JEI lists every crafter recipe](https://media.forgecdn.net/attachments/description/1013208/description_9a9e40b2-c450-4057-9fe6-4178db4cd840.jpg)
 
-![Not in this build](showcase/out/header_missing.png)
+![Not in this build](https://media.forgecdn.net/attachments/description/1013208/description_38e7f53d-1487-43b2-b88d-0fdb1177271f.png)
 
 - **Placeholder models** for the crafter and the ramps; the real ones are being drawn.
 - **No splitters** yet — they are next. No furnaces, drills or power generation: bring Forge
