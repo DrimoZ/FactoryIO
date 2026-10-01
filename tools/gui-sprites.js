@@ -204,6 +204,58 @@ for (let y = 0; y < 48; y++) {
     }
 }
 
+// Charte commune (FIO-181) : champ de saisie, flèche, slots d'état, voyants, petit verrou.
+
+// Champ de saisie : un creux sombre, où le texte blanc se lit.
+inset(112, 0, 16, 16, { dark: 0x1a1a1a, bright: 0xffffff, fill: 0x2b2b2b });
+
+// Flèche de progression 20×13 : plus lisible que l'ancienne 16×11, et la même partout.
+const ARROW2 = [
+    "............d.......",
+    "............dd......",
+    "............dmd.....",
+    "............dmmd....",
+    "ddddddddddddmmmmd...",
+    "dmmmmmmmmmmmmmmmmd..",
+    "dmmmmmmmmmmmmmmmmmd.",
+    "dmmmmmmmmmmmmmmmmd..",
+    "ddddddddddddmmmmd...",
+    "............dmmd....",
+    "............dmd.....",
+    "............dd......",
+    "............d.......",
+];
+ascii(112, 16, ARROW2, 20, 13);
+ascii(112, 30, ARROW2, 20, 13, { ...PALETTE, d: 0x2f6b2f, m: 0x6fd46f });
+
+// Slot désactivé : le même creux, plus sombre et hachuré — il n'acceptera rien.
+inset(132, 16, 18, 18, { dark: 0x262626, bright: 0x9a9a9a, fill: 0x6a6a6a });
+for (let i = 2; i < 16; i += 3) for (let j = 0; j < 16; j++) {
+    const x = 133 + j, y = 17 + ((i + j) % 16);
+    if (y < 33) set(x, y, 0x606060);
+}
+
+// Slot choisi : liseré vert, pour la recette courante dans le sélecteur.
+inset(150, 16, 18, 18, { dark: 0x1e7a1e, bright: 0x6fd46f, fill: 0x8b8b8b });
+for (let k = 0; k < 18; k++) { set(150 + k, 16, 0x3fbf3f); set(150, 16 + k, 0x3fbf3f); set(150 + k, 33, 0x3fbf3f); set(167, 16 + k, 0x3fbf3f); }
+
+// Voyants 7×7 : au travail, en attente, bloqué, en panne, arrêté.
+const LED = [".kkkkk.", "kcccccK", "kcwcccK", "kccccCK", "kccccCK", "kcCCCCK", ".KKKKK."];
+[[0x3fbf3f, 0x1e7a1e], [0xf7d44a, 0xb08a10], [0xf29b1d, 0xa0600a], [0xd83a2e, 0x8e1f18], [0x8b8b8b, 0x555555]]
+    .forEach(([c, C], i) => ascii(168 + i * 8, 16, LED, 7, 7, { ...PALETTE, c, C, w: 0xffffff }));
+
+// Petit verrou 7×8, dans le coin d'une case : la recette existe, pas pour ce palier.
+ascii(208, 16, [
+    "..kkk..",
+    ".k...k.",
+    ".k...k.",
+    "kkkkkkk",
+    "kyyyyyk",
+    "kyykyyk",
+    "kyyyyyk",
+    "kkkkkkk",
+], 7, 8);
+
 // Ligne 64 : icônes 12×12 -----------------------------------------------------------------
 
 const ICONS = [];

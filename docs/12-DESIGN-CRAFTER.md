@@ -247,14 +247,18 @@ les paliers changent surtout vitesse et consommation. Le temps réel d'un craft 
   cliquable — et refusée par le serveur de toute façon.
 - `C2SCrafterRecipe` porte l'identifiant de la recette, jamais un indice (l'ordre de la
   liste n'est pas stable), avec les 6 validations dans l'ordre ([`09`](09-CONVENTIONS.md) §3).
-- **Tel qu'implémenté (FIO-177)** : le grand slot à gauche montre la recette ; clic, le
-  sélecteur s'ouvre par-dessus la machine (8 × 3 icônes, molette, recherche sur le nom
-  du résultat ou l'identifiant) ; clic droit, la recette est retirée. Dans un slot
-  d'entrée vide, l'ingrédient attendu apparaît en filigrane ; les slots sans ingrédient
-  sont assombris. La recette voyage avec l'ouverture du menu, et un choix fait depuis
-  l'écran s'y reporte **sans attendre le serveur** : l'écran ne propose rien que le
-  serveur refuserait. Un autre joueur qui change la recette pendant ce temps n'est vu
-  qu'à la réouverture — limite assumée, qui éviterait sinon un paquet de plus.
+- **Tel qu'implémenté (FIO-177, refait en FIO-181 sur la charte commune, [`09`](09-CONVENTIONS.md) §9)** :
+  sous le bandeau (titre, voyant d'état), une bande **recette** — socle de 26 cliquable,
+  nom et temps réel d'un craft à la vitesse de la machine — puis une bande **travail** :
+  entrées 3×3 en colonnes 1 à 3, flèche, sorties 2×2 en colonnes 7 et 8. L'énergie occupe la
+  colonne 0. Un slot d'entrée vide montre l'ingrédient attendu en filigrane avec sa quantité
+  par craft ; un slot inutilisé par la recette est hachuré. L'onglet d'informations (état,
+  temps par craft, vitesse, rythme mesuré, consommation) est celui des inserters.
+  Clic sur le socle : le **sélecteur modal** recouvre tout l'écran (8 × 8 icônes, recherche,
+  recette courante au liseré vert, recettes hors palier voilées avec un verrou). Clic droit :
+  la recette est retirée. La recette voyage avec l'ouverture du menu et un choix fait depuis
+  l'écran s'y reporte **sans attendre le serveur** ; un autre joueur qui la change pendant ce
+  temps n'est vu qu'à la réouverture — limite assumée.
 - **JEI** : catégorie `factor_io:crafting` (pourcentages affichés), crafters en
   catalyseurs, bouton « + » qui choisit la recette.
 

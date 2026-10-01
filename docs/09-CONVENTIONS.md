@@ -212,3 +212,77 @@ Un bug corrigé sans test de non-régression n'est pas corrigé.
 - `MAJEUR` passe à 1 à la première release publique complète.
 - Toute rupture du format des définitions JSON impose une montée de `MINEUR` et
   une note de migration dans le `CHANGELOG`.
+
+## 9. Écrans : la charte commune
+
+Décidée en FIO-181 : tous les écrans du mod se ressemblent, et un nouvel écran se compose
+des mêmes pièces. Deux sources, et seulement deux :
+
+| | Où | Quoi |
+|---|---|---|
+| Grille | `shared/GuiMetrics` (commun : les menus en ont besoin) | largeur, bandeau, slots, socle, jauge, flèche, voyant, onglets |
+| Palette | `client/gui/GuiTheme` | couleurs de texte, teintes d'onglet, voiles, les 5 états |
+| Pièces | `client/gui/GuiSprites` + `tools/gui-sprites.js` | cadres, slots, jauge, flèche, voyants, verrou, item fantôme |
+
+Aucun écran ne déclare sa propre couleur ni sa propre dimension de pièce.
+
+### Disposition
+
+```
+ ┌────────────────────────────────────────┐
+ │ Titre                                ● │  bandeau 20 px : titre (8, 7), voyant d'état à droite
+ │ ▌ [socle 26]  sujet de l'écran         │  la jauge d'énergie en colonne 0, toute la hauteur
+ │ ▌ [ ][ ][ ]      ▶      [ ][ ]         │  le contenu aligné sur les colonnes de l'inventaire
+ │ Inventaire                             │  15 px sous le contenu
+ └────────────────────────────────────────┘
+```
+
+- **Largeur 176**, tout aligné sur les colonnes de l'inventaire : cadre de slot en
+  `GuiMetrics.column(n)` = `7 + 18 n`.
+- **L'énergie est toujours en colonne 0**, jauge de 14 px sur toute la hauteur du contenu ;
+  pour un burner, flamme et slot de carburant au même endroit.
+- **Le sujet de l'écran** (la main d'un inserter, la recette d'un crafter) a le grand socle
+  de 26 px ; tout le reste des slots de 18.
+- **Une seule flèche**, 20 × 13, remplie de vert à l'avancement.
+- **Le voyant d'état** du bandeau et l'onglet d'informations disent la même chose, de la
+  même teinte : `GuiTheme.Status` — au travail (vert), en attente (jaune), bloqué
+  (orange), en panne (rouge : il faut agir), arrêté (gris : c'est voulu).
+- **Onglets latéraux** : à gauche ce qui renseigne, à droite ce qui se règle. L'onglet
+  d'informations est jaune et à gauche sur toutes les machines.
+
+### Ce qui se voit dans un slot
+
+- **Item fantôme** (`GuiSprites.ghostItem`) : ce qui va dans un slot vide, voilé, avec la
+  quantité attendue. Jamais un vrai item.
+- **Slot hachuré** (`disabledSlot`) : un slot qui n'acceptera rien dans la configuration
+  courante.
+- **Liseré vert** (`selectedSlot`) : le choix courant d'une liste.
+- **Petit verrou** (`smallLock`) sur un voile sombre : ce qui existe, mais pas à ce palier.
+
+### Texte
+
+- Sur la fenêtre : `GuiTheme.TEXT` (gris sombre vanilla), sans ombre ; secondaire en
+  `TEXT_MUTED` ; `TEXT_PROBLEM` seulement pour ce qui empêche de fonctionner.
+- Dans un onglet : intitulés en `TAB_LABEL`, valeurs en blanc, ombrés.
+- Infobulles : les noms d'item sans leur style propre — une seule charte de couleurs.
+
+### Fenêtres modales
+
+Un choix dans une longue liste (recette…) se fait dans une **fenêtre modale qui recouvre
+tout l'écran** : rien de la machine ne transparaît ni ne prend de clic. Champ de recherche
+sombre (`GuiSprites.field`), grille alignée sur l'inventaire et dessinée en entier même
+vide, ascenseur dans la dernière colonne, aide en bas. Échap ferme ; la frappe va à la
+recherche — « E » s'y écrit.
+
+### Vérifier un écran
+
+On ne valide pas un écran sans l'avoir regardé. `gametest/GuiPreview` (outil de
+développement, absent du jar) ouvre chaque écran sur une copie du monde de test et en
+enregistre une capture :
+
+```bash
+FACTORIO_GUI_PREVIEW=1 ./gradlew runClient
+```
+
+Les captures arrivent dans `run/screenshots/preview/`. Un nouvel écran s'ajoute au
+scénario de `GuiPreview#script`.

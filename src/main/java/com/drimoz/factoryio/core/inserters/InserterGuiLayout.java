@@ -1,6 +1,6 @@
 package com.drimoz.factoryio.core.inserters;
 
-import com.drimoz.factoryio.shared.SideTabMetrics;
+import com.drimoz.factoryio.shared.GuiMetrics;
 import com.drimoz.factoryio.core.model.Inserter;
 
 /**
@@ -39,14 +39,14 @@ public record InserterGuiLayout(
 
     // Fenêtre
 
-    public static final int WIDTH = 176;
+    public static final int WIDTH = GuiMetrics.WIDTH;
 
     /** Hauteur du bandeau, qui ne porte que le titre. */
-    public static final int CONTENT_TOP = 20;
-    public static final int TITLE_Y = 7;
+    public static final int CONTENT_TOP = GuiMetrics.CONTENT_TOP;
+    public static final int TITLE_Y = GuiMetrics.TITLE_Y;
 
-    public static final int SLOT = 18;
-    public static final int HAND_SOCKET = 26;
+    public static final int SLOT = GuiMetrics.SLOT;
+    public static final int HAND_SOCKET = GuiMetrics.SOCKET;
 
     /**
      * Hauteur du contenu, <b>la même pour tous les types</b> : celle d'un inserter filtrant, le
@@ -72,7 +72,7 @@ public record InserterGuiLayout(
     }
 
     public int inventoryY() {
-        return contentBottom() + 15;
+        return GuiMetrics.inventoryY(contentBottom());
     }
 
     public int inventoryLabelY() {
@@ -91,8 +91,8 @@ public record InserterGuiLayout(
 
     /** Colonne d'alimentation, alignée sur la première colonne de l'inventaire. */
     public static final int POWER_X = 8;
-    public static final int GAUGE_X = POWER_X + 1;
-    public static final int GAUGE_WIDTH = 14;
+    public static final int GAUGE_X = GuiMetrics.GAUGE_X;
+    public static final int GAUGE_WIDTH = GuiMetrics.GAUGE_WIDTH;
 
     /** Jauge d'énergie : toute la hauteur du contenu. */
     public int gaugeHeight() {
@@ -132,19 +132,19 @@ public record InserterGuiLayout(
         return handSocketY() + (HAND_SOCKET - 16) / 2;
     }
 
-    public static final int ARROW_WIDTH = 16;
-    public static final int ARROW_HEIGHT = 11;
+    public static final int ARROW_WIDTH = GuiMetrics.ARROW_WIDTH;
+    public static final int ARROW_HEIGHT = GuiMetrics.ARROW_HEIGHT;
 
     public int arrowY() {
         return handSocketY() + (HAND_SOCKET - ARROW_HEIGHT) / 2;
     }
 
     public int inArrowX() {
-        return handSocketX() - 8 - ARROW_WIDTH;
+        return handSocketX() - 6 - ARROW_WIDTH;
     }
 
     public int outArrowX() {
-        return handSocketX() + HAND_SOCKET + 8;
+        return handSocketX() + HAND_SOCKET + 6;
     }
 
     /**
@@ -198,11 +198,11 @@ public record InserterGuiLayout(
     }
 
     public static int augmentSlotX(int index) {
-        return WIDTH + SideTabMetrics.PADDING + 1 + index * SLOT;
+        return WIDTH + GuiMetrics.TAB_PADDING + 1 + index * SLOT;
     }
 
     public static int augmentSlotY() {
-        return SideTabMetrics.TOP + SideTabMetrics.HEADER + 1;
+        return GuiMetrics.TAB_TOP + GuiMetrics.TAB_HEADER + 1;
     }
 
     /** Largeur de l'onglet ouvert : de quoi loger quatre modules et leur effet. */

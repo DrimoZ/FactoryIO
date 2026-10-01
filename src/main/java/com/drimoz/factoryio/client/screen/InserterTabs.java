@@ -1,7 +1,8 @@
 package com.drimoz.factoryio.client.screen;
 
-import com.drimoz.factoryio.shared.SideTabMetrics;
+import com.drimoz.factoryio.shared.GuiMetrics;
 import com.drimoz.factoryio.client.gui.GuiSprites;
+import com.drimoz.factoryio.client.gui.GuiTheme;
 import com.drimoz.factoryio.client.gui.IconButton;
 import com.drimoz.factoryio.client.gui.SideTab;
 import com.drimoz.factoryio.core.generic.container.slots.InserterFuelSlot;
@@ -46,22 +47,18 @@ final class InserterTabs {
 
     private InserterTabs() {}
 
-    private static final int LINE = 10;
-    private static final int LABEL = 0xD8D8D8;
-    private static final int VALUE = 0xFFFFFF;
-    private static final int MUTED = 0x9A9A9A;
-
-    private static final int INFO_COLOUR = 0xC89420;
-    private static final int AUGMENT_COLOUR = 0x3C6FC8;
-    private static final int CONTROL_COLOUR = 0xC03C2C;
-    private static final int SETTINGS_COLOUR = 0x7C7C94;
+    // La charte est commune à tous les écrans : GuiTheme.
+    private static final int LINE = GuiTheme.LINE;
+    private static final int LABEL = GuiTheme.TAB_LABEL;
+    private static final int VALUE = GuiTheme.TAB_VALUE;
+    private static final int MUTED = GuiTheme.TAB_MUTED;
 
     private static void label(GuiGraphics graphics, Font font, Component text, int x, int y) {
-        graphics.drawString(font, text, x, y, LABEL, true);
+        GuiTheme.tabLabel(graphics, font, text, x, y);
     }
 
     private static void value(GuiGraphics graphics, Font font, Component text, int x, int y, int colour) {
-        graphics.drawString(font, text, x, y, colour, true);
+        GuiTheme.tabValue(graphics, font, text, x, y, colour);
     }
 
     private static Component number(double value) {
@@ -113,7 +110,7 @@ final class InserterTabs {
         private final InserterScreen screen;
 
         Info(InserterScreen screen) {
-            super("info", Side.LEFT, INFO_COLOUR);
+            super("info", Side.LEFT, GuiTheme.TAB_INFO);
             this.screen = screen;
         }
 
@@ -144,7 +141,7 @@ final class InserterTabs {
 
             label(graphics, font, ModUtils.tooltipComponent("info_state"), x, y);
             State state = state(be);
-            value(graphics, font, ModUtils.tooltipComponent(state.key), x, y + LINE, state.colour);
+            value(graphics, font, ModUtils.tooltipComponent(state.key), x, y + LINE, state.status.tabColour);
 
             label(graphics, font, ModUtils.tooltipComponent("info_rate"), x, y + ROW);
             value(graphics, font, ModUtils.tooltipComponent("value_items_per_second", number(be.getItemsPerSecond())),
@@ -174,21 +171,26 @@ final class InserterTabs {
             }
         }
 
-        private enum State {
-            OFF("state_off", 0xB8B8B8),
-            REDSTONE("state_redstone", 0xFF8A80),
-            NO_POWER("state_no_power", 0xFF8A80),
-            BLOCKED("state_blocked", 0xFFC060),
-            WORKING("state_working", 0x90FF90),
-            WAITING("state_waiting", 0xFFFFA0);
+        enum State {
+            OFF("state_off", GuiTheme.Status.OFF),
+            REDSTONE("state_redstone", GuiTheme.Status.OFF),
+            NO_POWER("state_no_power", GuiTheme.Status.PROBLEM),
+            BLOCKED("state_blocked", GuiTheme.Status.BLOCKED),
+            WORKING("state_working", GuiTheme.Status.WORKING),
+            WAITING("state_waiting", GuiTheme.Status.WAITING);
 
             final String key;
-            final int colour;
+            final GuiTheme.Status status;
 
-            State(String key, int colour) {
+            State(String key, GuiTheme.Status status) {
                 this.key = key;
-                this.colour = colour;
+                this.status = status;
             }
+        }
+
+        /** Aussi pour le voyant du bandeau : les deux disent la même chose. */
+        State state() {
+            return state(this.screen.blockEntity());
         }
 
         /** L'état tel qu'un joueur le décrirait, dans l'ordre où les causes se masquent. */
@@ -234,7 +236,7 @@ final class InserterTabs {
         private final InserterScreen screen;
 
         Augments(InserterScreen screen) {
-            super(ID, Side.RIGHT, AUGMENT_COLOUR);
+            super(ID, Side.RIGHT, GuiTheme.TAB_AUGMENTS);
             this.screen = screen;
         }
 
@@ -250,7 +252,7 @@ final class InserterTabs {
 
         @Override
         protected int contentWidth() {
-            return InserterGuiLayout.AUGMENT_TAB_WIDTH - 2 * SideTabMetrics.PADDING;
+            return InserterGuiLayout.AUGMENT_TAB_WIDTH - 2 * GuiMetrics.TAB_PADDING;
         }
 
         @Override
@@ -330,7 +332,7 @@ final class InserterTabs {
         private final boolean redstone;
 
         Control(InserterScreen screen) {
-            super("control", Side.RIGHT, CONTROL_COLOUR);
+            super("control", Side.RIGHT, GuiTheme.TAB_CONTROL);
             this.screen = screen;
             this.redstone = screen.getMenu().isAffectedByRedstone();
 
@@ -455,7 +457,7 @@ final class InserterTabs {
         private final InserterScreen screen;
 
         Settings(InserterScreen screen) {
-            super("settings", Side.LEFT, SETTINGS_COLOUR);
+            super("settings", Side.LEFT, GuiTheme.TAB_SETTINGS);
             this.screen = screen;
 
             this.buttons.add(new IconButton(0, HAND_ROW, BUTTON, BUTTON)
