@@ -7,6 +7,16 @@ All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the 
 
 ### Added
 
+- **Crafters**, Factorio's assembling machines: three tiers (Mk1, Mk2, Mk3) of a 3×3×2 machine
+  placed in one go, with an outline showing where it will stand. Pick a recipe from the icon
+  selector — tiers above the machine are greyed out — and feed it with inserters from any
+  side. Inputs only accept the recipe's ingredients, two crafts ahead, so an inserter never
+  empties a belt into a single machine. Runs on FE, only while working. The model is a
+  placeholder.
+- **`factor_io:crafting` recipes** for datapacks: counted ingredients, up to four results with
+  an optional chance, a crafting time and a minimum crafter tier. Crafting table recipes can be
+  allowed in crafters too, per world (`vanillaRecipes` in `factor_io-server.toml`, off by
+  default).
 - **A new inserter screen.** It resizes to the model and shows the blocks an inserter takes from
   and drops into. Everything that is not the machine's core job moved to side tabs: Information
   and Settings on the left, Upgrades and Control on the right.

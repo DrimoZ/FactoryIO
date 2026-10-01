@@ -1,7 +1,10 @@
 package com.drimoz.factoryio.content.multiblock;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -77,6 +80,17 @@ public class MultiblockPartBlock extends BaseEntityBlock {
 
         BlockPos master = masterOf(level, pos);
         if (master != null) level.getBlockState(master).neighborChanged(level, master, block, fromPos, isMoving);
+    }
+
+    /** Un clic sur n'importe quelle partie ouvre la machine, comme sur le maître. */
+    @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        // Côté client, le block entity de la partie connaît déjà son maître (getUpdateTag).
+        if (!(level.getBlockEntity(pos) instanceof MultiblockPartBlockEntity part) || part.masterPos() == null) {
+            return InteractionResult.PASS;
+        }
+        BlockPos master = part.masterPos();
+        return level.getBlockState(master).use(level, player, hand, hit.withPosition(master));
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.drimoz.factoryio.client;
 
+import com.drimoz.factoryio.client.crafter.CrafterScreen;
+import com.drimoz.factoryio.content.crafter.CrafterMenu;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.belts.BeltItemRenderer;
 import com.drimoz.factoryio.core.init.ModBlocks;
@@ -45,10 +47,12 @@ public final class ClientEvents {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() ->
-                InserterRegistry.getInstance().getInserters().forEach(inserter ->
-                        MenuScreens.register(
-                                inserter.getMenuType().get(),
-                                InserterScreen::new)));
+        event.enqueueWork(() -> {
+            InserterRegistry.getInstance().getInserters().forEach(inserter ->
+                    MenuScreens.register(
+                            inserter.getMenuType().get(),
+                            InserterScreen::new));
+            MenuScreens.register(CrafterMenu.TYPE.get(), CrafterScreen::new);
+        });
     }
 }

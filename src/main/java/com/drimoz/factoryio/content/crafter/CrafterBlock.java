@@ -4,6 +4,12 @@ import com.drimoz.factoryio.content.multiblock.MultiblockBlock;
 import com.drimoz.factoryio.content.multiblock.MultiblockShape;
 import com.drimoz.factoryio.core.init.ModBlocks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -58,6 +64,22 @@ public class CrafterBlock extends MultiblockBlock {
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         return level.isClientSide ? null : createTickerHelper(type, ModBlocks.CRAFTER_ENTITY.get(), CrafterBlockEntity::tick);
+    }
+
+    // Interface (Interaction)
+
+    /** La recette voyage avec l'ouverture : l'écran l'affiche sans rien demander de plus. */
+    @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (level.isClientSide) return InteractionResult.SUCCESS;
+        if (!(level.getBlockEntity(pos) instanceof CrafterBlockEntity crafter)) return InteractionResult.PASS;
+
+        NetworkHooks.openScreen((ServerPlayer) player, crafter, buf -> {
+            buf.writeBlockPos(pos);
+            buf.writeBoolean(crafter.getRecipeId() != null);
+            if (crafter.getRecipeId() != null) buf.writeResourceLocation(crafter.getRecipeId());
+        });
+        return InteractionResult.CONSUME;
     }
 
     // Interface (Casse)

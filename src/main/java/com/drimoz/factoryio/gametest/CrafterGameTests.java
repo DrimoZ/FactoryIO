@@ -4,6 +4,9 @@ import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.content.crafter.Crafter;
 import com.drimoz.factoryio.content.crafter.CrafterBlock;
 import com.drimoz.factoryio.content.crafter.CrafterBlockEntity;
+import com.drimoz.factoryio.content.crafter.CrafterMenu;
+import com.drimoz.factoryio.core.network.packet.C2SCrafterRecipe;
+import net.minecraft.server.level.ServerPlayer;
 import com.drimoz.factoryio.content.crafter.CrafterRecipe;
 import com.drimoz.factoryio.content.crafter.CrafterRecipes;
 import com.drimoz.factoryio.content.crafter.CrafterRegistry;
@@ -24,6 +27,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.items.IItemHandler;
@@ -162,6 +166,30 @@ public class CrafterGameTests {
             helper.succeedWhen(() -> helper.assertTrue(crafter.getItems().getStackInSlot(CrafterBlockEntity.INPUT_SLOTS).is(Items.STONE),
                     "La machine n'est pas repartie"));
         });
+    }
+
+    /**
+     * Le paquet de choix de recette (FIO-177) : accepté menu ouvert, refusé au-dessus du
+     * palier, refusé sans le menu de CETTE machine.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void theServerRefusesWhatTheScreenWouldNotOffer(GameTestHelper helper) {
+        CrafterRecipe basic = inject(helper, "packet_basic", 1);
+        CrafterRecipe advanced = inject(helper, "packet_advanced", 2);
+        CrafterBlockEntity crafter = place(helper, "crafter_mk1");
+        BlockPos pos = crafter.getBlockPos();
+
+        ServerPlayer player = FakePlayerFactory.getMinecraft(helper.getLevel());
+        player.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() - 2.5);
+
+        helper.assertFalse(C2SCrafterRecipe.apply(player, pos, basic.getId()), "Accepté sans menu ouvert");
+
+        player.containerMenu = new CrafterMenu(1, player.getInventory(), crafter);
+        helper.assertTrue(C2SCrafterRecipe.apply(player, pos, basic.getId()), "Refusé menu ouvert");
+        helper.assertFalse(C2SCrafterRecipe.apply(player, pos, advanced.getId()), "Recette de palier 2 acceptée par un Mk1");
+        helper.assertTrue(basic.getId().equals(crafter.getRecipeId()), "La recette a changé malgré le refus");
+        helper.assertTrue(basic.getId().equals(((CrafterMenu) player.containerMenu).getRecipeId()), "Le menu n'a pas suivi");
+        helper.succeed();
     }
 
     /** Recette, contenu, énergie et avancement survivent à une sauvegarde. */
