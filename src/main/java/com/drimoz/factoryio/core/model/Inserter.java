@@ -161,9 +161,6 @@ public class Inserter implements Definition {
         return this.getId().getPath();
     }
 
-    public String getModId() {
-        return this.getId().getNamespace();
-    }
 
     public boolean isFilterable() {
         return filterable;

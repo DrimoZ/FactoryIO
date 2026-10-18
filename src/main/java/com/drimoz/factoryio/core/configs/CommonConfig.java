@@ -5,23 +5,14 @@ import com.drimoz.factoryio.content.crafter.CrafterRegistry;
 import com.drimoz.factoryio.FactoryIO;
 import com.drimoz.factoryio.core.model.Belt;
 import com.drimoz.factoryio.core.model.BeltDefaults;
+import com.drimoz.factoryio.core.model.Inserter;
+import com.drimoz.factoryio.core.model.InserterDefaults;
 import net.minecraftforge.common.ForgeConfigSpec;
-
-import java.util.Arrays;
 
 public class CommonConfig {
     // Configs Base
     public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
     public static final ForgeConfigSpec SPEC;
-
-    // Inserters
-    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_GEN_BURNER_INSERTER;
-    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_GEN_INSERTER;
-    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_GEN_LONG_HANDED_INSERTER;
-    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_GEN_FILTER_INSERTER;
-    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_GEN_FAST_INSERTER;
-    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_GEN_STACK_INSERTER;
-    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_GEN_STACK_FILTER_INSERTER;
 
     // Convoyeurs livrés : leur vitesse se règle par datapack (factor_io/belts/), plus ici.
 
@@ -41,27 +32,11 @@ public class CommonConfig {
                 "These values are read before Forge loads this file (block registration happens earlier),",
                 "so a change only takes effect on the NEXT game launch.");
 
-        SHOULD_GEN_BURNER_INSERTER = BUILDER
-                .comment("Should create default Burner Inserter")
-                .defineInList("burner_inserter", true, Arrays.asList(true, false));
-        SHOULD_GEN_INSERTER = BUILDER
-                .comment("Should create default Inserter")
-                .defineInList("inserter", true, Arrays.asList(true, false));
-        SHOULD_GEN_LONG_HANDED_INSERTER = BUILDER
-                .comment("Should create default Long Handed Inserter")
-                .defineInList("long_handed_inserter", true, Arrays.asList(true, false));
-        SHOULD_GEN_FILTER_INSERTER = BUILDER
-                .comment("Should create default Filter Inserter")
-                .defineInList("filter_inserter", true, Arrays.asList(true, false));
-        SHOULD_GEN_FAST_INSERTER = BUILDER
-                .comment("Should create default Fast Inserter")
-                .defineInList("fast_inserter", true, Arrays.asList(true, false));
-        SHOULD_GEN_STACK_INSERTER = BUILDER
-                .comment("Should create default Stack Inserter")
-                .defineInList("stack_inserter", true, Arrays.asList(true, false));
-        SHOULD_GEN_STACK_FILTER_INSERTER = BUILDER
-                .comment("Should create default Stack Filter Inserter")
-                .defineInList("stack_filter_inserter", true, Arrays.asList(true, false));
+        // Valeurs lues par EarlyConfig, jamais ici : le spec ne sert qu'à écrire le fichier.
+        for (Inserter inserter : InserterDefaults.all()) {
+            BUILDER.comment("Should create default " + inserter.getName())
+                    .define(inserter.getName(), true);
+        }
 
         BUILDER.pop();
 
