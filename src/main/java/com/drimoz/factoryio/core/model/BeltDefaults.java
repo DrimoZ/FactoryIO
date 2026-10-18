@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.model;
 
+import com.drimoz.factoryio.core.belts.BeltTransport;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
@@ -26,8 +27,8 @@ public final class BeltDefaults {
     /** Des instances neuves à chaque appel : chacune porte sa vitesse, réglable à chaud. */
     public static List<Belt> all() {
         return List.of(
-                new Belt(TRANSPORT, TRANSPORT_TICKS, true, Optional.of(FAST), null),
-                new Belt(FAST, FAST_TICKS, true, Optional.of(EXPRESS), null),
-                new Belt(EXPRESS, EXPRESS_TICKS, true, Optional.empty(), null));
+                new Belt(TRANSPORT, BeltTransport.everyTicks(TRANSPORT_TICKS), true, Optional.of(FAST), null),
+                new Belt(FAST, BeltTransport.everyTicks(FAST_TICKS), true, Optional.of(EXPRESS), null),
+                new Belt(EXPRESS, BeltTransport.everyTicks(EXPRESS_TICKS), true, Optional.empty(), null));
     }
 }

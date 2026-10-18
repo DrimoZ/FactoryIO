@@ -38,7 +38,7 @@ class BeltTransportTest {
     }
 
     private static BeltTransport<String> saturated(int ticksPerSlot) {
-        BeltTransport<String> belt = new BeltTransport<>(ticksPerSlot);
+        BeltTransport<String> belt = new BeltTransport<>(BeltTransport.everyTicks(ticksPerSlot));
 
         for (int lane = 0; lane < BeltTransport.LANES; lane++) {
             for (int slot = 0; slot < belt.lane(lane).capacity(); slot++) {
@@ -62,7 +62,7 @@ class BeltTransportTest {
     @Test
     @DisplayName("Changer la cadence ramène le sous-tick dans les bornes")
     void changingTheCadenceClampsTheSubTick() {
-        BeltTransport<String> belt = new BeltTransport<>(4);
+        BeltTransport<String> belt = new BeltTransport<>(BeltTransport.everyTicks(4));
         belt.offer(BeltTransport.LEFT, "item");
 
         belt.tick(new Recorder());
@@ -71,7 +71,7 @@ class BeltTransportTest {
 
         assertEquals(3, belt.subTick(), "le montage du test ne place pas le sous-tick au maximum");
 
-        belt.setTicksPerSlot(1);
+        belt.setRate(BeltTransport.everyTicks(1));
 
         assertEquals(0, belt.subTick(), "le sous-tick a survécu à une cadence plus courte");
         assertTrue(belt.progress(BeltTransport.LEFT, 0, 1f) <= 1f,
@@ -81,10 +81,10 @@ class BeltTransportTest {
     @Test
     @DisplayName("La nouvelle cadence s'applique aux pas suivants")
     void theNewCadenceTakesEffect() {
-        BeltTransport<String> belt = new BeltTransport<>(4);
+        BeltTransport<String> belt = new BeltTransport<>(BeltTransport.everyTicks(4));
         belt.offer(BeltTransport.LEFT, "item");
 
-        belt.setTicksPerSlot(1);
+        belt.setRate(BeltTransport.everyTicks(1));
 
         assertTrue(belt.tick(new Recorder()), "un pas par tick était attendu après le changement");
         assertEquals(1, belt.lane(BeltTransport.LEFT).count());
@@ -93,9 +93,9 @@ class BeltTransportTest {
     @Test
     @DisplayName("Une cadence nulle ou négative est refusée")
     void aCadenceMustBeAtLeastOneTick() {
-        BeltTransport<String> belt = new BeltTransport<>(4);
+        BeltTransport<String> belt = new BeltTransport<>(BeltTransport.everyTicks(4));
 
-        assertThrows(IllegalArgumentException.class, () -> belt.setTicksPerSlot(0));
+        assertThrows(IllegalArgumentException.class, () -> belt.setRate(0));
     }
 
     // L'horloge
@@ -192,7 +192,7 @@ class BeltTransportTest {
     @Test
     @DisplayName("Un item ne change pas de voie en franchissant la frontière")
     void itemsKeepTheirLane() {
-        BeltTransport<String> belt = new BeltTransport<>(1);
+        BeltTransport<String> belt = new BeltTransport<>(BeltTransport.everyTicks(1));
         belt.offerAt(BeltTransport.RIGHT, belt.lane(BeltTransport.RIGHT).exitSlot(), "a");
 
         Recorder sink = new Recorder();
@@ -208,7 +208,7 @@ class BeltTransportTest {
     @Test
     @DisplayName("Un convoyeur vide peut dormir, un convoyeur chargé non")
     void onlyAnEmptyBeltSleeps() {
-        BeltTransport<String> belt = new BeltTransport<>(4);
+        BeltTransport<String> belt = new BeltTransport<>(BeltTransport.everyTicks(4));
 
         assertTrue(belt.canSleep());
 
@@ -225,7 +225,7 @@ class BeltTransportTest {
     @Test
     @DisplayName("S'endormir remet le sous-tick à zéro")
     void sleepingResetsTheClock() {
-        BeltTransport<String> belt = new BeltTransport<>(4);
+        BeltTransport<String> belt = new BeltTransport<>(BeltTransport.everyTicks(4));
 
         belt.tick(BeltSink.blocked());
         belt.tick(BeltSink.blocked());
@@ -255,7 +255,7 @@ class BeltTransportTest {
     @Test
     @DisplayName("Un sous-tick incohérent en sauvegarde est ramené dans le domaine")
     void restoredSubTickIsBounded() {
-        BeltTransport<String> belt = new BeltTransport<>(4);
+        BeltTransport<String> belt = new BeltTransport<>(BeltTransport.everyTicks(4));
 
         belt.restoreSubTick(99);
         assertEquals(3, belt.subTick(), "au plus un cran avant le pas");
@@ -269,8 +269,8 @@ class BeltTransportTest {
     @Test
     @DisplayName("Daté, le pas tombe au même tick pour tous les convoyeurs d'une vitesse")
     void datedStepsShareOnePhase() {
-        BeltTransport<String> early = new BeltTransport<>(4);
-        BeltTransport<String> late = new BeltTransport<>(4);
+        BeltTransport<String> early = new BeltTransport<>(BeltTransport.everyTicks(4));
+        BeltTransport<String> late = new BeltTransport<>(BeltTransport.everyTicks(4));
         early.offer(BeltTransport.LEFT, "a");
 
         // L'un tique depuis le tick 0, l'autre ne commence qu'au tick 2 : ils doivent pourtant

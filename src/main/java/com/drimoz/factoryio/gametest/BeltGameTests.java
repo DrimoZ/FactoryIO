@@ -357,19 +357,19 @@ public class BeltGameTests {
         belt(helper, FIRST).accept(BeltTransport.LEFT, new ItemStack(Items.COBBLESTONE));
 
         Belt definition = BeltRegistry.get(BeltDefaults.TRANSPORT);
-        int changed = definition.getDefaultTicksPerSlot() + 3;
+        int changed = Belt.rateOf(15);
 
-        definition.setTicksPerSlot(changed);
+        definition.setRate(changed);
         BeltSettings.invalidate();
 
         helper.startSequence()
                 .thenIdle(2)
                 .thenExecute(() -> {
-                    int actual = belt(helper, FIRST).transport().ticksPerSlot();
+                    int actual = belt(helper, FIRST).transport().rate();
 
                     // Remis avant toute assertion : un échec ne doit pas laisser la vitesse
                     // modifiée pour les tests suivants.
-                    definition.resetTicksPerSlot();
+                    definition.resetRate();
                     BeltSettings.invalidate();
 
                     helper.assertTrue(actual == changed,

@@ -23,26 +23,26 @@ public class Belt implements Definition {
     private static final double TICKS_PER_SECOND = 20.0D;
 
     private final ResourceLocation id;
-    private final int defaultTicksPerSlot;
+    private final int defaultRate;
     private final boolean ramp;
     private final Optional<ResourceLocation> next;
     private final ResourceLocation texture;
     private final Translation translation = new Translation();
 
-    private int ticksPerSlot;
+    private int rate;
     private Supplier<Block> block;
     @Nullable
     private Supplier<Block> rampBlock;
 
     /**
-     * @param ticksPerSlot durée d'un pas : 1 = 40 items/s, 2 = 20, 4 = 10
+     * @param rate    cadence d'un pas, voir {@link #rateOf}
      * @param texture      texture de la bande, ou {@code null} pour {@code <ns>:block/<nom>}
      */
-    public Belt(ResourceLocation id, int ticksPerSlot, boolean ramp,
+    public Belt(ResourceLocation id, int rate, boolean ramp,
                 Optional<ResourceLocation> next, @Nullable ResourceLocation texture) {
         this.id = id;
-        this.defaultTicksPerSlot = ticksPerSlot;
-        this.ticksPerSlot = ticksPerSlot;
+        this.defaultRate = rate;
+        this.rate = rate;
         this.ramp = ramp;
         this.next = next;
         this.texture = texture != null ? texture : new ResourceLocation(id.getNamespace(), "block/" + id.getPath());
@@ -75,25 +75,39 @@ public class Belt implements Definition {
 
     // Interface (Vitesse)
 
-    public int getTicksPerSlot() {
-        return this.ticksPerSlot;
+    /** Cadence d'un pas, en fraction de case par tick — voir {@link BeltTransport#FULL_SPEED}. */
+    public int getRate() {
+        return this.rate;
     }
 
-    public int getDefaultTicksPerSlot() {
-        return this.defaultTicksPerSlot;
+    public int getDefaultRate() {
+        return this.defaultRate;
     }
 
     /** Débit d'un bloc saturé, les deux voies comprises. */
     public double getItemsPerSecond() {
-        return BeltTransport.LANES * TICKS_PER_SECOND / this.ticksPerSlot;
+        return itemsPerSecondOf(this.rate);
     }
 
-    public void setTicksPerSlot(int ticksPerSlot) {
-        this.ticksPerSlot = Math.max(1, ticksPerSlot);
+    /** Borné à ]0, une case par tick] : la valeur arrive aussi d'un paquet réseau. */
+    public void setRate(int rate) {
+        this.rate = Math.max(1, Math.min(rate, BeltTransport.FULL_SPEED));
     }
 
-    public void resetTicksPerSlot() {
-        this.ticksPerSlot = this.defaultTicksPerSlot;
+    public void resetRate() {
+        this.rate = this.defaultRate;
+    }
+
+    /** Débit maximal d'un convoyeur : une case par tick sur chaque voie. */
+    public static final double MAX_ITEMS_PER_SECOND = BeltTransport.LANES * TICKS_PER_SECOND;
+
+    public static double itemsPerSecondOf(int rate) {
+        return MAX_ITEMS_PER_SECOND * rate / BeltTransport.FULL_SPEED;
+    }
+
+    public static int rateOf(double itemsPerSecond) {
+        return (int) Math.max(1L, Math.min(Math.round(itemsPerSecond / MAX_ITEMS_PER_SECOND * BeltTransport.FULL_SPEED),
+                BeltTransport.FULL_SPEED));
     }
 
     // Interface (Registre)
@@ -118,7 +132,7 @@ public class Belt implements Definition {
 
     @Override
     public String toString() {
-        return "Belt{" + this.id + ", ticksPerSlot=" + this.ticksPerSlot + ", ramp=" + this.ramp
+        return "Belt{" + this.id + ", itemsPerSecond=" + getItemsPerSecond() + ", ramp=" + this.ramp
                 + ", next=" + this.next.map(ResourceLocation::toString).orElse("—") + "}";
     }
 

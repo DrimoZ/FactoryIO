@@ -16,9 +16,14 @@ package com.drimoz.factoryio.core.belts;
  *
  * <h2>L'horloge</h2>
  *
- * <p>Un compteur de sous-ticks, et un pas tous les {@code ticksPerSlot}. C'est ce qui donne sa
- * vitesse au convoyeur, et c'est aussi ce que le rendu interpole : sans lui, les items
- * sauteraient de case en case.
+ * <p>Une cadence en fraction de pas par tick ({@link #FULL_SPEED} = une case par tick), et une
+ * phase qui l'accumule. C'est ce qui donne sa vitesse au convoyeur, et c'est aussi ce que le
+ * rendu interpole : sans elle, les items sauteraient de case en case.
+ *
+ * <p>La cadence est <b>fractionnaire</b> (FIO-189) : 15 items/s font un pas tous les 2,67 ticks,
+ * en alternant des intervalles de 2 et 3. Le plafond reste une case par tick : un item ne
+ * franchit jamais deux cases dans le même tick, c'est ce qui garde le mouvement indépendant de
+ * l'ordre de tick ({@link BeltLane#advance}).
  *
  * <h2>Les deux voies sont indépendantes</h2>
  *
@@ -34,29 +39,35 @@ public final class BeltTransport<T> {
     public static final int LEFT = 0;
     public static final int RIGHT = 1;
 
+    /**
+     * Cadence d'une case par tick, la plus haute.
+     *
+     * <p>720 720 est le plus petit multiple commun de 1 à 16 : une cadence d'un pas tous les
+     * {@code n} ticks, pour tout {@code n} jusqu'à 16, y est exacte, sans dérive.
+     */
+    public static final int FULL_SPEED = 720_720;
+
     private final BeltLane<T>[] lanes;
 
-    /** Non final : un changement de configuration doit s'appliquer aux blocs déjà posés. */
-    private int ticksPerSlot;
+    /**
+     * Fraction de case par tick, sur {@link #FULL_SPEED}. Non final : un changement de
+     * vitesse doit s'appliquer aux blocs déjà posés.
+     */
+    private int rate;
 
-    /** Sous-ticks écoulés depuis le dernier pas, de 0 à {@code ticksPerSlot}. */
-    private int subTick;
+    /** Cadence accumulée depuis le dernier pas, de 0 à {@link #FULL_SPEED} exclu. */
+    private long phase;
 
     /** Instant du dernier tick, pour dater les glissements que le rendu interpole. */
     private long clock;
 
-    @SuppressWarnings("unchecked")
-    public BeltTransport(int ticksPerSlot) {
-        this(ticksPerSlot, BeltLane.DEFAULT_CAPACITY);
+    public BeltTransport(int rate) {
+        this(rate, BeltLane.DEFAULT_CAPACITY);
     }
 
     @SuppressWarnings("unchecked")
-    public BeltTransport(int ticksPerSlot, int slotsPerLane) {
-        if (ticksPerSlot < 1) {
-            throw new IllegalArgumentException("Un pas dure au moins un tick : " + ticksPerSlot);
-        }
-
-        this.ticksPerSlot = ticksPerSlot;
+    public BeltTransport(int rate, int slotsPerLane) {
+        this.rate = checkRate(rate);
         this.lanes = new BeltLane[LANES];
 
         for (int lane = 0; lane < LANES; lane++) {
@@ -64,31 +75,40 @@ public final class BeltTransport<T> {
         }
     }
 
+    /** La cadence d'un pas tous les {@code ticksPerSlot} ticks. */
+    public static int everyTicks(int ticksPerSlot) {
+        if (ticksPerSlot < 1) throw new IllegalArgumentException("Un pas dure au moins un tick : " + ticksPerSlot);
+
+        return Math.max(1, Math.round((float) FULL_SPEED / ticksPerSlot));
+    }
+
+    private static int checkRate(int rate) {
+        if (rate < 1 || rate > FULL_SPEED) {
+            throw new IllegalArgumentException("Cadence hors de ]0, une case par tick] : " + rate);
+        }
+
+        return rate;
+    }
+
     // Interface (Lecture)
 
-    public int ticksPerSlot() {
-        return this.ticksPerSlot;
+    public int rate() {
+        return this.rate;
     }
 
     /**
      * Change la cadence d'un convoyeur déjà en service.
      *
-     * <p>Le sous-tick est <b>ramené dans les bornes</b> de la nouvelle cadence. Sans cela, un
-     * convoyeur qui passe de quatre ticks par case à un garderait un sous-tick de trois, et
-     * {@code progress} rendrait une avance supérieure à 1 : l'item déborderait de son bloc au
-     * premier rendu. Même raison que {@link #restoreSubTick}, autre source, même écueil.
+     * <p>La phase reste sous {@link #FULL_SPEED} quelle que soit la cadence : aucun pas n'est
+     * dû d'avance, et le rendu ne peut pas faire déborder un item de son bloc.
      */
-    public void setTicksPerSlot(int ticksPerSlot) {
-        if (ticksPerSlot < 1) {
-            throw new IllegalArgumentException("Un pas dure au moins un tick : " + ticksPerSlot);
-        }
-
-        this.ticksPerSlot = ticksPerSlot;
-        this.subTick = Math.min(this.subTick, ticksPerSlot - 1);
+    public void setRate(int rate) {
+        this.rate = checkRate(rate);
     }
 
+    /** Ticks entiers écoulés depuis le dernier pas. */
     public int subTick() {
-        return this.subTick;
+        return (int) (this.phase / this.rate);
     }
 
     public BeltLane<T> lane(int lane) {
@@ -118,8 +138,8 @@ public final class BeltTransport<T> {
     /**
      * Fait avancer le convoyeur d'un tick.
      *
-     * <p>Le pas n'a lieu qu'une fois tous les {@code ticksPerSlot} ; entre-temps seul le
-     * sous-tick progresse, ce qui suffit au rendu.
+     * <p>Le pas n'a lieu que lorsque la phase atteint une case ; entre-temps seule la phase
+     * progresse, ce qui suffit au rendu.
      *
      * @return {@code true} si quelque chose a bougé, de quoi décider d'une mise en sommeil
      */
@@ -140,18 +160,22 @@ public final class BeltTransport<T> {
         // phase, née de l'arrivée de son premier item ; deux blocs voisins avançaient alors à
         // des instants différents, et un item passait deux ticks sur l'un, quatre sur l'autre —
         // une saccade à chaque frontière.
+        //
+        // Un pas a lieu au tick où le compte des cases parcourues depuis l'origine du monde
+        // change d'entier : une fonction du temps seul, donc la même pour tous les convoyeurs
+        // de même cadence, et pour le client comme le serveur.
         if (stamp == BeltLane.NO_STAMP) {
             this.clock++;
-            this.subTick++;
+            this.phase += this.rate;
+            if (this.phase < FULL_SPEED) return false;
+            this.phase -= FULL_SPEED;
         } else {
             this.clock = stamp;
-            this.subTick = (int) Math.floorMod(stamp + 1, (long) this.ticksPerSlot);
-            if (this.subTick == 0) this.subTick = this.ticksPerSlot;
+            long before = Math.floorDiv(stamp * this.rate, FULL_SPEED);
+            long reached = (stamp + 1) * this.rate;
+            this.phase = Math.floorMod(reached, (long) FULL_SPEED);
+            if (Math.floorDiv(reached, FULL_SPEED) == before) return false;
         }
-
-        if (this.subTick < this.ticksPerSlot) return false;
-
-        this.subTick = 0;
 
         boolean moved = false;
         long now = this.clock;
@@ -181,7 +205,7 @@ public final class BeltTransport<T> {
     public boolean canSleep() {
         if (!isEmpty()) return false;
 
-        this.subTick = 0;
+        this.phase = 0;
 
         return true;
     }
@@ -225,7 +249,7 @@ public final class BeltTransport<T> {
             lane.clear();
         }
 
-        this.subTick = 0;
+        this.phase = 0;
     }
 
     // Interface (Rendu)
@@ -237,12 +261,12 @@ public final class BeltTransport<T> {
      * @param partialTick fraction de tick écoulée, pour un rendu fluide entre deux ticks
      */
     public float progress(int lane, int slot, float partialTick) {
-        return this.lanes[lane].progressOf(slot, this.clock, partialTick, this.ticksPerSlot);
+        return this.lanes[lane].progressOf(slot, this.clock, partialTick, this.rate);
     }
 
     /** Position de l'item du tampon d'une voie, légèrement en deçà de l'entrée. */
     public float stagedProgress(int lane, float partialTick) {
-        return this.lanes[lane].stagedProgress(this.clock, partialTick, this.ticksPerSlot);
+        return this.lanes[lane].stagedProgress(this.clock, partialTick, this.rate);
     }
 
     // Interface (Persistance)
@@ -250,11 +274,10 @@ public final class BeltTransport<T> {
     /**
      * Restaure le sous-tick lu en NBT.
      *
-     * <p>Borné : une sauvegarde écrite avec un autre {@code ticksPerSlot} — un datapack qui a
-     * changé la vitesse entre deux sessions — donnerait sinon une progression au-delà de 1, et
-     * un item qui déborde de son bloc au premier rendu.
+     * <p>Borné : une sauvegarde écrite avec une autre cadence — un datapack qui a changé la
+     * vitesse entre deux sessions — donnerait sinon un pas dû d'avance.
      */
     public void restoreSubTick(int subTick) {
-        this.subTick = Math.max(0, Math.min(subTick, this.ticksPerSlot - 1));
+        this.phase = Math.max(0L, Math.min((long) subTick * this.rate, FULL_SPEED - 1L));
     }
 }

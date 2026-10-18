@@ -42,7 +42,7 @@ class BeltChainTest {
 
         Chain(int length, int ticksPerSlot) {
             for (int index = 0; index < length; index++) {
-                belts.add(new BeltTransport<>(ticksPerSlot));
+                belts.add(new BeltTransport<>(BeltTransport.everyTicks(ticksPerSlot)));
             }
         }
 

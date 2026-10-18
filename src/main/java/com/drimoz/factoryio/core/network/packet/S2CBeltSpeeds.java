@@ -20,33 +20,33 @@ import java.util.function.Supplier;
  */
 public class S2CBeltSpeeds {
 
-    private final Map<ResourceLocation, Integer> ticksPerSlot;
+    private final Map<ResourceLocation, Integer> rates;
 
-    public S2CBeltSpeeds(Map<ResourceLocation, Integer> ticksPerSlot) {
-        this.ticksPerSlot = ticksPerSlot;
+    public S2CBeltSpeeds(Map<ResourceLocation, Integer> rates) {
+        this.rates = rates;
     }
 
     public static S2CBeltSpeeds current() {
         Map<ResourceLocation, Integer> speeds = new HashMap<>();
-        for (Belt belt : BeltRegistry.all()) speeds.put(belt.getId(), belt.getTicksPerSlot());
+        for (Belt belt : BeltRegistry.all()) speeds.put(belt.getId(), belt.getRate());
         return new S2CBeltSpeeds(speeds);
     }
 
     public S2CBeltSpeeds(FriendlyByteBuf buf) {
-        this.ticksPerSlot = buf.readMap(FriendlyByteBuf::readResourceLocation, FriendlyByteBuf::readVarInt);
+        this.rates = buf.readMap(FriendlyByteBuf::readResourceLocation, FriendlyByteBuf::readVarInt);
     }
 
     public void toBytes(FriendlyByteBuf buf) {
-        buf.writeMap(this.ticksPerSlot, FriendlyByteBuf::writeResourceLocation, FriendlyByteBuf::writeVarInt);
+        buf.writeMap(this.rates, FriendlyByteBuf::writeResourceLocation, FriendlyByteBuf::writeVarInt);
     }
 
     public void handle(Supplier<NetworkEvent.Context> supplier) {
         NetworkEvent.Context context = supplier.get();
 
         context.enqueueWork(() -> {
-            this.ticksPerSlot.forEach((id, ticks) -> {
+            this.rates.forEach((id, rate) -> {
                 Belt belt = BeltRegistry.get(id);
-                if (belt != null) belt.setTicksPerSlot(ticks);
+                if (belt != null) belt.setRate(rate);
             });
             BeltSettings.invalidate();
         });

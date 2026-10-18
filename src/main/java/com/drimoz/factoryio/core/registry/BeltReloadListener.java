@@ -7,7 +7,7 @@ import com.drimoz.factoryio.core.model.BeltCodec;
 /**
  * Vitesse des convoyeurs apportée par un datapack : {@code data/<ns>/factor_io/belts/<nom>.json}.
  *
- * <p>Seule {@code ticksPerSlot} est reprise : apparence, rampe et tier suivant décident d'assets
+ * <p>Seule la vitesse est reprise : apparence, rampe et tier suivant décident d'assets
  * et de blocs, figés au lancement.
  */
 public class BeltReloadListener extends DefinitionReloadListener<Belt> {
@@ -23,13 +23,13 @@ public class BeltReloadListener extends DefinitionReloadListener<Belt> {
 
     @Override
     protected void reset(Belt target) {
-        target.resetTicksPerSlot();
+        target.resetRate();
         BeltSettings.invalidate();
     }
 
     @Override
     protected void applyTuning(Belt target, Belt parsed) {
-        target.setTicksPerSlot(parsed.getTicksPerSlot());
+        target.setRate(parsed.getRate());
         BeltSettings.invalidate();
     }
 }

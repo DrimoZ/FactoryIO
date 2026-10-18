@@ -397,15 +397,15 @@ public final class BeltLane<T> {
      *
      * @param clock        instant du dernier tick
      * @param partialTick  fraction écoulée depuis, de 0 à 1
-     * @param ticksPerSlot durée d'un pas, en ticks
+     * @param rate         cadence du convoyeur, voir {@link BeltTransport#FULL_SPEED}
      */
-    public float progressOf(int slot, long clock, float partialTick, int ticksPerSlot) {
-        return (slot + slide(this.slidAt[slot], clock, partialTick, ticksPerSlot)) / capacity();
+    public float progressOf(int slot, long clock, float partialTick, int rate) {
+        return (slot + slide(this.slidAt[slot], clock, partialTick, rate)) / capacity();
     }
 
     /** Position de l'item du tampon : il franchit la frontière amont, de -1/capacité à 0. */
-    public float stagedProgress(long clock, float partialTick, int ticksPerSlot) {
-        return (entrySlot() + slide(this.stagedAt, clock, partialTick, ticksPerSlot)) / capacity();
+    public float stagedProgress(long clock, float partialTick, int rate) {
+        return (entrySlot() + slide(this.stagedAt, clock, partialTick, rate)) / capacity();
     }
 
     /**
@@ -414,13 +414,33 @@ public final class BeltLane<T> {
      * <p>La soustraction se fait en {@code long} : le temps du monde se compte en millions de
      * ticks, et un {@code float} n'y distingue plus deux ticks voisins, encore moins une
      * fraction d'image.
+     *
+     * <p>Le glissement dure jusqu'au <b>pas suivant</b>, pas une durée moyenne. À une cadence
+     * fractionnaire, les pas alternent des intervalles inégaux — 2 et 3 ticks pour 15 items/s.
+     * Une durée moyenne laisserait l'item s'arrêter avant le pas suivant, ou au contraire le
+     * ferait sauter en avant quand le pas tombe plus tôt.
      */
-    private static float slide(long at, long clock, float partialTick, int ticksPerSlot) {
+    private static float slide(long at, long clock, float partialTick, int rate) {
         if (at == NO_STAMP) return 0f;
 
-        float elapsed = ((clock - at) + partialTick) / ticksPerSlot;
+        float elapsed = ((clock - at) + partialTick) / stepDuration(at, rate);
 
         return elapsed >= 1f ? 0f : Math.max(elapsed, 0f) - 1f;
+    }
+
+    /**
+     * Ticks entre le pas daté {@code at} et le suivant, à cette cadence.
+     *
+     * <p>Inverse exact de la règle de {@link BeltTransport#tick(BeltSink, long)} : le pas
+     * franchi en {@code at} porte le compte à {@code k}, le suivant a lieu au premier tick
+     * {@code t} où {@code (t + 1) × rate} atteint {@code (k + 1) × FULL_SPEED}.
+     */
+    private static long stepDuration(long at, int rate) {
+        long full = BeltTransport.FULL_SPEED;
+        long reached = Math.floorDiv((at + 1) * rate, full) + 1;
+        long next = -Math.floorDiv(-reached * full, rate) - 1;
+
+        return Math.max(1L, next - at);
     }
 
     /**
