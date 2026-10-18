@@ -111,7 +111,7 @@ public class BeltBlockEntity extends BlockEntity {
         super(ModBlocks.BELT_ENTITY.get(), pos, state);
 
         this.transport = new BeltTransport<>(
-                ticksPerSlotOf(state), BeltLane.DEFAULT_CAPACITY);
+                rateOf(state), BeltLane.DEFAULT_CAPACITY);
 
         this.speedGeneration = BeltSettings.generation();
         this.reconcilePhase = Math.floorMod(pos.hashCode(), RECONCILE_PERIOD);
@@ -130,7 +130,7 @@ public class BeltBlockEntity extends BlockEntity {
         if (generation == this.speedGeneration) return;
 
         this.speedGeneration = generation;
-        this.transport.setTicksPerSlot(ticksPerSlotOf(getBlockState()));
+        this.transport.setRate(rateOf(getBlockState()));
     }
 
     @SuppressWarnings("unchecked")
@@ -158,8 +158,8 @@ public class BeltBlockEntity extends BlockEntity {
      * <p>Plusieurs vitesses et trois sens auraient multiplié par neuf les variantes de blockstate,
      * pour une information qui ne change jamais sur un bloc donné.
      */
-    private static int ticksPerSlotOf(BlockState state) {
-        return state.getBlock() instanceof BeltBlock belt ? belt.belt().getTicksPerSlot() : BeltCodec.DEFAULT_TICKS_PER_SLOT;
+    private static int rateOf(BlockState state) {
+        return state.getBlock() instanceof BeltBlock belt ? belt.belt().getRate() : BeltCodec.DEFAULT_RATE;
     }
 
     /** Direction dans laquelle la bande déverse. Lue à chaque appel : une rotation la change. */

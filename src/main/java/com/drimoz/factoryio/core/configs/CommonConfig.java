@@ -46,7 +46,7 @@ public class CommonConfig {
         BUILDER.comment(
                 "Choose here whether the shipped belts should be created. Read before Forge loads this",
                 "file, so a change only takes effect on the NEXT game launch. Belt speed is set by",
-                "datapack: data/<namespace>/factor_io/belts/<belt>.json, { \"ticksPerSlot\": 2 }.");
+                "datapack: data/<namespace>/factor_io/belts/<belt>.json, { \"itemsPerSecond\": 15 }.");
 
         for (Belt belt : BeltDefaults.all()) {
             BUILDER.comment("Should create default " + belt.getName())

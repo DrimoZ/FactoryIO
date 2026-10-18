@@ -197,8 +197,60 @@ lecture.
 
 ### Reproduire
 
-Les trois classes se compilent hors du projet :
+Les trois classes se compilent hors du projet, avec le harness de mesure :
 
 ```bash
-javac -d out src/main/java/com/drimoz/factoryio/core/belts/Belt{Lane,Transport,Sink}.java
+javac -d out tools/BeltTransportBench.java src/main/java/com/drimoz/factoryio/core/belts/Belt{Lane,Transport,Sink}.java
+java -cp out BeltTransportBench 180180 moving
 ```
+
+Lancer chaque cas dans une JVM neuve, plusieurs fois, et garder la médiane : voir la section
+suivante.
+
+---
+
+## Convoyeurs — vitesse libre (18/10/2026)
+
+FIO-189 remplace `ticksPerSlot` (40/n items/s seulement) par une cadence fractionnaire. Deux
+questions : la nouvelle horloge coûte-t-elle plus cher, et les vitesses fractionnaires
+tiennent-elles leur débit ?
+
+[`BeltTransportBench`](../tools/BeltTransportBench.java), 2 000 convoyeurs chaînés, ticks datés
+comme en jeu, médiane de 5 JVM neuves par cas.
+
+### Avant, après
+
+| Régime | 10 items/s | | 40 items/s | |
+|---|---|---|---|---|
+| | avant | après | avant | après |
+| En mouvement | 0,0585 | 0,0620 | 0,1863 | 0,1860 |
+| Comprimé | 0,0300 | 0,0300 | 0,0620 | 0,0654 |
+| Vide | 0,0246 | 0,0226 | 0,0491 | 0,0480 |
+
+*(ms/tick pour 2 000 convoyeurs)*
+
+Les écarts, ±5 %, restent dans la dispersion d'une même version : **aucune régression
+mesurable**.
+
+### Vitesses fractionnaires
+
+| Vitesse | En mouvement | Comprimé | Débit mesuré |
+|---|---|---|---|
+| 10 | 0,055 | 0,027 | 10,000 |
+| **15** | **0,069** | **0,033** | **15,000** |
+| 20 | 0,098 | 0,043 | 20,000 |
+| **33,3** | **0,122** | **0,054** | **33,334** |
+| 40 | 0,168 | 0,060 | 40,000 |
+
+Le coût suit le nombre de pas, rien de plus : une cadence fractionnaire se range entre ses deux
+voisines entières. Le débit est exact ; 33,334 au lieu de 33,333 vient de la fenêtre de
+mesure, qui compte un item de plus selon sa position dans le cycle.
+
+### Pourquoi pas les `BeltBenchmarks` en jeu
+
+Ils ont tourné avant et après FIO-189, et passent. Mais d'un lancement à l'autre ils varient
+d'un facteur 2 à 4 **dans les deux sens** sur des chemins que le changement ne touche pas —
+convoyeurs endormis de 0,107 à 0,423 ms pour 1 000, comprimés de 1,23 à 0,57. Ils tournent
+au milieu des autres GameTests, sans JVM dédiée : bons pour attraper un ordre de grandeur,
+c'est leur rôle (« Pourquoi les seuils sont larges »), pas pour comparer deux versions à
+quelques pour cent.

@@ -1,5 +1,6 @@
 package com.drimoz.factoryio.core.belts;
 
+import com.drimoz.factoryio.core.model.Belt;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -21,12 +22,15 @@ class BeltSmoothnessTest {
     /** Un temps du monde réaliste : c'est là qu'un calcul en {@code float} perdrait le tick. */
     private static final long WORLD_TIME = 12_345_678L;
 
-    @ParameterizedTest(name = "{0} tick(s) par case")
-    @ValueSource(ints = {1, 2, 4})
+    @ParameterizedTest(name = "{0} items/s")
+    @ValueSource(doubles = {40, 20, 10, 15, 7.5})
     @DisplayName("sur deux blocs saturés, un item glisse sans saut, frontière comprise")
-    void saturatedLineMovesSmoothly(int ticksPerSlot) {
-        BeltTransport<String> first = new BeltTransport<>(ticksPerSlot);
-        BeltTransport<String> second = new BeltTransport<>(ticksPerSlot);
+    void saturatedLineMovesSmoothly(double itemsPerSecond) {
+        int rate = Belt.rateOf(itemsPerSecond);
+        // Le plus court des intervalles entre deux pas : à une cadence fractionnaire, ils alternent.
+        int shortest = BeltTransport.FULL_SPEED / rate;
+        BeltTransport<String> first = new BeltTransport<>(rate);
+        BeltTransport<String> second = new BeltTransport<>(rate);
         fill(first.lane(BeltTransport.LEFT), "a");
         fill(second.lane(BeltTransport.LEFT), "b");
 
@@ -36,7 +40,7 @@ class BeltSmoothnessTest {
         int fed = 0;
         boolean crossed = false;
 
-        for (long time = WORLD_TIME; time < WORLD_TIME + ticksPerSlot * 16L; time++) {
+        for (long time = WORLD_TIME; time < WORLD_TIME + (shortest + 1) * 16L; time++) {
             long stamp = time;
 
             // L'aval tique d'abord, puis l'amont lui passe sa tête : l'ordre le plus courant.
@@ -55,7 +59,7 @@ class BeltSmoothnessTest {
             }
         }
 
-        float expected = 1f / (BeltLane.DEFAULT_CAPACITY * ticksPerSlot * FRAMES_PER_TICK);
+        float expected = 1f / (BeltLane.DEFAULT_CAPACITY * shortest * FRAMES_PER_TICK);
 
         assertTrue(crossed, "l'item suivi n'a jamais atteint le second bloc");
         assertTrue(largest <= expected * 1.01f,

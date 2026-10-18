@@ -3,6 +3,18 @@
 All notable changes to Factor'I/O. Versions follow `MAJOR.MINOR.PATCH`, and the jar is named
 `factor_io-<minecraft>-<version>.jar`.
 
+## [Unreleased]
+
+### Changed
+
+- **Belt speed takes any value**, in items per second: `{ "itemsPerSecond": 15 }` in a belt
+  definition or datapack, from 0.2 to 40. Before, only 40, 20, 13.3, 10… were possible. Items
+  still advance one slot at a time; at speeds that do not divide 40, steps alternate between
+  two intervals, and the rendering follows them without jumps. 40 remains the ceiling: one slot
+  per tick on each lane.
+- `ticksPerSlot` is still read, so existing datapacks keep working. A file that sets both
+  `itemsPerSecond` and `ticksPerSlot` is rejected, with a message naming both keys.
+
 ## [0.4.0-beta] — 2026-10-01
 
 The first machine: **crafters**, Factorio's assembling machines, in three tiers, with modules and

@@ -156,14 +156,18 @@ two mods never need to know about each other.
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
-| `ticksPerSlot` | int, 1 to 200 | 4 | ticks for an item to advance one slot; **the only field describing speed** |
+| `itemsPerSecond` | number, 0.2 to 40 | 10 | throughput of a saturated block, both lanes; **the only field describing speed** |
 | `ramp` | bool | true | whether this belt gets a ramp variant |
 | `next` | resource location | — | the tier above, for in-place upgrade and JEI |
 | `texture` | resource location | `<namespace>:block/<name>` | texture of the belt surface |
 | `translations` | map | — | display names per language code |
 
-Rate is derived: `items/s = 2 lanes × 20 / ticksPerSlot`, so 4 gives 10 items/s, 2 gives 20, 1
-gives 40 — the fastest Minecraft allows, one slot per tick.
+Any value in range works, 15 or 33.3 as well as 10: items advance one slot at a time, at
+intervals that alternate when the speed is not a whole division of 40 (15 items/s steps every 2,
+3, 3 ticks). 40 is the ceiling, one slot per tick on each lane.
+
+The former `ticksPerSlot` (int, 1 to 200, `items/s = 40 / ticksPerSlot`) is still read; giving both
+keys is an error.
 
 ### Creating a belt
 
@@ -171,7 +175,7 @@ gives 40 — the fastest Minecraft allows, one slot per tick.
 
 ```json
 {
-  "ticksPerSlot": 1,
+  "itemsPerSecond": 40,
   "next": "factor_io:express_transport_belt",
   "texture": "mypack:block/belts/turbo",
   "translations": { "en_us": "Turbo Belt", "fr_fr": "Convoyeur turbo" }
@@ -190,7 +194,7 @@ assets.
 `data/mypack/factor_io/belts/transport_belt.json`:
 
 ```json
-{ "ticksPerSlot": 3 }
+{ "itemsPerSecond": 15 }
 ```
 
 `/reload` applies it to belts already placed, and sends it to connected players, whose clients

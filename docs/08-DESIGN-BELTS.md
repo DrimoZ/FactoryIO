@@ -129,6 +129,19 @@ déjà dans `CommonConfig`) :
 Les valeurs Factorio sont volontairement revues à la baisse : à 20 tps, un slot
 par tick (`express`) est déjà la limite physique de Minecraft.
 
+> **Mis à jour le 18/10/2026 (FIO-189).** La vitesse se règle en `itemsPerSecond`, à
+> n'importe quelle valeur de 0,2 à 40 — plus seulement 40, 20, 13,3, 10… La cadence est une
+> fraction de case par tick (`BeltTransport.FULL_SPEED` = 720 720 pour une case par tick) :
+> un pas a lieu au tick où `⌊(t + 1) × cadence / FULL_SPEED⌋` change, une fonction du temps du
+> monde seul, donc identique pour tous les convoyeurs de même vitesse et pour le client.
+> Le rendu fait glisser chaque item jusqu'au pas suivant exact : à 15 items/s les pas
+> alternent 2 et 3 ticks, l'item glisse un peu plus vite sur les premiers, sans jamais sauter.
+>
+> **Le plafond de 40 tient au tick de chaque bloc**, pas à la représentation : un bloc tique
+> une fois par tick et un item n'y franchit qu'une case, condition de l'indépendance à l'ordre
+> de tick (algorithme ci-dessous). Le dépasser demanderait d'empiler plusieurs items par case, ou un ticker de
+> niveau qui jouerait des sous-pas sur tous les convoyeurs à la fois.
+
 ### Algorithme de tick
 
 ```
