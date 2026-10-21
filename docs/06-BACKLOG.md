@@ -5,7 +5,26 @@ Backlog priorisé et estimé. Chaque ticket est autonome et vérifiable.
 **Priorité** : `P0` bloquant · `P1` prochaine version · `P2` important · `P3` souhaitable
 **Estimation** : `XS` <1 h · `S` 1-4 h · `M` 0,5-2 j · `L` 3-5 j · `XL` >1 sem
 
-Colonne « ✓ » = critère d'acceptation.
+Colonne « ✓ » = critère d'acceptation. `❄️` = gelé : ni abandonné, ni planifié.
+
+## 🧭 Positionnement — décidé le 21/10/2026 (FIO-190)
+
+Factor'I/O est **la couche logistique Factorio pour modpacks**, pas un Factorio autonome.
+Les modpacks fournissent déjà fours, foreuses et énergie (Mekanism, Thermal…) ; ce que le
+mod apporte, c'est le comportement Factorio : voies, inserters déterministes, modules,
+contenu piloté par datapack. Create occupe déjà le terrain du « tapis + bras » générique.
+
+Conséquences sur le backlog :
+
+- **Séparateurs (FIO-099) passent en P1** : c'est la pièce qui manque au cœur du jeu.
+- **Intégration (FIO-151 Jade / TOP) passe en P1** : un mod de modpack se lit sans ouvrir d'écran.
+- **Four, foreuse, générateur, recherche (FIO-121, 123, 124, 128) sont gelés** ❄️. Ils
+  reviennent si des joueurs les réclament, pas avant. L'énergie vient d'un autre mod, ou de
+  la source créative.
+- **Port NeoForge 1.21.1 (FIO-191) planifié** juste après les séparateurs, avant toute
+  nouvelle machine : chaque fonctionnalité ajoutée en augmente le coût.
+- Les tickets 🟡 qui n'attendent qu'une vérification en jeu ou à deux clients passent
+  **avant** tout nouveau code : les modpacks tournent sur serveur dédié.
 
 ---
 
@@ -148,7 +167,7 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | ~~FIO-097~~ | ✅ | M | **Interaction inserter ↔ convoyeur.** Un inserter dépose sur la voie **lointaine**, la règle sur laquelle reposent les montages à deux voies. Tenue par le **convoyeur** : `getCapability` reçoit la face, la bande en déduit sa voie lointaine et range ses cases. L'inserter n'a pas une ligne de code au sujet des convoyeurs, et hoppers et tuyaux d'autres mods en bénéficient sans rien savoir. L'ordre est relu à chaque appel — tourner une bande échange ses voies sans changer sa position ni son block entity, et un ordre mis en cache y survivrait (famille BUG-042). A demandé de lever la mémorisation du balayage sur les petits inventaires, qui la contredisait. | ✅ boucle four → bande → inserter → four |
 | ~~FIO-166~~ | ✅ | S | **Voie lointaine stricte, en option.** `insert_on_far_lane_only` rétablit la règle exacte de Factorio : la voie proche n'est jamais utilisée pour un dépôt, et l'inserter attend. **Désactivée par défaut** — un inserter arrêté devant un convoyeur à moitié vide se lit comme une panne pour qui ne connaît pas Factorio, et les deux comportements sont indiscernables tant que la voie lointaine n'est pas saturée. La restriction ne porte que sur le dépôt : Factorio interdit d'y poser, pas d'y prendre. | ✅ l'inserter attend quand la voie lointaine est pleine |
 | ~~FIO-098~~ | ⛔ | — | ~~Convoyeurs souterrains~~ **Hors périmètre, décision du mainteneur du 16/08/2026.** Rien n'avait été écrit : ni classe, ni asset, ni blockstate. Voir [`08`](08-DESIGN-BELTS.md) §8.1. | — |
-| FIO-099 | P2 | XL | Séparateurs : répartition, priorité entrée/sortie, filtre | — |
+| FIO-099 | **P1** | XL | Séparateurs : répartition, priorité entrée/sortie, filtre. Remonté de P2 par le positionnement (FIO-190). | 2 entrées → 2 sorties, répartition 50/50 mesurée, sans perte |
 | FIO-100 | P2 | M | Frontières de chunk et chunks déchargés | pas de perte d'item à la frontière |
 | FIO-101 | P2 | M | Sauvegarde/chargement des lignes en NBT | 500 items conservés au rechargement |
 | FIO-102 | P3 | M | Sons et particules | — |
@@ -160,6 +179,9 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 > un cadre multibloc générique et le crafter, rien d'autre. Conception complète dans
 > [`12`](12-DESIGN-CRAFTER.md), ordre des tickets en §9. Four, foreuse, générateur et
 > arbre de recherche restent ajournés.
+>
+> **Gelés le 21/10/2026** (FIO-190) : le mod se positionne comme couche logistique pour
+> modpacks, qui fournissent déjà ces machines.
 
 | ID | P | Est. | Ticket |
 |---|---|---|---|
@@ -174,13 +196,13 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | ~~FIO-181~~ | ✅ | M | **Charte commune des écrans** — **faite** ([`09`](09-CONVENTIONS.md) §9). Grille `GuiMetrics` alignée sur l'inventaire, palette `GuiTheme`, nouvelles pièces (flèche 20×13, champ, slot hachuré, liseré, voyants, verrou, item fantôme). Écran du crafter refait : bande recette + bande travail, énergie à gauche, voyant d'état, onglet d'informations commun, sélecteur modal plein écran. Inserter aligné (voyant, flèches, palette) ; son socle de cible montre enfin la machine d'un multibloc. Outil `GuiPreview` pour capturer les écrans sans jouer. | captures `run/screenshots/preview/` |
 | ~~FIO-183~~ | ✅ | S | **Contrôle du crafter** — **fait** ([`12`](12-DESIGN-CRAFTER.md) §4.4) : interrupteur et condition redstone comme sur les inserters, lus sur tout le volume ; persistés, synchronisés par le menu, réglés par `C2SCrafterSetting`. L'onglet de contrôle devient commun (`client/gui/ControlTab`) et `InserterRedstoneCondition` devient `RedstoneCondition`. Condition réglable sans module tant que le crafter n'a pas de slots d'amélioration. | GameTests : `switchingOffStopsTheCrafter`, `theRedstoneConditionReadsTheWholeMachine` |
 | ~~FIO-185~~ | ✅ | S | **Module de redstone avancée sur le crafter** — **fait** : même règle que les inserters, la condition réglée ne s'applique qu'avec le module posé dans un slot de module ; barème `requiresModule` commun. Textes de l'onglet de contrôle rendus génériques (« la machine »). | GameTest `withoutTheModuleOnlyTheNativeReactionApplies` |
-| FIO-121 | P1 | L | Four (pierre / électrique) : minerai → plaque |
-| FIO-123 | P1 | L | Foreuse (burner / électrique) |
-| 🟡 FIO-124 | P1 | M | Générateur d'énergie minimal (vapeur) pour être jouable en standalone. **Partiellement adressé** : une source d'énergie *créative* existe (`creative_energy_source`, sans recette) et lève la dépendance à un mod tiers pour tester et jouer en créatif. Elle ne tranche pas la question du générateur de survie, qui reste ouverte. |
+| ❄️ FIO-121 | gelé | L | Four (pierre / électrique) : minerai → plaque |
+| ❄️ FIO-123 | gelé | L | Foreuse (burner / électrique) |
+| ❄️ FIO-124 | gelé | M | Générateur d'énergie minimal (vapeur) pour être jouable en standalone. **Partiellement adressé** : une source d'énergie *créative* existe (`creative_energy_source`, sans recette) et lève la dépendance à un mod tiers pour tester et jouer en créatif. Elle ne tranche pas la question du générateur de survie, qui reste ouverte. |
 | ~~FIO-125~~ | ✅ | M | Recettes des 7 inserters. Chaîne de progression : chaque modèle se construit à partir du précédent, le comparateur porte le filtrage et la redstone concentrée paie la vitesse. Vanilla et tags `forge:` uniquement — les plaques et circuits du mod restent à FIO-126, qui décidera de la chaîne complète. |
 | ~~FIO-126~~ | ✅ | M | **Recettes du crafter** — **faites** ([`12`](12-DESIGN-CRAFTER.md) §6) : intermédiaires aux ratios Factorio ; circuit avancé et processeur exclusifs au crafter ; crafters Mk1 → Mk3 en chaîne. Le processeur demande un crafter Mk2 (l'acide de Factorio exige un assembleur 2) ; poudre à canon et varech séché tiennent lieu d'acide et de plastique. Test : `advancedCircuitsOnlyComeFromTheCrafter`. |
 | ~~FIO-127~~ | ✅ | L | **Modules du crafter** — **faits** ([`12`](12-DESIGN-CRAFTER.md) §4.4 bis) : slots par palier (0/2/4), effets de Factorio additionnés (`CrafterModules`), productivité en barre. Les modules des inserters restent ceux de FIO-165. |
-| FIO-128 | P2 | L | Arbre de recherche + usage des 7 science packs (ou suppression) |
+| ❄️ FIO-128 | gelé | L | Arbre de recherche + usage des 7 science packs (ou suppression) |
 | FIO-129 | P2 | S | Supprimer ou tager `stone`/`stone_brick` qui dupliquent le vanilla |
 | FIO-130 | P2 | S | Résoudre les textures orphelines ([BUG-033](03-BUGS.md)) |
 | FIO-131 | P3 | M | Coffres logistiques / robots (périmètre à trancher) |
@@ -190,7 +212,7 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | ID | P | Est. | Ticket |
 |---|---|---|---|
 | 🟡 FIO-150 | P1 | M | Plugin JEI — **crafter fait** (FIO-178 : catégorie `factor_io:crafting`, catalyseurs, « + »). Reste une catégorie d'information pour les inserters, si elle sert. |
-| FIO-151 | P2 | M | Provider The One Probe / Jade |
+| FIO-151 | **P1** | M | Provider The One Probe / Jade — remonté par le positionnement (FIO-190) |
 | ~~FIO-152~~ | ✅ | M | i18n complète — **fait** : plus de fragments recollés, des clés à trous (`%s`) ; `LangFilesTest` vérifie la parité `en_us`/`fr_fr` et l'existence des clés citées |
 | FIO-153 | P2 | M | Sons |
 | FIO-154 | P2 | L | Guide en jeu (Patchouli) |
@@ -198,9 +220,15 @@ imposée a bien changé le comportement en jeu. Refaire cette sonde en cas de do
 | FIO-156 | P2 | S | `updateJSONURL` + fichier de mise à jour |
 | FIO-157 | P2 | M | Passe d'accessibilité GUI (contrastes, tooltips, clavier) |
 | ~~FIO-158~~ | ✅ | S | `CHANGELOG.md` et politique de versionnage — **fait** : `MAJOR.MINOR.PATCH`, suffixe `-beta` tant que des modèles sont provisoires, section par version reprise telle quelle comme « What's new » du fichier CurseForge. |
-| FIO-187 | P1 | M | **Refonte de la documentation et de la vitrine pour `0.4.0-beta`** : wiki réécrit (pages Crafters, Modules, Recipes), README, page CurseForge ([`curseforge-description.md`](curseforge-description.md)), captures rejouables ([`showcase/`](showcase/README.md)), état des lieux et roadmap à jour. |
+| ~~FIO-187~~ | ✅ | M | **Refonte de la documentation et de la vitrine pour `0.4.0-beta`** : wiki réécrit (pages Crafters, Modules, Recipes), README, page CurseForge ([`curseforge-description.md`](curseforge-description.md)), captures rejouables ([`showcase/`](showcase/README.md)), état des lieux et roadmap à jour. |
 
 ---
+
+## Épic G — Plateforme
+
+| ID | P | Est. | Ticket | ✓ |
+|---|---|---|---|---|
+| FIO-191 | P1 | L | **Port NeoForge 1.21.1.** Les nouveaux modpacks partent sur NeoForge 1.21.1 ; la 1.20.1 Forge vieillit. À faire **après les séparateurs, avant toute nouvelle machine**. Gain attendu : `BlockCapability` et son cache de voisin (DT-07), `DataComponents` à la place du NBT d'item. GeckoLib et JEI existent tous deux en 1.21.1. Une branche 1.20.1 de maintenance reste possible mais n'est pas un objectif. | `build`, GameTests et `runServer` verts en 1.21.1 |
 
 ## Épic B-bis — Dette introduite par le port (à traiter en priorité)
 
@@ -237,18 +265,18 @@ Diagnostic établi en comparant le projet à un **MDK Forge 1.20.1 vierge**, une
 
 ## Ordre d'attaque recommandé
 
+Revu le 21/10/2026 avec le positionnement (FIO-190).
+
 ```
-✅ FIO-001..018   Phase 0 appliquée
-✅ FIO-040, 043   port Forge 1.20.1
+✅ Phases 0 à 2, convoyeurs, crafter   jusqu'à 0.4.0-beta, puis FIO-186..189
 
-✅ FIO-047..050   mod porté validé en jeu
-✅ FIO-030..042   réseau, modèle, assets, filet de tests
-✅ FIO-071, 152, 162, 167..171   refonte de l'interface
-
-✅ FIO-164   recettes et textures des composants
-✅ FIO-165   barème d'améliorations par datapack
-FIO-163 (validation à l'œil) → FIO-172
-puis Épic F (FIO-150 JEI, FIO-155/158 publication), puis Épic D
+1. Vérifier ce qui attend l'œil ou deux clients, sans écrire de code :
+   FIO-163, 092, 094, 095, 103 (à l'œil) · FIO-096, 090c (runServer, deux clients) · FIO-090b (FPS)
+2. Publier 0.4.1 sur CurseForge et Modrinth (FIO-155)
+3. FIO-099 séparateurs                  → 0.5.0
+4. FIO-151 Jade / TOP
+5. FIO-191 port NeoForge 1.21.1         → 0.6.0
+❄️ FIO-121, 123, 124, 128 gelés
 ```
 
 `FIO-041/042` (tests) est placé **avant** les refontes délibérément : sans filet,

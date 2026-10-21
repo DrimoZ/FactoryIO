@@ -27,6 +27,12 @@ les phases sont faites dans l'ordre.
 > réduit : cadre multibloc et crafter T1-T3, avec modules et fluides. Phase 5 entamée :
 > JEI, i18n `en_us`/`fr_fr` complète, wiki et page CurseForge refaits, captures rejouables.
 > Le détail est dans [`02`](02-ETAT-DES-LIEUX.md).
+>
+> **Positionnement — 21/10/2026 (FIO-190).** L'objectif « usine complète, de l'extraction
+> à la production » cède la place à **une couche logistique Factorio pour modpacks** : les
+> modpacks fournissent l'extraction, la fonte et l'énergie. La suite est donc séparateurs,
+> intégration (Jade / TOP), puis port NeoForge 1.21.1 ; four, foreuse, générateur et
+> recherche sont gelés. Ordre détaillé dans [`06`](06-BACKLOG.md).
 
 ---
 
@@ -247,6 +253,9 @@ tourne 30 minutes sans perte d'item ni chute de TPS.
 > T1-T3, conçus dans [`12`](12-DESIGN-CRAFTER.md). Le reste de la phase reste ajourné, et
 > l'énergie de survie (FIO-124) n'est pas tranchée : le crafter consomme du FE venu d'un
 > autre mod, ou de la source créative en test.
+>
+> **Gel du reste le 21/10/2026** (FIO-190) : four, foreuse, générateur et recherche ne
+> sont plus prévus ; le crafter consomme durablement le FE d'un autre mod.
 
 > **Reportée le 16/08/2026, décision du mainteneur** : « la Phase 4 n'a pas de sens pour
 > le moment ». Rien n'est supprimé — la spécification ci-dessous reste valable le jour où
@@ -332,4 +341,5 @@ antérieure sur CurseForge est le prototype 1.18.2, `factory_io-0.0.x`).
 | `0.4.0` | convoyeurs + séparateurs | `0.3.0-beta` (16/08/2026) : inserters et convoyeurs, sans séparateurs |
 | `0.7.0` | machines, recettes, progression jouable | `0.4.0-beta` (01/10/2026) : crafters, rampes, modules, toutes les recettes |
 | `0.5.0` | séparateurs, art définitif du crafter et des rampes | à venir |
-| `1.0.0` | intégrations, i18n, publication | à venir |
+| `0.6.0` | port NeoForge 1.21.1 (FIO-191) | à venir |
+| `1.0.0` | intégrations (Jade / TOP), publication CurseForge + Modrinth | à venir |
